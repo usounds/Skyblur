@@ -173,7 +173,7 @@ const PostPage = () => {
                 </nav>
             </div>
 
-            <div className="mx-auto max-w-screen-2xl px-4 md:px-8 mt-4 text-gray-800">
+            <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-4 text-gray-800">
                 <div className="mx-auto max-w-screen-md rounded-lg">
                     {userProf &&
                         <Avatar userProf={userProf} />
