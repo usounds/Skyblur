@@ -102,7 +102,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         const rkey = generateRkey()
         const url = '/post/' + did + "/" + rkey
         const tempUrl = origin + url
-        const blurUri = `at://${did}/${COLLECTION}/rkey`
+        const blurUri = `at://${did}/${COLLECTION}/${rkey}`
 
         //URLの判定
         // titleからURLを抽出
@@ -142,7 +142,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             facets: rt.facets,
             langs: [locale.CreatePost_Lang],
             via: 'Skyblur',
-            "uk.skyblur.uri": blurUri
+            "uk.skyblur.post.uri": blurUri
         };
 
         postObj.facets = new Array(0);

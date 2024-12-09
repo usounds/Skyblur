@@ -1,6 +1,6 @@
 export default {
     Home_inAuthProgress: "認可処理中です",
-    Home_Welcome: "Skyblurへようこそ。Blueskyへ伏字を使った投稿をポストできます。",
+    Home_Welcome: "Skyblurへようこそ。Blueskyへ伏せ字を使った文章をポストできます。",
     Menu_CreatePost: "新規の投稿",
     Menu_DeletePost: "投稿の削除",
     Menu_Logout: "ログアウト",
