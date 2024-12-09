@@ -203,16 +203,19 @@ export default function Home() {
 
     <div className="">
 
-      <div className="flex flex-wrap sm:justify-start sm:flex-nowrap w-full text-sm py-4 bg-neutral-800">
-        <nav className="px-4 md:px-8 w-full mx-auto sm:flex sm:items-center sm:justify-between" aria-label="Global">
-          <Link href={"/"} className="flex-none text-xl font-semibold text-white" >Skyblur</Link>
-          <div className="flex flex-row items-center gap-2 mt-2 sm:justify-end text-gray-800">
-            <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2" >{locale.Menu_TermOfUse}</Link>
+      <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
+        <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
+          <Link href={"/"} className="text-xl font-semibold text-white">
+            Skyblur
+          </Link>
+          <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
+            <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
+              {locale.Menu_TermOfUse}
+            </Link>
             <LanguageSelect
               selectedLocale={selectedLocale}
               onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}
             />
-
           </div>
         </nav>
       </div>

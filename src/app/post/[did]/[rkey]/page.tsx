@@ -3,7 +3,7 @@ export const runtime = 'edge';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from "react";
 import { AtpAgent, AppBskyActorDefs } from '@atproto/api'
-import { DIDResponse, Service, PostData,COLLECTION } from '../../../../types/types'
+import { DIDResponse, Service, PostData, COLLECTION } from '../../../../types/types'
 import PostTextWithBold from "../../../../components/PostTextWithBold"
 import { Avatar } from "../../../../components/Avatar"
 import LanguageSelect from "../../../../components/LanguageSelect"
@@ -155,20 +155,19 @@ const PostPage = () => {
     return (
         <>
 
-            <div className="flex flex-wrap sm:justify-start sm:flex-nowrap w-full text-sm py-4 bg-neutral-800">
-                <nav className="px-4 md:px-8 w-full mx-auto sm:flex sm:items-center sm:justify-between" aria-label="Global">
-                    <Link href={"/"} className="flex-none text-xl font-semibold text-white" >Skyblur</Link>
-                    <div className="flex flex-row items-center gap-5 mt-5 sm:justify-end sm:mt-0 sm:ps-5">
-                        <div className="flex flex-row items-center gap-2 mt-2 sm:justify-end text-gray-800">
-                            <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2" >{locale.Menu_TermOfUse}</Link>
-
-                            <LanguageSelect
-                                selectedLocale={selectedLocale}
-                                onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}
-                            />
-
-                        </div>
-
+            <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
+                <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
+                    <Link href={"/"} className="text-xl font-semibold text-white">
+                        Skyblur
+                    </Link>
+                    <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
+                        <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
+                            {locale.Menu_TermOfUse}
+                        </Link>
+                        <LanguageSelect
+                            selectedLocale={selectedLocale}
+                            onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}
+                        />
                     </div>
                 </nav>
             </div>
@@ -186,14 +185,20 @@ const PostPage = () => {
                             </span>
                             読み込み中です... / Now Loading...
                         </>
-                        : <>
+                        :
+                        <>
                             <p className="text-sm text-gray-500">{postDate}</p>
-                            <div className="overflow-hidden break-words">
-                                <PostTextWithBold postText={postText} />
+                            <div className="border rounded-lg p-2 border-gray-300">
+                                <div className="overflow-hidden break-words">
+                                    <PostTextWithBold postText={postText} />
+                                </div>
+                                {addText &&
+                                    <div className="overflow-hidden break-words mt-2">
+                                        {addText}
+                                    </div>
+                                }
                             </div>
-                            <div className="overflow-hidden break-words mt-2">
-                                {addText}
-                            </div>
+
                             <div className="overflow-hidden break-words mt-2 text-center">
                                 <Link href={bskyUrl} target='_blank' className="flex items-center justify-center space-x-2">
                                     <span>{locale.CreatePost_LinkToBsky}</span>
@@ -233,8 +238,6 @@ const PostPage = () => {
                                     </svg>
                                 </Link>
                             </div>
-
-
                         </>
                     }
                     {errorMessage &&
