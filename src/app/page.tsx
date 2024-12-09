@@ -210,9 +210,11 @@ export default function Home() {
           </Link>
           <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
             {isLoginToBsky &&
-              <div onClick={logout} className="flex-none text-sm font-semibold text-white mr-2">
-                {locale.Menu_Logout}
-              </div>
+              <>
+                <div onClick={logout} className="flex-none text-sm font-semibold text-white mr-2">
+                  {locale.Menu_Logout} 
+                </div>
+              </>
             }
             <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
               {locale.Menu_TermOfUse}
@@ -235,6 +237,7 @@ export default function Home() {
 
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
                 <>{(isLoading) ? <>
+
                   <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
                     <span className="sr-only">Loading...</span>
                   </span>
@@ -260,16 +263,20 @@ export default function Home() {
               <div className="w-full">
                 {userProf &&
                   <>
-                    <div className="flex items-center justify-between mt-2 grid-cols-1 m-2">
-                      <Avatar userProf={userProf} />
-                    </div>
-
-
                     {mode === 'menu' &&
                       <>
                         <div className="mt-4 mx-auto max-w-screen-sm flex flex-col  ">
+                          <div className="flex justify-center my-4">
+                              {locale.Menu_LoginMessage.replace("{1}", userProf.displayName||'No Name')}
+                            </div>
+
                           <div className="flex justify-center gap-4 mb-8">
-                            <button onClick={() => setMode("create")} className="relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-blue-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.Menu_CreatePost}</button>
+                            <button onClick={() => setMode("create")} className="relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-blue-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+
+                              <>
+                                {locale.Menu_CreatePost}
+                              </>
+                            </button>
 
                           </div>
 
@@ -280,7 +287,7 @@ export default function Home() {
                     }
                     {mode === 'create' &&
                       <>
-                        <div className="flex justify-center ">
+                        <div className="flex justify-center mt-4">
                           <div onClick={() => setMode("menu")} className="block text-sm text-gray-400 mx-1 underline ">{locale.Menu_Back}</div>
                         </div>
                         <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode}

@@ -9,7 +9,7 @@ type AvatarProp = {
 
 export const Avatar: React.FC<AvatarProp> = ({
     userProf,
-    time
+    
 }) => {
     return (
 
@@ -18,7 +18,7 @@ export const Avatar: React.FC<AvatarProp> = ({
                 <img
                     className="object-cover w-10 h-10 rounded-full"
                     src={userProf.avatar}
-                    alt=""
+                    alt={userProf.displayName}
                 />
             ) : (
                 <svg
@@ -41,7 +41,7 @@ export const Avatar: React.FC<AvatarProp> = ({
             <div>
                 <h1 className="text-lg font-semibold capitalize">{userProf.displayName || "No Name"}</h1>
 
-                <p className="text-sm text-gray-500 ">@{userProf.handle} {time}</p>
+                <p className="text-sm text-gray-500 ">@{userProf.handle}</p>
             </div>
         </div>
     );
