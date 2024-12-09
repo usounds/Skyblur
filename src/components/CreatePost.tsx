@@ -193,7 +193,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         }
 
         console.log(userProf)
-        let og = await getOgp("https://blursky.usounds.work/skyblur.png");
+        let og = await getOgp("https://skyblur.uk/skyblur.png");
         const uploadedImage = await agent.uploadBlob(og.image, {
             encoding: og.type,
         });
