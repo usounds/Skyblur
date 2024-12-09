@@ -6,6 +6,7 @@ export default {
     Menu_Logout: "ログアウト",
     Menu_Back: "← 前のページに戻る",
     Menu_TermOfUse: "利用規約",
+    Menu_LoginMessage: "{1}さん、こんにちわ！",
     Login_Title: "ハンドルを入力してログインをタップしてください",
     Login_InputHandle: "ハンドルを入力してください",
     Login_InvalidHandle: "無効なハンドルです",

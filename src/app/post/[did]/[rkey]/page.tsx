@@ -152,7 +152,7 @@ const PostPage = () => {
             fetchRecord();
         }
     }, [did, rkey]); // did または rkey が変更された場合に再実行
-    
+
 
     return (
         <>
@@ -177,7 +177,7 @@ const PostPage = () => {
             <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
                 <div className="mx-auto rounded-lg">
                     {userProf &&
-                        <Avatar userProf={userProf}/>
+                        <Avatar userProf={userProf} />
                     }
 
                     {isLoading ?
@@ -199,16 +199,20 @@ const PostPage = () => {
                                     </div>
                                 }
 
-                            <div className="flex justify-end gap-2 mt-2">
-                                <div className="text-sm text-gray-400">{postDate}</div>
-                                <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
-                                    <Image
-                                        src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                                        alt="Trash Icon"
-                                        width={20} // 必要に応じて幅を指定
-                                        height={20} // 必要に応じて高さを指定
-                                    /></a>
-                            </div>
+                                <div className="flex justify-between items-center mt-2">
+                                    <div className="text-sm text-gray-400">{postDate}</div>
+                                    <div className="flex gap-2">
+                                        <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
+                                            <Image
+                                                src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                                alt="Trash Icon"
+                                                width={20} // 必要に応じて幅を指定
+                                                height={20} // 必要に応じて高さを指定
+                                            />
+                                        </a>
+                                    </div>
+                                </div>
+
                             </div>
 
                         </>
