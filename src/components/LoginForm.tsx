@@ -161,7 +161,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   }
 
   return (
-    <div>
+    <div className="w-[350px]">
       <label htmlFor="handle" className="sr-only text-gray-500">
         Handle
       </label>

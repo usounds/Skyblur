@@ -309,7 +309,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <button
                             onClick={handleCrearePost}
                             disabled={isLoading}
-                            className="rounded-lg mt-2 w-full bg-blue-800 px-8 py-3 text-center text-sm text-white outline-none ring-blue-300 transition duration-100 hover:bg-blue-700 focus-visible:ring active:bg-blue-600 disabled:bg-gray-200 disabled:text-gray-600 md:text-base flex items-center justify-center"
+                            className="rounded-lg mt-2 w-[300px] bg-blue-800 px-8 py-3 text-center text-sm text-white outline-none ring-blue-300 transition duration-100 hover:bg-blue-700 focus-visible:ring active:bg-blue-600 disabled:bg-gray-200 disabled:text-gray-600 md:text-base flex items-center justify-center"
                         >
                             {locale.CreatePost_CreateButton}
                         </button>
