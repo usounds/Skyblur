@@ -31,7 +31,8 @@ export default {
     CreatePost_CreateDescription: "投稿してよければ下のボタンを押してください",
     CreatePost_CreateButton: "投稿する",
     CreatePost_Lang:"ja",
-    CreatePost_OGPDescription: "@{1}さんの伏せた投稿です",
+    CreatePost_OGPTitle: "Skyblur",
+    CreatePost_OGPDescription: "伏せていない投稿を参照する",
     CreatePost_Success: "投稿に成功しました",
     CreatePost_LinkToBsky: "Blueskyで表示する",
     DeleteList_ChooseDeleteItem: "投稿一覧",
@@ -41,4 +42,5 @@ export default {
     DeleteList_CancelButton: "キャンセル",
     DeleteList_Loading: "読み込み中",
     DeleteList_ReadMore: "さらに読み込み",
+    DeleteList_ToHead: "再読み込み",
 }

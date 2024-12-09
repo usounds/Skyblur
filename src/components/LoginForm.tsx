@@ -118,6 +118,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       return
 
     }
+    setBlueskyLoginMessage(locale.Login_PDSResolve)
     const pds = await fetchServiceEndpoint(obj.data.did) ||""
 
     const match = pds.match(/https?:\/\/([^/]+)/);
@@ -131,7 +132,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     if (host.endsWith("bsky.network")) {
         host =  "bsky.social";
     }
-    setBlueskyLoginMessage(locale.Login_PDSResolve)
 
     console.log(pds)
 

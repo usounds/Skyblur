@@ -58,13 +58,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             return match.replace(/./g, locale.CreatePost_OmmitChar);
         });
 
-
-        if (blurredText.length > 200) {
-            blurredText = blurredText.slice(0, 200);
-        }
-
-        console.log(blurredText)
-
         // 状態を更新
         setPostTest(text)
         setPostTextForRecord(postTextLocal);
@@ -109,6 +102,33 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         const rkey = generateRkey()
         const url = '/post/' + did + "/" + rkey
         const tempUrl = origin + url
+        const blurUri = `at://${did}/${COLLECTION}/rkey`
+
+        //URLの判定
+        // titleからURLを抽出
+        const pattern =
+            /https?:\/\/[-_.!~*\'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g;
+        const urls = postTextBlur.match(pattern);
+
+        // URLと出現位置を保持する配列を定義
+        let urlArray: { [urlKey: string]: number };
+        urlArray = {};
+
+        //URLが取得できたら、URLが出現するまでのバイト数をカウントする
+        let pos = 0;
+
+        if (urls != null) {
+            for (const url of urls) {
+                console.log(url);
+                pos = encodeURI(postTextBlur).replace(/%../g, "*").indexOf(url);
+                //URLが見つからない場合は想定外とみなし処理を行わない（正規表現で想定外の検知をしたものは処理をしない）
+                if (pos >= 0) {
+                    urlArray[url] = pos;
+                }
+            }
+        }
+
+        console.log(urlArray)
 
         //投稿
         let postTextBlurLocal: string = postTextBlur;
@@ -122,7 +142,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             facets: rt.facets,
             langs: [locale.CreatePost_Lang],
             via: 'Skyblur',
-            "uk.skyblur.link" : tempUrl
+            "uk.skyblur.uri": blurUri
         };
 
         postObj.facets = new Array(0);
@@ -195,19 +215,37 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             );
         }
 
-        console.log(userProf)
-        const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.handle);
+        const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.displayName);
 
-
-        // 投稿オブジェクトに画像を追加
+        // OGP設定
         postObj.embed = {
             $type: 'app.bsky.embed.external',
             external: {
                 uri: tempUrl,
-                title: userProf.displayName + ' | Skyblur',
+                title: locale.CreatePost_OGPTitle,
                 description: localDesc,
             },
         };
+
+        //URLをリンク化
+        Object.keys(urlArray).forEach(function (key) {
+            if (typeof postObj.facets !== "undefined") {
+                postObj.facets.push(
+                    {
+                        index: {
+                            "byteStart": urlArray[key],
+                            "byteEnd": urlArray[key] + key.length
+                        },
+                        features: [
+                            {
+                                "$type": "app.bsky.richtext.facet#link",
+                                "uri": key
+                            }
+                        ]
+                    }
+                );
+            }
+        });
 
         const result = await agent.post(postObj);
 

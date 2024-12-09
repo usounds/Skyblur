@@ -299,7 +299,9 @@ export default function Home() {
                     }
                     {mode === 'create' &&
                       <>
-                        <div onClick={() => setMode("menu")} className="block text-sm text-gray-400 mx-1 underline">{locale.Menu_Back}</div>
+                        <div className="flex justify-center ">
+                          <div onClick={() => setMode("menu")} className="block text-sm text-gray-400 mx-1 underline ">{locale.Menu_Back}</div>
+                        </div>
                         <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode}
                           userProf={userProf} />
                       </>
