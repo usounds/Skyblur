@@ -19,20 +19,27 @@ export const DeleteList: React.FC<DeleteListProps> = ({
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostForDelete[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
+    const [isDeleteing, setIsDeleting] = useState<boolean>(false)
     const [selectedItem, setSelectedItem] = useState<PostForDelete | null>(null);
     const [duplicate, setDuplicate] = useState<boolean>(false);
 
     const getPosts = async (did: string, cursor: string) => {
+
+        if (duplicate) {
+            return;
+        }
+        setDuplicate(true); // 重複実行を防ぐ
+
         setIsLoading(true)
         setDeleteList([])
-        console.log('call');
+        //console.log('call');
         let deleteList: any[] = []; // 初期化
         try {
             const param = {
                 repo: did,
                 collection: COLLECTION,
                 cursor: cursor,
-                limit: 20
+                limit: 10
             };
 
             const bookMark = await agent.com.atproto.repo.listRecords(param);
@@ -56,7 +63,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
             // setDeleteList を呼び出して UI を更新
             setDeleteList(deleteList);
             setIsLoading(false);
-            console.log(bookMark.data.cursor);
+            setDuplicate(false); // 重複実行を防ぐ
 
         } catch (error) {
             console.error('Error fetching bookmarks:', error);
@@ -97,7 +104,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
 
     // 投稿を削除する関数
     const handleDeleteItem = async () => {
-        setIsLoading(true)
+        setIsDeleting(true)
         try {
             // 非同期操作を待つ
             await deleteRecord(selectedItem?.postATUri || '')
@@ -105,7 +112,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
-            setIsLoading(false)
+            setIsDeleting(false)
             return
         }
         // 実際の削除処理をここに追加
@@ -114,15 +121,13 @@ export const DeleteList: React.FC<DeleteListProps> = ({
             setDeleteList(prevList => prevList.filter(item => item.blurATUri !== selectedItem.blurATUri));
         }
         setSelectedItem(null); // ダイアログを閉じる
-        setIsLoading(false)
+        setIsDeleting(false)
 
     };
 
     const transformUrl = (inputUrl: string): string => {
 
         const parts = inputUrl.split('/');
-
-        console.log(parts)
 
         if (parts[3] === 'app.bsky.feed.post') {
             return `https://bsky.app/profile/${parts[2]}/post/${parts[4]}`;
@@ -151,16 +156,14 @@ export const DeleteList: React.FC<DeleteListProps> = ({
         }).format(date);
     };
 
-
+    let useEffectDuplidate = false
 
     useEffect(() => {
-        if (duplicate) {
-            return;
-        }
-
-        setDuplicate(true); // 重複実行を防ぐ
-
+        if (useEffectDuplidate) return
+        useEffectDuplidate = true
         // fetchBookmarks を呼び出す
+        console.log('useEffect')
+
         getPosts(did, cursor);
 
         // 実行後、duplicate を再度 false に設定
@@ -171,16 +174,18 @@ export const DeleteList: React.FC<DeleteListProps> = ({
     return (
         <>
             <div className="max-w-screen-sm">
-                <div className="flex flex-wrap mb-2 justify-center ">
-                    {(deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
-                    {(deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
-                </div>
+                {!isLoading &&
+                    <div className="flex flex-wrap mb-2 justify-center ">
+                        {(deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
+                        {(deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
+                    </div>
+                }
                 <div className="flex flex-wrap justify-center max-w-screen-sm ">
 
                     {deleteList.map((item, index) => (
                         <div
                             key={index}
-                            className="py-3 px-2 mb-1 mx-2 bg-white rounded-md border border-gray-400 w-full "
+                            className="py-3 px-2 mb-2 mx-2 bg-white rounded-md border border-gray-400 w-full "
                         >
                             <div>
                                 <PostTextWithBold postText={item.text} />
@@ -232,14 +237,14 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                                     <button
                                         className="px-4 py-2 bg-red-600 disabled:bg-red-100 text-white rounded-md"
                                         onClick={handleDeleteItem} // 削除処理
-                                        disabled={isLoading}
+                                        disabled={isDeleteing}
                                     >
                                         {locale.DeleteList_DeleteButton}
                                     </button>
                                     <button
                                         className="px-4 py-2 bg-gray-300 disabled:bg-gray-100 text-gray-800 rounded-md"
                                         onClick={handleCloseOverlay} // 閉じる処理
-                                        disabled={isLoading}
+                                        disabled={isDeleteing}
                                     >
                                         {locale.DeleteList_CancelButton}
                                     </button>
@@ -250,10 +255,19 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                     )}
                 </div>
 
-                {deleteList.length == 20 &&
+                {deleteList.length == 10 &&
                     <div className="flex justify-center gap-4 mt-6">
-                        <button onClick={() => getPosts(did, cursor)} className="relative z-0 h-12 rounded-full bg-gray-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+                        <button disabled={isLoading} onClick={() => getPosts(did, cursor)} className="relative z-0 h-12 rounded-full bg-gray-500 disabled:bg-gray-300 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
                             {isLoading ? <>{locale.DeleteList_Loading}</> : <>{locale.DeleteList_ReadMore}</>}
+                        </button>
+
+                    </div>
+                }
+
+                {(deleteList.length != 10) &&
+                    <div className="flex justify-center gap-4 mt-6">
+                        <button disabled={isLoading} onClick={() => getPosts(did, '')} className="relative z-0 h-12 rounded-full bg-gray-500 px-6 disabled:bg-gray-300 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+                            {isLoading ? <>{locale.DeleteList_Loading}</> : <>{locale.DeleteList_ToHead}</>}
                         </button>
 
                     </div>
