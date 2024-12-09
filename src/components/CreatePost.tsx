@@ -239,7 +239,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     return (
         <>
-            <div className="">
+            <div className="m-3">
 
                 {(!appUrl) &&
                     <>
