@@ -4,10 +4,12 @@ import Image from 'next/image';
 
 type AvatarProp = {
     userProf: AppBskyActorDefs.ProfileViewDetailed
+    time? : string
 };
 
 export const Avatar: React.FC<AvatarProp> = ({
-    userProf
+    userProf,
+    time
 }) => {
     return (
 
@@ -39,7 +41,7 @@ export const Avatar: React.FC<AvatarProp> = ({
             <div>
                 <h1 className="text-lg font-semibold capitalize">{userProf.displayName || "No Name"}</h1>
 
-                <p className="text-sm text-gray-500 ">@{userProf.handle}</p>
+                <p className="text-sm text-gray-500 ">@{userProf.handle} {time}</p>
             </div>
         </div>
     );

@@ -34,9 +34,11 @@ export default {
     CreatePost_OGPDescription: "@{1}さんの伏せた投稿です",
     CreatePost_Success: "投稿に成功しました",
     CreatePost_LinkToBsky: "Blueskyで表示する",
-    DeleteList_ChooseDeleteItem: "削除する投稿を選んでください",
+    DeleteList_ChooseDeleteItem: "投稿一覧",
     DeleteList_NoListItem: "投稿がありません",
     DeleteList_ConfirmDelete: "この投稿を削除しますか？",
     DeleteList_DeleteButton: "削除",
     DeleteList_CancelButton: "キャンセル",
+    DeleteList_Loading: "読み込み中",
+    DeleteList_ReadMore: "さらに読み込み",
 }
