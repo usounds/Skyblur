@@ -34,9 +34,11 @@ export default {
     CreatePost_OGPDescription: "Post from @{1} with censor.",
     CreatePost_Success: "Post is successed.",
     CreatePost_LinkToBsky: "View in Bluesky",
-    DeleteList_ChooseDeleteItem: "Please select the post to delete",
+    DeleteList_ChooseDeleteItem: "Past post(s)",
     DeleteList_NoListItem: "No posts available",
     DeleteList_ConfirmDelete: "Are you sure you want to delete this post?",
     DeleteList_DeleteButton: "Delete",
     DeleteList_CancelButton: "Cancel",
+    DeleteList_Loading: "Loading",
+    DeleteList_ReadMore: "Read More",
 }

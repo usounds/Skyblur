@@ -11,13 +11,15 @@ type CreatePostProps = {
     locale: any,
     did: string,
     userProf: AppBskyActorDefs.ProfileViewDetailed
+    setMode: (value: string) => void;
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
     agent,
     locale,
     did,
-    userProf
+    userProf,
+    setMode
 }) => {
     const [postText, setPostTest] = useState("");
     const [postTextForRecord, setPostTextForRecord] = useState("");
@@ -120,6 +122,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             facets: rt.facets,
             langs: [locale.CreatePost_Lang],
             via: 'Skyblur',
+            "uk.skyblur.link" : tempUrl
         };
 
         postObj.facets = new Array(0);
@@ -193,10 +196,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         }
 
         console.log(userProf)
-        let og = await getOgp("https://skyblur.uk/skyblur.png");
-        const uploadedImage = await agent.uploadBlob(og.image, {
-            encoding: og.type,
-        });
         const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.handle);
 
 
@@ -205,14 +204,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             $type: 'app.bsky.embed.external',
             external: {
                 uri: tempUrl,
-                thumb: {
-                    $type: 'blob',
-                    ref: {
-                        $link: uploadedImage.data.blob.ref.toString(),
-                    },
-                    mimeType: uploadedImage.data.blob.mimeType,
-                    size: uploadedImage.data.blob.size,
-                },
                 title: userProf.displayName + ' | Skyblur',
                 description: localDesc,
             },
@@ -238,6 +229,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
+            setMode('menu')
         } else {
             console.error(ret)
 
@@ -303,16 +295,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             max={10000}
                         />
 
-
-                        <div className='mt-2'>{locale.CreatePost_Create}</div>
-                        <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_CreateDescription}</div>
-                        <button
-                            onClick={handleCrearePost}
-                            disabled={isLoading}
-                            className="rounded-lg mt-2 w-[300px] bg-blue-800 px-8 py-3 text-center text-sm text-white outline-none ring-blue-300 transition duration-100 hover:bg-blue-700 focus-visible:ring active:bg-blue-600 disabled:bg-gray-200 disabled:text-gray-600 md:text-base flex items-center justify-center"
-                        >
-                            {locale.CreatePost_CreateButton}
-                        </button>
+                        <div className="flex justify-center gap-4 mb-8">
+                            <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_CreateButton}</button>
+                        </div>
                     </>
                 }
 

@@ -34,4 +34,6 @@ export type PostForDelete = {
     postATUri: string; 
     blurATUri: string; 
     createdAt: string; 
+    postURL?: string; 
+    blurURL?: string; 
 }

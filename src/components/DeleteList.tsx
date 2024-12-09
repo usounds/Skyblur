@@ -1,5 +1,6 @@
 
 import { Agent, RichText, AppBskyFeedPost, AppBskyActorDefs } from '@atproto/api'
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { COLLECTION, PostForDelete, PostData } from "../types/types"
 import PostTextWithBold from "./PostTextWithBold"
@@ -19,8 +20,48 @@ export const DeleteList: React.FC<DeleteListProps> = ({
     const [deleteList, setDeleteList] = useState<PostForDelete[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [selectedItem, setSelectedItem] = useState<PostForDelete | null>(null);
+    const [duplicate, setDuplicate] = useState<boolean>(false);
 
-    let duplicate = false
+    const getPosts = async (did: string, cursor: string) => {
+        setIsLoading(true)
+        setDeleteList([])
+        console.log('call');
+        let deleteList: any[] = []; // 初期化
+        try {
+            const param = {
+                repo: did,
+                collection: COLLECTION,
+                cursor: cursor,
+                limit: 20
+            };
+
+            const bookMark = await agent.com.atproto.repo.listRecords(param);
+
+            // 新しいカーソルを設定
+            setCursor(bookMark.data.cursor || '');
+
+            // records を処理して deleteList を更新
+            for (let obj of bookMark.data.records) {
+                const value = obj.value as PostData;
+                deleteList.push({
+                    text: value.text,
+                    postATUri: obj.uri,
+                    blurATUri: value.uri,
+                    createdAt: formatDateToLocale(value.createdAt),
+                    postURL: transformUrl(value.uri),
+                    blurURL: transformUrl(obj.uri),
+                });
+            }
+
+            // setDeleteList を呼び出して UI を更新
+            setDeleteList(deleteList);
+            setIsLoading(false);
+            console.log(bookMark.data.cursor);
+
+        } catch (error) {
+            console.error('Error fetching bookmarks:', error);
+        }
+    };
 
     // 投稿をタップした時に選択する関数
     const handleSelectItem = (item: PostForDelete) => {
@@ -77,6 +118,23 @@ export const DeleteList: React.FC<DeleteListProps> = ({
 
     };
 
+    const transformUrl = (inputUrl: string): string => {
+
+        const parts = inputUrl.split('/');
+
+        console.log(parts)
+
+        if (parts[3] === 'app.bsky.feed.post') {
+            return `https://bsky.app/profile/${parts[2]}/post/${parts[4]}`;
+        }
+
+        if (parts[3] === 'uk.skyblur.post') {
+            return `https://${window.location.hostname}/post/${parts[2]}/${parts[4]}`;
+        }
+
+        return ''
+    };
+
 
     const formatDateToLocale = (dateString: string) => {
         const date = new Date(dateString);
@@ -94,79 +152,75 @@ export const DeleteList: React.FC<DeleteListProps> = ({
     };
 
 
+
     useEffect(() => {
         if (duplicate) {
-            return
+            return;
         }
-        duplicate = true
-        const fetchBookmarks = async () => {
-            console.log('call')
-            let cursor = ''
-            try {
-                const param = {
-                    repo: did,
-                    collection: COLLECTION,
-                    cursor: cursor,
-                    limit: 50
-                };
 
-                const bookMark = await agent.com.atproto.repo.listRecords(param);
+        setDuplicate(true); // 重複実行を防ぐ
 
-                setCursor(bookMark.data.cursor || '')
+        // fetchBookmarks を呼び出す
+        getPosts(did, cursor);
 
-                for (let obj of bookMark.data.records) {
-                    const value = obj.value as PostData
-                    deleteList.push({
-                        text: value.text,
-                        postATUri: obj.uri,
-                        blurATUri: value.uri,
-                        createdAt: formatDateToLocale(value.createdAt)
-                    }
-                    )
+        // 実行後、duplicate を再度 false に設定
+        setDuplicate(false);
 
-                }
-
-                setDeleteList(deleteList)
-                setIsLoading(false)
-
-                duplicate = false
-
-            } catch (error) {
-                console.error('Error fetching bookmarks:', error);
-            }
-        };
-
-        fetchBookmarks(); // 非同期関数を呼び出す
     }, [did]); // `did` または `cursor` が変更された場合に再実行
 
     return (
         <>
-            <div>
-                <div className="flex flex-wrap gap-2 mb-2 justify-center w-full">
-                    {(!isLoading && deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
-                    {(!isLoading && deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
+            <div className="max-w-screen-sm">
+                <div className="flex flex-wrap mb-2 justify-center ">
+                    {(deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
+                    {(deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
                 </div>
-                <div className="flex flex-wrap gap-2 justify-center w-full">
-                    {(isLoading && deleteList.length === 0) &&
-                        <>
-                            <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
-                                <span className="sr-only">Loading...</span>
-                            </span>
-                        </>
-                    }
+                <div className="flex flex-wrap justify-center max-w-screen-sm ">
 
                     {deleteList.map((item, index) => (
                         <div
                             key={index}
-                            className="w-[300px] py-3 px-2 bg-white rounded-md border border-gray-400"
-                            onClick={() => handleSelectItem(item)}
+                            className="py-3 px-2 mb-1 bg-white rounded-md border border-gray-400 w-full "
                         >
                             <div>
-                                <p className="text-sm text-gray-400">{item.createdAt}</p>
                                 <PostTextWithBold postText={item.text} />
                             </div>
+
+                            <div className="flex justify-end gap-2 mt-2">
+                                <div className="text-sm text-gray-400">{item.createdAt}</div>
+                                <a className="text-sm text-gray-500 mx-2" href={item.postURL} target="_blank">
+                                    <Image
+                                        src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                        alt="Trash Icon"
+                                        width={20} // 必要に応じて幅を指定
+                                        height={20} // 必要に応じて高さを指定
+                                    /></a>
+                                <a className="text-sm text-gray-500 mx-2" href={item.blurURL} target="_blank">
+                                    <Image
+                                        src="/export-arrow-up-right.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                        alt="Trash Icon"
+                                        width={20} // 必要に応じて幅を指定
+                                        height={20} // 必要に応じて高さを指定
+                                    /></a>
+                                <div className="text-sm text-red-500 mx-2" onClick={() => handleSelectItem(item)}>
+
+                                    <Image
+                                        src="/trash.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                        alt="Trash Icon"
+                                        width={20} // 必要に応じて幅を指定
+                                        height={20} // 必要に応じて高さを指定
+                                    />
+
+                                </div>
+                            </div>
+
+
                         </div>
+
+
                     ))}
+
+
 
 
                     {/* オーバーレイ: 削除確認メッセージ */}
@@ -195,6 +249,15 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                         </div>
                     )}
                 </div>
+
+                {deleteList.length == 20 &&
+                    <div className="flex justify-center gap-4 mt-6">
+                        <button onClick={() => getPosts(did, cursor)} className="relative z-0 h-12 rounded-full bg-gray-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+                            {isLoading ? <>{locale.DeleteList_Loading}</> : <>{locale.DeleteList_ReadMore}</>}
+                        </button>
+
+                    </div>
+                }
 
             </div>
         </>)

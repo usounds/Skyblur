@@ -2,6 +2,7 @@
 export const runtime = 'edge';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { AtpAgent, AppBskyActorDefs } from '@atproto/api'
 import { DIDResponse, Service, PostData, COLLECTION } from '../../../../types/types'
 import PostTextWithBold from "../../../../components/PostTextWithBold"
@@ -151,6 +152,7 @@ const PostPage = () => {
             fetchRecord();
         }
     }, [did, rkey]); // did または rkey が変更された場合に再実行
+    
 
     return (
         <>
@@ -172,10 +174,10 @@ const PostPage = () => {
                 </nav>
             </div>
 
-            <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-4 text-gray-800">
-                <div className="mx-auto max-w-screen-md rounded-lg">
+            <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
+                <div className="mx-auto rounded-lg">
                     {userProf &&
-                        <Avatar userProf={userProf} />
+                        <Avatar userProf={userProf}/>
                     }
 
                     {isLoading ?
@@ -187,7 +189,6 @@ const PostPage = () => {
                         </>
                         :
                         <>
-                            <p className="text-sm text-gray-500">{postDate}</p>
                             <div className="border rounded-lg p-2 border-gray-300">
                                 <div className="overflow-hidden break-words">
                                     <PostTextWithBold postText={postText} />
@@ -197,47 +198,19 @@ const PostPage = () => {
                                         {addText}
                                     </div>
                                 }
+
+                            <div className="flex justify-end gap-2 mt-2">
+                                <div className="text-sm text-gray-400">{postDate}</div>
+                                <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
+                                    <Image
+                                        src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                        alt="Trash Icon"
+                                        width={20} // 必要に応じて幅を指定
+                                        height={20} // 必要に応じて高さを指定
+                                    /></a>
+                            </div>
                             </div>
 
-                            <div className="overflow-hidden break-words mt-2 text-center">
-                                <Link href={bskyUrl} target='_blank' className="flex items-center justify-center space-x-2">
-                                    <span>{locale.CreatePost_LinkToBsky}</span>
-                                    <svg
-                                        width="20px"
-                                        height="20px"
-                                        viewBox="0 0 800 800"
-                                        version="1.1"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        xmlnsXlink="http://www.w3.org/1999/xlink"
-                                        xmlSpace="preserve"
-                                        style={{
-                                            fillRule: 'evenodd',
-                                            clipRule: 'evenodd',
-                                            strokeLinecap: 'round',
-                                            strokeLinejoin: 'round',
-                                            strokeMiterlimit: 1
-                                        }}
-                                    >
-                                        <g transform="matrix(1,0,0,1,-235,-1950)">
-                                            <g transform="matrix(2.02015,0,0,2.02017,-51.8034,1393.69)">
-                                                <rect x="142.327" y="275.741" width="396.011" height="396.011" style={{ fill: 'none' }} />
-                                                <g transform="matrix(0.495014,0,0,0.495007,3.15989,-102.548)">
-                                                    <path
-                                                        d="M687.28,980.293L406.378,980.293L406.378,1438.97L865.059,1438.97L865.059,1159.34"
-                                                        style={{ fill: 'none', stroke: 'black', strokeWidth: '22.22px' }}
-                                                    />
-                                                </g>
-                                                <g transform="matrix(0.145129,0.145127,-0.145129,0.145127,656.851,-26.082)">
-                                                    <path
-                                                        d="M519.133,2352.46L519.133,2855.01L744,2855.01L744,2352.46L1108.68,2352.46L631.567,1875.35L154.455,2352.46L519.133,2352.46Z"
-                                                        style={{ fill: 'none', stroke: 'black', strokeWidth: '53.6px' }}
-                                                    />
-                                                </g>
-                                            </g>
-                                        </g>
-                                    </svg>
-                                </Link>
-                            </div>
                         </>
                     }
                     {errorMessage &&

@@ -224,7 +224,7 @@ export default function Home() {
 
         <div className="mx-auto max-w-screen-md ">
           {!isLoginToBsky &&
-            <><div className="flex items-center justify-center h-full text-gray-800 mt-2 mx-4">
+            <><div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
               {locale.Home_Welcome}
             </div>
 
@@ -252,10 +252,10 @@ export default function Home() {
 
             <>
 
-              <div className="flex flex-col gap-2 p-2 md:p-3 max-w-screen-md ">
+              <div className="w-full">
                 {userProf &&
                   <>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mt-2 grid-cols-1">
                       <Avatar userProf={userProf} />
                       <button
                         onClick={logout}
@@ -286,46 +286,22 @@ export default function Home() {
 
                     {mode === 'menu' &&
                       <>
-                        <div className="flex flex-col items-center">
-                          <div className="flex justify-center gap-4">
-                            <div
-                              onClick={() => setMode("create")}
-                              className="flex flex-col border border-gray-400 rounded-md items-center p-2 w-[150px] h-[150px]">
-                              <Image
-                                src="/kkrn_icon_enpitsu_6.png"
-                                alt="投稿"
-                                width={100}
-                                height={100}
-                              />
-                              <span className="mt-2 text-center">{locale.Menu_CreatePost}</span>
-                            </div>
-                            <div
+                        <div className="mt-4 mx-auto max-w-screen-sm flex flex-col  ">
+                          <div className="flex justify-center gap-4 mb-8">
+                            <button onClick={() => setMode("create")} className="relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-blue-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.Menu_CreatePost}</button>
 
-                              onClick={() => setMode("delete")}
-                              className="flex flex-col border border-gray-400 rounded-md items-center p-2 w-[150px] h-[150px]">
-                              <Image
-                                src="/kkrn_icon_gomibako_6.png"
-                                alt="削除"
-                                width={100}
-                                height={100}
-                              />
-                              <span className="mt-2 text-center" >{locale.Menu_DeletePost}</span>
-                            </div>
                           </div>
+
+                          <DeleteList agent={agent} locale={locale} did={did} />
+
                         </div>
                       </>
                     }
                     {mode === 'create' &&
                       <>
                         <div onClick={() => setMode("menu")} className="block text-sm text-gray-400 mx-1 underline">{locale.Menu_Back}</div>
-                        <CreatePostForm agent={agent} locale={locale} did={did}
+                        <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode}
                           userProf={userProf} />
-                      </>
-                    }
-                    {mode === 'delete' &&
-                      <>
-                        <div onClick={() => setMode("menu")} className="block text-sm text-gray-400 mt-1 underline" >{locale.Menu_Back}</div>
-                        <DeleteList agent={agent} locale={locale} did={did} />
                       </>
                     }
                   </>
