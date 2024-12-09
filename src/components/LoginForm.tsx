@@ -118,9 +118,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       return
 
     }
+    const pds = await fetchServiceEndpoint(obj.data.did) ||""
 
+    const match = pds.match(/https?:\/\/([^/]+)/);
+    if (!match) {
+        throw new Error("Invalid URL");
+    }
+
+    let host = match[1];
+
+    // "bsky.network" を "bsky.social" に置き換え
+    if (host.endsWith("bsky.network")) {
+        host =  "bsky.social";
+    }
     setBlueskyLoginMessage(locale.Login_PDSResolve)
-    const pds = await fetchServiceEndpoint(obj.data.did)
+
+    console.log(pds)
 
     browserClient = new BrowserOAuthClient({
       clientMetadata: metadata,
@@ -139,7 +152,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
 
-      setBlueskyLoginMessage(locale.Login_Redirect)
+      setBlueskyLoginMessage(locale.Login_Redirect.replace("{1}",host))
       const oooo = await browserClient.signIn(handle, {
         state: state,
         prompt: 'consent', // Attempt to sign in without user interaction (SSO)

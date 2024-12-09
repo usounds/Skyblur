@@ -180,7 +180,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                     {deleteList.map((item, index) => (
                         <div
                             key={index}
-                            className="py-3 px-2 mb-1 bg-white rounded-md border border-gray-400 w-full "
+                            className="py-3 px-2 mb-1 mx-2 bg-white rounded-md border border-gray-400 w-full "
                         >
                             <div>
                                 <PostTextWithBold postText={item.text} />

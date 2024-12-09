@@ -189,7 +189,7 @@ const PostPage = () => {
                         </>
                         :
                         <>
-                            <div className="border rounded-lg p-2 border-gray-300">
+                            <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
                                 <div className="overflow-hidden break-words">
                                     <PostTextWithBold postText={postText} />
                                 </div>

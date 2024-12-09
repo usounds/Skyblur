@@ -11,7 +11,7 @@ export default {
     Login_InvalidHandle: "Invalid handle",
     Login_DidResolve: "Resolving DID",
     Login_PDSResolve: "Resolving PDS",
-    Login_Redirect: "Redirecting to PDS",
+    Login_Redirect: "Redirecting to {1}",
     Login_RedirectFailed: "Failed to redirect to the authorization page",
     Login_Login: "Login",
     CreatePost_Fixed: "[Read full text]",

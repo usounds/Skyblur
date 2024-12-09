@@ -12,7 +12,7 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ selectedLocale, onChang
 
   return (
     <select
-      className="py-2 px-2 pe-2 block border border-gray-600 bg-gray-800 text-white rounded-lg text-sm"
+      className="py-2 px-2 pe-2 block border border-gray-600 bg-neutral-800 text-white rounded-lg text-sm"
       value={selectedLocale}
       onChange={handleSelectChange}
     >

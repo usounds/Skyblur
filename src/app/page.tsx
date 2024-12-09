@@ -255,7 +255,7 @@ export default function Home() {
               <div className="w-full">
                 {userProf &&
                   <>
-                    <div className="flex items-center justify-between mt-2 grid-cols-1">
+                    <div className="flex items-center justify-between mt-2 grid-cols-1 m-2">
                       <Avatar userProf={userProf} />
                       <button
                         onClick={logout}

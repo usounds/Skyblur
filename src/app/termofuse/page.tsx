@@ -6,11 +6,12 @@ export default function Home({ params }: { params: { locale: string } }) {
 
   return (
     <main >
-      <header className="flex flex-wrap sm:justify-start sm:flex-nowrap w-full bg-white text-sm py-4 dark:bg-neutral-800">
-        <nav className="px-4 md:px-8 w-full mx-auto sm:flex sm:items-center sm:justify-between" aria-label="Global">
-          <Link href={"/"} className="flex-none text-xl font-semibold dark:text-white" >Skyblur</Link>
-          <div className="flex flex-row items-center gap-5 mt-5 sm:justify-end sm:mt-0 sm:ps-5">
-
+      <header className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
+      <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
+          <Link href={"/"} className="text-xl font-semibold text-white">
+            Skyblur
+          </Link>
+          <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
           </div>
         </nav>
       </header>
