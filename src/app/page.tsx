@@ -47,10 +47,7 @@ export default function Home() {
     const origin = window.location.hostname
 
     if (process.env.NODE_ENV === 'production') {
-      if (origin.includes('o-auth.starrysky-console.pages.dev')) {
-        env = 'o-auth'
-
-      } else if (origin.includes('preview.starrysky-console.pages.dev')) {
+      if (origin.includes('preview.skyblur.uk')) {
         env = 'preview'
 
       } else {
