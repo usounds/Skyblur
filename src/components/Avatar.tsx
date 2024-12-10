@@ -1,6 +1,5 @@
 
 import { AppBskyActorDefs } from '@atproto/api'
-import Image from 'next/image';
 
 type AvatarProp = {
     userProf: AppBskyActorDefs.ProfileViewDetailed

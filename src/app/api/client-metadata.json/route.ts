@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
   let envLocal
   if (process.env.NODE_ENV === 'production') {
-    if (origin.includes('preview.skyblur.pages.dev')) {
+    if (origin.includes('preview')) {
       envLocal = 'preview'
     } else {
       envLocal = 'production'
