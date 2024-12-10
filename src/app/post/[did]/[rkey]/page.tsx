@@ -189,32 +189,33 @@ const PostPage = () => {
                         </>
                         :
                         <>
-                            <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
-                                <div className="overflow-hidden break-words">
-                                    <PostTextWithBold postText={postText} />
-                                </div>
-                                {addText &&
-                                    <div className="overflow-hidden break-words mt-2">
-                                        {addText}
+                            {!errorMessage &&
+                                <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
+                                    <div className="overflow-hidden break-words">
+                                        <PostTextWithBold postText={postText} />
                                     </div>
-                                }
+                                    {addText &&
+                                        <div className="overflow-hidden break-words mt-2">
+                                            {addText}
+                                        </div>
+                                    }
 
-                                <div className="flex justify-between items-center mt-2">
-                                    <div className="text-sm text-gray-400">{postDate}</div>
-                                    <div className="flex gap-2">
-                                        <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
-                                            <Image
-                                                src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                                                alt="Trash Icon"
-                                                width={20} // 必要に応じて幅を指定
-                                                height={20} // 必要に応じて高さを指定
-                                            />
-                                        </a>
+                                    <div className="flex justify-between items-center mt-2">
+                                        <div className="text-sm text-gray-400">{postDate}</div>
+                                        <div className="flex gap-2">
+                                            <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
+                                                <Image
+                                                    src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                                    alt="Trash Icon"
+                                                    width={20} // 必要に応じて幅を指定
+                                                    height={20} // 必要に応じて高さを指定
+                                                />
+                                            </a>
+                                        </div>
                                     </div>
+
                                 </div>
-
-                            </div>
-
+                            }
                         </>
                     }
                     {errorMessage &&
