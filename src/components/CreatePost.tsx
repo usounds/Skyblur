@@ -94,10 +94,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     
         return tid;
     }
-    
-    // 使用例
-    console.log(generateTID());
-    
 
     const getOgp = async (url: string) => {
         const response = await fetch(url || '');
