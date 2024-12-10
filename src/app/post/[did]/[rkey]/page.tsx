@@ -163,7 +163,7 @@ const PostPage = () => {
 
                         let tempPostText = postData.text
 
-                        if(validateBrackets(postData.text)) tempPostText = tempPostText.replace(/[\[\]]/g, '')
+                        //if(validateBrackets(postData.text)) tempPostText = tempPostText.replace(/[\[\]]/g, '')
 
                         setPostText(tempPostText);
                         setAddText(postData.additional);
