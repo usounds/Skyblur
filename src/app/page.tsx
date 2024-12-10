@@ -212,7 +212,7 @@ export default function Home() {
             {isLoginToBsky &&
               <>
                 <div onClick={logout} className="flex-none text-sm font-semibold text-white mr-2">
-                  {locale.Menu_Logout} 
+                  {locale.Menu_Logout}
                 </div>
               </>
             }
@@ -243,13 +243,16 @@ export default function Home() {
                   </span>
                   {locale.Home_inAuthProgress}
                 </> :
-                  <LoginForm
-                    handle={handle}
-                    setHandle={setHandle}
-                    publicAgent={publicAgent}
-                    locale={locale}
-                    browserClient={browserClient}
-                  />
+                  <>
+                    <LoginForm
+                      handle={handle}
+                      setHandle={setHandle}
+                      publicAgent={publicAgent}
+                      locale={locale}
+                      browserClient={browserClient}
+                    />
+
+                  </>
 
                 }</>
               </div>
@@ -267,8 +270,8 @@ export default function Home() {
                       <>
                         <div className="mt-4 mx-auto max-w-screen-sm flex flex-col  ">
                           <div className="flex justify-center my-4">
-                              {locale.Menu_LoginMessage.replace("{1}", userProf.displayName||'No Name')}
-                            </div>
+                            {locale.Menu_LoginMessage.replace("{1}", userProf.displayName || 'No Name')}
+                          </div>
 
                           <div className="flex justify-center gap-4 mb-8">
                             <button onClick={() => setMode("create")} className="relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-blue-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
@@ -303,6 +306,60 @@ export default function Home() {
           }
 
         </div>
+
+        <section className="bg-white mt-4">
+          <div className="container px-6 py-12 mx-auto">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing001Title}</h1>
+
+                <p className="mt-2 text-gray-500 ">{locale.Home_Landing001Descrtption}</p>
+
+                <div className="flex justify-center mt-4 border  rounded-lg">
+                  <Image
+                    src="/001.png"
+                    alt="Skyblur post image"
+                    width={338}
+                    height={150}
+                  />
+                </div>
+
+              </div>
+
+
+              <div>
+                <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing002Title}</h1>
+
+                <p className="mt-2 text-gray-500 ">{locale.Home_Landing002Descrtption}</p>
+
+                <div className="flex justify-center mt-4 border rounded-lg">
+                  <Image
+                    src="/002.png"
+                    alt="Bluesky post image"
+                    width={382}
+                    height={150}
+                  />
+                </div>
+              </div>
+
+
+              <div>
+                <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing003Title}</h1>
+
+                <p className="mt-2 text-gray-500 ">{locale.Home_Landing003Descrtption}</p>
+                <div className="flex justify-center mt-4 border">
+                  <Image
+                    src="/003.png"
+                    alt="Skyblur Viewer"
+                    width={310}
+                    height={150}
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
 
       </main>
 
