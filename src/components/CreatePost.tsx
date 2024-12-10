@@ -58,23 +58,57 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             // マッチした文字列内の改行を維持しつつ ommitChar で置換
             return match.replace(/./g, locale.CreatePost_OmmitChar);
         });
+        
 
         // 状態を更新
         setPostTest(text)
         setPostTextForRecord(postTextLocal);
         setPostTextBlur(blurredText);
+
+        if (validateBrackets(text)) {
+            setWarning(locale.CreatePost_ErrorDuplicateBranket)
+            return
+        }
+        setWarning('')
     };
+
+    function validateBrackets(input: string):boolean  {
+        let insideBracket = false; // 現在 `[` の中にいるかどうかを追跡
+    
+        for (let i = 0; i < input.length; i++) {
+            const char = input[i];
+            console.log(char)
+    
+            if (char === "[") {
+                // すでに `[` の中にいる場合はエラー
+                if (insideBracket) {
+                    console.log('char')
+                    return true;
+                }
+                insideBracket = true; // `[` の中に入る
+            } else if (char === "]") {
+                // `[` の中にいる場合は終了
+                if (insideBracket) {
+                    insideBracket = false;
+                }
+            }
+        }
+
+        if(insideBracket) return true
+    
+        return false; // エラーがなければ `error: false`
+    }
 
     function generateTID(): string {
         // Base32-sortable character set
         const base32Chars = '234567abcdefghijklmnopqrstuvwxyz';
-    
+
         // 最初の文字（234567abcdefghijからランダムに選択）
         const firstChar = '234567abcdefghij'[Math.floor(Math.random() * 14)];
-    
+
         // 現在の時刻（ミリ秒単位）を取得し、Base32文字列に変換
         const timestamp = Date.now().toString(36); // 36進数で表現
-    
+
         // 時刻部分をBase32文字列に変換し、最大12文字まで利用
         let randomChars = '';
         for (let i = 0; i < timestamp.length && randomChars.length < 12; i++) {
@@ -83,15 +117,15 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 randomChars += char;
             }
         }
-    
+
         // 必要に応じてランダム文字列で補完
         while (randomChars.length < 12) {
             randomChars += base32Chars[Math.floor(Math.random() * base32Chars.length)];
         }
-    
+
         // TIDを組み立てる
         const tid = firstChar + randomChars;
-    
+
         return tid;
     }
 
@@ -323,7 +357,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             max={300}
                             isEnableBrackets={!simpleMode}
                         />
+                        {warning && <div className="text-red-500 my-3">{warning}</div> }
+                        
                         <div className="block text-sm text-gray-600 mt-1">{postText.length}/300</div>
+
 
                         <div className='mt-2'>{locale.CreatePost_Preview}</div>
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
@@ -353,7 +390,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <div className="block text-sm text-gray-600 mt-1">{addText.length}/10000</div>
 
                         <div className="flex justify-center gap-4 mb-8">
-                            <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_CreateButton}</button>
+                            {warning ? <div className="text-red-500">{warning}</div> :
+                                <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_CreateButton}</button>
+                            }
                         </div>
                     </>
                 }
