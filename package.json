@@ -12,7 +12,6 @@
     "@atproto/api": "^0.13.19",
     "@atproto/oauth-client-browser": "^0.3.3",
     "next": "^14.2.20",
-    "next-pwa": "^5.6.0",
     "preline": "^2.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
