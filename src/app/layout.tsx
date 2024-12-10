@@ -25,11 +25,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-    <head>
-      <link rel="manifest" href="/manifest.json" />
-      <link rel="apple-touch-icon" href="/icon512_maskable.png"></link>
-      <meta name="theme-color" content="#ffffff" />
-    </head>
 
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white `}
