@@ -42,6 +42,7 @@ export default {
     CreatePost_Success: "Post is successed.",
     CreatePost_LinkToBsky: "View in Bluesky",
     CreatePost_AddBrackets: "Enclose the selected text with []",
+    CreatePost_ErrorDuplicateBranket: "A closing ] is missing. Please add ].",
     DeleteList_ChooseDeleteItem: "Post List",
     DeleteList_NoListItem: "No posts available.",
     DeleteList_ConfirmDelete: "Are you sure you want to delete this post?",
