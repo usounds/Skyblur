@@ -4,7 +4,7 @@ export default {
     Home_Landing001Title: "Skyblurから投稿",
     Home_Landing001Descrtption: "伏せたい投稿はSkyblurから投稿してください！伏せたいところを[秘密だよ]でくくります。Skyblurから投稿すると、Blueskyに自動で投稿されます",
     Home_Landing002Title: "Blueskyは○○○○で表示",
-    Home_Landing002Descrtption: "Blueskyでは[秘密だよ]の箇所は伏せて表示されます。埋め込みをタップするとSkyblurで続きが読めます。日本語の場合は○○○○で伏せます。",
+    Home_Landing002Descrtption: "[秘密だよ]の箇所は伏せて表示されます。埋め込みをタップするとSkyblurで続きが読めます。日本語の場合は○○○○で伏せます。",
     Home_Landing003Title: "Skyblurは原文で表示",
     Home_Landing003Descrtption: "[秘密だよ]の箇所の原文が表示されます。投稿を削除したいときもSkyblurから。",
     Menu_CreatePost: "新規の投稿",
