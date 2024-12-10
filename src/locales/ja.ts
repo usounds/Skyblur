@@ -41,6 +41,7 @@ export default {
     CreatePost_OGPDescription: "伏せていない投稿を参照する",
     CreatePost_Success: "投稿に成功しました",
     CreatePost_LinkToBsky: "Blueskyで表示する",
+    CreatePost_AddBrackets: "選択部分を[]で括る",
     DeleteList_ChooseDeleteItem: "投稿一覧",
     DeleteList_NoListItem: "投稿がありません",
     DeleteList_ConfirmDelete: "この投稿を削除しますか？",

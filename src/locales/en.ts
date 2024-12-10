@@ -41,6 +41,7 @@ export default {
     CreatePost_OGPDescription: "Refer to the unblurred text.",
     CreatePost_Success: "Post is successed.",
     CreatePost_LinkToBsky: "View in Bluesky",
+    CreatePost_AddBrackets: "Enclose the selected text with []",
     DeleteList_ChooseDeleteItem: "Post List",
     DeleteList_NoListItem: "No posts available.",
     DeleteList_ConfirmDelete: "Are you sure you want to delete this post?",
