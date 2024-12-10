@@ -47,7 +47,7 @@ export default function Home() {
     const origin = window.location.hostname
 
     if (process.env.NODE_ENV === 'production') {
-      if (origin.includes('preview.skyblur.uk')) {
+      if (origin.includes('preview.skyblur.pages.dev')) {
         env = 'preview'
 
       } else {
