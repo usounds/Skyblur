@@ -10,7 +10,7 @@ export default {
     Menu_CreatePost: "新規の投稿",
     Menu_DeletePost: "投稿の削除",
     Menu_Logout: "ログアウト",
-    Menu_Back: "← 前のページに戻る",
+    Menu_Back: "戻る",
     Menu_TermOfUse: "利用規約",
     Menu_LoginMessage: "{1}さん、こんにちわ！",
     Login_Title: "ハンドルを入力してログインをタップしてください",

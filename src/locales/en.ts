@@ -10,7 +10,7 @@ export default {
     Menu_CreatePost: "Create a post",
     Menu_DeletePost: "Delete a post",
     Menu_Logout: "Logout",
-    Menu_Back: "← Back to prior page",
+    Menu_Back: "戻る",
     Menu_TermOfUse: "Term of Use",
     Menu_LoginMessage: "Hello, {1}!",
     Login_Title: "Please enter your handle and tap login.",

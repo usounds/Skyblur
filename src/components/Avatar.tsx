@@ -39,7 +39,7 @@ export const Avatar: React.FC<AvatarProp> = ({
             )}
 
             <div>
-                <h1 className="text-lg font-semibold capitalize">{userProf.displayName || "No Name"}</h1>
+                <h1 className="text-lg font-semibold">{userProf.displayName || "No Display Name"}</h1>
 
                 <p className="text-sm text-gray-500 ">@{userProf.handle}</p>
             </div>
