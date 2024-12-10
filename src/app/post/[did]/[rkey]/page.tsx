@@ -25,12 +25,42 @@ const PostPage = () => {
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
     const [locale, setLocale] = useState(ja)
     const [selectedLocale, setSelectedLocale] = useState<string>('ja');
+    const [isIncorrectBrackets, setIsIncorrectBrackets] = useState<boolean>(false)
 
     let publicAgent: AtpAgent
 
     const publicAgent2 = new AtpAgent({
         service: "https://api.bsky.app"
     })
+
+
+    function validateBrackets(input: string): boolean {
+        let insideBracket = false; // 現在 `[` の中にいるかどうかを追跡
+
+        for (let i = 0; i < input.length; i++) {
+            const char = input[i];
+            console.log(char)
+
+            if (char === "[") {
+                // すでに `[` の中にいる場合はエラー
+                if (insideBracket) {
+                    console.log('char')
+                    return true;
+                }
+                insideBracket = true; // `[` の中に入る
+            } else if (char === "]") {
+                // `[` の中にいる場合は終了
+                if (insideBracket) {
+                    insideBracket = false;
+                }
+            }
+        }
+
+        if (insideBracket) return true
+
+        return false; // エラーがなければ `error: false`
+    }
+
 
     const changeLocale = (localeParam: string) => {
         // ここで実際のロジック（例: 言語の変更など）を実行します
@@ -129,7 +159,13 @@ const PostPage = () => {
 
                         // postDataのデータをセット
                         const postData: PostData = postResponse.data.value as PostData;
-                        setPostText(postData.text);
+
+
+                        let tempPostText = postData.text
+
+                        if(validateBrackets(postData.text)) tempPostText = tempPostText.replace(/[\[\]]/g, '')
+
+                        setPostText(tempPostText);
                         setAddText(postData.additional);
                         setPostDate(formatDateToLocale(postData.createdAt));
 
