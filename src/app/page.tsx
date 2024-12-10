@@ -309,60 +309,61 @@ export default function Home() {
           }
 
         </div>
+        {mode !== 'create' &&
+          <section className="bg-white mt-4">
+            <div className="container px-6 py-12 mx-auto">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing001Title}</h1>
 
-        <section className="bg-white mt-4">
-          <div className="container px-6 py-12 mx-auto">
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing001Title}</h1>
+                  <p className="mt-2 text-gray-500 ">{locale.Home_Landing001Descrtption}</p>
 
-                <p className="mt-2 text-gray-500 ">{locale.Home_Landing001Descrtption}</p>
+                  <div className="flex justify-center mt-4 border  rounded-lg">
+                    <Image
+                      src="/001.png"
+                      alt="Skyblur post image"
+                      width={338}
+                      height={150}
+                    />
+                  </div>
 
-                <div className="flex justify-center mt-4 border  rounded-lg">
-                  <Image
-                    src="/001.png"
-                    alt="Skyblur post image"
-                    width={338}
-                    height={150}
-                  />
+                </div>
+
+
+                <div>
+                  <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing002Title}</h1>
+
+                  <p className="mt-2 text-gray-500 ">{locale.Home_Landing002Descrtption}</p>
+
+                  <div className="flex justify-center mt-4 border rounded-lg">
+                    <Image
+                      src="/002.png"
+                      alt="Bluesky post image"
+                      width={382}
+                      height={150}
+                    />
+                  </div>
+                </div>
+
+
+                <div>
+                  <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing003Title}</h1>
+
+                  <p className="mt-2 text-gray-500 ">{locale.Home_Landing003Descrtption}</p>
+                  <div className="flex justify-center mt-4 border">
+                    <Image
+                      src="/003.png"
+                      alt="Skyblur Viewer"
+                      width={310}
+                      height={150}
+                    />
+                  </div>
                 </div>
 
               </div>
-
-
-              <div>
-                <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing002Title}</h1>
-
-                <p className="mt-2 text-gray-500 ">{locale.Home_Landing002Descrtption}</p>
-
-                <div className="flex justify-center mt-4 border rounded-lg">
-                  <Image
-                    src="/002.png"
-                    alt="Bluesky post image"
-                    width={382}
-                    height={150}
-                  />
-                </div>
-              </div>
-
-
-              <div>
-                <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing003Title}</h1>
-
-                <p className="mt-2 text-gray-500 ">{locale.Home_Landing003Descrtption}</p>
-                <div className="flex justify-center mt-4 border">
-                  <Image
-                    src="/003.png"
-                    alt="Skyblur Viewer"
-                    width={310}
-                    height={150}
-                  />
-                </div>
-              </div>
-
             </div>
-          </div>
-        </section>
+          </section>
+        }
 
       </main>
 
