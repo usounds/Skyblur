@@ -1,6 +1,5 @@
 
 import { Agent, RichText, AppBskyFeedPost, AppBskyActorDefs } from '@atproto/api'
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { COLLECTION, PostForDelete, PostData } from "../types/types"
 import PostTextWithBold from "./PostTextWithBold"
@@ -194,24 +193,24 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                                 <div className="text-sm text-gray-400">{item.createdAt}</div>
                                 <div className="flex gap-2">
                                     <div className="text-sm text-red-500 mx-3" onClick={() => handleSelectItem(item)}>
-                                        <Image
-                                            src="/trash.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                        <img
+                                            src="https://backet.skyblur.uk/trash.svg" // public フォルダ内のファイルは / からの相対パスで指定
                                             alt="Trash Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
                                         />
                                     </div>
                                     <a className="text-sm text-gray-500 mx-3" href={item.blurURL} target="_blank">
-                                        <Image
-                                            src="/export-arrow-up-right.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                        <img
+                                            src="https://backet.skyblur.uk/export-arrow-up-right.svg" // public フォルダ内のファイルは / からの相対パスで指定
                                             alt="Export Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
                                         />
                                     </a>
                                     <a className="text-sm text-gray-500 mx-3" href={item.postURL} target="_blank">
-                                        <Image
-                                            src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                        <img
+                                            src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
                                             alt="Bluesky Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定

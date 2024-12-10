@@ -2,7 +2,6 @@
 export const runtime = 'edge';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { AtpAgent, AppBskyActorDefs } from '@atproto/api'
 import { DIDResponse, Service, PostData, COLLECTION } from '../../../../types/types'
 import PostTextWithBold from "../../../../components/PostTextWithBold"
@@ -240,8 +239,8 @@ const PostPage = () => {
                                         <div className="text-sm text-gray-400">{postDate}</div>
                                         <div className="flex gap-2">
                                             <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
-                                                <Image
-                                                    src="/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                                <img
+                                                    src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
                                                     alt="Trash Icon"
                                                     width={20} // 必要に応じて幅を指定
                                                     height={20} // 必要に応じて高さを指定

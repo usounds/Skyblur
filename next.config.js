@@ -4,4 +4,13 @@ module.exports = {
   eslint: {
     ignoreDuringBuilds: true, // ビルド時に ESLint を無視
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'backet.skyblur.uk',
+        pathname: '/**', // パスも指定可能
+      },
+    ],
+  },
 };
