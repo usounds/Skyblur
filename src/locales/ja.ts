@@ -8,7 +8,6 @@ export default {
     Home_Landing003Title: "Skyblurは原文で表示",
     Home_Landing003Descrtption: "[秘密だよ]の箇所の原文が表示されます。投稿を削除したいときもSkyblurから。",
     Menu_CreatePost: "新規の投稿",
-    Menu_DeletePost: "投稿の削除",
     Menu_Logout: "ログアウト",
     Menu_Back: "戻る",
     Menu_TermOfUse: "利用規約",
