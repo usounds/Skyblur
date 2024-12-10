@@ -1,7 +1,14 @@
-module.exports = {
-  // 必要な設定をここに追加します
-  reactStrictMode: true,  // 例: React Strict Mode を有効化
+const nextPWA = require('next-pwa');
+
+const withPWA = nextPWA({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+});
+
+module.exports = withPWA({
+  reactStrictMode: true,
   eslint: {
-    ignoreDuringBuilds: true, // ビルド時に ESLint を無視
+    ignoreDuringBuilds: true,
   },
-};
+});
