@@ -24,6 +24,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [postText, setPostTest] = useState("");
     const [postTextForRecord, setPostTextForRecord] = useState("");
     const [postTextBlur, setPostTextBlur] = useState("");
+    const [warning, setWarning] = useState("");
     const [addText, setAddText] = useState("");
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [appUrl, setAppUrl] = useState("");
@@ -64,20 +65,39 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostTextBlur(blurredText);
     };
 
-    function generateRkey(): string {
-        // 現在の時刻をミリ秒で取得
+    function generateTID(): string {
+        // Base32-sortable character set
+        const base32Chars = '234567abcdefghijklmnopqrstuvwxyz';
+    
+        // 最初の文字（234567abcdefghijからランダムに選択）
+        const firstChar = '234567abcdefghij'[Math.floor(Math.random() * 14)];
+    
+        // 現在の時刻（ミリ秒単位）を取得し、Base32文字列に変換
         const timestamp = Date.now().toString(36); // 36進数で表現
-
-        // ランダムな英数字を生成（小文字のアルファベットと数字）
-        const randomChars = Math.random().toString(36).slice(2, 7); // 5文字
-
-        // タイムスタンプとランダム文字列を組み合わせて15桁
-        const rkey = (timestamp + randomChars).slice(0, 15);
-
-        console.log("rkey:" + rkey)
-
-        return rkey;
+    
+        // 時刻部分をBase32文字列に変換し、最大12文字まで利用
+        let randomChars = '';
+        for (let i = 0; i < timestamp.length && randomChars.length < 12; i++) {
+            const char = timestamp[i];
+            if (base32Chars.includes(char)) {
+                randomChars += char;
+            }
+        }
+    
+        // 必要に応じてランダム文字列で補完
+        while (randomChars.length < 12) {
+            randomChars += base32Chars[Math.floor(Math.random() * base32Chars.length)];
+        }
+    
+        // TIDを組み立てる
+        const tid = firstChar + randomChars;
+    
+        return tid;
     }
+    
+    // 使用例
+    console.log(generateTID());
+    
 
     const getOgp = async (url: string) => {
         const response = await fetch(url || '');
@@ -99,7 +119,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setIsLoading(true)
         setAppUrl('')
 
-        const rkey = generateRkey()
+        const rkey = generateTID()
         const url = '/post/' + did + "/" + rkey
         const tempUrl = origin + url
         const blurUri = `at://${did}/${COLLECTION}/${rkey}`
@@ -305,6 +325,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             locale={locale}
                             placeHolder={locale.CreatePost_PostPlaceHolder}
                             max={300}
+                            isEnableBrackets={!simpleMode}
                         />
                         <div className="block text-sm text-gray-600 mt-1">{postText.length}/300</div>
 
@@ -318,6 +339,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             locale={locale}
                             placeHolder={locale.CreatePost_PreviewPlaceHolder}
                             max={10000}
+                            isEnableBrackets={false}
                         />
 
                         <div className='mt-2'>{locale.CreatePost_Additional}</div>
@@ -329,6 +351,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             locale={locale}
                             placeHolder={locale.CreatePost_AdditionalPlaceHolder}
                             max={10000}
+                            isEnableBrackets={false}
                         />
 
                         <div className="block text-sm text-gray-600 mt-1">{addText.length}/10000</div>
