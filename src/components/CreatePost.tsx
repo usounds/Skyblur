@@ -307,19 +307,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             max={300}
                         />
                         <div className="block text-sm text-gray-600 mt-1">{postText.length}/300</div>
-                        <div className='mt-2'>{locale.CreatePost_Additional}</div>
-                        <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_AdditionalDescription}</div>
-                        <AutoResizeTextArea
-                            text={addText}
-                            setPostText={setAddText}
-                            disabled={false}
-                            locale={locale}
-                            placeHolder={locale.CreatePost_AdditionalPlaceHolder}
-                            max={10000}
-                        />
-
-                        <div className="block text-sm text-gray-600 mt-1">{addText.length}/10000</div>
-
 
                         <div className='mt-2'>{locale.CreatePost_Preview}</div>
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
@@ -332,6 +319,19 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             placeHolder={locale.CreatePost_PreviewPlaceHolder}
                             max={10000}
                         />
+
+                        <div className='mt-2'>{locale.CreatePost_Additional}</div>
+                        <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_AdditionalDescription}</div>
+                        <AutoResizeTextArea
+                            text={addText}
+                            setPostText={setAddText}
+                            disabled={false}
+                            locale={locale}
+                            placeHolder={locale.CreatePost_AdditionalPlaceHolder}
+                            max={10000}
+                        />
+
+                        <div className="block text-sm text-gray-600 mt-1">{addText.length}/10000</div>
 
                         <div className="flex justify-center gap-4 mb-8">
                             <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_CreateButton}</button>
