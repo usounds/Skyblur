@@ -1,6 +1,5 @@
 "use client";
 export const runtime = 'edge';
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import Link from 'next/link'
 import { AtpAgent, Agent, AppBskyActorDefs } from '@atproto/api'
@@ -319,8 +318,8 @@ export default function Home() {
                   <p className="mt-2 text-gray-500 ">{locale.Home_Landing001Descrtption}</p>
 
                   <div className="flex justify-center mt-4 border  rounded-lg">
-                    <Image
-                      src="/001.png"
+                    <img
+                      src="https://backet.skyblur.uk/001.png"
                       alt="Skyblur post image"
                       width={338}
                       height={150}
@@ -336,8 +335,8 @@ export default function Home() {
                   <p className="mt-2 text-gray-500 ">{locale.Home_Landing002Descrtption}</p>
 
                   <div className="flex justify-center mt-4 border rounded-lg">
-                    <Image
-                      src="/002.png"
+                    <img
+                      src="https://backet.skyblur.uk/002.png"
                       alt="Bluesky post image"
                       width={382}
                       height={150}
@@ -351,8 +350,8 @@ export default function Home() {
 
                   <p className="mt-2 text-gray-500 ">{locale.Home_Landing003Descrtption}</p>
                   <div className="flex justify-center mt-4 border">
-                    <Image
-                      src="/003.png"
+                    <img
+                      src="https://backet.skyblur.uk/003.png"
                       alt="Skyblur Viewer"
                       width={310}
                       height={150}
