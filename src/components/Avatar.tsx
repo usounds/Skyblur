@@ -12,7 +12,7 @@ export const Avatar: React.FC<AvatarProp> = ({
 }) => {
     return (
 
-        <div className="flex items-center gap-x-2 mb-3">
+        <a className="flex items-center gap-x-2 mb-3" href={"https://bsky.app/profile/"+userProf.handle} target="_blank">
             {userProf.avatar ? (
                 <img
                     className="object-cover w-10 h-10 rounded-full"
@@ -42,7 +42,7 @@ export const Avatar: React.FC<AvatarProp> = ({
 
                 <p className="text-sm text-gray-500 ">@{userProf.handle}</p>
             </div>
-        </div>
+        </a>
     );
 };
 
