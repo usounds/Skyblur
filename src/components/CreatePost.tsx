@@ -78,12 +78,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     
         for (let i = 0; i < input.length; i++) {
             const char = input[i];
-            console.log(char)
     
             if (char === "[") {
                 // すでに `[` の中にいる場合はエラー
                 if (insideBracket) {
-                    console.log('char')
                     return true;
                 }
                 insideBracket = true; // `[` の中に入る
@@ -99,21 +97,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     
         return false; // エラーがなければ `error: false`
     }
-
-    const getOgp = async (url: string) => {
-        const response = await fetch(url || '');
-        const buffer = await response.arrayBuffer();
-
-        let resizedImage, mimeType;
-        mimeType = response.headers.get("content-type") || 'image/ping';
-
-        resizedImage = new Uint8Array(buffer);
-
-        return {
-            type: mimeType,
-            image: resizedImage,
-        };
-    };
 
     const handleCrearePost = async () => {
         if (!postText) return
@@ -140,7 +123,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
         if (urls != null) {
             for (const url of urls) {
-                console.log(url);
                 pos = encodeURI(postTextBlur).replace(/%../g, "*").indexOf(url);
                 //URLが見つからない場合は想定外とみなし処理を行わない（正規表現で想定外の検知をしたものは処理をしない）
                 if (pos >= 0) {
@@ -148,8 +130,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 }
             }
         }
-
-        console.log(urlArray)
 
         //投稿
         let postTextBlurLocal: string = postTextBlur;
