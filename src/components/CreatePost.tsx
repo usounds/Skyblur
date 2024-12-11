@@ -6,6 +6,8 @@ import AutoResizeTextArea from "./AutoResizeTextArea"
 import Link from 'next/link';
 import twitterText from 'twitter-text';
 import { COLLECTION } from "../types/types"
+import {franc} from 'franc';
+const iso6393to1 = require('iso-639-3-to-1');
 
 type CreatePostProps = {
     agent: Agent;
@@ -30,6 +32,19 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
+
+    function detectLanguage(text: string): string {
+        // francを使用してテキストの言語を検出
+        const lang3 = franc(text);
+
+        console.log(lang3)
+      
+        // 3文字の言語コードを2文字のコードに変換。
+        // 未対応の場合は 現在の表示言語 を返す
+        const lang2 = iso6393to1(lang3) || locale.CreatePost_Lang;
+      
+        return lang2;
+      }
 
     const setPostText = (text: string) => {
         if (!text) setPostTextBlur("")
@@ -71,6 +86,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             return
         }
         setWarning('')
+
     };
 
     function validateBrackets(input: string):boolean  {
@@ -136,12 +152,15 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         const rt = new RichText({ text: postTextBlurLocal });
         await rt.detectFacets(agent);
 
+
+        const langs = [detectLanguage(postText)]
+
         const postObj: Partial<AppBskyFeedPost.Record> &
             Omit<AppBskyFeedPost.Record, 'createdAt'> = {
             $type: 'app.bsky.feed.post',
             text: rt.text,
             facets: rt.facets,
-            langs: [locale.CreatePost_Lang],
+            langs: langs,
             via: 'Skyblur',
             "uk.skyblur.post.uri": blurUri
         };
