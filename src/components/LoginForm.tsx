@@ -3,7 +3,6 @@ import { DIDResponse, Service } from '../types/types'
 import { useState } from "react";
 import { AtpAgent } from '@atproto/api'
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser'
-import { OAuthClientMetadataInput } from '@atproto/oauth-types';
 import { getClientMetadata } from '../types/ClientMetadataContext'
 
 type LoginFormProps = {
@@ -11,7 +10,7 @@ type LoginFormProps = {
   setHandle: (value: string) => void;
   publicAgent: AtpAgent
   locale: any,
-  browserClient?: BrowserOAuthClient|undefined
+  browserClient?: BrowserOAuthClient | undefined
 };
 
 export const LoginForm: React.FC<LoginFormProps> = ({
@@ -109,7 +108,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       if (host.endsWith("bsky.network")) {
         host = "bsky.social";
       }
-    }else{
+    } else {
       pds = 'https://bsky.social/'
       host = "bsky.social";
     }
@@ -195,7 +194,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           </>}
       </button>
 
-      <>{!isLoading && blueskyLoginMessage}</>
+
+      {(!isLoading && blueskyLoginMessage) &&
+
+        <p>
+          <a href={"https://bsky.app/profile/" + handle} target="_blank" className="mt-4">{blueskyLoginMessage}
+            {locale.Login_TapToLinkProfile}
+          </a>
+        </p>
+      }
+
     </div>
   );
 };
