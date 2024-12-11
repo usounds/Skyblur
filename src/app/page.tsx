@@ -45,6 +45,8 @@ export default function Home() {
     let env
     const origin = window.location.hostname
 
+    console.log(origin)
+
     if (origin.includes('skyblur.uk')) {
       env = 'production'
 
