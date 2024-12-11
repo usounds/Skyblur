@@ -187,7 +187,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                             className="py-3 px-2 mb-2 mx-2 bg-white rounded-md border border-gray-400 w-full "
                         >
                             <div>
-                                <PostTextWithBold postText={item.text} />
+                                <PostTextWithBold postText={item.text} isValidateBrackets={true}/>
                             </div>
                             <div className="flex justify-between gap-2 mt-2">
                                 <div className="text-sm text-gray-400">{item.createdAt}</div>
@@ -247,7 +247,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                                         {locale.DeleteList_CancelButton}
                                     </button>
                                 </div>
-                                <PostTextWithBold postText={selectedItem.text} />
+                                <PostTextWithBold postText={selectedItem.text}isValidateBrackets={true}/>
                             </div>
                         </div>
                     )}
