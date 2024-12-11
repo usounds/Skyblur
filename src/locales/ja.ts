@@ -23,7 +23,7 @@ export default {
     CreatePost_Fixed: "[全文を読む]",
     CreatePost_Post: "本文",
     CreatePost_PostPlaceHolder: "本文を入力してください",
-    CreatePost_PostSimpleModeDescription: "2行目以降が自動で伏せます",
+    CreatePost_PostSimpleModeDescription: "2行目以降を自動で伏せます",
     CreatePost_PostComplexDescription: "伏せたい箇所を[]でくくってください",
     CreatePost_OmmitChar: "○",
     CreatePost_SimpleMode: "シンプルモード(切り替えると本文が消えます)",
