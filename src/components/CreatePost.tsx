@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react";
 import { Agent, RichText, AppBskyFeedPost, AppBskyActorDefs } from '@atproto/api'
+import { TID } from '@atproto/common-web'
 import AutoResizeTextArea from "./AutoResizeTextArea"
 import Link from 'next/link';
 import twitterText from 'twitter-text';
@@ -99,36 +100,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         return false; // エラーがなければ `error: false`
     }
 
-    function generateTID(): string {
-        // Base32-sortable character set
-        const base32Chars = '234567abcdefghijklmnopqrstuvwxyz';
-
-        // 最初の文字（234567abcdefghijからランダムに選択）
-        const firstChar = '234567abcdefghij'[Math.floor(Math.random() * 14)];
-
-        // 現在の時刻（ミリ秒単位）を取得し、Base32文字列に変換
-        const timestamp = Date.now().toString(36); // 36進数で表現
-
-        // 時刻部分をBase32文字列に変換し、最大12文字まで利用
-        let randomChars = '';
-        for (let i = 0; i < timestamp.length && randomChars.length < 12; i++) {
-            const char = timestamp[i];
-            if (base32Chars.includes(char)) {
-                randomChars += char;
-            }
-        }
-
-        // 必要に応じてランダム文字列で補完
-        while (randomChars.length < 12) {
-            randomChars += base32Chars[Math.floor(Math.random() * base32Chars.length)];
-        }
-
-        // TIDを組み立てる
-        const tid = firstChar + randomChars;
-
-        return tid;
-    }
-
     const getOgp = async (url: string) => {
         const response = await fetch(url || '');
         const buffer = await response.arrayBuffer();
@@ -149,7 +120,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setIsLoading(true)
         setAppUrl('')
 
-        const rkey = generateTID()
+        const rkey = TID.nextStr()
         const url = '/post/' + did + "/" + rkey
         const tempUrl = origin + url
         const blurUri = `at://${did}/${COLLECTION}/${rkey}`
