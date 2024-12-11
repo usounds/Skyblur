@@ -1,8 +1,7 @@
-"use client"
 export const runtime = 'edge';
 import Link from 'next/link'
 
-export default function Home({ params }: { params: { locale: string } }) {
+export default function Home() {
 
   return (
     <main >
