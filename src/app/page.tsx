@@ -6,11 +6,9 @@ import { AtpAgent, Agent, AppBskyActorDefs } from '@atproto/api'
 import { LoginForm } from "../components/LoginForm"
 import { CreatePostForm } from "../components/CreatePost"
 import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser'
-import { clientMetadataByEnv } from '../types/ClientMetadataContext'
-import { OAuthClientMetadataInput } from '@atproto/oauth-types';
+import { getClientMetadata } from '../types/ClientMetadataContext'
 import ja from "../locales/ja"
 import en from "../locales/en"
-import { Avatar } from "../components/Avatar";
 import { DeleteList } from "../components/DeleteList";
 import LanguageSelect from "../components/LanguageSelect";
 let agent: Agent
@@ -31,44 +29,15 @@ export default function Home() {
     service: "https://api.bsky.app"
   })
 
+  let browserClient:BrowserOAuthClient
 
   const changeLocale = (localeParam: string) => {
     // ここで実際のロジック（例: 言語の変更など）を実行します
-    console.log(`Locale changed to: ${locale}`);
     setSelectedLocale(localeParam)
     window.localStorage.setItem('preference.locale', localeParam)
     if (localeParam == 'ja') setLocale(ja)
     if (localeParam == 'en') setLocale(en)
   };
-
-  function getClientMetadata(): OAuthClientMetadataInput | undefined {
-    let env
-    const origin = window.location.hostname
-
-    console.log(origin)
-
-    if (origin.includes('skyblur.uk')) {
-      env = 'production'
-
-    } else if (origin.includes('preview')) {
-      env = 'preview'
-
-    } else {
-      env = 'local'
-
-    }
-
-    let ret = clientMetadataByEnv[env];
-
-    return ret;
-  }
-
-  const metadata = getClientMetadata();
-
-  let browserClient: BrowserOAuthClient = new BrowserOAuthClient({
-    clientMetadata: metadata,
-    handleResolver: "https://bsky.social"
-  })
 
   let ignore = false
 
@@ -107,8 +76,8 @@ export default function Home() {
 
         try {
           if (localState && localPdsUrl) {
-            browserClient = new BrowserOAuthClient({
-              clientMetadata: metadata,
+             browserClient = new BrowserOAuthClient({
+              clientMetadata: getClientMetadata(),
               handleResolver: localPdsUrl,
             })
 
@@ -248,7 +217,6 @@ export default function Home() {
                       setHandle={setHandle}
                       publicAgent={publicAgent}
                       locale={locale}
-                      browserClient={browserClient}
                     />
 
                   </>
