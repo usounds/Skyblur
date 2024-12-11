@@ -96,7 +96,7 @@ const PostPage = () => {
     useEffect(() => {
         if (did && rkey) {
 
-            if(duplicate) return
+            if (duplicate) return
             duplicate = true
             const localLocale = window.localStorage.getItem('preference.locale')
 
@@ -206,10 +206,10 @@ const PostPage = () => {
                                     <div className="overflow-hidden break-words">
                                         <PostTextWithBold postText={postText} />
                                     </div>
-                                    {addText &&
-                                        <div className="overflow-hidden break-words mt-2">
-                                            {addText}
-                                        </div>
+                                    {addText && <textarea
+                                        value={addText}
+                                        className="break-words mt-2">
+                                    </textarea>
                                     }
 
                                     <div className="flex justify-between items-center mt-2">
