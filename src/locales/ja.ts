@@ -11,7 +11,7 @@ export default {
     Menu_Logout: "ログアウト",
     Menu_Back: "戻る",
     Menu_TermOfUse: "利用規約",
-    Menu_LoginMessage: "{1}さん、こんにちわ！",
+    Menu_LoginMessage: "{1}さん、こんにちは！",
     Login_Title: "ハンドルを入力してログインをタップして「bsky.social」のドメインであることを確認してから「通常のパスワード」を使ってください。",
     Login_InputHandle: "ハンドルを入力してください。",
     Login_InvalidHandle: "無効なハンドルです。",
