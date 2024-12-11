@@ -28,11 +28,11 @@ function validateBrackets(input: string): boolean {
   return openBracket; // 最後に閉じ括弧がない場合もエラー
 }
 
-const PostTextWithBold = ({ postText }: { postText: string }) => {
+const PostTextWithBold = ({ postText ,isValidateBrackets}: { postText: string,isValidateBrackets:boolean }) => {
   let processedText = postText;
 
   // 括弧のバリデーションをチェックし、エラーがあれば括弧を削除
-  if (validateBrackets(processedText)) {
+  if (isValidateBrackets && validateBrackets(processedText)) {
     processedText = processedText.replace(/[\[\]]/g, "");
     console.log("Updated postText:", processedText);
   }

@@ -204,12 +204,12 @@ const PostPage = () => {
                             {!errorMessage &&
                                 <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
                                     <div className="overflow-hidden break-words">
-                                        <PostTextWithBold postText={postText} />
+                                        <PostTextWithBold postText={postText} isValidateBrackets={true} />
                                     </div>
-                                    {addText && <textarea
-                                        value={addText}
-                                        className="break-words mt-2">
-                                    </textarea>
+                                    {addText &&
+                                        <div className="mt-2">
+                                            <PostTextWithBold postText={addText} isValidateBrackets={false} />
+                                        </div>
                                     }
 
                                     <div className="flex justify-between items-center mt-2">
