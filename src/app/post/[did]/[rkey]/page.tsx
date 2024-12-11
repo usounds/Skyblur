@@ -33,34 +33,6 @@ const PostPage = () => {
     })
 
 
-    function validateBrackets(input: string): boolean {
-        let insideBracket = false; // 現在 `[` の中にいるかどうかを追跡
-
-        for (let i = 0; i < input.length; i++) {
-            const char = input[i];
-            console.log(char)
-
-            if (char === "[") {
-                // すでに `[` の中にいる場合はエラー
-                if (insideBracket) {
-                    console.log('char')
-                    return true;
-                }
-                insideBracket = true; // `[` の中に入る
-            } else if (char === "]") {
-                // `[` の中にいる場合は終了
-                if (insideBracket) {
-                    insideBracket = false;
-                }
-            }
-        }
-
-        if (insideBracket) return true
-
-        return false; // エラーがなければ `error: false`
-    }
-
-
     const changeLocale = (localeParam: string) => {
         // ここで実際のロジック（例: 言語の変更など）を実行します
         console.log(`Locale changed to: ${locale}`);
@@ -119,8 +91,13 @@ const PostPage = () => {
         }).format(date);
     };
 
+    let duplicate = false
+
     useEffect(() => {
         if (did && rkey) {
+
+            if(duplicate) return
+            duplicate = true
             const localLocale = window.localStorage.getItem('preference.locale')
 
             if (localLocale) changeLocale(localLocale)
