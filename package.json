@@ -12,6 +12,8 @@
     "@atproto/api": "^0.13.19",
     "@atproto/common-web": "^0.3.1",
     "@atproto/oauth-client-browser": "^0.3.3",
+    "franc": "^6.2.0",
+    "iso-639-3-to-1": "^1.0.0",
     "next": "^14.2.20",
     "preline": "^2.6.0",
     "react": "^18.3.1",
