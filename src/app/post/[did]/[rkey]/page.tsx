@@ -26,6 +26,8 @@ const PostPage = () => {
     const [selectedLocale, setSelectedLocale] = useState<string>('ja');
     const [isIncorrectBrackets, setIsIncorrectBrackets] = useState<boolean>(false)
 
+    const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
+
     let publicAgent: AtpAgent
 
     const publicAgent2 = new AtpAgent({
@@ -168,6 +170,7 @@ const PostPage = () => {
 
     return (
         <>
+        <link rel="alternate" href={aturi}/>
 
             <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
                 <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
