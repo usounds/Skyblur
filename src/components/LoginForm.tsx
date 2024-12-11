@@ -4,14 +4,14 @@ import { useState } from "react";
 import { AtpAgent } from '@atproto/api'
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser'
 import { OAuthClientMetadataInput } from '@atproto/oauth-types';
-import { clientMetadataByEnv } from '../types/ClientMetadataContext'
+import { getClientMetadata } from '../types/ClientMetadataContext'
 
 type LoginFormProps = {
   handle: string;
   setHandle: (value: string) => void;
   publicAgent: AtpAgent
   locale: any,
-  browserClient?: BrowserOAuthClient
+  browserClient?: BrowserOAuthClient|undefined
 };
 
 export const LoginForm: React.FC<LoginFormProps> = ({
@@ -25,8 +25,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   const [blueskyLoginMessage, setBlueskyLoginMessage] = useState("");
   const [isLoading, setIsLoading] = useState<boolean>(false)
-
-
   const metadata = getClientMetadata();
 
   function generateRandomState(length: number = 32): string {
@@ -39,30 +37,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       .replace(/=+$/, ''); // Base64 の末尾の = を削除
   }
 
-  function getClientMetadata(): OAuthClientMetadataInput | undefined {
-    let env
-    const origin = window.location.hostname
-
-    if (process.env.NODE_ENV === 'production') {
-      if (origin.includes('o-auth.starrysky-console.pages.dev')) {
-        env = 'o-auth'
-
-      } else if (origin.includes('preview.starrysky-console.pages.dev')) {
-        env = 'preview'
-
-      } else {
-        env = 'production'
-      }
-
-    } else {
-      env = 'local'
-
-    }
-
-    let ret = clientMetadataByEnv[env];
-
-    return ret;
-  }
 
   const fetchServiceEndpoint = async (did: string) => {
     const encodedDid = encodeURIComponent(did); // URLエンコード
@@ -189,7 +163,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           value={handle}
           onChange={(event) => setHandle(event.target.value)}
           type="text"
-          placeholder="abcde.bsky.social"
+          placeholder="alice.bsky.social"
           className="block w-full rounded-l-none rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-gray-700 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40"
         />
       </div>

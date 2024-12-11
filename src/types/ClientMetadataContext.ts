@@ -3,6 +3,23 @@ import { OAuthClientMetadataInput } from '@atproto/oauth-types';
 
 export type ClientMetadataByEnv = Record<string, OAuthClientMetadataInput>;
 
+export const getClientMetadata: () => OAuthClientMetadataInput | undefined = () => {
+    let env;
+    const origin = window.location.hostname;
+    if (origin.includes('skyblur.uk')) {
+        env = 'production';
+    } else if (origin.includes('preview')) {
+        env = 'preview';
+    } else {
+        env = 'local';
+    }
+
+    let ret = clientMetadataByEnv[env];
+
+    return ret;
+};
+
+
 export const clientMetadataByEnv: ClientMetadataByEnv = {
     local: {
         client_id: "https://blursky.usounds.work/api/client-metadata.json",
