@@ -33,34 +33,6 @@ const PostPage = () => {
     })
 
 
-    function validateBrackets(input: string): boolean {
-        let insideBracket = false; // 現在 `[` の中にいるかどうかを追跡
-
-        for (let i = 0; i < input.length; i++) {
-            const char = input[i];
-            console.log(char)
-
-            if (char === "[") {
-                // すでに `[` の中にいる場合はエラー
-                if (insideBracket) {
-                    console.log('char')
-                    return true;
-                }
-                insideBracket = true; // `[` の中に入る
-            } else if (char === "]") {
-                // `[` の中にいる場合は終了
-                if (insideBracket) {
-                    insideBracket = false;
-                }
-            }
-        }
-
-        if (insideBracket) return true
-
-        return false; // エラーがなければ `error: false`
-    }
-
-
     const changeLocale = (localeParam: string) => {
         // ここで実際のロジック（例: 言語の変更など）を実行します
         console.log(`Locale changed to: ${locale}`);
@@ -119,8 +91,13 @@ const PostPage = () => {
         }).format(date);
     };
 
+    let duplicate = false
+
     useEffect(() => {
         if (did && rkey) {
+
+            if (duplicate) return
+            duplicate = true
             const localLocale = window.localStorage.getItem('preference.locale')
 
             if (localLocale) changeLocale(localLocale)
@@ -194,9 +171,9 @@ const PostPage = () => {
 
             <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
                 <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
-                    <Link href={"/"} className="text-xl font-semibold text-white">
+                    <a href={"/"} className="text-xl font-semibold text-white">
                         Skyblur
-                    </Link>
+                    </a>
                     <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
                         <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
                             {locale.Menu_TermOfUse}
@@ -227,11 +204,11 @@ const PostPage = () => {
                             {!errorMessage &&
                                 <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
                                     <div className="overflow-hidden break-words">
-                                        <PostTextWithBold postText={postText} />
+                                        <PostTextWithBold postText={postText} isValidateBrackets={true} />
                                     </div>
                                     {addText &&
-                                        <div className="overflow-hidden break-words mt-2">
-                                            {addText}
+                                        <div className="mt-2">
+                                            <PostTextWithBold postText={addText} isValidateBrackets={false} />
                                         </div>
                                     }
 
