@@ -145,12 +145,20 @@ export default function Home() {
 
   const logout = async (): Promise<void> => {
     try {
+      const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl') || ''
+      
+      browserClient = new BrowserOAuthClient({
+        clientMetadata: getClientMetadata(),
+        handleResolver: localPdsUrl
+      })
+
+      browserClient.revoke(did)
+
       window.localStorage.removeItem('oauth.code_verifier')
       window.localStorage.removeItem('oauth.pdsUrl')
       window.localStorage.removeItem('oauth.handle')
       setHandle('')
 
-      browserClient?.revoke(did)
 
     } catch (e) {
       console.error(e)
