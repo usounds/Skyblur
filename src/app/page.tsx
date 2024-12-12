@@ -3,14 +3,14 @@ export const runtime = 'edge';
 import { useState, useEffect } from "react";
 import Link from 'next/link'
 import { AtpAgent, Agent, AppBskyActorDefs } from '@atproto/api'
-import { LoginForm } from "../components/LoginForm"
-import { CreatePostForm } from "../components/CreatePost"
+import { LoginForm } from "@/components/LoginForm"
+import { CreatePostForm } from "@/components/CreatePost"
 import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser'
-import { getClientMetadata } from '../types/ClientMetadataContext'
-import ja from "../locales/ja"
-import en from "../locales/en"
-import { DeleteList } from "../components/DeleteList";
-import LanguageSelect from "../components/LanguageSelect";
+import { getClientMetadata } from '@/types/ClientMetadataContext'
+import ja from "@/locales/ja"
+import en from "@/locales/en"
+import { DeleteList } from "@/components/DeleteList";
+import LanguageSelect from "@/components/LanguageSelect";
 let agent: Agent
 
 export default function Home() {
@@ -203,9 +203,9 @@ export default function Home() {
                 </div>
               </>
             }
-            <a href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
+            <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
               {locale.Menu_TermOfUse}
-            </a>
+            </Link>
             <LanguageSelect
               selectedLocale={selectedLocale}
               onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}

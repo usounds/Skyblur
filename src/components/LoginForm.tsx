@@ -3,7 +3,7 @@ import { DIDResponse, Service } from '../types/types'
 import { useState } from "react";
 import { AtpAgent } from '@atproto/api'
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser'
-import { getClientMetadata } from '../types/ClientMetadataContext'
+import { getClientMetadata } from '@/types/ClientMetadataContext'
 
 type LoginFormProps = {
   handle: string;
