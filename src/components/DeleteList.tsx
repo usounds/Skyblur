@@ -58,6 +58,11 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                     blurURL: transformUrl(obj.uri),
                 });
             }
+            
+            // createdAtで降順ソート
+            deleteList.sort((a, b) => {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
 
             // setDeleteList を呼び出して UI を更新
             setDeleteList(deleteList);
