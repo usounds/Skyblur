@@ -107,7 +107,7 @@ const PostPage = () => {
               } else {
                 const userLanguages = navigator.language;
                 console.log(userLanguages)
-                if (userLanguages === 'ja-JP') {
+                if (userLanguages.startsWith('ja')) {
                   changeLocale('ja')
                 } else {
                   changeLocale('en')
