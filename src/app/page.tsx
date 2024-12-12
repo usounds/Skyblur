@@ -29,7 +29,7 @@ export default function Home() {
     service: "https://api.bsky.app"
   })
 
-  let browserClient:BrowserOAuthClient
+  let browserClient: BrowserOAuthClient
 
   const changeLocale = (localeParam: string) => {
     // ここで実際のロジック（例: 言語の変更など）を実行します
@@ -70,13 +70,24 @@ export default function Home() {
         const localHandle = window.localStorage.getItem('oauth.handle')
         const localLocale = window.localStorage.getItem('preference.locale')
 
-        if (localLocale) changeLocale(localLocale)
+        if (localLocale && typeof localLocale === 'string') {
+          changeLocale(localLocale)
+        } else {
+          const userLanguages = navigator.language;
+          console.log(userLanguages)
+          if (userLanguages === 'ja-JP') {
+            changeLocale('ja')
+          } else {
+            changeLocale('en')
+
+          }
+        }
 
         if (localHandle) setHandle(localHandle)
 
         try {
           if (localState && localPdsUrl) {
-             browserClient = new BrowserOAuthClient({
+            browserClient = new BrowserOAuthClient({
               clientMetadata: getClientMetadata(),
               handleResolver: localPdsUrl,
             })
@@ -146,7 +157,7 @@ export default function Home() {
   const logout = async (): Promise<void> => {
     try {
       const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl') || ''
-      
+
       browserClient = new BrowserOAuthClient({
         clientMetadata: getClientMetadata(),
         handleResolver: localPdsUrl
