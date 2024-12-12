@@ -184,9 +184,9 @@ const PostPage = () => {
 
             <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
                 <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
-                    <a href={"/"} className="text-xl font-semibold text-white">
+                    <Link href={"/"} className="text-xl font-semibold text-white">
                         Skyblur
-                    </a>
+                    </Link>
                     <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
                         <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
                             {locale.Menu_TermOfUse}
