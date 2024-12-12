@@ -5,7 +5,7 @@ import { TID } from '@atproto/common-web'
 import AutoResizeTextArea from "./AutoResizeTextArea"
 import Link from 'next/link';
 import twitterText from 'twitter-text';
-import { COLLECTION } from "../types/types"
+import { COLLECTION } from "@/types/types"
 import {franc} from 'franc';
 const iso6393to1 = require('iso-639-3-to-1');
 

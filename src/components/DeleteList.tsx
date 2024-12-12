@@ -1,7 +1,7 @@
 
-import { Agent, RichText, AppBskyFeedPost, AppBskyActorDefs } from '@atproto/api'
+import { Agent } from '@atproto/api'
 import { useState, useEffect } from "react";
-import { COLLECTION, PostForDelete, PostData } from "../types/types"
+import { COLLECTION, PostForDelete, PostData } from "@/types/types"
 import PostTextWithBold from "./PostTextWithBold"
 
 type DeleteListProps = {
@@ -58,6 +58,11 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                     blurURL: transformUrl(obj.uri),
                 });
             }
+            
+            // createdAtで降順ソート
+            deleteList.sort((a, b) => {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
 
             // setDeleteList を呼び出して UI を更新
             setDeleteList(deleteList);

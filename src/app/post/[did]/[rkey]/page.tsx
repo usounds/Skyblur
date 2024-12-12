@@ -3,12 +3,12 @@ export const runtime = 'edge';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from "react";
 import { AtpAgent, AppBskyActorDefs } from '@atproto/api'
-import { DIDResponse, Service, PostData, COLLECTION } from '../../../../types/types'
-import PostTextWithBold from "../../../../components/PostTextWithBold"
-import { Avatar } from "../../../../components/Avatar"
-import LanguageSelect from "../../../../components/LanguageSelect"
-import ja from "../../../../locales/ja"
-import en from "../../../../locales/en"
+import { DIDResponse, Service, PostData, COLLECTION } from '@/types/types'
+import PostTextWithBold from "@/components/PostTextWithBold"
+import { Avatar } from "@/components/Avatar"
+import LanguageSelect from "@/components/LanguageSelect"
+import ja from "@/locales/ja"
+import en from "@/locales/en"
 
 import Link from 'next/link';
 
@@ -24,7 +24,6 @@ const PostPage = () => {
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
     const [locale, setLocale] = useState(ja)
     const [selectedLocale, setSelectedLocale] = useState<string>('ja');
-    const [isIncorrectBrackets, setIsIncorrectBrackets] = useState<boolean>(false)
 
     const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
 
@@ -185,9 +184,9 @@ const PostPage = () => {
 
             <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
                 <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
-                    <a href={"/"} className="text-xl font-semibold text-white">
+                    <Link href={"/"} className="text-xl font-semibold text-white">
                         Skyblur
-                    </a>
+                    </Link>
                     <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
                         <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
                             {locale.Menu_TermOfUse}
