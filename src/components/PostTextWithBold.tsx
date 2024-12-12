@@ -1,13 +1,10 @@
 import React from "react";
+import DOMPurify from 'dompurify';
 
 // HTMLエスケープ用の関数
 const escapeHTML = (str: string): string => {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return DOMPurify.sanitize(str);
+
 };
 
 // 括弧のバリデーション関数
