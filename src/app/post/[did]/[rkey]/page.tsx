@@ -3,12 +3,12 @@ export const runtime = 'edge';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from "react";
 import { AtpAgent, AppBskyActorDefs } from '@atproto/api'
-import { DIDResponse, Service, PostData, COLLECTION } from '../../../../types/types'
-import PostTextWithBold from "../../../../components/PostTextWithBold"
-import { Avatar } from "../../../../components/Avatar"
-import LanguageSelect from "../../../../components/LanguageSelect"
-import ja from "../../../../locales/ja"
-import en from "../../../../locales/en"
+import { DIDResponse, Service, PostData, COLLECTION } from '@/types/types'
+import PostTextWithBold from "@/components/PostTextWithBold"
+import { Avatar } from "@/components/Avatar"
+import LanguageSelect from "@/components/LanguageSelect"
+import ja from "@/locales/ja"
+import en from "@/locales/en"
 
 import Link from 'next/link';
 
@@ -24,7 +24,6 @@ const PostPage = () => {
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
     const [locale, setLocale] = useState(ja)
     const [selectedLocale, setSelectedLocale] = useState<string>('ja');
-    const [isIncorrectBrackets, setIsIncorrectBrackets] = useState<boolean>(false)
 
     const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
 
