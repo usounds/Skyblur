@@ -102,7 +102,18 @@ const PostPage = () => {
             duplicate = true
             const localLocale = window.localStorage.getItem('preference.locale')
 
-            if (localLocale) changeLocale(localLocale)
+            if (localLocale && typeof localLocale === 'string') {
+                changeLocale(localLocale)
+              } else {
+                const userLanguages = navigator.language;
+                console.log(userLanguages)
+                if (userLanguages.startsWith('ja')) {
+                  changeLocale('ja')
+                } else {
+                  changeLocale('en')
+      
+                }
+              }
 
             const fetchRecord = async () => {
 
@@ -170,7 +181,7 @@ const PostPage = () => {
 
     return (
         <>
-        <link rel="alternate" href={aturi}/>
+            <link rel="alternate" href={aturi} />
 
             <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
                 <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
