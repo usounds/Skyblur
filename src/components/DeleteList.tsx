@@ -1,7 +1,7 @@
 
-import { Agent, RichText, AppBskyFeedPost, AppBskyActorDefs } from '@atproto/api'
+import { Agent } from '@atproto/api'
 import { useState, useEffect } from "react";
-import { COLLECTION, PostForDelete, PostData } from "../types/types"
+import { COLLECTION, PostForDelete, PostData } from "@/types/types"
 import PostTextWithBold from "./PostTextWithBold"
 
 type DeleteListProps = {
