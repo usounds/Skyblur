@@ -203,9 +203,9 @@ export default function Home() {
                 </div>
               </>
             }
-            <a href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
+            <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
               {locale.Menu_TermOfUse}
-            </a>
+            </Link>
             <LanguageSelect
               selectedLocale={selectedLocale}
               onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}
