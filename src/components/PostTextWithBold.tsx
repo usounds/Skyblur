@@ -22,14 +22,33 @@ function validateBrackets(input: string): boolean {
     }
   }
 
+  
+
   return openBracket; // 最後に閉じ括弧がない場合もエラー
 }
+
+
+function areBracketsUnbalanced(input: string): boolean {
+  let openBracketsCount = 0;
+  let closeBracketsCount = 0;
+
+  for (const char of input) {
+      if (char === '[') {
+          openBracketsCount++;
+      } else if (char === ']') {
+          closeBracketsCount++;
+      }
+  }
+
+  return openBracketsCount !== closeBracketsCount;
+}
+
 
 const PostTextWithBold = ({ postText ,isValidateBrackets}: { postText: string,isValidateBrackets:boolean }) => {
   let processedText = postText;
 
   // 括弧のバリデーションをチェックし、エラーがあれば括弧を削除
-  if (isValidateBrackets && validateBrackets(processedText)) {
+  if (isValidateBrackets && (validateBrackets(processedText) || areBracketsUnbalanced(processedText))) {
     processedText = processedText.replace(/[\[\]]/g, "");
     console.log("Updated postText:", processedText);
   }

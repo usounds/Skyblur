@@ -6,7 +6,7 @@ import AutoResizeTextArea from "./AutoResizeTextArea"
 import Link from 'next/link';
 import twitterText from 'twitter-text';
 import { COLLECTION } from "@/types/types"
-import {franc} from 'franc';
+import { franc } from 'franc';
 const iso6393to1 = require('iso-639-3-to-1');
 
 type CreatePostProps = {
@@ -32,19 +32,44 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
+    const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
         const lang3 = franc(text);
 
         console.log(lang3)
-      
+
         // 3文字の言語コードを2文字のコードに変換。
         // 未対応の場合は 現在の表示言語 を返す
         const lang2 = iso6393to1(lang3) || locale.CreatePost_Lang;
-      
+
         return lang2;
-      }
+    }
+
+    function containsFullWidthBrackets(input: string): boolean {
+        const fullWidthBracketsPattern = /［|］/;
+        return fullWidthBracketsPattern.test(input);
+    }
+
+    function areBracketsUnbalanced(input: string): boolean {
+        let openBracketsCount = 0;
+        let closeBracketsCount = 0;
+    
+        for (const char of input) {
+            if (char === '[') {
+                openBracketsCount++;
+            } else if (char === ']') {
+                closeBracketsCount++;
+            }
+        }
+    
+        return openBracketsCount !== closeBracketsCount;
+    }
+
+    function convertFullWidthToHalfWidthBrackets(): void {
+        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'))
+    }
 
     const setPostText = (text: string) => {
         if (!text) setPostTextBlur("")
@@ -74,27 +99,36 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             // マッチした文字列内の改行を維持しつつ ommitChar で置換
             return match.replace(/./g, locale.CreatePost_OmmitChar);
         });
-        
+
 
         // 状態を更新
         setPostTest(text)
         setPostTextForRecord(postTextLocal);
         setPostTextBlur(blurredText);
 
+        setIsIncludeFullBranket(containsFullWidthBrackets(text))
+
+
         if (validateBrackets(text)) {
             setWarning(locale.CreatePost_ErrorDuplicateBranket)
             return
         }
+
+        if(areBracketsUnbalanced(text)){
+            setWarning(locale.CreatePost_BracketsUnbalanced)
+            return
+        }
+
         setWarning('')
 
     };
 
-    function validateBrackets(input: string):boolean  {
+    function validateBrackets(input: string): boolean {
         let insideBracket = false; // 現在 `[` の中にいるかどうかを追跡
-    
+
         for (let i = 0; i < input.length; i++) {
             const char = input[i];
-    
+
             if (char === "[") {
                 // すでに `[` の中にいる場合はエラー
                 if (insideBracket) {
@@ -109,8 +143,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             }
         }
 
-        if(insideBracket) return true
-    
+        if (insideBracket) return true
+
         return false; // エラーがなければ `error: false`
     }
 
@@ -327,8 +361,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             max={300}
                             isEnableBrackets={!simpleMode}
                         />
-                        {warning && <div className="text-red-500 my-3">{warning}</div> }
-                        
+                        {warning && <div className="text-red-500 my-3">{warning}</div>}
+
+                        <div className="flex justify-center gap-4 mb-8">
+                            {isIncludeFullBranket &&
+                                <button onClick={convertFullWidthToHalfWidthBrackets} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_BracketFromFullToHalf}</button>
+                            }
+                        </div>
+
                         <div className="block text-sm text-gray-600 mt-1">{postText.length}/300</div>
 
 
