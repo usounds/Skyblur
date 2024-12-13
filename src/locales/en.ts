@@ -46,6 +46,8 @@ export default {
     CreatePost_ErrorDuplicateBranket: "A closing ] is missing. Please add ].",
     CreatePost_BracketFromFullToHalf: "Convert Full-width Brackets to Half-width Brackets",
     CreatePost_BracketsUnbalanced: "The brackets are not correct. The number of [ and ] do not match.",
+    CreatePost_isPrevBlurLoading: "Retrieving the content of the previous post.",
+    CreatePost_UpdateButton: "Update (Only applicable to Skyblur)",
     DeleteList_ChooseDeleteItem: "Post List",
     DeleteList_NoListItem: "No posts available.",
     DeleteList_ConfirmDelete: "Are you sure you want to delete this post?",

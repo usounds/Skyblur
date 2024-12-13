@@ -46,6 +46,8 @@ export default {
     CreatePost_ErrorDuplicateBranket: "閉じる]がありません。]をつけてください。",
     CreatePost_BracketFromFullToHalf: "全角のカッコを半角に変換する",
     CreatePost_BracketsUnbalanced: "カッコが正しくありません。[と]の数が一致しません。",
+    CreatePost_isPrevBlurLoading: "前回の投稿内容を取得しています",
+    CreatePost_UpdateButton: "更新する(Skyblurのみ反映されます)",
     DeleteList_ChooseDeleteItem: "投稿一覧",
     DeleteList_NoListItem: "投稿がありません",
     DeleteList_ConfirmDelete: "この投稿を削除しますか？",
