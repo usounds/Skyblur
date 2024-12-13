@@ -6,6 +6,7 @@ import { AtpAgent, Agent, AppBskyActorDefs } from '@atproto/api'
 import { LoginForm } from "@/components/LoginForm"
 import { CreatePostForm } from "@/components/CreatePost"
 import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser'
+import { PostForDelete } from "@/types/types"
 import { getClientMetadata } from '@/types/ClientMetadataContext'
 import ja from "@/locales/ja"
 import en from "@/locales/en"
@@ -24,6 +25,8 @@ export default function Home() {
   const [mode, setMode] = useState("login")
   const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const [windowWidth, setWindowWidth] = useState(0);
+  const [prevPostAturi, setPrevPostAturi] = useState("")
+  const [prevBlurAturi, setPrevBlurAturi] = useState("")
 
   const publicAgent = new AtpAgent({
     service: "https://api.bsky.app"
@@ -178,6 +181,25 @@ export default function Home() {
 
   }
 
+  const handleEdit = (input: PostForDelete) => {
+    console.log(input)
+    setPrevPostAturi(input.postATUri)
+    setPrevBlurAturi(input.blurATUri)
+
+    setMode("create")
+
+  };
+
+
+  const handleNew = () => {
+    setPrevPostAturi("")
+    setPrevBlurAturi("")
+
+    setMode("create")
+
+  };
+
+
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newLocale = event.target.value;
@@ -260,7 +282,7 @@ export default function Home() {
                           </div>
 
                           <div className="flex justify-center gap-4 mb-8">
-                            <button onClick={() => setMode("create")} className="relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-blue-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+                            <button onClick={() => handleNew()} className="relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-blue-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
 
                               <>
                                 {locale.Menu_CreatePost}
@@ -269,14 +291,14 @@ export default function Home() {
 
                           </div>
 
-                          <DeleteList agent={agent} locale={locale} did={did} />
+                          <DeleteList agent={agent} locale={locale} did={did} handleEdit={handleEdit}/>
 
                         </div>
                       </>
                     }
                     {mode === 'create' &&
                       <>
-                        <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode}
+                        <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode} prevPostAturi={prevPostAturi} prevBlurAturi={prevBlurAturi}
                           userProf={userProf} />
                         <div className="flex justify-center mt-4">
                           <button onClick={() => {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AtpAgent } from '@atproto/api'
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser'
 import { getClientMetadata } from '@/types/ClientMetadataContext'
+import {fetchServiceEndpoint} from "@/logic/HandleGetBlurRecord"
 
 type LoginFormProps = {
   handle: string;
@@ -35,34 +36,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       .replace(/\//g, '_') // Base64 の / を _ に置換
       .replace(/=+$/, ''); // Base64 の末尾の = を削除
   }
-
-
-  const fetchServiceEndpoint = async (did: string) => {
-    const encodedDid = encodeURIComponent(did); // URLエンコード
-    const didUrl = `https://dev.uniresolver.io/1.0/identifiers/${encodedDid}`;
-
-    try {
-      const response = await fetch(didUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch DID document');
-      }
-
-      const data: DIDResponse = await response.json(); // レスポンスの全体を型定義
-      const didDocument = data.didDocument; // didDocument部分を取り出す
-
-      // didDocument.serviceが存在するかチェック
-      const service = didDocument.service?.find((s: Service) => s.id === '#atproto_pds');
-
-      if (service && service.serviceEndpoint) {
-        console.log('Service Endpoint:', service.serviceEndpoint);
-        return service.serviceEndpoint;
-      } else {
-        throw new Error('Service with id #atproto_pds not found or no service endpoint available');
-      }
-    } catch (error) {
-      console.error('Error fetching service endpoint:', error);
-    }
-  };
 
   const blueskyOAuthLogin = async (): Promise<void> => {
     setBlueskyLoginMessage("")
