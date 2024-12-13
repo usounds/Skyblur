@@ -1,11 +1,11 @@
 "use client"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Agent, RichText, AppBskyFeedPost, AppBskyActorDefs } from '@atproto/api'
 import { TID } from '@atproto/common-web'
 import AutoResizeTextArea from "./AutoResizeTextArea"
 import Link from 'next/link';
 import twitterText from 'twitter-text';
-import { COLLECTION } from "@/types/types"
+import { COLLECTION, PostData } from "@/types/types"
 import { franc } from 'franc';
 const iso6393to1 = require('iso-639-3-to-1');
 
@@ -15,6 +15,8 @@ type CreatePostProps = {
     did: string,
     userProf: AppBskyActorDefs.ProfileViewDetailed
     setMode: (value: string) => void;
+    prevPostAturi: string
+    prevBlurAturi: string
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
@@ -22,7 +24,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     locale,
     did,
     userProf,
-    setMode
+    setMode,
+    prevPostAturi,
+    prevBlurAturi
 }) => {
     const [postText, setPostTest] = useState("");
     const [postTextForRecord, setPostTextForRecord] = useState("");
@@ -33,6 +37,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
+    const [isGetPrevData, setIsGetPrevData] = useState<boolean>(false)
+    const [prevCreatedDate, setPrevCreatedDate] = useState("");
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -55,7 +61,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     function areBracketsUnbalanced(input: string): boolean {
         let openBracketsCount = 0;
         let closeBracketsCount = 0;
-    
+
         for (const char of input) {
             if (char === '[') {
                 openBracketsCount++;
@@ -63,7 +69,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 closeBracketsCount++;
             }
         }
-    
+
         return openBracketsCount !== closeBracketsCount;
     }
 
@@ -114,7 +120,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             return
         }
 
-        if(areBracketsUnbalanced(text)){
+        if (areBracketsUnbalanced(text)) {
             setWarning(locale.CreatePost_BracketsUnbalanced)
             return
         }
@@ -153,174 +159,191 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setIsLoading(true)
         setAppUrl('')
 
-        const rkey = TID.nextStr()
+        let localPrevPostAturi = prevPostAturi
+
+        let rkey = TID.nextStr()
+        if (prevBlurAturi) {
+            const regex = /\/([^/]+)$/;
+            const match = prevBlurAturi.match(regex);
+            if (match) {
+                rkey = match[1];
+            }
+        }
         const url = '/post/' + did + "/" + rkey
         const tempUrl = origin + url
         const blurUri = `at://${did}/${COLLECTION}/${rkey}`
+        if (prevPostAturi === "") {
 
-        //URLの判定
-        // titleからURLを抽出
-        const pattern =
-            /https?:\/\/[-_.!~*\'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g;
-        const urls = postTextBlur.match(pattern);
+            //URLの判定
+            // titleからURLを抽出
+            const pattern =
+                /https?:\/\/[-_.!~*\'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g;
+            const urls = postTextBlur.match(pattern);
 
-        // URLと出現位置を保持する配列を定義
-        let urlArray: { [urlKey: string]: number };
-        urlArray = {};
+            // URLと出現位置を保持する配列を定義
+            let urlArray: { [urlKey: string]: number };
+            urlArray = {};
 
-        //URLが取得できたら、URLが出現するまでのバイト数をカウントする
-        let pos = 0;
+            //URLが取得できたら、URLが出現するまでのバイト数をカウントする
+            let pos = 0;
 
-        if (urls != null) {
-            for (const url of urls) {
-                pos = encodeURI(postTextBlur).replace(/%../g, "*").indexOf(url);
-                //URLが見つからない場合は想定外とみなし処理を行わない（正規表現で想定外の検知をしたものは処理をしない）
-                if (pos >= 0) {
-                    urlArray[url] = pos;
+            if (urls != null) {
+                for (const url of urls) {
+                    pos = encodeURI(postTextBlur).replace(/%../g, "*").indexOf(url);
+                    //URLが見つからない場合は想定外とみなし処理を行わない（正規表現で想定外の検知をしたものは処理をしない）
+                    if (pos >= 0) {
+                        urlArray[url] = pos;
+                    }
                 }
             }
-        }
-
-        //投稿
-        let postTextBlurLocal: string = postTextBlur;
-        const rt = new RichText({ text: postTextBlurLocal });
-        await rt.detectFacets(agent);
 
 
-        const langs = [detectLanguage(postText)]
+            //投稿
+            let postTextBlurLocal: string = postTextBlur;
+            const rt = new RichText({ text: postTextBlurLocal });
+            await rt.detectFacets(agent);
 
-        const postObj: Partial<AppBskyFeedPost.Record> &
-            Omit<AppBskyFeedPost.Record, 'createdAt'> = {
-            $type: 'app.bsky.feed.post',
-            text: rt.text,
-            facets: rt.facets,
-            langs: langs,
-            via: 'Skyblur',
-            "uk.skyblur.post.uri": blurUri
-        };
 
-        postObj.facets = new Array(0);
+            const langs = [detectLanguage(postText)]
 
-        // TextEncoder を使用して UTF-8 バイト配列に変換
-        const encoder = new TextEncoder();
-        const postTextBytes = encoder.encode(postTextBlurLocal);
-        const fixedTextBytes = encoder.encode(tempUrl);
+            const postObj: Partial<AppBskyFeedPost.Record> &
+                Omit<AppBskyFeedPost.Record, 'createdAt'> = {
+                $type: 'app.bsky.feed.post',
+                text: rt.text,
+                facets: rt.facets,
+                langs: langs,
+                via: 'Skyblur',
+                "uk.skyblur.post.uri": blurUri
+            };
 
-        // バイト列を検索するためのインデックス取得
-        let startIndex = -1;
-        for (let i = 0; i <= postTextBytes.length - fixedTextBytes.length; i++) {
-            // バイト列が一致するかを比較
-            if (postTextBytes.slice(i, i + fixedTextBytes.length).every((byte, index) => byte === fixedTextBytes[index])) {
-                startIndex = i;
-                break;
+            postObj.facets = new Array(0);
+
+            // TextEncoder を使用して UTF-8 バイト配列に変換
+            const encoder = new TextEncoder();
+            const postTextBytes = encoder.encode(postTextBlurLocal);
+            const fixedTextBytes = encoder.encode(tempUrl);
+
+            // バイト列を検索するためのインデックス取得
+            let startIndex = -1;
+            for (let i = 0; i <= postTextBytes.length - fixedTextBytes.length; i++) {
+                // バイト列が一致するかを比較
+                if (postTextBytes.slice(i, i + fixedTextBytes.length).every((byte, index) => byte === fixedTextBytes[index])) {
+                    startIndex = i;
+                    break;
+                }
             }
-        }
 
-        if (startIndex !== -1) {
-            // 見つかった場合、その位置を byteStart として設定
-            const byteStart = startIndex;
+            if (startIndex !== -1) {
+                // 見つかった場合、その位置を byteStart として設定
+                const byteStart = startIndex;
 
-            // byteEnd は byteStart に locale.CreatePost_Fixed の長さを加算
-            const byteEnd = byteStart + encodeURI(tempUrl).replace(/%../g, "*").length;
+                // byteEnd は byteStart に locale.CreatePost_Fixed の長さを加算
+                const byteEnd = byteStart + encodeURI(tempUrl).replace(/%../g, "*").length;
 
-            // postObj.facets に追加するオブジェクトを作成
-            postObj.facets.push(
-                {
-                    index: {
-                        byteStart: byteStart,
-                        byteEnd: byteEnd
-                    },
-                    features: [
-                        {
-                            "$type": "app.bsky.richtext.facet#link",
-                            "uri": tempUrl
-                        }
-                    ]
-                }
-            );
-        } else {
-            console.log("指定された文字列が見つかりませんでした");
-        }
-
-        const hashTags = twitterText.extractHashtagsWithIndices(postTextBlurLocal);
-
-        for (const obj of hashTags) {
-            //ハッシュタグまでの文字列とハッシュタグが終わる文字列を取得
-            const fromText = postTextBlurLocal.slice(0, obj.indices[0]);
-            const toText = postTextBlurLocal.slice(0, obj.indices[1]);
-
-            //マルチバイト対応
-            const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
-            const toIndex = encodeURI(toText).replace(/%../g, "*").length;
-
-            postObj.facets.push(
-                {
-                    index: {
-                        "byteStart": fromIndex,
-                        "byteEnd": toIndex
-                    },
-                    features: [
-                        {
-                            "$type": "app.bsky.richtext.facet#tag",
-                            "tag": obj.hashtag
-                        }
-                    ]
-                }
-            );
-        }
-
-        const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.displayName);
-
-        // OGP設定
-        postObj.embed = {
-            $type: 'app.bsky.embed.external',
-            external: {
-                uri: tempUrl,
-                title: locale.CreatePost_OGPTitle,
-                description: localDesc,
-            },
-        };
-
-        //URLをリンク化
-        Object.keys(urlArray).forEach(function (key) {
-            if (typeof postObj.facets !== "undefined") {
+                // postObj.facets に追加するオブジェクトを作成
                 postObj.facets.push(
                     {
                         index: {
-                            "byteStart": urlArray[key],
-                            "byteEnd": urlArray[key] + key.length
+                            byteStart: byteStart,
+                            byteEnd: byteEnd
                         },
                         features: [
                             {
                                 "$type": "app.bsky.richtext.facet#link",
-                                "uri": key
+                                "uri": tempUrl
+                            }
+                        ]
+                    }
+                );
+            } else {
+                console.log("指定された文字列が見つかりませんでした");
+            }
+
+            const hashTags = twitterText.extractHashtagsWithIndices(postTextBlurLocal);
+
+            for (const obj of hashTags) {
+                //ハッシュタグまでの文字列とハッシュタグが終わる文字列を取得
+                const fromText = postTextBlurLocal.slice(0, obj.indices[0]);
+                const toText = postTextBlurLocal.slice(0, obj.indices[1]);
+
+                //マルチバイト対応
+                const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
+                const toIndex = encodeURI(toText).replace(/%../g, "*").length;
+
+                postObj.facets.push(
+                    {
+                        index: {
+                            "byteStart": fromIndex,
+                            "byteEnd": toIndex
+                        },
+                        features: [
+                            {
+                                "$type": "app.bsky.richtext.facet#tag",
+                                "tag": obj.hashtag
                             }
                         ]
                     }
                 );
             }
-        });
 
-        const result = await agent.post(postObj);
+            const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.displayName);
+
+            // OGP設定
+            postObj.embed = {
+                $type: 'app.bsky.embed.external',
+                external: {
+                    uri: tempUrl,
+                    title: locale.CreatePost_OGPTitle,
+                    description: localDesc,
+                },
+            };
+
+            //URLをリンク化
+            Object.keys(urlArray).forEach(function (key) {
+                if (typeof postObj.facets !== "undefined") {
+                    postObj.facets.push(
+                        {
+                            index: {
+                                "byteStart": urlArray[key],
+                                "byteEnd": urlArray[key] + key.length
+                            },
+                            features: [
+                                {
+                                    "$type": "app.bsky.richtext.facet#link",
+                                    "uri": key
+                                }
+                            ]
+                        }
+                    );
+                }
+            });
+
+            const result = await agent.post(postObj);
+
+            localPrevPostAturi = result.uri
+
+
+        }
 
         const postObject = {
             repo: did,
             collection: COLLECTION,
             rkey: rkey,
             record: {
-                uri: result.uri,
+                uri: localPrevPostAturi,
                 text: postTextForRecord,
                 additional: addText,
-                createdAt: new Date().toISOString(),
+                createdAt: prevCreatedDate || new Date().toISOString(),
             },
         }
 
         const ret = await agent.com.atproto.repo.putRecord(postObject)
         if (ret.success) {
-            const convertedUri = result.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
+            const convertedUri = localPrevPostAturi.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
+            setPrevCreatedDate('')
             setMode('menu')
         } else {
             console.error(ret)
@@ -329,11 +352,66 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setIsLoading(false)
     }
 
+    function extractSpecificPart(input: string): string | null {
+        const regex = /\/([^/]+)$/;
+        const match = input.match(regex);
+        if (match) {
+            return match[1];
+        }
+        return null;
+    }
+
+    let useEffectDuplidate = false
+
+    useEffect(() => {
+        if (useEffectDuplidate) return;
+        useEffectDuplidate = true;
+
+        const fetchData = async () => {
+            console.log(prevBlurAturi)
+            if (prevBlurAturi) {
+                setIsGetPrevData(true)
+                setIsLoading(true)
+                try {
+                    const postResponse = await agent.com.atproto.repo.getRecord({
+                        repo: did,
+                        collection: COLLECTION,
+                        rkey: extractSpecificPart(prevBlurAturi) || '',
+                    });
+
+                    const postData: PostData = postResponse.data.value as PostData;
+
+                    setPostText(postData.text)
+                    setAddText(postData.additional)
+                    setPrevCreatedDate(postData.createdAt)
+
+                    // Handle postData as needed
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    // Handle error if necessary
+                }
+                setIsGetPrevData(false)
+                setIsLoading(false)
+            }
+        };
+
+        fetchData();
+
+    }, [did, prevBlurAturi]); // Make sure to use the correct second dependency
+
     return (
         <>
             <div className="m-3">
+                {isGetPrevData &&
+                    <>
+                        <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
+                            <span className="sr-only">Loading...</span>
+                        </span>
+                        {locale.CreatePost_isPrevBlurLoading}
+                    </>
+                }
 
-                {(!appUrl) &&
+                {(!appUrl && !isGetPrevData) &&
                     <>
 
                         <label className="">{locale.CreatePost_Post}</label>
@@ -401,7 +479,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                         <div className="flex justify-center gap-4 mb-8">
                             {warning ? <div className="text-red-500">{warning}</div> :
-                                <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_CreateButton}</button>
+                                <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+                                    {prevPostAturi ?
+                                        <>{locale.CreatePost_UpdateButton}</>
+                                        :
+                                        <>{locale.CreatePost_CreateButton}</>
+                                    }
+                                </button>
                             }
                         </div>
                     </>
