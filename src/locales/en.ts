@@ -24,7 +24,7 @@ export default {
     CreatePost_Fixed: "[Read full text]",
     CreatePost_Post: "Post content",
     CreatePost_PostPlaceHolder: "Please enter the content.",
-    CreatePost_PostSimpleModeDescription: "The second line and beyond will be automatically blurred.",
+    CreatePost_PostSimpleModeDescription: "The second line and beyond will be automatically blurred. Please select the text you want to blur and use the button.",
     CreatePost_PostComplexDescription: "Please enclose the parts you want to blur with [].",
     CreatePost_OmmitChar: "*",
     CreatePost_SimpleMode: "Simple Mode (switching will erase the content)",

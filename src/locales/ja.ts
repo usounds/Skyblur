@@ -25,7 +25,7 @@ export default {
     CreatePost_Post: "本文",
     CreatePost_PostPlaceHolder: "本文を入力してください",
     CreatePost_PostSimpleModeDescription: "2行目以降を自動で伏せます",
-    CreatePost_PostComplexDescription: "伏せたい箇所を[]でくくってください",
+    CreatePost_PostComplexDescription: "伏せたい箇所を[]でくくってください。伏せたい文章を選択してボタンを使ってみてください",
     CreatePost_OmmitChar: "○",
     CreatePost_SimpleMode: "シンプルモード(切り替えると本文が消えます)",
     CreatePost_Preview: "Blueskyに投稿されるポストのプレビュー",
