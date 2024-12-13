@@ -44,6 +44,8 @@ export default {
     CreatePost_LinkToBsky: "View in Bluesky",
     CreatePost_AddBrackets: "Enclose the selected text with []",
     CreatePost_ErrorDuplicateBranket: "A closing ] is missing. Please add ].",
+    CreatePost_BracketFromFullToHalf: "Convert Full-width Brackets to Half-width Brackets",
+    CreatePost_BracketsUnbalanced: "The brackets are not correct. The number of [ and ] do not match.",
     DeleteList_ChooseDeleteItem: "Post List",
     DeleteList_NoListItem: "No posts available.",
     DeleteList_ConfirmDelete: "Are you sure you want to delete this post?",
