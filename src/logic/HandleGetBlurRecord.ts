@@ -1,5 +1,5 @@
 
-import { DIDResponse, Service, PostData, COLLECTION } from '@/types/types' 
+import { DIDResponse, Service } from '@/types/types';
  
 export const fetchServiceEndpoint = async (did: string) => {
         const encodedDid = encodeURIComponent(did); // URLエンコード

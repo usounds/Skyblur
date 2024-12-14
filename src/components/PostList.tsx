@@ -1,14 +1,14 @@
 
-import { Agent } from '@atproto/api'
-import { useState, useEffect } from "react";
-import { COLLECTION, PostForDelete, PostData } from "@/types/types"
-import PostTextWithBold from "./PostTextWithBold"
+import { COLLECTION, PostData, PostListItem } from "@/types/types";
+import { Agent } from '@atproto/api';
+import { useEffect, useState } from "react";
+import PostTextWithBold from "@/components/PostTextWithBold";
 
 type DeleteListProps = {
     agent: Agent;
     locale: any,
     did: string,
-    handleEdit: (input: PostForDelete) => void;
+    handleEdit: (input: PostListItem) => void;
 };
 
 export const DeleteList: React.FC<DeleteListProps> = ({
@@ -18,10 +18,10 @@ export const DeleteList: React.FC<DeleteListProps> = ({
     handleEdit
 }) => {
     const [cursor, setCursor] = useState("");
-    const [deleteList, setDeleteList] = useState<PostForDelete[]>([]);
+    const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [isDeleteing, setIsDeleting] = useState<boolean>(false)
-    const [selectedItem, setSelectedItem] = useState<PostForDelete | null>(null);
+    const [selectedItem, setSelectedItem] = useState<PostListItem | null>(null);
     const [duplicate, setDuplicate] = useState<boolean>(false);
 
     const getPosts = async (did: string, cursor: string) => {
@@ -74,7 +74,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
     };
 
     // 投稿をタップした時に選択する関数
-    const handleSelectItem = (item: PostForDelete) => {
+    const handleSelectItem = (item: PostListItem) => {
         setSelectedItem(item);
     };
 

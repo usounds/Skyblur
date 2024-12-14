@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react";
-import { Agent, RichText, AppBskyFeedPost, AppBskyActorDefs } from '@atproto/api'
-import { TID } from '@atproto/common-web'
-import AutoResizeTextArea from "./AutoResizeTextArea"
-import Link from 'next/link';
-import twitterText from 'twitter-text';
-import { COLLECTION, PostForDelete } from "@/types/types"
+import { COLLECTION, PostListItem } from "@/types/types";
+import { Agent, AppBskyActorDefs, AppBskyFeedPost, RichText } from '@atproto/api';
+import { TID } from '@atproto/common-web';
 import { franc } from 'franc';
+import Link from 'next/link';
+import { useEffect, useState } from "react";
+import twitterText from 'twitter-text';
+import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 const iso6393to1 = require('iso-639-3-to-1');
 
 type CreatePostProps = {
@@ -15,7 +15,7 @@ type CreatePostProps = {
     did: string,
     userProf: AppBskyActorDefs.ProfileViewDetailed
     setMode: (value: string) => void;
-    prevBlur?: PostForDelete
+    prevBlur?: PostListItem
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({

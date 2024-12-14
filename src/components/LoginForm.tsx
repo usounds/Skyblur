@@ -1,10 +1,9 @@
 "use client"
-import { DIDResponse, Service } from '../types/types'
+import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
+import { getClientMetadata } from '@/types/ClientMetadataContext';
+import { AtpAgent } from '@atproto/api';
+import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import { useState } from "react";
-import { AtpAgent } from '@atproto/api'
-import { BrowserOAuthClient } from '@atproto/oauth-client-browser'
-import { getClientMetadata } from '@/types/ClientMetadataContext'
-import {fetchServiceEndpoint} from "@/logic/HandleGetBlurRecord"
 
 type LoginFormProps = {
   handle: string;

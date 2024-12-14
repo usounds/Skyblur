@@ -1,17 +1,17 @@
 "use client";
 export const runtime = 'edge';
-import { useState, useEffect } from "react";
-import Link from 'next/link'
-import { AtpAgent, Agent, AppBskyActorDefs } from '@atproto/api'
-import { LoginForm } from "@/components/LoginForm"
-import { CreatePostForm } from "@/components/CreatePost"
-import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser'
-import { PostForDelete,PostData } from "@/types/types"
-import { getClientMetadata } from '@/types/ClientMetadataContext'
-import ja from "@/locales/ja"
-import en from "@/locales/en"
-import { DeleteList } from "@/components/DeleteList";
+import { CreatePostForm } from "@/components/CreatePost";
+import { DeleteList } from "@/components/PostList";
 import LanguageSelect from "@/components/LanguageSelect";
+import { LoginForm } from "@/components/LoginForm";
+import en from "@/locales/en";
+import ja from "@/locales/ja";
+import { getClientMetadata } from '@/types/ClientMetadataContext';
+import { PostListItem } from "@/types/types";
+import { Agent, AppBskyActorDefs, AtpAgent } from '@atproto/api';
+import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
+import Link from 'next/link';
+import { useEffect, useState } from "react";
 let agent: Agent
 
 export default function Home() {
@@ -25,7 +25,7 @@ export default function Home() {
   const [mode, setMode] = useState("login")
   const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const [windowWidth, setWindowWidth] = useState(0);
-  const [prevBlur, setPrevBlur] = useState<PostForDelete>()
+  const [prevBlur, setPrevBlur] = useState<PostListItem>()
 
   const publicAgent = new AtpAgent({
     service: "https://api.bsky.app"
@@ -180,7 +180,7 @@ export default function Home() {
 
   }
 
-  const handleEdit = (input: PostForDelete) => {
+  const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
 
     setMode("create")

@@ -1,4 +1,3 @@
-import React from "react";
 import DOMPurify from 'dompurify';
 
 // HTMLエスケープ用の関数
