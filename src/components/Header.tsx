@@ -18,6 +18,7 @@ const Header = () => {
   const setDid = useAtpAgentStore((state) => state.setDid);
   const setUserProf = useAtpAgentStore((state) => state.setUserProf);
   const setIsLoginProcess = useAtpAgentStore((state) => state.setIsLoginProcess);
+  const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
 
   let ignore = false
@@ -53,7 +54,9 @@ const Header = () => {
           }
         } catch (e) {
           console.error(e)
-          //setBlueskyLoginMessage("OAuth認証に失敗しました")
+          setBlueskyLoginMessage("OAuth認証に失敗しました")
+          setIsLoginProcess(false)
+          return
         }
 
         if (result) {
@@ -62,7 +65,7 @@ const Header = () => {
           if (state != null) {
             //stateがズレている場合はエラー
             if (state !== localState) {
-              //setBlueskyLoginMessage("stateが一致しません")
+              setBlueskyLoginMessage("stateが一致しません")
               setIsLoginProcess(false)
               return
 

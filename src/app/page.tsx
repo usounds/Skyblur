@@ -13,7 +13,6 @@ import { useState } from "react";
 
 export default function Home() {
   const [handle, setHandle] = useState<string>("")
-  const [blueskyLoginMessage, setBlueskyLoginMessage] = useState("")
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
 
   const publicAgent = useAtpAgentStore((state) => state.publicAgent);
@@ -21,6 +20,7 @@ export default function Home() {
   const locale = useLocaleStore((state) => state.localeData);
   const isLoading = useAtpAgentStore((state) => state.isLoginProcess);
   const userProf = useAtpAgentStore((state) => state.userProf);
+  const blueskyLoginMessage = useAtpAgentStore((state) => state.blueskyLoginMessage);
   const mode = useModeStore((state) => state.mode);
   const setMode = useModeStore((state) => state.setMode);
 
