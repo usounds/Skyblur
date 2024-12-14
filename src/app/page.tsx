@@ -49,16 +49,22 @@ export default function Home() {
             </div>
 
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
-                <>{(isLoading) ? <>
-
-                  <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
-                    <span className="sr-only">Loading...</span>
-                  </span>
-                  {locale.Home_inAuthProgress}
-                </> :
-                  <LoginForm />
-
-                }</>
+                <>
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <span
+                        className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full"
+                        role="status"
+                        aria-label="loading"
+                      >
+                        <span className="sr-only">Loading...</span>
+                      </span>
+                      {locale.Home_inAuthProgress}
+                    </div>
+                  ) : (
+                    <LoginForm />
+                  )}
+                </>
               </div>
 
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
