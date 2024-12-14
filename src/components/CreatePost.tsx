@@ -5,7 +5,7 @@ import { TID } from '@atproto/common-web'
 import AutoResizeTextArea from "./AutoResizeTextArea"
 import Link from 'next/link';
 import twitterText from 'twitter-text';
-import { COLLECTION, PostData,PostForDelete } from "@/types/types"
+import { COLLECTION, PostForDelete } from "@/types/types"
 import { franc } from 'franc';
 const iso6393to1 = require('iso-639-3-to-1');
 
@@ -167,7 +167,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 rkey = match[1];
             }
 
-            localPrevPostAturi = prevBlur.blurATUri
+            localPrevPostAturi = prevBlur.blur.uri
         }
 
         const url = '/post/' + did + "/" + rkey
