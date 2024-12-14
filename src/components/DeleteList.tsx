@@ -52,10 +52,8 @@ export const DeleteList: React.FC<DeleteListProps> = ({
             for (let obj of bookMark.data.records) {
                 const value = obj.value as PostData;
                 deleteList.push({
-                    text: value.text,
-                    postATUri:value.uri,
                     blurATUri: obj.uri,
-                    createdAt: formatDateToLocale(value.createdAt),
+                    blur: value,
                     postURL: transformUrl(value.uri),
                     blurURL: transformUrl(obj.uri),
                 });
@@ -113,7 +111,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
         setIsDeleting(true)
         try {
             // 非同期操作を待つ
-            await deleteRecord(selectedItem?.postATUri || '')
+            await deleteRecord(selectedItem?.blur.uri || '')
             await deleteRecord(selectedItem?.blurATUri || '')
         } catch (e) {
             // エラーハンドリング
@@ -194,10 +192,10 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                             className="py-3 px-2 mb-2 mx-2 bg-white rounded-md border border-gray-400 w-full "
                         >
                             <div>
-                                <PostTextWithBold postText={item.text} isValidateBrackets={true}/>
+                                <PostTextWithBold postText={item.blur.text} isValidateBrackets={true}/>
                             </div>
                             <div className="flex justify-between gap-2 mt-2">
-                                <div className="text-sm text-gray-400">{item.createdAt}</div>
+                                <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
                                 <div className="flex gap-2">
                                     <div className="text-sm text-red-500 mx-3" onClick={() => handleSelectItem(item)}>
                                         <img
@@ -257,7 +255,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                                         {locale.DeleteList_CancelButton}
                                     </button>
                                 </div>
-                                <PostTextWithBold postText={selectedItem.text}isValidateBrackets={true}/>
+                                <PostTextWithBold postText={selectedItem.blur.text}isValidateBrackets={true}/>
                             </div>
                         </div>
                     )}

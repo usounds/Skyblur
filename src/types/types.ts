@@ -30,10 +30,8 @@ export const COLLECTION = 'uk.skyblur.post';
 
 
 export type PostForDelete = {
-    text: string; 
-    postATUri: string; 
+    blur: PostData; 
     blurATUri: string; 
-    createdAt: string; 
     postURL?: string; 
     blurURL?: string; 
 }

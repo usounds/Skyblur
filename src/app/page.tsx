@@ -6,7 +6,7 @@ import { AtpAgent, Agent, AppBskyActorDefs } from '@atproto/api'
 import { LoginForm } from "@/components/LoginForm"
 import { CreatePostForm } from "@/components/CreatePost"
 import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser'
-import { PostForDelete } from "@/types/types"
+import { PostForDelete,PostData } from "@/types/types"
 import { getClientMetadata } from '@/types/ClientMetadataContext'
 import ja from "@/locales/ja"
 import en from "@/locales/en"
@@ -25,8 +25,7 @@ export default function Home() {
   const [mode, setMode] = useState("login")
   const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const [windowWidth, setWindowWidth] = useState(0);
-  const [prevPostAturi, setPrevPostAturi] = useState("")
-  const [prevBlurAturi, setPrevBlurAturi] = useState("")
+  const [prevBlur, setPrevBlur] = useState<PostForDelete>()
 
   const publicAgent = new AtpAgent({
     service: "https://api.bsky.app"
@@ -182,9 +181,7 @@ export default function Home() {
   }
 
   const handleEdit = (input: PostForDelete) => {
-    console.log(input)
-    setPrevPostAturi(input.postATUri)
-    setPrevBlurAturi(input.blurATUri)
+    setPrevBlur(input)
 
     setMode("create")
 
@@ -192,8 +189,7 @@ export default function Home() {
 
 
   const handleNew = () => {
-    setPrevPostAturi("")
-    setPrevBlurAturi("")
+    setPrevBlur(undefined)
 
     setMode("create")
 
@@ -298,7 +294,7 @@ export default function Home() {
                     }
                     {mode === 'create' &&
                       <>
-                        <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode} prevPostAturi={prevPostAturi} prevBlurAturi={prevBlurAturi}
+                        <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode} prevBlur={prevBlur}
                           userProf={userProf} />
                         <div className="flex justify-center mt-4">
                           <button onClick={() => {
