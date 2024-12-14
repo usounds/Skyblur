@@ -9,5 +9,6 @@ module.exports = {
         pathname: '/**', // パスも指定可能
       },
     ],
+    domains: ['cdn.bsky.app'],
   },
 };
