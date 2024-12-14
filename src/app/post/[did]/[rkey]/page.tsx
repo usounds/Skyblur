@@ -1,17 +1,14 @@
 "use client"
 export const runtime = 'edge';
 import { Avatar } from "@/components/Avatar";
-import LanguageSelect from "@/components/LanguageSelect";
 import PostTextWithBold from "@/components/PostTextWithBold";
-import en from "@/locales/en";
-import ja from "@/locales/ja";
 import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
+import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { COLLECTION, PostData } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from "react";
-
-import Link from 'next/link';
 
 const PostPage = () => {
     // useParams を使って、URL パラメータを取得
@@ -23,48 +20,8 @@ const PostPage = () => {
     const [postDate, setPostDate] = useState<string>('')
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
-    const [locale, setLocale] = useState(ja)
-    const [selectedLocale, setSelectedLocale] = useState<string>('ja');
 
     const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
-
-    let publicAgent: AtpAgent
-
-    const publicAgent2 = new AtpAgent({
-        service: "https://api.bsky.app"
-    })
-
-
-    const changeLocale = (localeParam: string) => {
-        // ここで実際のロジック（例: 言語の変更など）を実行します
-        console.log(`Locale changed to: ${locale}`);
-        setSelectedLocale(localeParam)
-        window.localStorage.setItem('preference.locale', localeParam)
-        if (localeParam == 'ja') setLocale(ja)
-        if (localeParam == 'en') setLocale(en)
-    };
-
-    const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newLocale = event.target.value;
-        setSelectedLocale(newLocale); // 選択された値をステートに設定
-        changeLocale(newLocale); // changeLocale を呼び出す
-    };
-
-
-    const formatDateToLocale = (dateString: string) => {
-        const date = new Date(dateString);
-        const userLocale = navigator.language; // ブラウザのロケールを取得
-
-        return new Intl.DateTimeFormat(userLocale, {
-            year: "numeric",
-            month: "numeric",
-            day: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-            second: "numeric",
-            hour12: false, // 24時間表示
-        }).format(date);
-    };
 
     let duplicate = false
 
@@ -72,21 +29,8 @@ const PostPage = () => {
         if (did && rkey) {
 
             if (duplicate) return
+            // eslint-disable-next-line react-hooks/exhaustive-deps
             duplicate = true
-            const localLocale = window.localStorage.getItem('preference.locale')
-
-            if (localLocale && typeof localLocale === 'string') {
-                changeLocale(localLocale)
-              } else {
-                const userLanguages = navigator.language;
-                console.log(userLanguages)
-                if (userLanguages.startsWith('ja')) {
-                  changeLocale('ja')
-                } else {
-                  changeLocale('en')
-      
-                }
-              }
 
             const fetchRecord = async () => {
 
@@ -100,16 +44,19 @@ const PostPage = () => {
 
                     const pdsUrl = await fetchServiceEndpoint(repo)
 
-                    publicAgent = new AtpAgent({
+                    const pdsAgent = new AtpAgent({
                         service: pdsUrl || ''
                     })
 
+                    const apiAgent = new AtpAgent({
+                        service: "https://api.bsky.app"
+                    })
 
                     try {
                         // getProfileとgetRecordを並行して呼び出す
                         const [userProfileResponse, postResponse] = await Promise.all([
-                            publicAgent2.getProfile({ actor: repo }),
-                            publicAgent.com.atproto.repo.getRecord({
+                            apiAgent.getProfile({ actor: repo }),
+                            pdsAgent.com.atproto.repo.getRecord({
                                 repo: repo,
                                 collection: COLLECTION,
                                 rkey: rkeyParam,
@@ -123,7 +70,7 @@ const PostPage = () => {
                         const postData: PostData = postResponse.data.value as PostData;
 
 
-                        let tempPostText = postData.text
+                        const tempPostText = postData.text
 
                         //if(validateBrackets(postData.text)) tempPostText = tempPostText.replace(/[\[\]]/g, '')
 
@@ -149,29 +96,13 @@ const PostPage = () => {
 
             fetchRecord();
         }
+         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
     return (
         <>
             <link rel="alternate" href={aturi} />
-
-            <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
-                <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
-                    <Link href={"/"} className="text-xl font-semibold text-white">
-                        Skyblur
-                    </Link>
-                    <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
-                        <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
-                            {locale.Menu_TermOfUse}
-                        </Link>
-                        <LanguageSelect
-                            selectedLocale={selectedLocale}
-                            onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}
-                        />
-                    </div>
-                </nav>
-            </div>
 
             <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
                 <div className="mx-auto rounded-lg">
@@ -203,7 +134,7 @@ const PostPage = () => {
                                         <div className="text-sm text-gray-400">{postDate}</div>
                                         <div className="flex gap-2">
                                             <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
-                                                <img
+                                                <Image
                                                     src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
                                                     alt="Trash Icon"
                                                     width={20} // 必要に応じて幅を指定
