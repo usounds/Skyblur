@@ -17,6 +17,8 @@ export const Avatar: React.FC<AvatarProp> = ({
             {userProf.avatar ? (
                 <Image
                     className="object-cover w-10 h-10 rounded-full"
+                    width={48}
+                    height={48}
                     src={userProf.avatar}
                     alt={userProf.displayName || "No Avatar"}
                 />
