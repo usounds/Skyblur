@@ -1,17 +1,17 @@
 "use client"
 export const runtime = 'edge';
-import { useParams } from 'next/navigation';
-import { useState, useEffect } from "react";
-import { AtpAgent, AppBskyActorDefs } from '@atproto/api'
-import { DIDResponse, Service, PostData, COLLECTION } from '@/types/types'
-import PostTextWithBold from "@/components/PostTextWithBold"
-import { Avatar } from "@/components/Avatar"
-import LanguageSelect from "@/components/LanguageSelect"
-import {fetchServiceEndpoint} from "@/logic/HandleGetBlurRecord"
-import ja from "@/locales/ja"
-import en from "@/locales/en"
-
+import { Avatar } from "@/components/Avatar";
+import Header from "@/components/Header";
+import PostTextWithBold from "@/components/PostTextWithBold";
+import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
+import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { useLocaleStore } from "@/state/Locale";
+import { COLLECTION, PostData } from '@/types/types';
+import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from "react";
 
 const PostPage = () => {
     // useParams を使って、URL パラメータを取得
@@ -23,48 +23,11 @@ const PostPage = () => {
     const [postDate, setPostDate] = useState<string>('')
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
-    const [locale, setLocale] = useState(ja)
-    const [selectedLocale, setSelectedLocale] = useState<string>('ja');
+    const locale = useLocaleStore((state) => state.localeData);
+    const searchParams = useSearchParams();
+    const q = searchParams.get('q'); // 'q' parameter obtained here
 
     const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
-
-    let publicAgent: AtpAgent
-
-    const publicAgent2 = new AtpAgent({
-        service: "https://api.bsky.app"
-    })
-
-
-    const changeLocale = (localeParam: string) => {
-        // ここで実際のロジック（例: 言語の変更など）を実行します
-        console.log(`Locale changed to: ${locale}`);
-        setSelectedLocale(localeParam)
-        window.localStorage.setItem('preference.locale', localeParam)
-        if (localeParam == 'ja') setLocale(ja)
-        if (localeParam == 'en') setLocale(en)
-    };
-
-    const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newLocale = event.target.value;
-        setSelectedLocale(newLocale); // 選択された値をステートに設定
-        changeLocale(newLocale); // changeLocale を呼び出す
-    };
-
-
-    const formatDateToLocale = (dateString: string) => {
-        const date = new Date(dateString);
-        const userLocale = navigator.language; // ブラウザのロケールを取得
-
-        return new Intl.DateTimeFormat(userLocale, {
-            year: "numeric",
-            month: "numeric",
-            day: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-            second: "numeric",
-            hour12: false, // 24時間表示
-        }).format(date);
-    };
 
     let duplicate = false
 
@@ -72,24 +35,10 @@ const PostPage = () => {
         if (did && rkey) {
 
             if (duplicate) return
+            // eslint-disable-next-line react-hooks/exhaustive-deps
             duplicate = true
-            const localLocale = window.localStorage.getItem('preference.locale')
-
-            if (localLocale && typeof localLocale === 'string') {
-                changeLocale(localLocale)
-              } else {
-                const userLanguages = navigator.language;
-                console.log(userLanguages)
-                if (userLanguages.startsWith('ja')) {
-                  changeLocale('ja')
-                } else {
-                  changeLocale('en')
-      
-                }
-              }
 
             const fetchRecord = async () => {
-
 
                 try {
                     let repo = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
@@ -100,16 +49,19 @@ const PostPage = () => {
 
                     const pdsUrl = await fetchServiceEndpoint(repo)
 
-                    publicAgent = new AtpAgent({
+                    const pdsAgent = new AtpAgent({
                         service: pdsUrl || ''
                     })
 
+                    const apiAgent = new AtpAgent({
+                        service: "https://api.bsky.app"
+                    })
 
                     try {
                         // getProfileとgetRecordを並行して呼び出す
                         const [userProfileResponse, postResponse] = await Promise.all([
-                            publicAgent2.getProfile({ actor: repo }),
-                            publicAgent.com.atproto.repo.getRecord({
+                            apiAgent.getProfile({ actor: repo }),
+                            pdsAgent.com.atproto.repo.getRecord({
                                 repo: repo,
                                 collection: COLLECTION,
                                 rkey: rkeyParam,
@@ -123,7 +75,7 @@ const PostPage = () => {
                         const postData: PostData = postResponse.data.value as PostData;
 
 
-                        let tempPostText = postData.text
+                        const tempPostText = postData.text
 
                         //if(validateBrackets(postData.text)) tempPostText = tempPostText.replace(/[\[\]]/g, '')
 
@@ -134,14 +86,13 @@ const PostPage = () => {
                         const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
                         setBskyUrl(convertedUri)
                         setIsLoading(false); // ローディング状態を終了
-                    } catch (e) {
+                    } catch (err) {
                         // エラーハンドリング
-                        setErrorMessage('エラーが発生しました / Error Ocurred :' + e);
+                        setErrorMessage(err + '');
                         setIsLoading(false); // ローディング状態を終了
                     }
                 } catch (err) {
-                    console.error(err);
-                    setErrorMessage('エラーが発生しました / Error Ocurred :' + err)
+                    setErrorMessage(err + '');
                 } finally {
                     setIsLoading(false);
                 }
@@ -149,29 +100,14 @@ const PostPage = () => {
 
             fetchRecord();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
     return (
         <>
+            <Header />
             <link rel="alternate" href={aturi} />
-
-            <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
-                <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
-                    <Link href={"/"} className="text-xl font-semibold text-white">
-                        Skyblur
-                    </Link>
-                    <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
-                        <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
-                            {locale.Menu_TermOfUse}
-                        </Link>
-                        <LanguageSelect
-                            selectedLocale={selectedLocale}
-                            onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}
-                        />
-                    </div>
-                </nav>
-            </div>
 
             <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
                 <div className="mx-auto rounded-lg">
@@ -180,50 +116,63 @@ const PostPage = () => {
                     }
 
                     {isLoading ?
-                        <>
+                        <div className="flex items-center">
                             <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
                                 <span className="sr-only">Loading...</span>
                             </span>
-                            読み込み中です... / Now Loading...
-                        </>
+                            {locale.Post_IsLoading}
+                        </div>
                         :
                         <>
                             {!errorMessage &&
-                                <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
-                                    <div className="overflow-hidden break-words">
-                                        <PostTextWithBold postText={postText} isValidateBrackets={true} />
-                                    </div>
-                                    {addText &&
-                                        <div className="mt-2">
-                                            <PostTextWithBold postText={addText} isValidateBrackets={false} />
+                                <>
+                                    <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
+                                        <div className="overflow-hidden break-words">
+                                            <PostTextWithBold postText={postText} isValidateBrackets={true} />
                                         </div>
+                                        {addText &&
+                                            <div className="mt-2">
+                                                <PostTextWithBold postText={addText} isValidateBrackets={false} />
+                                            </div>
+                                        }
+
+                                        <div className="flex justify-between items-center mt-2">
+                                            <div className="text-sm text-gray-400">{postDate}</div>
+                                            <div className="flex gap-2">
+                                                <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
+                                                    <Image
+                                                        src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                                        alt="Trash Icon"
+                                                        width={20} // 必要に応じて幅を指定
+                                                        height={20} // 必要に応じて高さを指定
+                                                    />
+                                                </a>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+
+                                    {q == 'preview' &&
+                                        <>
+                                            <div className="flex justify-center mt-10">
+                                                <Link href="/" className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-md bg-gray-600 px-6 font-medium text-neutral-200"><span>{locale.Menu_Back}</span><div className="ml-1 transition group-hover:translate-x-1"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5"><path d="M8.14645 3.14645C8.34171 2.95118 8.65829 2.95118 8.85355 3.14645L12.8536 7.14645C13.0488 7.34171 13.0488 7.65829 12.8536 7.85355L8.85355 11.8536C8.65829 12.0488 8.34171 12.0488 8.14645 11.8536C7.95118 11.6583 7.95118 11.3417 8.14645 11.1464L11.2929 8H2.5C2.22386 8 2 7.77614 2 7.5C2 7.22386 2.22386 7 2.5 7H11.2929L8.14645 3.85355C7.95118 3.65829 7.95118 3.34171 8.14645 3.14645Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg></div></Link>
+                                            </div>
+                                        </>
                                     }
 
-                                    <div className="flex justify-between items-center mt-2">
-                                        <div className="text-sm text-gray-400">{postDate}</div>
-                                        <div className="flex gap-2">
-                                            <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
-                                                <img
-                                                    src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                                                    alt="Trash Icon"
-                                                    width={20} // 必要に応じて幅を指定
-                                                    height={20} // 必要に応じて高さを指定
-                                                />
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                </div>
+                                </>
                             }
                         </>
                     }
+
                     {errorMessage &&
                         <div className="whitespace-pre-wrap break-words text-red-800">
                             {errorMessage}
                         </div>
                     }
                 </div>
-            </div>
+            </div >
         </>
     );
 };

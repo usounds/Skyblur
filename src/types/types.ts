@@ -29,11 +29,9 @@ export type  PostData = {
 export const COLLECTION = 'uk.skyblur.post';
 
 
-export type PostForDelete = {
-    text: string; 
-    postATUri: string; 
+export type PostListItem = {
+    blur: PostData; 
     blurATUri: string; 
-    createdAt: string; 
     postURL?: string; 
     blurURL?: string; 
 }

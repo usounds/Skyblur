@@ -1,6 +1,6 @@
 export const runtime = 'edge';
+import { clientMetadataByEnv } from '@/types/ClientMetadataContext'
 
-import { clientMetadataByEnv } from '../../../types/ClientMetadataContext'
 export async function GET(request: Request) {
   const origin = request.headers.get('host') || ''
   let envLocal
