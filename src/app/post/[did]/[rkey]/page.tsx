@@ -1,6 +1,7 @@
 "use client"
 export const runtime = 'edge';
 import { Avatar } from "@/components/Avatar";
+import Header from "@/components/Header";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
@@ -96,12 +97,13 @@ const PostPage = () => {
 
             fetchRecord();
         }
-         // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
     return (
         <>
+            <Header />
             <link rel="alternate" href={aturi} />
 
             <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">

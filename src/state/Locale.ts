@@ -17,9 +17,13 @@ type Action = {
 
 // ユーザーの言語を取得する関数
 const getUserLocale = () => {
-  const userLanguages = navigator.language;
-  console.log(userLanguages);  // デバッグ用のログ
-  return userLanguages.startsWith('ja') ? 'ja' : 'en';
+  if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+    const userLanguages = navigator.language;
+    console.log(userLanguages);  // デバッグ用のログ
+    return userLanguages.startsWith('ja') ? 'ja' : 'en';
+  }
+  // サーバーサイドの場合のデフォルトの操作
+  return 'en';
 };
 
 // Zustandストアの作成
