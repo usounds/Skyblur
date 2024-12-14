@@ -1,7 +1,7 @@
 const messages = {
     Home_inAuthProgress: "Authorization is in progress",
     Home_Welcome: "Welcome to Skyblur. You can make posts with blurred words on Bluesky.",
-    Home_Landing001Title: "Post from Skyblur",
+    Home_Landing001Title: "Content warning and Spoilers protection tool for Bluesky",
     Home_Landing001Descrtption: "If you want to post with blur, please post from Skyblur. Enclose the parts you want to blur with [secret]. When posted from Skyblur, it will automatically be posted to Bluesky.",
     Home_Landing002Title: "Bluesky shows the blurred text",
     Home_Landing002Descrtption: "The parts enclosed with [secret] will be blurred. Tap the embed to read the unblurred text on Skyblur.",
