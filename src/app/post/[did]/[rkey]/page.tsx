@@ -1,15 +1,15 @@
 "use client"
 export const runtime = 'edge';
+import { Avatar } from "@/components/Avatar";
+import LanguageSelect from "@/components/LanguageSelect";
+import PostTextWithBold from "@/components/PostTextWithBold";
+import en from "@/locales/en";
+import ja from "@/locales/ja";
+import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
+import { COLLECTION, PostData } from '@/types/types';
+import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import { useParams } from 'next/navigation';
-import { useState, useEffect } from "react";
-import { AtpAgent, AppBskyActorDefs } from '@atproto/api'
-import { DIDResponse, Service, PostData, COLLECTION } from '@/types/types'
-import PostTextWithBold from "@/components/PostTextWithBold"
-import { Avatar } from "@/components/Avatar"
-import LanguageSelect from "@/components/LanguageSelect"
-import {fetchServiceEndpoint} from "@/logic/HandleGetBlurRecord"
-import ja from "@/locales/ja"
-import en from "@/locales/en"
+import { useEffect, useState } from "react";
 
 import Link from 'next/link';
 
