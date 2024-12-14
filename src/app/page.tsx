@@ -3,7 +3,7 @@ export const runtime = 'edge';
 import { CreatePostForm } from "@/components/CreatePost";
 import Header from "@/components/Header";
 import { LoginForm } from "@/components/LoginForm";
-import { DeleteList } from "@/components/PostList";
+import { PostList } from "@/components/PostList";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
@@ -94,7 +94,7 @@ export default function Home() {
 
                           </div>
 
-                          <DeleteList handleEdit={handleEdit} />
+                          <PostList handleEdit={handleEdit} />
 
                         </div>
                       </>

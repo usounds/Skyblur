@@ -1,7 +1,6 @@
 "use client"
 export const runtime = 'edge';
 import { Avatar } from "@/components/Avatar";
-import { useParams, useSearchParams } from 'next/navigation';
 import Header from "@/components/Header";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
@@ -11,6 +10,7 @@ import { COLLECTION, PostData } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 
 const PostPage = () => {

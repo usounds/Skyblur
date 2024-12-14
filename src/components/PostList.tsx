@@ -4,14 +4,14 @@ import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { COLLECTION, PostData, PostListItem } from "@/types/types";
 import Image from 'next/image';
-import { useEffect, useState } from "react";
 import Link from 'next/link';
+import { useEffect, useState } from "react";
 
-type DeleteListProps = {
+type PostListProps = {
     handleEdit: (input: PostListItem) => void;
 };
 
-export const DeleteList: React.FC<DeleteListProps> = ({
+export const PostList: React.FC<PostListProps> = ({
     handleEdit
 }) => {
     const [cursor, setCursor] = useState("");
