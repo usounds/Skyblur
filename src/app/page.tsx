@@ -6,146 +6,29 @@ import { LoginForm } from "@/components/LoginForm";
 import { DeleteList } from "@/components/PostList";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { getClientMetadata } from '@/types/ClientMetadataContext';
+import { useModeStore } from "@/state/Mode";
 import { PostListItem } from "@/types/types";
-import { Agent, AppBskyActorDefs } from '@atproto/api';
-import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
 import Image from 'next/image';
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function Home() {
   const [handle, setHandle] = useState<string>("")
-  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [blueskyLoginMessage, setBlueskyLoginMessage] = useState("")
-  const [mode, setMode] = useState("login")
-  const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
 
-  const setAgent = useAtpAgentStore((state) => state.setAgent);
   const publicAgent = useAtpAgentStore((state) => state.publicAgent);
   const did = useAtpAgentStore((state) => state.did);
-  const setDid = useAtpAgentStore((state) => state.setDid);
   const locale = useLocaleStore((state) => state.localeData);
-
-  let ignore = false
-
-  useEffect(() => {
-
-
-    (
-      async function () {
-        if (ignore) {
-          console.log("useEffect duplicate call")
-          return
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        ignore = true
-
-        let result
-
-        const localState = window.localStorage.getItem('oauth.code_verifier')
-        const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl')
-        const localHandle = window.localStorage.getItem('oauth.handle')
-
-        if (localHandle) setHandle(localHandle)
-
-        try {
-          if (localState && localPdsUrl) {
-            const browserClient = new BrowserOAuthClient({
-              clientMetadata: getClientMetadata(),
-              handleResolver: localPdsUrl,
-            })
-
-            result = await browserClient.init() as undefined | { session: OAuthSession; state?: string | undefined };
-
-            //setBrowserClient(browserClient)
-
-          }
-        } catch (e) {
-          console.error(e)
-          setBlueskyLoginMessage("OAuth認証に失敗しました")
-        }
-
-        if (result) {
-          const { session, state } = result
-          //OAuth認証から戻ってきた場合
-          if (state != null) {
-            //stateがズレている場合はエラー
-            if (state !== localState) {
-              setBlueskyLoginMessage("stateが一致しません")
-              setIsLoading(false)
-              return
-
-            }
-
-            const agent = new Agent(session)
-            setAgent(agent)
-
-            console.log(`${agent.assertDid} was successfully authenticated (state: ${state})`)
-            const userProfile = await agent.getProfile({ actor: agent.assertDid })
-            setUserProf(userProfile.data)
-            setIsLoading(false)
-            setDid(agent.assertDid)
-            setMode('menu')
-            return
-
-            //セッションのレストア
-          } else {
-            console.log(`${session.sub} was restored (last active session)`)
-            const agent = new Agent(session)
-            setAgent(agent)
-            const userProfile = await agent.getProfile({ actor: agent.assertDid })
-            setUserProf(userProfile.data)
-            setIsLoading(false)
-            setDid(agent.assertDid)
-            setMode('menu')
-            return
-
-          }
-
-        } else {
-          console.log(`OAuth未認証です`)
-        }
-
-        setIsLoading(false)
-      })();
-
-    //setIsLoading(false)
-
-    // クリーンアップ
-    return () => {
-    };
-
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-
-  /*
-    const logout = async (): Promise<void> => {
-      try {
-        browserClient?.revoke(did)
-  
-        window.localStorage.removeItem('oauth.code_verifier')
-        window.localStorage.removeItem('oauth.pdsUrl')
-        window.localStorage.removeItem('oauth.handle')
-        setHandle('')
-  
-  
-      } catch (e) {
-        console.error(e)
-      }
-      setIsLoginToBsky(false)
-  
-    }
-      */
+  const isLoading = useAtpAgentStore((state) => state.isLoginProcess);
+  const userProf = useAtpAgentStore((state) => state.userProf);
+  const mode = useModeStore((state) => state.mode);
+  const setMode = useModeStore((state) => state.setMode);
 
   const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
     setMode("create")
 
   };
-
 
   const handleNew = () => {
     setPrevBlur(undefined)
@@ -162,7 +45,8 @@ export default function Home() {
       <main className="text-gray-800 ">
 
         <div className="mx-auto max-w-screen-md ">
-          {!did &&
+
+          {did==="" &&
             <><div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
               {locale.Home_Welcome}
             </div>
@@ -193,8 +77,8 @@ export default function Home() {
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
 
 
-              {blueskyLoginMessage && <p>{blueskyLoginMessage}</p>
-                    }
+                {blueskyLoginMessage && <p>{blueskyLoginMessage}</p>
+                }
               </div>
             </>
           }
