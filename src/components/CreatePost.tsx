@@ -35,7 +35,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
-    const [prevCreatedDate, setPrevCreatedDate] = useState("");
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -333,7 +332,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 uri: localPrevPostAturi,
                 text: postTextForRecord,
                 additional: addText,
-                createdAt: prevCreatedDate || new Date().toISOString(),
+                createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
             },
         }
 
@@ -343,7 +342,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
-            setPrevCreatedDate('')
             setMode('menu')
         } else {
             console.error(ret)
@@ -351,30 +349,16 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         }
         setIsLoading(false)
     }
-
-    function extractSpecificPart(input: string): string | null {
-        const regex = /\/([^/]+)$/;
-        const match = input.match(regex);
-        if (match) {
-            return match[1];
-        }
-        return null;
-    }
-
     let useEffectDuplidate = false
 
     useEffect(() => {
         if (useEffectDuplidate) return;
         useEffectDuplidate = true;
 
-        const fetchData = async () => {
-            if (prevBlur) {
-                setPostText(prevBlur.blur.text)
-                setAddText(prevBlur.blur.additional)
-            }
-        };
-
-        fetchData();
+        if (prevBlur) {
+            setPostText(prevBlur.blur.text)
+            setAddText(prevBlur.blur.additional)
+        }
 
     }, [did, prevBlur]); // Make sure to use the correct second dependency
 
