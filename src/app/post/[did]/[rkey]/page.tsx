@@ -86,14 +86,13 @@ const PostPage = () => {
                         const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
                         setBskyUrl(convertedUri)
                         setIsLoading(false); // ローディング状態を終了
-                    } catch (e) {
+                    } catch (err) {
                         // エラーハンドリング
-                        setErrorMessage('エラーが発生しました / Error Ocurred :' + e);
+                        setErrorMessage(err + '');
                         setIsLoading(false); // ローディング状態を終了
                     }
                 } catch (err) {
-                    console.error(err);
-                    setErrorMessage('エラーが発生しました / Error Ocurred :' + err)
+                    setErrorMessage(err + '');
                 } finally {
                     setIsLoading(false);
                 }
@@ -117,12 +116,12 @@ const PostPage = () => {
                     }
 
                     {isLoading ?
-                        <>
+                        <div className="flex items-center">
                             <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
                                 <span className="sr-only">Loading...</span>
                             </span>
-                            読み込み中です... / Now Loading...
-                        </>
+                            {locale.Post_IsLoading}
+                        </div>
                         :
                         <>
                             {!errorMessage &&
