@@ -5,7 +5,7 @@ import { TID } from '@atproto/common-web'
 import AutoResizeTextArea from "./AutoResizeTextArea"
 import Link from 'next/link';
 import twitterText from 'twitter-text';
-import { COLLECTION, PostData } from "@/types/types"
+import { COLLECTION, PostData,PostForDelete } from "@/types/types"
 import { franc } from 'franc';
 const iso6393to1 = require('iso-639-3-to-1');
 
@@ -15,8 +15,7 @@ type CreatePostProps = {
     did: string,
     userProf: AppBskyActorDefs.ProfileViewDetailed
     setMode: (value: string) => void;
-    prevPostAturi: string
-    prevBlurAturi: string
+    prevBlur?: PostForDelete
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
@@ -25,8 +24,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     did,
     userProf,
     setMode,
-    prevPostAturi,
-    prevBlurAturi
+    prevBlur
 }) => {
     const [postText, setPostTest] = useState("");
     const [postTextForRecord, setPostTextForRecord] = useState("");
@@ -37,7 +35,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
-    const [isGetPrevData, setIsGetPrevData] = useState<boolean>(false)
     const [prevCreatedDate, setPrevCreatedDate] = useState("");
 
     function detectLanguage(text: string): string {
@@ -159,21 +156,24 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setIsLoading(true)
         setAppUrl('')
 
-        let localPrevPostAturi = prevPostAturi
+        let localPrevPostAturi
+        
 
         let rkey = TID.nextStr()
-        if (prevBlurAturi) {
+        if (prevBlur && prevBlur.blurATUri) {
             const regex = /\/([^/]+)$/;
-            const match = prevBlurAturi.match(regex);
+            const match = prevBlur.blurATUri.match(regex);
             if (match) {
                 rkey = match[1];
             }
+
+            localPrevPostAturi = prevBlur.blurATUri
         }
+
         const url = '/post/' + did + "/" + rkey
         const tempUrl = origin + url
         const blurUri = `at://${did}/${COLLECTION}/${rkey}`
-        if (prevPostAturi === "") {
-
+        if (!prevBlur) {
             //URLの判定
             // titleからURLを抽出
             const pattern =
@@ -339,7 +339,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
         const ret = await agent.com.atproto.repo.putRecord(postObject)
         if (ret.success) {
-            const convertedUri = localPrevPostAturi.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
+            const convertedUri = "completed";
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
@@ -368,50 +368,21 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         useEffectDuplidate = true;
 
         const fetchData = async () => {
-            console.log(prevBlurAturi)
-            if (prevBlurAturi) {
-                setIsGetPrevData(true)
-                setIsLoading(true)
-                try {
-                    const postResponse = await agent.com.atproto.repo.getRecord({
-                        repo: did,
-                        collection: COLLECTION,
-                        rkey: extractSpecificPart(prevBlurAturi) || '',
-                    });
-
-                    const postData: PostData = postResponse.data.value as PostData;
-
-                    setPostText(postData.text)
-                    setAddText(postData.additional)
-                    setPrevCreatedDate(postData.createdAt)
-
-                    // Handle postData as needed
-                } catch (error) {
-                    console.error('Error fetching data:', error);
-                    // Handle error if necessary
-                }
-                setIsGetPrevData(false)
-                setIsLoading(false)
+            if (prevBlur) {
+                setPostText(prevBlur.blur.text)
+                setAddText(prevBlur.blur.additional)
             }
         };
 
         fetchData();
 
-    }, [did, prevBlurAturi]); // Make sure to use the correct second dependency
+    }, [did, prevBlur]); // Make sure to use the correct second dependency
 
     return (
         <>
             <div className="m-3">
-                {isGetPrevData &&
-                    <>
-                        <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
-                            <span className="sr-only">Loading...</span>
-                        </span>
-                        {locale.CreatePost_isPrevBlurLoading}
-                    </>
-                }
 
-                {(!appUrl && !isGetPrevData) &&
+                {(!appUrl) &&
                     <>
 
                         <label className="">{locale.CreatePost_Post}</label>
@@ -480,7 +451,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <div className="flex justify-center gap-4 mb-8">
                             {warning ? <div className="text-red-500">{warning}</div> :
                                 <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
-                                    {prevPostAturi ?
+                                    {prevBlur ?
                                         <>{locale.CreatePost_UpdateButton}</>
                                         :
                                         <>{locale.CreatePost_CreateButton}</>
