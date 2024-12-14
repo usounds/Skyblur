@@ -1,27 +1,24 @@
 "use client"
+import AutoResizeTextArea from "@/components/AutoResizeTextArea";
+import { useAtpAgentStore } from "@/state/AtpAgent";
+import { useLocaleStore } from "@/state/Locale";
 import { COLLECTION, PostListItem } from "@/types/types";
-import { Agent, AppBskyActorDefs, AppBskyFeedPost, RichText } from '@atproto/api';
+import { AppBskyActorDefs, AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
 import { franc } from 'franc';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
-import AutoResizeTextArea from "@/components/AutoResizeTextArea";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
 
 type CreatePostProps = {
-    agent: Agent;
-    locale: any,
-    did: string,
     userProf: AppBskyActorDefs.ProfileViewDetailed
     setMode: (value: string) => void;
     prevBlur?: PostListItem
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
-    agent,
-    locale,
-    did,
     userProf,
     setMode,
     prevBlur
@@ -35,6 +32,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
+    const [useEffectDuplidate, setUseEffectDuplidate] = useState<boolean>(false)
+    const agent = useAtpAgentStore((state) => state.agent);
+    const locale = useLocaleStore((state) => state.localeData);
+    const did = useAtpAgentStore((state) => state.did);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -97,7 +98,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
         // 正規表現で [] に囲まれた部分を ○ に置換
-        let blurredText = postTextLocal.replace(/\[(.*?)\]/gs, (_, match) => {
+        const blurredText = postTextLocal.replace(/\[(.*?)\]/gs, (_, match) => {
             // マッチした文字列内の改行を維持しつつ ommitChar で置換
             return match.replace(/./g, locale.CreatePost_OmmitChar);
         });
@@ -151,12 +152,16 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     const handleCrearePost = async () => {
+        if(!agent){
+            console.error("未ログインです")
+            return
+        }
         if (!postText) return
         setIsLoading(true)
         setAppUrl('')
 
         let localPrevPostAturi
-        
+
 
         let rkey = TID.nextStr()
         if (prevBlur && prevBlur.blurATUri) {
@@ -180,8 +185,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             const urls = postTextBlur.match(pattern);
 
             // URLと出現位置を保持する配列を定義
-            let urlArray: { [urlKey: string]: number };
-            urlArray = {};
+            const urlArray: { [urlKey: string]: number } = {};
 
             //URLが取得できたら、URLが出現するまでのバイト数をカウントする
             let pos = 0;
@@ -198,7 +202,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
             //投稿
-            let postTextBlurLocal: string = postTextBlur;
+            const postTextBlurLocal: string = postTextBlur;
             const rt = new RichText({ text: postTextBlurLocal });
             await rt.detectFacets(agent);
 
@@ -285,7 +289,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 );
             }
 
-            const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.displayName);
+            const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.displayName||'');
 
             // OGP設定
             postObj.embed = {
@@ -349,17 +353,16 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         }
         setIsLoading(false)
     }
-    let useEffectDuplidate = false
 
     useEffect(() => {
         if (useEffectDuplidate) return;
-        useEffectDuplidate = true;
+        setUseEffectDuplidate(true)
 
         if (prevBlur) {
             setPostText(prevBlur.blur.text)
             setAddText(prevBlur.blur.additional)
         }
-
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, prevBlur]); // Make sure to use the correct second dependency
 
     return (

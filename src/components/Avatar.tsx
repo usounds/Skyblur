@@ -1,5 +1,6 @@
 
-import { AppBskyActorDefs } from '@atproto/api'
+import { AppBskyActorDefs } from '@atproto/api';
+import Image from 'next/image';
 
 type AvatarProp = {
     userProf: AppBskyActorDefs.ProfileViewDetailed
@@ -14,10 +15,10 @@ export const Avatar: React.FC<AvatarProp> = ({
 
         <a className="flex items-center gap-x-2 mb-3" href={"https://bsky.app/profile/"+userProf.handle} target="_blank">
             {userProf.avatar ? (
-                <img
+                <Image
                     className="object-cover w-10 h-10 rounded-full"
                     src={userProf.avatar}
-                    alt={userProf.displayName}
+                    alt={userProf.displayName||"No Avatar"}
                 />
             ) : (
                 <svg

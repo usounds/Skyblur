@@ -21,7 +21,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   browserClient
 }) => {
 
-
   const [blueskyLoginMessage, setBlueskyLoginMessage] = useState("");
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const metadata = getClientMetadata();
@@ -54,6 +53,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         setBlueskyLoginMessage(locale.Login_DidResolve)
         obj = await publicAgent.getProfile({ actor: handle })
       } catch (e) {
+        console.error(e)
         setBlueskyLoginMessage(locale.Login_InvalidHandle)
         setIsLoading(false)
         return

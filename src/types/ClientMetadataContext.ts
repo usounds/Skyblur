@@ -14,9 +14,7 @@ export const getClientMetadata: () => OAuthClientMetadataInput | undefined = () 
         env = 'local';
     }
 
-    let ret = clientMetadataByEnv[env];
-
-    return ret;
+    return clientMetadataByEnv[env];
 };
 
 

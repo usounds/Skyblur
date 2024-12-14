@@ -1,4 +1,4 @@
-export default {
+const messages = {
     Home_inAuthProgress: "Authorization is in progress",
     Home_Welcome: "Welcome to Skyblur. You can make posts with blurred words on Bluesky.",
     Home_Landing001Title: "Post from Skyblur",
@@ -57,3 +57,6 @@ export default {
     DeleteList_ReadMore: "Read More",
     DeleteList_ToHead: "Reload",
 }
+
+
+export default messages;
