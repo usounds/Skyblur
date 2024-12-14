@@ -79,7 +79,7 @@ export default function Home() {
                   <>
                     {mode === 'menu' &&
                       <>
-                        <div className="mt-4 mx-auto max-w-screen-sm flex flex-col  ">
+                        <div className="mx-auto max-w-screen-sm flex flex-col  ">
                           <div className="flex justify-center my-4">
                             {locale.Menu_LoginMessage.replace("{1}", userProf.displayName || 'No Name')}
                           </div>

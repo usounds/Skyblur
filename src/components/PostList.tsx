@@ -208,7 +208,7 @@ export const DeleteList: React.FC<DeleteListProps> = ({
                                             height={20} // 必要に応じて高さを指定
                                         />
                                     </div>
-                                    <Link className="text-sm text-gray-500 mx-3" href={item.blurURL||''} >
+                                    <Link className="text-sm text-gray-500 mx-3" href={`${item.blurURL || ''}?q=preview`}>
                                         <Image
                                             src="https://backet.skyblur.uk/right-arrow.svg" // public フォルダ内のファイルは / からの相対パスで指定
                                             alt="Export Icon"
