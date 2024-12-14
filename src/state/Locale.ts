@@ -3,18 +3,15 @@ import ja from "@/locales/ja";
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// ステートの型定義
 type State = {
   locale: string;
   localeData: typeof en | typeof ja;
 };
 
-// アクションの型定義
 type Action = {
   setLocale: (locale: string) => void;
 };
 
-// ユーザーの言語を取得する関数
 const getUserLocale = () => {
   if (typeof window !== "undefined" && typeof navigator !== "undefined") {
     const userLanguages = navigator.language;
@@ -25,7 +22,6 @@ const getUserLocale = () => {
   return 'en';
 };
 
-// Zustandストアの作成
 export const useLocaleStore = create<State & Action>()(
   persist(
     (set) => {

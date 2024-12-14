@@ -159,12 +159,9 @@ export const PostList: React.FC<PostListProps> = ({
         if (useEffectDuplidate) return
         // eslint-disable-next-line react-hooks/exhaustive-deps
         useEffectDuplidate = true
-        // fetchBookmarks を呼び出す
         console.log('useEffect')
 
         getPosts(did, cursor);
-
-        // 実行後、duplicate を再度 false に設定
         setDuplicate(false);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
