@@ -4,21 +4,21 @@ import Image from 'next/image';
 
 type AvatarProp = {
     userProf: AppBskyActorDefs.ProfileViewDetailed
-    time? : string
+    time?: string
 };
 
 export const Avatar: React.FC<AvatarProp> = ({
     userProf,
-    
+
 }) => {
     return (
 
-        <a className="flex items-center gap-x-2 mb-3" href={"https://bsky.app/profile/"+userProf.handle} target="_blank">
+        <a className="flex items-center gap-x-2 mb-3" href={"https://bsky.app/profile/" + userProf.handle} target="_blank">
             {userProf.avatar ? (
                 <Image
                     className="object-cover w-10 h-10 rounded-full"
                     src={userProf.avatar}
-                    alt={userProf.displayName||"No Avatar"}
+                    alt={userProf.displayName || "No Avatar"}
                 />
             ) : (
                 <svg
