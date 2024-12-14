@@ -1,6 +1,7 @@
 "use client";
 export const runtime = 'edge';
 import { CreatePostForm } from "@/components/CreatePost";
+import Header from "@/components/Header";
 import { LoginForm } from "@/components/LoginForm";
 import { DeleteList } from "@/components/PostList";
 import { useAtpAgentStore } from "@/state/AtpAgent";
@@ -155,6 +156,8 @@ export default function Home() {
   return (
 
     <div className="">
+
+      <Header />
 
       <main className="text-gray-800 ">
 

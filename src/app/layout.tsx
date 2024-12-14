@@ -1,4 +1,3 @@
-import Header from "@/components/Header";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -31,7 +30,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white `}
       >
 
-      <Header />
 
         {children}
         <footer className="flex gap-6 flex-wrap items-center justify-center text-gray-600 bg-white py-4 mt-10">
