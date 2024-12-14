@@ -1,4 +1,3 @@
-"use client";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { create } from 'zustand';
