@@ -5,9 +5,12 @@ import Header from "@/components/Header";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { useLocaleStore } from "@/state/Locale";
+import { useModeStore } from "@/state/Mode";
 import { COLLECTION, PostData } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 
@@ -21,6 +24,8 @@ const PostPage = () => {
     const [postDate, setPostDate] = useState<string>('')
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
+    const mode = useModeStore((state) => state.mode);
+    const locale = useLocaleStore((state) => state.localeData);
 
     const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
 
@@ -122,41 +127,54 @@ const PostPage = () => {
                         :
                         <>
                             {!errorMessage &&
-                                <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
-                                    <div className="overflow-hidden break-words">
-                                        <PostTextWithBold postText={postText} isValidateBrackets={true} />
-                                    </div>
-                                    {addText &&
-                                        <div className="mt-2">
-                                            <PostTextWithBold postText={addText} isValidateBrackets={false} />
+                                <>
+                                    <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
+                                        <div className="overflow-hidden break-words">
+                                            <PostTextWithBold postText={postText} isValidateBrackets={true} />
                                         </div>
+                                        {addText &&
+                                            <div className="mt-2">
+                                                <PostTextWithBold postText={addText} isValidateBrackets={false} />
+                                            </div>
+                                        }
+
+                                        <div className="flex justify-between items-center mt-2">
+                                            <div className="text-sm text-gray-400">{postDate}</div>
+                                            <div className="flex gap-2">
+                                                <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
+                                                    <Image
+                                                        src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                                        alt="Trash Icon"
+                                                        width={20} // 必要に応じて幅を指定
+                                                        height={20} // 必要に応じて高さを指定
+                                                    />
+                                                </a>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+
+                                    {mode == 'menu' &&
+                                        <>
+                                            <div className="flex justify-center mt-4">
+                                                <Link href="/" className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-md bg-gray-600 px-6 font-medium text-neutral-200"><span>{locale.Menu_Back}</span><div className="ml-1 transition group-hover:translate-x-1"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5"><path d="M8.14645 3.14645C8.34171 2.95118 8.65829 2.95118 8.85355 3.14645L12.8536 7.14645C13.0488 7.34171 13.0488 7.65829 12.8536 7.85355L8.85355 11.8536C8.65829 12.0488 8.34171 12.0488 8.14645 11.8536C7.95118 11.6583 7.95118 11.3417 8.14645 11.1464L11.2929 8H2.5C2.22386 8 2 7.77614 2 7.5C2 7.22386 2.22386 7 2.5 7H11.2929L8.14645 3.85355C7.95118 3.65829 7.95118 3.34171 8.14645 3.14645Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg></div></Link>
+                                            </div>
+                                        </>
                                     }
 
-                                    <div className="flex justify-between items-center mt-2">
-                                        <div className="text-sm text-gray-400">{postDate}</div>
-                                        <div className="flex gap-2">
-                                            <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
-                                                <Image
-                                                    src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                                                    alt="Trash Icon"
-                                                    width={20} // 必要に応じて幅を指定
-                                                    height={20} // 必要に応じて高さを指定
-                                                />
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                </div>
+                                </>
                             }
                         </>
                     }
+
                     {errorMessage &&
                         <div className="whitespace-pre-wrap break-words text-red-800">
                             {errorMessage}
                         </div>
                     }
                 </div>
-            </div>
+            </div >
         </>
     );
 };
