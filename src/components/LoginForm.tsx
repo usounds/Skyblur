@@ -1,29 +1,19 @@
 "use client"
 import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
+import { useAtpAgentStore } from "@/state/AtpAgent";
+import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
-import { AtpAgent } from '@atproto/api';
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import { useState } from "react";
 
-type LoginFormProps = {
-  handle: string;
-  setHandle: (value: string) => void;
-  publicAgent: AtpAgent
-  locale: any,
-  browserClient?: BrowserOAuthClient | undefined
-};
-
-export const LoginForm: React.FC<LoginFormProps> = ({
-  handle,
-  setHandle,
-  publicAgent,
-  locale,
-  browserClient
+export const LoginForm: React.FC = ({
 }) => {
-
   const [blueskyLoginMessage, setBlueskyLoginMessage] = useState("");
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const metadata = getClientMetadata();
+  const [handle, setHandle] = useState("");
+  const locale = useLocaleStore((state) => state.localeData);
+  const publicAgent = useAtpAgentStore((state) => state.publicAgent);
 
   function generateRandomState(length: number = 32): string {
     const array = new Uint8Array(length);
@@ -85,7 +75,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       host = "bsky.social";
     }
 
-    browserClient = new BrowserOAuthClient({
+    const browserClient = new BrowserOAuthClient({
       clientMetadata: metadata,
       handleResolver: pds || ''
     })

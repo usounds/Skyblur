@@ -12,10 +12,7 @@ import Image from 'next/image';
 import { useState } from "react";
 
 export default function Home() {
-  const [handle, setHandle] = useState<string>("")
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
-
-  const publicAgent = useAtpAgentStore((state) => state.publicAgent);
   const did = useAtpAgentStore((state) => state.did);
   const locale = useLocaleStore((state) => state.localeData);
   const isLoading = useAtpAgentStore((state) => state.isLoginProcess);
@@ -46,7 +43,7 @@ export default function Home() {
 
         <div className="mx-auto max-w-screen-md ">
 
-          {did==="" &&
+          {did === "" &&
             <><div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
               {locale.Home_Welcome}
             </div>
@@ -59,17 +56,7 @@ export default function Home() {
                   </span>
                   {locale.Home_inAuthProgress}
                 </> :
-                  <>
-                    <LoginForm
-                      handle={handle}
-                      setHandle={setHandle}
-                      publicAgent={publicAgent}
-                      locale={locale}
-                    />
-
-                  </>
-
-
+                  <LoginForm />
 
                 }</>
               </div>
