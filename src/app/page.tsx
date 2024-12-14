@@ -1,273 +1,82 @@
 "use client";
 export const runtime = 'edge';
-import { useState, useEffect } from "react";
-import Link from 'next/link'
-import { AtpAgent, Agent, AppBskyActorDefs } from '@atproto/api'
-import { LoginForm } from "@/components/LoginForm"
-import { CreatePostForm } from "@/components/CreatePost"
-import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser'
-import { PostForDelete } from "@/types/types"
-import { getClientMetadata } from '@/types/ClientMetadataContext'
-import ja from "@/locales/ja"
-import en from "@/locales/en"
-import { DeleteList } from "@/components/DeleteList";
-import LanguageSelect from "@/components/LanguageSelect";
-let agent: Agent
+import { CreatePostForm } from "@/components/CreatePost";
+import Header from "@/components/Header";
+import { LoginForm } from "@/components/LoginForm";
+import { PostList } from "@/components/PostList";
+import { useAtpAgentStore } from "@/state/AtpAgent";
+import { useLocaleStore } from "@/state/Locale";
+import { useModeStore } from "@/state/Mode";
+import { PostListItem } from "@/types/types";
+import Image from 'next/image';
+import { useState } from "react";
 
 export default function Home() {
-  const [handle, setHandle] = useState<string>("")
-  const [did, setDid] = useState<string>("")
-  const [locale, setLocale] = useState(ja)
-  const [selectedLocale, setSelectedLocale] = useState<string>('ja');
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [isLoginToBsky, setIsLoginToBsky] = useState<boolean>(false)
-  const [blueskyLoginMessage, setBlueskyLoginMessage] = useState("")
-  const [mode, setMode] = useState("login")
-  const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
-  const [windowWidth, setWindowWidth] = useState(0);
-  const [prevPostAturi, setPrevPostAturi] = useState("")
-  const [prevBlurAturi, setPrevBlurAturi] = useState("")
+  const [prevBlur, setPrevBlur] = useState<PostListItem>()
+  const did = useAtpAgentStore((state) => state.did);
+  const locale = useLocaleStore((state) => state.localeData);
+  const isLoading = useAtpAgentStore((state) => state.isLoginProcess);
+  const userProf = useAtpAgentStore((state) => state.userProf);
+  const blueskyLoginMessage = useAtpAgentStore((state) => state.blueskyLoginMessage);
+  const mode = useModeStore((state) => state.mode);
+  const setMode = useModeStore((state) => state.setMode);
 
-  const publicAgent = new AtpAgent({
-    service: "https://api.bsky.app"
-  })
-
-  let browserClient: BrowserOAuthClient
-
-  const changeLocale = (localeParam: string) => {
-    // ここで実際のロジック（例: 言語の変更など）を実行します
-    setSelectedLocale(localeParam)
-    window.localStorage.setItem('preference.locale', localeParam)
-    if (localeParam == 'ja') setLocale(ja)
-    if (localeParam == 'en') setLocale(en)
-  };
-
-  let ignore = false
-
-  useEffect(() => {
-
-    // 初期ウィンドウ幅の設定
-    setWindowWidth(window.innerWidth);
-
-    // リサイズイベントリスナーの設定
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-
-
-    (
-      async function () {
-        if (ignore) {
-          console.log("useEffect duplicate call")
-          return
-        }
-        ignore = true
-
-        let result
-
-        const localState = window.localStorage.getItem('oauth.code_verifier')
-        const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl')
-        const localHandle = window.localStorage.getItem('oauth.handle')
-        const localLocale = window.localStorage.getItem('preference.locale')
-
-        if (localLocale && typeof localLocale === 'string') {
-          changeLocale(localLocale)
-        } else {
-          const userLanguages = navigator.language;
-          console.log(userLanguages)
-          if (userLanguages.startsWith('ja')) {
-            changeLocale('ja')
-          } else {
-            changeLocale('en')
-
-          }
-        }
-
-        if (localHandle) setHandle(localHandle)
-
-        try {
-          if (localState && localPdsUrl) {
-            browserClient = new BrowserOAuthClient({
-              clientMetadata: getClientMetadata(),
-              handleResolver: localPdsUrl,
-            })
-
-            result = await browserClient.init() as undefined | { session: OAuthSession; state?: string | undefined };
-
-          }
-        } catch (e) {
-          setBlueskyLoginMessage("OAuth認証に失敗しました")
-        }
-
-        if (result) {
-          const { session, state } = result
-          //OAuth認証から戻ってきた場合
-          if (state != null) {
-            //stateがズレている場合はエラー
-            if (state !== localState) {
-              setBlueskyLoginMessage("stateが一致しません")
-              setIsLoading(false)
-              return
-
-            }
-
-            agent = new Agent(session)
-
-            console.log(`${agent.assertDid} was successfully authenticated (state: ${state})`)
-            const userProfile = await agent.getProfile({ actor: agent.assertDid })
-            setUserProf(userProfile.data)
-            setIsLoading(false)
-            setIsLoginToBsky(true)
-            setDid(agent.assertDid)
-            setMode('menu')
-            return
-
-            //セッションのレストア
-          } else {
-            console.log(`${session.sub} was restored (last active session)`)
-            agent = new Agent(session)
-            const userProfile = await agent.getProfile({ actor: agent.assertDid })
-            setUserProf(userProfile.data)
-            setIsLoginToBsky(true)
-            setIsLoading(false)
-            setDid(agent.assertDid)
-            setMode('menu')
-            return
-
-          }
-
-        } else {
-          console.log(`OAuth未認証です`)
-        }
-
-        setIsLoading(false)
-      })();
-
-    //setIsLoading(false)
-
-    // クリーンアップ
-    return () => {
-    };
-
-
-  }, [])
-
-
-
-  const logout = async (): Promise<void> => {
-    try {
-      const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl') || ''
-
-      browserClient = new BrowserOAuthClient({
-        clientMetadata: getClientMetadata(),
-        handleResolver: localPdsUrl
-      })
-
-      browserClient.revoke(did)
-
-      window.localStorage.removeItem('oauth.code_verifier')
-      window.localStorage.removeItem('oauth.pdsUrl')
-      window.localStorage.removeItem('oauth.handle')
-      setHandle('')
-
-
-    } catch (e) {
-      console.error(e)
-    }
-    setIsLoginToBsky(false)
-
-  }
-
-  const handleEdit = (input: PostForDelete) => {
-    console.log(input)
-    setPrevPostAturi(input.postATUri)
-    setPrevBlurAturi(input.blurATUri)
-
+  const handleEdit = (input: PostListItem) => {
+    setPrevBlur(input)
     setMode("create")
 
   };
-
 
   const handleNew = () => {
-    setPrevPostAturi("")
-    setPrevBlurAturi("")
-
+    setPrevBlur(undefined)
     setMode("create")
 
-  };
-
-
-
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLocale = event.target.value;
-    setSelectedLocale(newLocale); // 選択された値をステートに設定
-    changeLocale(newLocale); // changeLocale を呼び出す
   };
 
   return (
 
-
     <div className="">
 
-      <div className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
-        <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
-          <Link href={"/"} className="text-xl font-semibold text-white">
-            Skyblur
-          </Link>
-          <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
-            {isLoginToBsky &&
-              <>
-                <div onClick={logout} className="flex-none text-sm font-semibold text-white mr-2">
-                  {locale.Menu_Logout}
-                </div>
-              </>
-            }
-            <Link href={"/termofuse"} className="flex-none text-sm font-semibold text-white mr-2">
-              {locale.Menu_TermOfUse}
-            </Link>
-            <LanguageSelect
-              selectedLocale={selectedLocale}
-              onChange={(locale) => handleChange({ target: { value: locale } } as React.ChangeEvent<HTMLSelectElement>)}
-            />
-          </div>
-        </nav>
-      </div>
+      <Header />
 
       <main className="text-gray-800 ">
 
         <div className="mx-auto max-w-screen-md ">
-          {!isLoginToBsky &&
+
+          {did === "" &&
             <><div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
               {locale.Home_Welcome}
             </div>
 
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
-                <>{(isLoading) ? <>
+                <>
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <span
+                        className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full"
+                        role="status"
+                        aria-label="loading"
+                      >
+                        <span className="sr-only">Loading...</span>
+                      </span>
+                      {locale.Home_inAuthProgress}
+                    </div>
+                  ) : (
+                    <LoginForm />
+                  )}
+                </>
+              </div>
 
-                  <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
-                    <span className="sr-only">Loading...</span>
-                  </span>
-                  {locale.Home_inAuthProgress}
-                </> :
-                  <>
-                    <LoginForm
-                      handle={handle}
-                      setHandle={setHandle}
-                      publicAgent={publicAgent}
-                      locale={locale}
-                    />
+              <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
 
-                  </>
 
-                }</>
+                {blueskyLoginMessage && <p>{blueskyLoginMessage}</p>
+                }
               </div>
             </>
           }
 
-          {isLoginToBsky &&
+          {did &&
 
             <>
 
@@ -276,7 +85,7 @@ export default function Home() {
                   <>
                     {mode === 'menu' &&
                       <>
-                        <div className="mt-4 mx-auto max-w-screen-sm flex flex-col  ">
+                        <div className="mx-auto max-w-screen-sm flex flex-col  ">
                           <div className="flex justify-center my-4">
                             {locale.Menu_LoginMessage.replace("{1}", userProf.displayName || 'No Name')}
                           </div>
@@ -291,14 +100,14 @@ export default function Home() {
 
                           </div>
 
-                          <DeleteList agent={agent} locale={locale} did={did} handleEdit={handleEdit}/>
+                          <PostList handleEdit={handleEdit} />
 
                         </div>
                       </>
                     }
                     {mode === 'create' &&
                       <>
-                        <CreatePostForm agent={agent} locale={locale} did={did} setMode={setMode} prevPostAturi={prevPostAturi} prevBlurAturi={prevBlurAturi}
+                        <CreatePostForm setMode={setMode} prevBlur={prevBlur}
                           userProf={userProf} />
                         <div className="flex justify-center mt-4">
                           <button onClick={() => {
@@ -327,7 +136,7 @@ export default function Home() {
                   <p className="mt-2 text-gray-500 ">{locale.Home_Landing001Descrtption}</p>
 
                   <div className="flex justify-center mt-4 border  rounded-lg">
-                    <img
+                    <Image
                       src="https://backet.skyblur.uk/001.png"
                       alt="Skyblur post image"
                       width={338}
@@ -344,7 +153,7 @@ export default function Home() {
                   <p className="mt-2 text-gray-500 ">{locale.Home_Landing002Descrtption}</p>
 
                   <div className="flex justify-center mt-4 border rounded-lg">
-                    <img
+                    <Image
                       src="https://backet.skyblur.uk/002.png"
                       alt="Bluesky post image"
                       width={382}
@@ -359,7 +168,7 @@ export default function Home() {
 
                   <p className="mt-2 text-gray-500 ">{locale.Home_Landing003Descrtption}</p>
                   <div className="flex justify-center mt-4 border">
-                    <img
+                    <Image
                       src="https://backet.skyblur.uk/003.png"
                       alt="Skyblur Viewer"
                       width={310}

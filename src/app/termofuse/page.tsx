@@ -1,19 +1,12 @@
+"use client"
 export const runtime = 'edge';
-import Link from 'next/link'
+import Header from "@/components/Header";
 
 export default function Home() {
 
   return (
     <main >
-      <header className="flex flex-wrap w-full text-sm py-2 bg-neutral-800">
-      <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row">
-          <Link href={"/"} className="text-xl font-semibold text-white">
-            Skyblur
-          </Link>
-          <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
-          </div>
-        </nav>
-      </header>
+      <Header />
       <section className="bg-white">
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h1 className="text-2xl font-semibold text-gray-800 capitalize lg:text-3xl">プライバシーポリシー & 利用規約</h1>

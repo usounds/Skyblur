@@ -1,17 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
-
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
 
 export const metadata: Metadata = {
   title: "Skyblur",
@@ -27,8 +15,9 @@ export default function RootLayout({
     <html lang="ja">
 
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white `}
+        className={`antialiased bg-white `}
       >
+
 
         {children}
         <footer className="flex gap-6 flex-wrap items-center justify-center text-gray-600 bg-white py-4 mt-10">

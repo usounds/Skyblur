@@ -1,4 +1,4 @@
-export default {
+const messages = {
     Home_inAuthProgress: "認可処理中です",
     Home_Welcome: "Skyblurへようこそ。Blueskyへ伏せ字を使った文章をポストできます。",
     Home_Landing001Title: "Skyblurから投稿",
@@ -56,4 +56,7 @@ export default {
     DeleteList_Loading: "読み込み中",
     DeleteList_ReadMore: "さらに読み込み",
     DeleteList_ToHead: "再読み込み",
+    Post_IsLoading:"読み込み中です... ",
 }
+
+export default messages;
