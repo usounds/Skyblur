@@ -6,6 +6,7 @@ import { COLLECTION, PostData, PostListItem } from "@/types/types";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
+import PostListLoading from "@/components/PostListLoading";
 
 type PostListProps = {
     handleEdit: (input: PostListItem) => void;
@@ -164,7 +165,9 @@ export const PostList: React.FC<PostListProps> = ({
     return (
         <>
             <div className="max-w-screen-sm">
-                {!isLoading &&
+                {isLoading ?
+                    <PostListLoading />
+                    :
                     <div className="flex flex-wrap mb-2 justify-center ">
                         {(deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
                         {(deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
