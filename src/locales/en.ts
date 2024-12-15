@@ -56,7 +56,6 @@ const messages = {
     DeleteList_Loading: "Loading",
     DeleteList_ReadMore: "Read More",
     DeleteList_ToHead: "Reload",
-    Post_IsLoading:"Loading... ",
 }
 
 
