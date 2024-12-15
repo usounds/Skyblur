@@ -30,17 +30,9 @@ const PostPage = () => {
 
     const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
 
-    let duplicate = false
-
     useEffect(() => {
         if (did && rkey) {
 
-            if (duplicate) {
-                console.log("duplicate")
-                return
-            }
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-            duplicate = true
 
             const fetchRecord = async () => {
 

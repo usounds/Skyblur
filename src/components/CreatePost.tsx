@@ -32,7 +32,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
-    const [useEffectDuplidate, setUseEffectDuplidate] = useState<boolean>(false)
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const did = useAtpAgentStore((state) => state.did);
@@ -355,12 +354,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     useEffect(() => {
-        if (useEffectDuplidate) {
-            console.log('useEffectDuplidate')
-            return
-        }
 
-        setUseEffectDuplidate(true)
 
         if (prevBlur) {
             setPostText(prevBlur.blur.text)
