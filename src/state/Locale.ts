@@ -1,24 +1,40 @@
 import en from "@/locales/en";
 import ja from "@/locales/ja";
+//import kr from "@/locales/kr"; 
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+type LocaleInfo = {
+  data: LocaleData;
+  label: string;
+};
+
+export type Locales = 'en' | 'ja' 
+type LocaleData = typeof en;
+
+export const localeDataMap: Record<Locales, LocaleInfo> = {
+  ja: { data: ja, label: 'Japanese' },
+  en: { data: en, label: 'English' },
+//  kr: { data: kr, label: 'Korean' },
+};
+
 type State = {
-  locale: string;
-  localeData: typeof en | typeof ja;
+  locale: Locales;
+  localeData: LocaleData;
 };
 
 type Action = {
-  setLocale: (locale: string) => void;
+  setLocale: (locale: Locales) => void;
 };
 
-const getUserLocale = () => {
+const getUserLocale = (): Locales => {
   if (typeof window !== "undefined" && typeof navigator !== "undefined") {
     const userLanguages = navigator.language;
-    console.log(userLanguages);  // デバッグ用のログ
-    return userLanguages.startsWith('ja') ? 'ja' : 'en';
+    if (userLanguages.startsWith('ja')) return 'ja';
+ //   if (userLanguages.startsWith('kr')) return 'kr';
+    return 'en';
   }
-  // サーバーサイドの場合のデフォルトの操作
   return 'en';
 };
 
@@ -28,11 +44,10 @@ export const useLocaleStore = create<State & Action>()(
       const initialLocale = getUserLocale();
       return {
         locale: initialLocale,
-        localeData: initialLocale === 'ja' ? ja : en,
+        localeData: localeDataMap[initialLocale].data,
 
         setLocale: (locale) => {
-          const newLocaleData = locale === 'ja' ? ja : en;
-          set({ locale, localeData: newLocaleData });
+          set({ locale, localeData: localeDataMap[locale].data });
         },
       };
     },

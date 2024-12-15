@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { COLLECTION, PostData } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
@@ -24,6 +25,7 @@ const PostPage = () => {
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
     const locale = useLocaleStore((state) => state.localeData);
+    const apiAgent = useAtpAgentStore((state) => state.publicAgent);
     const searchParams = useSearchParams();
     const q = searchParams.get('q'); // 'q' parameter obtained here
 
@@ -51,10 +53,6 @@ const PostPage = () => {
 
                     const pdsAgent = new AtpAgent({
                         service: pdsUrl || ''
-                    })
-
-                    const apiAgent = new AtpAgent({
-                        service: "https://api.bsky.app"
                     })
 
                     try {
