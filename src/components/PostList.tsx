@@ -189,6 +189,7 @@ export const PostList: React.FC<PostListProps> = ({
                                             alt="Trash Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
+                                            unoptimized
                                         />
                                     </div>
                                     <div onClick={() => handleEdit(item)} className="text-sm text-gray-500 mx-3">
@@ -197,6 +198,7 @@ export const PostList: React.FC<PostListProps> = ({
                                             alt="Export Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
+                                            unoptimized
                                         />
                                     </div>
                                     <Link className="text-sm text-gray-500 mx-3" href={`${item.blurURL || ''}?q=preview`}>
@@ -205,6 +207,7 @@ export const PostList: React.FC<PostListProps> = ({
                                             alt="Export Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
+                                            unoptimized
                                         />
                                     </Link>
                                     <a className="text-sm text-gray-600 ml-2 mr-2" href={item.postURL} target="_blank">

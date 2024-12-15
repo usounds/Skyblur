@@ -21,6 +21,7 @@ export const Avatar: React.FC<AvatarProp> = ({
                     height={48}
                     src={userProf.avatar}
                     alt={userProf.displayName || "No Avatar"}
+                    unoptimized
                 />
             ) : (
                 <svg
