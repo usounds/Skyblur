@@ -3,11 +3,11 @@ import LanguageSelect from "@/components/LanguageSelect";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
-import { BrowserOAuthClient,OAuthSession } from '@atproto/oauth-client-browser';
+import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import Link from 'next/link';
 import React from 'react';
 import { useEffect } from "react";
-import { Agent } from '@atproto/api';
+import { handleOAuth } from "@/logic/HandleOAuth"
 import { useModeStore } from "@/state/Mode";
 
 const Header = () => {
@@ -15,97 +15,54 @@ const Header = () => {
   const agent = useAtpAgentStore((state) => state.agent);
   const setAgent = useAtpAgentStore((state) => state.setAgent);
   const did = useAtpAgentStore((state) => state.did);
-  const setDid = useAtpAgentStore((state) => state.setDid);
   const setUserProf = useAtpAgentStore((state) => state.setUserProf);
   const setIsLoginProcess = useAtpAgentStore((state) => state.setIsLoginProcess);
+  const setDid = useAtpAgentStore((state) => state.setDid);
   const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
-  
+
+  let ignore = false
+
   useEffect(() => {
-
-    if(did) {
-      console.log("has active session")
-      return        
+    if (ignore) {
+      console.log("useEffect duplicate call")
+      return
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ignore = true
 
+    if (did) {
+      console.log("has active session")
+      return
+    }
 
     (
       async function () {
+        setIsLoginProcess(true)
 
-        let result
+        const ret = await handleOAuth(
+          getClientMetadata,
+          setAgent,
+          setUserProf,
+          setIsLoginProcess,
+          setDid,
+          setBlueskyLoginMessage
+        );
 
-        const localState = window.localStorage.getItem('oauth.code_verifier')
-        const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl')
+        if (ret) {
+          setMode('menu')
 
-        try {
-          if (localState && localPdsUrl) {
-            const browserClient = new BrowserOAuthClient({
-              clientMetadata: getClientMetadata(),
-              handleResolver: localPdsUrl,
-            })
-
-            result = await browserClient.init() as undefined | { session: OAuthSession; state?: string | undefined };
-
-          }
-        } catch (e) {
-          console.error(e)
-          setBlueskyLoginMessage("OAuth認証に失敗しました")
-          setIsLoginProcess(false)
-          return
         }
-
-        if (result) {
-          const { session, state } = result
-          //OAuth認証から戻ってきた場合
-          if (state != null) {
-            //stateがズレている場合はエラー
-            if (state !== localState) {
-              setBlueskyLoginMessage("stateが一致しません")
-              setIsLoginProcess(false)
-              return
-
-            }
-
-            const agent = new Agent(session)
-            setAgent(agent)
-
-            console.log(`${agent.assertDid} was successfully authenticated (state: ${state})`)
-            const userProfile = await agent.getProfile({ actor: agent.assertDid })
-            setUserProf(userProfile.data)
-            setIsLoginProcess(false)
-            setDid(agent.assertDid)
-            setMode('menu')
-            return
-
-            //セッションのレストア
-          } else {
-            console.log(`${session.sub} was restored (last active session)`)
-            const agent = new Agent(session)
-            setAgent(agent)
-            const userProfile = await agent.getProfile({ actor: agent.assertDid })
-            setUserProf(userProfile.data)
-            setIsLoginProcess(false)
-            setDid(agent.assertDid)
-            setMode('menu')
-            return
-
-          }
-
-        } else {
-          console.log(`OAuth未認証です`)
-          setIsLoginProcess(false)
-        }
+        setIsLoginProcess(false)
 
       })();
 
 
     // クリーンアップ
     return () => {
-    };
-
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    };    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
   const logout = async (): Promise<void> => {
     try {
 
