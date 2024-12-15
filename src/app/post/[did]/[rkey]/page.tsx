@@ -110,8 +110,7 @@ const PostPage = () => {
           }
 
           {isLoading ?
-            <div className="flex items-center">
-
+            <div className="">
               <PostLoading />
             </div>
             :
