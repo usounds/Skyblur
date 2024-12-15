@@ -1,18 +1,12 @@
-import { useLocaleStore } from "@/state/Locale";
-import React, { useEffect } from "react";
+import { Locales, localeDataMap, useLocaleStore } from "@/state/Locale";
+import React from "react";
 
-const LanguageSelect: React.FC= () => {
+const LanguageSelect: React.FC = () => {
   const localeString = useLocaleStore((state) => state.locale);
   const setLocale = useLocaleStore((state) => state.setLocale);
 
-  useEffect(() => {
-    // コンポーネントがマウントされたときやlocaleが変わったときに実行
-    setLocale(localeString);
-    // 必要であれば他の処理も記述する
-  }, [localeString, setLocale]);
-
   const handleLocaleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setLocale(event.target.value);
+    setLocale(event.target.value as Locales);
   };
 
   return (
@@ -21,8 +15,11 @@ const LanguageSelect: React.FC= () => {
       value={localeString}
       onChange={handleLocaleChange}
     >
-      <option value="ja">Japanese</option>
-      <option value="en">English</option>
+      {Object.entries(localeDataMap).map(([value, info]) => (
+        <option key={value} value={value}>
+          {info.label}
+        </option>
+      ))}
     </select>
   );
 };
