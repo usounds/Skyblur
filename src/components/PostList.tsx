@@ -47,7 +47,12 @@ export const PostList: React.FC<PostListProps> = ({
             const bookMark = await agent.com.atproto.repo.listRecords(param);
 
             // 新しいカーソルを設定
-            setCursor(bookMark.data.cursor || '');
+            if (bookMark.data.records.length === 10) {
+                setCursor(bookMark.data.cursor || '');
+            } else {
+                setCursor('');
+
+            }
 
             // records を処理して deleteList を更新
             for (const obj of bookMark.data.records) {
@@ -157,13 +162,15 @@ export const PostList: React.FC<PostListProps> = ({
     return (
         <>
             <div className="max-w-screen-sm">
+                <div className="flex flex-wrap mb-2 justify-center ">
+                    {(!isLoading && deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
+                    {(!isLoading && deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
+                    {(isLoading) && <p className="text-m text-gray-800">{locale.DeleteList_Loading}</p>}
+                </div>
                 {isLoading ?
                     <PostListLoading />
                     :
-                    <div className="flex flex-wrap mb-2 justify-center ">
-                        {(deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
-                        {(deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
-                    </div>
+                    <></>
                 }
                 <div className="flex flex-wrap justify-center max-w-screen-sm ">
 
