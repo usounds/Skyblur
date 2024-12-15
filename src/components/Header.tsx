@@ -20,16 +20,8 @@ const Header = () => {
   const setIsLoginProcess = useAtpAgentStore((state) => state.setIsLoginProcess);
   const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
-
-  let ignore = false
-
+  
   useEffect(() => {
-    if (ignore) {
-      console.log("useEffect duplicate call")
-      return
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    ignore = true
 
     if(did) {
       console.log("has active session")

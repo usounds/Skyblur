@@ -154,17 +154,7 @@ export const PostList: React.FC<PostListProps> = ({
         return ''
     };
 
-    let useEffectDuplidate = false
-
     useEffect(() => {
-        if (useEffectDuplidate) {
-            console.log('useEffectDuplidate')
-            return
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        useEffectDuplidate = true
-        console.log('useEffect')
-
         getPosts(did, cursor);
         setDuplicate(false);
 
