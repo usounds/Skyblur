@@ -25,8 +25,8 @@ const PostLoading: React.FC<ContentLoaderProps> = (props) => {
             <ContentLoader
                 speed={1}
                 width="100%"
-                height={124}
-                viewBox={`0 0 ${viewBoxWidth} 124`}
+                height={200}
+                viewBox={`0 0 ${viewBoxWidth} 200`}
                 backgroundColor="#b0b0b0"
                 foregroundColor="#ffffff"
                 {...props}

@@ -77,6 +77,7 @@ const Header = () => {
 
       setAgent(null)
       setDid('')
+      setIsLoginProcess(false)
 
       window.localStorage.removeItem('oauth.code_verifier')
       window.localStorage.removeItem('oauth.pdsUrl')
