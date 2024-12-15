@@ -27,6 +27,7 @@ export const PostList: React.FC<PostListProps> = ({
     const getPosts = async (did: string, cursor: string) => {
 
         if (duplicate) {
+            console.log("duplicate")
             return;
         }
         if (!agent) {
@@ -156,7 +157,10 @@ export const PostList: React.FC<PostListProps> = ({
     let useEffectDuplidate = false
 
     useEffect(() => {
-        if (useEffectDuplidate) return
+        if (useEffectDuplidate) {
+            console.log('useEffectDuplidate')
+            return
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
         useEffectDuplidate = true
         console.log('useEffect')
