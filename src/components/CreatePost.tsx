@@ -355,7 +355,11 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     useEffect(() => {
-        if (useEffectDuplidate) return;
+        if (useEffectDuplidate) {
+            console.log('useEffectDuplidate')
+            return
+        }
+
         setUseEffectDuplidate(true)
 
         if (prevBlur) {
