@@ -24,17 +24,21 @@ const Header = () => {
   let ignore = false
 
   useEffect(() => {
+    if (ignore) {
+      console.log("useEffect duplicate call")
+      return
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ignore = true
+
+    if(did) {
+      console.log("has active session")
+      return        
+    }
 
 
     (
       async function () {
-        if (ignore) {
-          console.log("useEffect duplicate call")
-          return
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        ignore = true
-        
 
         let result
 
