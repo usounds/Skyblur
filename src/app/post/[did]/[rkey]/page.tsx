@@ -15,7 +15,6 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 
 const PostPage = () => {
-    // useParams を使って、URL パラメータを取得
     const { did, rkey } = useParams();
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [postText, setPostText] = useState<string>('')
@@ -27,7 +26,7 @@ const PostPage = () => {
     const locale = useLocaleStore((state) => state.localeData);
     const apiAgent = useAtpAgentStore((state) => state.publicAgent);
     const searchParams = useSearchParams();
-    const q = searchParams.get('q'); // 'q' parameter obtained here
+    const q = searchParams.get('q'); 
 
     const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
 
