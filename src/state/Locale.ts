@@ -1,7 +1,6 @@
 import en from "@/locales/en";
 import ja from "@/locales/ja";
 //import kr from "@/locales/kr"; 
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
