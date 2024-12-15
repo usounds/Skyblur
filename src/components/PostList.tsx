@@ -6,6 +6,7 @@ import { COLLECTION, PostData, PostListItem } from "@/types/types";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
+import PostListLoading from "@/components/PostListLoading";
 
 type PostListProps = {
     handleEdit: (input: PostListItem) => void;
@@ -19,22 +20,17 @@ export const PostList: React.FC<PostListProps> = ({
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [isDeleteing, setIsDeleting] = useState<boolean>(false)
     const [selectedItem, setSelectedItem] = useState<PostListItem | null>(null);
-    const [duplicate, setDuplicate] = useState<boolean>(false);
     const did = useAtpAgentStore((state) => state.did);
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
 
     const getPosts = async (did: string, cursor: string) => {
 
-        if (duplicate) {
-            return;
-        }
         if (!agent) {
             console.error("未ログインです")
             return
         }
 
-        setDuplicate(true); // 重複実行を防ぐ
 
         setIsLoading(true)
         setDeleteList([])
@@ -51,7 +47,12 @@ export const PostList: React.FC<PostListProps> = ({
             const bookMark = await agent.com.atproto.repo.listRecords(param);
 
             // 新しいカーソルを設定
-            setCursor(bookMark.data.cursor || '');
+            if (bookMark.data.records.length === 10) {
+                setCursor(bookMark.data.cursor || '');
+            } else {
+                setCursor('');
+
+            }
 
             // records を処理して deleteList を更新
             for (const obj of bookMark.data.records) {
@@ -71,7 +72,6 @@ export const PostList: React.FC<PostListProps> = ({
             // setDeleteList を呼び出して UI を更新
             setDeleteList(deleteList);
             setIsLoading(false);
-            setDuplicate(false); // 重複実行を防ぐ
 
         } catch (error) {
             console.error('Error fetching bookmarks:', error);
@@ -153,16 +153,8 @@ export const PostList: React.FC<PostListProps> = ({
         return ''
     };
 
-    let useEffectDuplidate = false
-
     useEffect(() => {
-        if (useEffectDuplidate) return
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        useEffectDuplidate = true
-        console.log('useEffect')
-
         getPosts(did, cursor);
-        setDuplicate(false);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -170,11 +162,15 @@ export const PostList: React.FC<PostListProps> = ({
     return (
         <>
             <div className="max-w-screen-sm">
-                {!isLoading &&
-                    <div className="flex flex-wrap mb-2 justify-center ">
-                        {(deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
-                        {(deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
-                    </div>
+                <div className="flex flex-wrap mb-2 justify-center ">
+                    {(!isLoading && deleteList.length > 0) && <p className="text-m text-gray-800">{locale.DeleteList_ChooseDeleteItem}</p>}
+                    {(!isLoading && deleteList.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
+                    {(isLoading) && <p className="text-m text-gray-800">{locale.DeleteList_Loading}</p>}
+                </div>
+                {isLoading ?
+                    <PostListLoading />
+                    :
+                    <></>
                 }
                 <div className="flex flex-wrap justify-center max-w-screen-sm ">
 
@@ -195,6 +191,7 @@ export const PostList: React.FC<PostListProps> = ({
                                             alt="Trash Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
+                                            unoptimized
                                         />
                                     </div>
                                     <div onClick={() => handleEdit(item)} className="text-sm text-gray-500 mx-3">
@@ -203,6 +200,7 @@ export const PostList: React.FC<PostListProps> = ({
                                             alt="Export Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
+                                            unoptimized
                                         />
                                     </div>
                                     <Link className="text-sm text-gray-500 mx-3" href={`${item.blurURL || ''}?q=preview`}>
@@ -211,6 +209,7 @@ export const PostList: React.FC<PostListProps> = ({
                                             alt="Export Icon"
                                             width={20} // 必要に応じて幅を指定
                                             height={20} // 必要に応じて高さを指定
+                                            unoptimized
                                         />
                                     </Link>
                                     <a className="text-sm text-gray-600 ml-2 mr-2" href={item.postURL} target="_blank">
@@ -220,11 +219,7 @@ export const PostList: React.FC<PostListProps> = ({
                             </div>
                         </div>
 
-
                     ))}
-
-
-
 
                     {/* オーバーレイ: 削除確認メッセージ */}
                     {selectedItem && (
@@ -253,19 +248,10 @@ export const PostList: React.FC<PostListProps> = ({
                     )}
                 </div>
 
-                {deleteList.length == 10 &&
+                {!isLoading &&
                     <div className="flex justify-center gap-4 mt-6">
                         <button disabled={isLoading} onClick={() => getPosts(did, cursor)} className="relative z-0 h-12 rounded-full bg-gray-500 disabled:bg-gray-300 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
-                            {isLoading ? <>{locale.DeleteList_Loading}</> : <>{locale.DeleteList_ReadMore}</>}
-                        </button>
-
-                    </div>
-                }
-
-                {(deleteList.length != 10) &&
-                    <div className="flex justify-center gap-4 mt-6">
-                        <button disabled={isLoading} onClick={() => getPosts(did, '')} className="relative z-0 h-12 rounded-full bg-gray-500 px-6 disabled:bg-gray-300 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
-                            {isLoading ? <>{locale.DeleteList_Loading}</> : <>{locale.DeleteList_ToHead}</>}
+                            {deleteList.length == 10 ? locale.DeleteList_ReadMore : locale.DeleteList_ToHead}
                         </button>
 
                     </div>

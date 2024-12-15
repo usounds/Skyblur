@@ -4,7 +4,7 @@ import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const LoginForm: React.FC = ({
 }) => {
@@ -108,6 +108,10 @@ export const LoginForm: React.FC = ({
 
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    setHandle(window.localStorage.getItem('oauth.handle') || '');
+  }, [])
 
   return (
     <div className="w-[350px]">

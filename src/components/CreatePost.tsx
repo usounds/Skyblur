@@ -3,7 +3,7 @@ import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { COLLECTION, PostListItem } from "@/types/types";
-import { AppBskyActorDefs, AppBskyFeedPost, RichText } from '@atproto/api';
+import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
 import { franc } from 'franc';
 import Link from 'next/link';
@@ -13,13 +13,11 @@ import twitterText from 'twitter-text';
 const iso6393to1 = require('iso-639-3-to-1');
 
 type CreatePostProps = {
-    userProf: AppBskyActorDefs.ProfileViewDetailed
     setMode: (value: string) => void;
     prevBlur?: PostListItem
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
-    userProf,
     setMode,
     prevBlur
 }) => {
@@ -32,7 +30,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
-    const [useEffectDuplidate, setUseEffectDuplidate] = useState<boolean>(false)
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const did = useAtpAgentStore((state) => state.did);
@@ -289,7 +286,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 );
             }
 
-            const localDesc = locale.CreatePost_OGPDescription.replace("{1}", userProf.displayName||'');
+            const localDesc = locale.CreatePost_OGPDescription
 
             // OGP設定
             postObj.embed = {
@@ -355,8 +352,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     useEffect(() => {
-        if (useEffectDuplidate) return;
-        setUseEffectDuplidate(true)
+
 
         if (prevBlur) {
             setPostText(prevBlur.blur.text)
