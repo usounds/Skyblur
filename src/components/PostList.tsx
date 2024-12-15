@@ -20,23 +20,17 @@ export const PostList: React.FC<PostListProps> = ({
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [isDeleteing, setIsDeleting] = useState<boolean>(false)
     const [selectedItem, setSelectedItem] = useState<PostListItem | null>(null);
-    const [duplicate, setDuplicate] = useState<boolean>(false);
     const did = useAtpAgentStore((state) => state.did);
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
 
     const getPosts = async (did: string, cursor: string) => {
 
-        if (duplicate) {
-            console.log("duplicate")
-            return;
-        }
         if (!agent) {
             console.error("未ログインです")
             return
         }
 
-        setDuplicate(true); // 重複実行を防ぐ
 
         setIsLoading(true)
         setDeleteList([])
@@ -73,7 +67,6 @@ export const PostList: React.FC<PostListProps> = ({
             // setDeleteList を呼び出して UI を更新
             setDeleteList(deleteList);
             setIsLoading(false);
-            setDuplicate(false); // 重複実行を防ぐ
 
         } catch (error) {
             console.error('Error fetching bookmarks:', error);
@@ -157,7 +150,6 @@ export const PostList: React.FC<PostListProps> = ({
 
     useEffect(() => {
         getPosts(did, cursor);
-        setDuplicate(false);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -220,11 +212,7 @@ export const PostList: React.FC<PostListProps> = ({
                             </div>
                         </div>
 
-
                     ))}
-
-
-
 
                     {/* オーバーレイ: 削除確認メッセージ */}
                     {selectedItem && (
@@ -253,19 +241,10 @@ export const PostList: React.FC<PostListProps> = ({
                     )}
                 </div>
 
-                {deleteList.length == 10 &&
+                {!isLoading &&
                     <div className="flex justify-center gap-4 mt-6">
                         <button disabled={isLoading} onClick={() => getPosts(did, cursor)} className="relative z-0 h-12 rounded-full bg-gray-500 disabled:bg-gray-300 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
-                            {isLoading ? <>{locale.DeleteList_Loading}</> : <>{locale.DeleteList_ReadMore}</>}
-                        </button>
-
-                    </div>
-                }
-
-                {(deleteList.length != 10) &&
-                    <div className="flex justify-center gap-4 mt-6">
-                        <button disabled={isLoading} onClick={() => getPosts(did, '')} className="relative z-0 h-12 rounded-full bg-gray-500 px-6 disabled:bg-gray-300 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
-                            {isLoading ? <>{locale.DeleteList_Loading}</> : <>{locale.DeleteList_ToHead}</>}
+                            {deleteList.length == 10 ? locale.DeleteList_ReadMore : locale.DeleteList_ToHead}
                         </button>
 
                     </div>

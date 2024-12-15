@@ -23,12 +23,12 @@ const PostLoading: React.FC<ContentLoaderProps> = (props) => {
   return (
     <div className="max-w-screen-sm">
       <ContentLoader 
-        speed={1.5}
+        speed={1}
         width="100%"
         height={124}
         viewBox={`0 0 ${viewBoxWidth} 124`}
-        backgroundColor="#f3f3f3"
-        foregroundColor="#6d6464"
+        backgroundColor="#b0b0b0"
+        foregroundColor="#ffffff"
         {...props}
       >
         <rect x="48" y="8" rx="3" ry="3" width="88" height="6" /> 
