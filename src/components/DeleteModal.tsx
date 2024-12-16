@@ -6,7 +6,7 @@ import React, { useState } from "react";
 interface DeleteModalProp {
   content: string;
   onConfirm: () => void;
-  onClose: () => void;
+  onClose: (isDeleted : boolean) => void;
 }
 
 export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onClose }) => {
@@ -30,18 +30,23 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
   const handleSubmit = async () => {
     setIsDeletesing(true)
     await onConfirm();
-    handleClose()
+    handleClose(true)
   };
-  const handleClose = () => {
+  const handleClose = (isDeleted:boolean) => {
     setOpen(false);
     setTimeout(() => {
-      onClose();
+      onClose(isDeleted);
     }, MODAL_TIME);
   };
 
+  const handleJustClose = () => {
+    handleClose(false)
+
+  }
+
   return (
     <ThemeProvider theme={extendTheme(theme, customTheme)}>
-      <Dialog open={open} onClose={handleClose} header={locale.DeleteList_ConfirmDelete} size="90%" >
+      <Dialog open={open} onClose={handleJustClose} header={locale.DeleteList_ConfirmDelete} size="90%" >
         {() => (
           <>
             <div className="mb-6 text-black">{content.replace(/\[|\]/g, '')}</div>
@@ -59,7 +64,7 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
               <Button
                 className="px-4 py-2 text-black border-gray-400"
                 onClick={() => {
-                  handleClose()
+                  handleJustClose()
                 }}
                 variant="outline"
               >
