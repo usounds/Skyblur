@@ -9,7 +9,6 @@ const LanguageSelect: React.FC = () => {
     setLocale(event.target.value as Locales);
   };
 
-
   useEffect(() => {
     setLocale(localeString)
 
@@ -19,6 +18,7 @@ const LanguageSelect: React.FC = () => {
   }, [])
   
   return (
+    <>
     <select
       className="py-2 px-1 pe-1 block border border-gray-600 bg-neutral-800 text-white rounded-lg text-sm"
       value={localeString}
@@ -30,6 +30,8 @@ const LanguageSelect: React.FC = () => {
         </option>
       ))}
     </select>
+
+    </>
   );
 };
 
