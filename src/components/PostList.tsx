@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import PostListLoading from "@/components/PostListLoading";
+import {DeleteModal} from "@/components/DeleteModal";
 
 type PostListProps = {
     handleEdit: (input: PostListItem) => void;
@@ -18,7 +19,6 @@ export const PostList: React.FC<PostListProps> = ({
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
-    const [isDeleteing, setIsDeleting] = useState<boolean>(false)
     const [selectedItem, setSelectedItem] = useState<PostListItem | null>(null);
     const did = useAtpAgentStore((state) => state.did);
     const agent = useAtpAgentStore((state) => state.agent);
@@ -62,6 +62,7 @@ export const PostList: React.FC<PostListProps> = ({
                     blur: value,
                     postURL: transformUrl(value.uri),
                     blurURL: transformUrl(obj.uri),
+                    modal:false
                 });
             }
             // createdAtで降順ソート
@@ -80,11 +81,13 @@ export const PostList: React.FC<PostListProps> = ({
 
     // 投稿をタップした時に選択する関数
     const handleSelectItem = (item: PostListItem) => {
+        item.modal = true
         setSelectedItem(item);
     };
 
     // 削除確認ダイアログを閉じる関数
     const handleCloseOverlay = () => {
+        if(selectedItem) selectedItem.modal=false
         setSelectedItem(null);
     };
 
@@ -117,7 +120,6 @@ export const PostList: React.FC<PostListProps> = ({
 
     // 投稿を削除する関数
     const handleDeleteItem = async () => {
-        setIsDeleting(true)
         try {
             // 非同期操作を待つ
             await deleteRecord(selectedItem?.blur.uri || '')
@@ -125,7 +127,6 @@ export const PostList: React.FC<PostListProps> = ({
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
-            setIsDeleting(false)
             return
         }
         // 実際の削除処理をここに追加
@@ -134,7 +135,6 @@ export const PostList: React.FC<PostListProps> = ({
             setDeleteList(prevList => prevList.filter(item => item.blurATUri !== selectedItem.blurATUri));
         }
         setSelectedItem(null); // ダイアログを閉じる
-        setIsDeleting(false)
 
     };
 
@@ -182,6 +182,10 @@ export const PostList: React.FC<PostListProps> = ({
                             <div>
                                 <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} />
                             </div>
+
+                            {item.modal&&
+                           <DeleteModal content={item.blur.text} onConfirm={handleDeleteItem} onClose={handleCloseOverlay}/> 
+                            }
                             <div className="flex justify-between gap-2 mt-2">
                                 <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
                                 <div className="flex gap-2">
@@ -221,31 +225,6 @@ export const PostList: React.FC<PostListProps> = ({
 
                     ))}
 
-                    {/* オーバーレイ: 削除確認メッセージ */}
-                    {selectedItem && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 border border-gray-800">
-                            <div className="bg-white p-6 rounded-md text-center w-80">
-                                <p className="text-gray-600 mb-4">{locale.DeleteList_ConfirmDelete}</p>
-                                <div className="flex justify-around mb-4">
-                                    <button
-                                        className="px-4 py-2 bg-red-600 disabled:bg-red-100 text-white rounded-md"
-                                        onClick={handleDeleteItem} // 削除処理
-                                        disabled={isDeleteing}
-                                    >
-                                        {locale.DeleteList_DeleteButton}
-                                    </button>
-                                    <button
-                                        className="px-4 py-2 bg-gray-300 disabled:bg-gray-100 text-gray-800 rounded-md"
-                                        onClick={handleCloseOverlay} // 閉じる処理
-                                        disabled={isDeleteing}
-                                    >
-                                        {locale.DeleteList_CancelButton}
-                                    </button>
-                                </div>
-                                <PostTextWithBold postText={selectedItem.blur.text} isValidateBrackets={true} />
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {!isLoading &&

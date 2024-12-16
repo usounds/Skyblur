@@ -2,6 +2,7 @@
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
+import { useTempPostStore } from "@/state/TempPost";
 import { COLLECTION, PostListItem } from "@/types/types";
 import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
@@ -9,6 +10,7 @@ import { franc } from 'franc';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
+import { Checkbox } from 'reablocks';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
 
@@ -33,6 +35,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const did = useAtpAgentStore((state) => state.did);
+    const setTempText = useTempPostStore((state) => state.setText);
+    const setTempAdditional = useTempPostStore((state) => state.setAdditional);
+    const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -106,6 +111,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostTextForRecord(postTextLocal);
         setPostTextBlur(blurredText);
 
+        setTempText(text)
+
         setIsIncludeFullBranket(containsFullWidthBrackets(text))
 
 
@@ -149,7 +156,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     const handleCrearePost = async () => {
-        if(!agent){
+        if (!agent) {
             console.error("未ログインです")
             return
         }
@@ -361,6 +368,19 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, prevBlur]); // Make sure to use the correct second dependency
 
+
+    const handleCheckboxChange = (isChecked: boolean) => {
+        setSimpleMode(isChecked);
+        setTempSimpleMode(isChecked);
+        setPostText(''); // テキストを空にします
+    };
+
+
+    const handleAddText = (addText: string) => {
+        setAddText(addText);
+        setTempAdditional(addText);
+    };
+
     return (
         <>
             <div className="m-3">
@@ -371,14 +391,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <label className="">{locale.CreatePost_Post}</label>
 
                         <div className="flex my-1">
-                            <input type="checkbox" checked={simpleMode} onChange={(event) => {
-                                setSimpleMode(event.target.checked);
-                                setPostText(''); // setPostTextは状態変更のために呼び出す
-                            }}
-                                className="shrink-0 mt-0.5 border-gray-200 rounded text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800" id="hs-checked-checkbox" />
-                            <label htmlFor="hs-checked-checkbox" className="text-sm mt-0.5 text-gray-500 ms-3">{locale.CreatePost_SimpleMode}</label>
+                            <p>      <Checkbox
+                                checked={simpleMode}
+                                onChange={handleCheckboxChange} // Boolean を渡します
+                                label={locale.CreatePost_SimpleMode}
+                            /></p>
                         </div>
-
                         {simpleMode ?
                             <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PostSimpleModeDescription}</div>
                             :
@@ -392,9 +410,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             placeHolder={locale.CreatePost_PostPlaceHolder}
                             max={300}
                             isEnableBrackets={!simpleMode}
+                            error={warning}
                         />
-                        {warning && <div className="text-red-500 my-3">{warning}</div>}
-
                         <div className="flex justify-center gap-4 mb-8">
                             {isIncludeFullBranket &&
                                 <button onClick={convertFullWidthToHalfWidthBrackets} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_BracketFromFullToHalf}</button>
@@ -421,7 +438,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_AdditionalDescription}</div>
                         <AutoResizeTextArea
                             text={addText}
-                            setPostText={setAddText}
+                            setPostText={handleAddText}
                             disabled={false}
                             locale={locale}
                             placeHolder={locale.CreatePost_AdditionalPlaceHolder}
@@ -432,7 +449,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <div className="block text-sm text-gray-600 mt-1">{addText.length}/10000</div>
 
                         <div className="flex justify-center gap-4 mb-8">
-                            {warning ? <div className="text-red-500">{warning}</div> :
+                            {!warning &&
                                 <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
                                     {prevBlur ?
                                         <>{locale.CreatePost_UpdateButton}</>

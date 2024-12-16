@@ -10,6 +10,7 @@ import { useModeStore } from "@/state/Mode";
 import { PostListItem } from "@/types/types";
 import Image from 'next/image';
 import { useState } from "react";
+import { ThemeProvider,theme, PartialReablocksTheme, extendTheme } from 'reablocks';
 
 export default function Home() {
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
@@ -20,6 +21,26 @@ export default function Home() {
   const mode = useModeStore((state) => state.mode);
   const setMode = useModeStore((state) => state.setMode);
   const isLoginProcess = useAtpAgentStore((state) => state.isLoginProcess);
+
+  const customTheme: PartialReablocksTheme = {
+    components: {
+      checkbox: {
+        label:{
+          base : "text-gray-600",
+          checked:"checked"
+        }
+      },
+      callout:{
+        base:{
+          variant:{
+          error:"bg-red-100 border-error"
+          }
+
+        }
+
+      }
+    },
+  };
 
   const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
@@ -39,8 +60,9 @@ export default function Home() {
 
     <div className="">
 
-      <Header />
+      <ThemeProvider theme={extendTheme(theme, customTheme)}>
 
+      <Header />
       <main className="text-gray-800 ">
 
         <div className="mx-auto max-w-screen-md ">
@@ -69,7 +91,6 @@ export default function Home() {
 
             </>
           }
-
           {blueskyLoginMessage &&
             <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
               <p className="mt-2">{blueskyLoginMessage}</p>
@@ -181,8 +202,8 @@ export default function Home() {
             </div>
           </section>
         }
-
       </main>
+      </ThemeProvider>
 
     </div>
   );

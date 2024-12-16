@@ -34,4 +34,5 @@ export type PostListItem = {
     blurATUri: string; 
     postURL?: string; 
     blurURL?: string; 
+    modal:boolean;
 }
