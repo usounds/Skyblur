@@ -12,16 +12,16 @@ module.exports = {
   extend: {
     colors: {
       primary: {
-        DEFAULT: colorPalette.blue[500],
-        active: colorPalette.blue[500],
-        hover: colorPalette.blue[600],
+        DEFAULT: colorPalette.blue[400],
+        active: colorPalette.blue[400],
+        hover: colorPalette.blue[500],
         inactive: colorPalette.blue[200]
       },
       secondary: {
-        DEFAULT: colorPalette.gray[700],
-        active: colorPalette.gray[700],
-        hover: colorPalette.gray[800],
-        inactive: colorPalette.gray[400]
+        DEFAULT: colorPalette.gray[500],
+        active: colorPalette.gray[500],
+        hover: colorPalette.gray[600],
+        inactive: colorPalette.gray[300]
       },
       success: {
         DEFAULT: colorPalette.green[500],

@@ -3,13 +3,13 @@ import { MODAL_TIME } from "@/types/types";
 import { Button, Dialog, PartialReablocksTheme, ThemeProvider, extendTheme, theme } from 'reablocks';
 import React, { useState } from "react";
 
-interface DeleteModalProp {
+interface RestoreTempPostModalProp {
   content: string;
-  onConfirm: () => void;
+  onApply: () => void;
   onClose: () => void;
 }
 
-export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onClose }) => {
+export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, onApply,onClose }) => {
   const [open, setOpen] = useState<boolean>(true)
   const [isDeletesing, setIsDeletesing] = useState<boolean>(false)
 
@@ -27,9 +27,9 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
 
   const locale = useLocaleStore((state) => state.localeData);
 
-  const handleSubmit = async () => {
+  const handleApply = async () => {
     setIsDeletesing(true)
-    await onConfirm();
+    await onApply();
     handleClose()
   };
   const handleClose = () => {
@@ -41,7 +41,7 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
 
   return (
     <ThemeProvider theme={extendTheme(theme, customTheme)}>
-      <Dialog open={open} onClose={handleClose} header={locale.DeleteList_ConfirmDelete} size="90%" >
+      <Dialog open={open} onClose={handleClose} header={locale.CreatePost_RestoreTitle} size="90%" >
         {() => (
           <>
             <div className="mb-6 text-black">{content.replace(/\[|\]/g, '')}</div>
@@ -50,11 +50,11 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
                 disabled={isDeletesing}
                 className="px-4 py-2 text-white"
                 onClick={() => {
-                  handleSubmit()
+                    handleApply()
                 }}
-                color="error"
+                color="primary"
               >
-                {locale.DeleteList_DeleteButton}
+                {locale.CreatePost_RestoreButton}
               </Button>
               <Button
                 className="px-4 py-2 text-black border-gray-400"

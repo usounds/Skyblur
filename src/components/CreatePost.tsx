@@ -1,5 +1,6 @@
 "use client"
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
+import { RestoreTempPost } from "@/components/RestoreTempPost";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
@@ -7,10 +8,9 @@ import { COLLECTION, PostListItem } from "@/types/types";
 import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
 import { franc } from 'franc';
-import Link from 'next/link';
+import { Button, Checkbox } from 'reablocks';
 import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
-import { Checkbox } from 'reablocks';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
 
@@ -38,6 +38,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const setTempText = useTempPostStore((state) => state.setText);
     const setTempAdditional = useTempPostStore((state) => state.setAdditional);
     const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
+    const tempText = useTempPostStore((state) => state.text);
+    const tempAdditional = useTempPostStore((state) => state.additional);
+    const tempSimpleMode = useTempPostStore((state) => state.simpleMode);
+    const [isTempRestore, setIsTempRestore] = useState<boolean>(false)
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -350,6 +354,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
+            handleTempDelete()
             setMode('menu')
         } else {
             console.error(ret)
@@ -364,6 +369,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         if (prevBlur) {
             setPostText(prevBlur.blur.text)
             setAddText(prevBlur.blur.additional)
+        } else if (tempText || tempAdditional) {
+            setIsTempRestore(true)
+
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, prevBlur]); // Make sure to use the correct second dependency
@@ -375,15 +383,36 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostText(''); // テキストを空にします
     };
 
-
     const handleAddText = (addText: string) => {
         setAddText(addText);
         setTempAdditional(addText);
     };
 
+    const handleTempDelete = () => {
+        setTempText('')
+        setTempAdditional('')
+        setTempSimpleMode(false)
+    };
+
+    const handleTempApply = () => {
+        console.log('handleTempApply')
+        setPostText(tempText);
+        setAddText(tempAdditional)
+        setSimpleMode(tempSimpleMode)
+    };
+
+    const handleModalClose = () => {
+        setIsTempRestore(false)
+    };
+
+
     return (
         <>
             <div className="m-3">
+
+                {isTempRestore &&
+                    <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} />
+                }
 
                 {(!appUrl) &&
                     <>
@@ -450,63 +479,19 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                         <div className="flex justify-center gap-4 mb-8">
                             {!warning &&
-                                <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+
+                                <Button color="primary" className="text-white text-base font-normal" onClick={handleCrearePost} disabled={isLoading || postText.length === 0} >
                                     {prevBlur ?
                                         <>{locale.CreatePost_UpdateButton}</>
                                         :
                                         <>{locale.CreatePost_CreateButton}</>
                                     }
-                                </button>
+                                </Button>
                             }
                         </div>
                     </>
                 }
 
-                {appUrl &&
-                    <>
-                        <label className="block text-sm text-gray-600 mt-1">{locale.CreatePost_Success}</label>
-
-                        <div className="overflow-hidden break-words mt-2 text-center">
-                            <Link href={appUrl} target='_blank' className="flex items-center justify-center space-x-2">
-                                <span>{locale.CreatePost_LinkToBsky}</span>
-                                <svg
-                                    width="20px"
-                                    height="20px"
-                                    viewBox="0 0 800 800"
-                                    version="1.1"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    xmlnsXlink="http://www.w3.org/1999/xlink"
-                                    xmlSpace="preserve"
-                                    style={{
-                                        fillRule: 'evenodd',
-                                        clipRule: 'evenodd',
-                                        strokeLinecap: 'round',
-                                        strokeLinejoin: 'round',
-                                        strokeMiterlimit: 1
-                                    }}
-                                >
-                                    <g transform="matrix(1,0,0,1,-235,-1950)">
-                                        <g transform="matrix(2.02015,0,0,2.02017,-51.8034,1393.69)">
-                                            <rect x="142.327" y="275.741" width="396.011" height="396.011" style={{ fill: 'none' }} />
-                                            <g transform="matrix(0.495014,0,0,0.495007,3.15989,-102.548)">
-                                                <path
-                                                    d="M687.28,980.293L406.378,980.293L406.378,1438.97L865.059,1438.97L865.059,1159.34"
-                                                    style={{ fill: 'none', stroke: 'black', strokeWidth: '22.22px' }}
-                                                />
-                                            </g>
-                                            <g transform="matrix(0.145129,0.145127,-0.145129,0.145127,656.851,-26.082)">
-                                                <path
-                                                    d="M519.133,2352.46L519.133,2855.01L744,2855.01L744,2352.46L1108.68,2352.46L631.567,1875.35L154.455,2352.46L519.133,2352.46Z"
-                                                    style={{ fill: 'none', stroke: 'black', strokeWidth: '53.6px' }}
-                                                />
-                                            </g>
-                                        </g>
-                                    </g>
-                                </svg>
-                            </Link>
-                        </div>
-                    </>
-                }
             </div>
         </>
     )
