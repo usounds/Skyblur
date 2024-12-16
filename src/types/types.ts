@@ -21,12 +21,12 @@ export type Service = {
     serviceEndpoint: string;
 }
 
-export type  PostData = {
-    text: string; 
-    additional: string; 
-    $type: string; 
-    createdAt: string; 
-    uri: string; 
+export type PostData = {
+    text: string;
+    additional: string;
+    $type: string;
+    createdAt: string;
+    uri: string;
 }
 
 export const COLLECTION = 'uk.skyblur.post';
@@ -34,31 +34,36 @@ export const MODAL_TIME = 600;
 
 
 export type PostListItem = {
-    blur: PostData; 
-    blurATUri: string; 
-    postURL?: string; 
-    blurURL?: string; 
-    modal:boolean;
+    blur: PostData;
+    blurATUri: string;
+    postURL?: string;
+    blurURL?: string;
+    modal: boolean;
 }
 
 
 export const customTheme: PartialReablocksTheme = {
     components: {
-      checkbox: {
-        label: {
-          base: "text-gray-600",
-          checked: "checked"
+        button: {
+            colors: {
+                primary: {
+                },
+            }
+        },
+        checkbox: {
+            label: {
+                base: "text-gray-600",
+                checked: "checked"
+            }
+        },
+        callout: {
+            base: {
+                variant: {
+                    error: "bg-red-100 border-error"
+                }
+
+            }
+
         }
-      },
-      callout: {
-        base: {
-          variant: {
-            error: "bg-red-100 border-error"
-          }
-  
-        }
-  
-      }
     },
-  };
-  
+};
