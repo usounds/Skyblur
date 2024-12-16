@@ -5,6 +5,7 @@ import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import { useState, useEffect } from "react";
+import { Button } from 'reablocks';
 
 export const LoginForm: React.FC = ({
 }) => {
@@ -133,11 +134,7 @@ export const LoginForm: React.FC = ({
         />
       </div>
 
-      <button
-        disabled={isLoading}
-        onClick={blueskyOAuthLogin}
-        className="rounded-lg w-full bg-blue-500 px-8 py-3 text-center text-sm text-white outline-none ring-blue-300 transition duration-100 hover:bg-blue-700 focus-visible:ring active:bg-blue-600 disabled:bg-gray-200 disabled:text-gray-600 md:text-base flex items-center justify-center"
-      >
+      <Button color="primary" className="text-white text-base font-normal w-full disabled:bg-blue-500" onClick={blueskyOAuthLogin} disabled={isLoading} >
         {isLoading ? <>
           <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
             <span className="sr-only">Loading...</span>
@@ -158,7 +155,8 @@ export const LoginForm: React.FC = ({
             </svg>
             {locale.Login_Login}
           </>}
-      </button>
+      </Button>
+
 
 
       {(!isLoading && blueskyLoginMessage) &&
