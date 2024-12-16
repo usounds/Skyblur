@@ -1,3 +1,6 @@
+
+import { PartialReablocksTheme } from 'reablocks';
+
 export type DIDDocument = {
     '@context': string[];
     id: string;
@@ -27,6 +30,7 @@ export type  PostData = {
 }
 
 export const COLLECTION = 'uk.skyblur.post';
+export const MODAL_TIME = 600;
 
 
 export type PostListItem = {
@@ -36,3 +40,25 @@ export type PostListItem = {
     blurURL?: string; 
     modal:boolean;
 }
+
+
+export const customTheme: PartialReablocksTheme = {
+    components: {
+      checkbox: {
+        label: {
+          base: "text-gray-600",
+          checked: "checked"
+        }
+      },
+      callout: {
+        base: {
+          variant: {
+            error: "bg-red-100 border-error"
+          }
+  
+        }
+  
+      }
+    },
+  };
+  

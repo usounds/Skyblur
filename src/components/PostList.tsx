@@ -1,3 +1,5 @@
+import { DeleteModal } from "@/components/DeleteModal";
+import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
@@ -6,8 +8,8 @@ import { COLLECTION, PostData, PostListItem } from "@/types/types";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
-import PostListLoading from "@/components/PostListLoading";
-import {DeleteModal} from "@/components/DeleteModal";
+
+import { Button } from 'reablocks';
 
 type PostListProps = {
     handleEdit: (input: PostListItem) => void;
@@ -62,7 +64,7 @@ export const PostList: React.FC<PostListProps> = ({
                     blur: value,
                     postURL: transformUrl(value.uri),
                     blurURL: transformUrl(obj.uri),
-                    modal:false
+                    modal: false
                 });
             }
             // createdAtで降順ソート
@@ -87,7 +89,7 @@ export const PostList: React.FC<PostListProps> = ({
 
     // 削除確認ダイアログを閉じる関数
     const handleCloseOverlay = () => {
-        if(selectedItem) selectedItem.modal=false
+        if (selectedItem) selectedItem.modal = false
         setSelectedItem(null);
     };
 
@@ -183,8 +185,8 @@ export const PostList: React.FC<PostListProps> = ({
                                 <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} />
                             </div>
 
-                            {item.modal&&
-                           <DeleteModal content={item.blur.text} onConfirm={handleDeleteItem} onClose={handleCloseOverlay}/> 
+                            {item.modal &&
+                                <DeleteModal content={item.blur.text} onConfirm={handleDeleteItem} onClose={handleCloseOverlay} />
                             }
                             <div className="flex justify-between gap-2 mt-2">
                                 <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
@@ -229,13 +231,12 @@ export const PostList: React.FC<PostListProps> = ({
 
                 {!isLoading &&
                     <div className="flex justify-center gap-4 mt-6">
-                        <button disabled={isLoading} onClick={() => getPosts(did, cursor)} className="relative z-0 h-12 rounded-full bg-gray-500 disabled:bg-gray-300 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full after:bg-gray-500 hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
+                        <Button color="secondary" className="text-white text-base font-normal" disabled={isLoading} onClick={() => getPosts(did, cursor)} >
                             {deleteList.length == 10 ? locale.DeleteList_ReadMore : locale.DeleteList_ToHead}
-                        </button>
-
+                        </Button>
                     </div>
                 }
 
-            </div>
+        </div >
         </>)
 }

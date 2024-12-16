@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { ErrorCallout } from 'reablocks';
+import { Button } from 'reablocks';
 
 type AutoResizeTextAreaProps = {
     text: string;
@@ -80,7 +81,9 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
             {error && <ErrorCallout text={error} variant="error" />}
             {isEnableBrackets &&
                 <div className="flex justify-center gap-4 mb-8">
-                    <button onClick={handleAddBrackets} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_AddBrackets}</button>
+                    <Button color="primary" className="text-white text-base font-normal" onClick={handleAddBrackets}>
+                        {locale.CreatePost_AddBrackets}
+                    </Button>
                 </div>
             }
         </div>
