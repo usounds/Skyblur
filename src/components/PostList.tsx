@@ -89,7 +89,11 @@ export const PostList: React.FC<PostListProps> = ({
 
     // 削除確認ダイアログを閉じる関数
     const handleCloseOverlay = () => {
-        if (selectedItem) selectedItem.modal = false
+        if (selectedItem) {
+            selectedItem.modal = false
+            setDeleteList(prevList => prevList.filter(item => item.blurATUri !== selectedItem.blurATUri));
+        }
+        
         setSelectedItem(null);
     };
 
@@ -133,10 +137,6 @@ export const PostList: React.FC<PostListProps> = ({
         }
         // 実際の削除処理をここに追加
         console.log("削除されました:", selectedItem);
-        if (selectedItem) {
-            setDeleteList(prevList => prevList.filter(item => item.blurATUri !== selectedItem.blurATUri));
-        }
-        setSelectedItem(null); // ダイアログを閉じる
 
     };
 
