@@ -25,6 +25,7 @@ export const PostList: React.FC<PostListProps> = ({
     const did = useAtpAgentStore((state) => state.did);
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const getPosts = async (did: string, cursor: string) => {
 
@@ -83,14 +84,14 @@ export const PostList: React.FC<PostListProps> = ({
 
     // 投稿をタップした時に選択する関数
     const handleSelectItem = (item: PostListItem) => {
-        item.modal = true
+        setIsModalOpen(true)
         setSelectedItem(item);
     };
 
     // 削除確認ダイアログを閉じる関数
-    const handleCloseOverlay = () => {
-        if (selectedItem) {
-            selectedItem.modal = false
+    const handleCloseOverlay = (isDeleted : boolean) => {
+        if (isDeleted && selectedItem) {
+            setIsModalOpen(false)
             setDeleteList(prevList => prevList.filter(item => item.blurATUri !== selectedItem.blurATUri));
         }
         
@@ -185,9 +186,6 @@ export const PostList: React.FC<PostListProps> = ({
                                 <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} />
                             </div>
 
-                            {item.modal &&
-                                <DeleteModal content={item.blur.text} onConfirm={handleDeleteItem} onClose={handleCloseOverlay} />
-                            }
                             <div className="flex justify-between gap-2 mt-2">
                                 <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
                                 <div className="flex gap-2">
@@ -228,6 +226,12 @@ export const PostList: React.FC<PostListProps> = ({
                     ))}
 
                 </div>
+
+
+                {isModalOpen && selectedItem && 
+                                <DeleteModal content={selectedItem.blur.text} onConfirm={handleDeleteItem} onClose={handleCloseOverlay} />
+                                
+                            }
 
                 {!isLoading &&
                     <div className="flex justify-center gap-4 mt-6">
