@@ -56,7 +56,6 @@ const messages = {
     DeleteList_Loading: "読み込み中",
     DeleteList_ReadMore: "さらに読み込み",
     DeleteList_ToHead: "再読み込み",
-    Post_IsLoading:"読み込み中です... ",
 }
 
 export default messages;

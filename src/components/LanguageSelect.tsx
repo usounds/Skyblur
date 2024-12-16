@@ -1,5 +1,5 @@
 import { Locales, localeDataMap, useLocaleStore } from "@/state/Locale";
-import React from "react";
+import React,{useEffect} from "react";
 
 const LanguageSelect: React.FC = () => {
   const localeString = useLocaleStore((state) => state.locale);
@@ -9,6 +9,15 @@ const LanguageSelect: React.FC = () => {
     setLocale(event.target.value as Locales);
   };
 
+
+  useEffect(() => {
+    setLocale(localeString)
+
+    // クリーンアップ
+    return () => {
+    };    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  
   return (
     <select
       className="py-2 px-1 pe-1 block border border-gray-600 bg-neutral-800 text-white rounded-lg text-sm"

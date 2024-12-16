@@ -33,8 +33,8 @@ const PostLoading: React.FC<ContentLoaderProps> = (props) => {
             >
 
 
-                <rect x="60" y="10" rx="3" ry="3" width="110" height="8" />
-                <rect x="60" y="32" rx="3" ry="3" width="65" height="8" />
+                <rect x="60" y="10" rx="3" ry="3" width="85" height="8" />
+                <rect x="60" y="32" rx="3" ry="3" width="130" height="8" />
                 <rect x="0" y="74" rx="3" ry="3" width={viewBoxWidth - 66} height="6" />
                 <rect x="0" y="90" rx="3" ry="3" width={viewBoxWidth - 96} height="6" />
                 <rect x="0" y="106" rx="3" ry="3" width="178" height="6" />
