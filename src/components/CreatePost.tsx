@@ -66,7 +66,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     function handleSetIsReply(param: boolean) {
         setIsReply(param)
-        
+
         if (!param) {
             setReplyPost(undefined)
             setTempReply('')
@@ -95,7 +95,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     function convertFullWidthToHalfWidthBrackets(): void {
-        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'),simpleMode)
+        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'), simpleMode)
     }
 
     const handleSetReplyPost = async (post: PostView) => {
@@ -105,12 +105,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     }
 
-    const handleSetPostText =(text: string) => {
+    const handleSetPostText = (text: string) => {
         setPostText(text, simpleMode)
-        
+
     }
 
-    const setPostText = (text: string, simpleMode:boolean) => {
+    const setPostText = (text: string, simpleMode: boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
         let postTextLocal = text
@@ -413,7 +413,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
         if (prevBlur) {
-            setPostText(prevBlur.blur.text,false)
+            setPostText(prevBlur.blur.text, false)
             setAddText(prevBlur.blur.additional)
         } else if (tempText || tempAdditional || tempReply) {
             setIsTempRestore(true)
@@ -426,7 +426,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const handleCheckboxChange = (isChecked: boolean) => {
         setSimpleMode(isChecked);
         if (!prevBlur) setTempSimpleMode(isChecked);
-        setPostText('',isChecked); // テキストを空にします
+        setPostText('', isChecked); // テキストを空にします
     };
 
     const handleAddText = (addText: string) => {
@@ -443,12 +443,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     const handleTempApply = async () => {
         console.log('handleTempApply')
-        setPostText(tempText,tempSimpleMode);
+        setPostText(tempText, tempSimpleMode);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
-        if(tempReply && agent && tempReply.includes(did)){
-            const result  = await agent.app.bsky.feed.getPosts({
-                uris : [tempReply]
+        if (tempReply && agent && tempReply.includes(did)) {
+            const result = await agent.app.bsky.feed.getPosts({
+                uris: [tempReply]
             })
 
             setIsReply(true)
@@ -505,19 +505,23 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 </Button>
                             }
                         </div>
+                        
+                        {!prevBlur &&
+                            <>
+                                <div className='mt-2'>{locale.CreatePost_Preview}</div>
+                                <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
 
-                        <div className='mt-2'>{locale.CreatePost_Preview}</div>
-                        <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
-
-                        <AutoResizeTextArea
-                            text={postTextBlur}
-                            setPostText={handleSetPostText}
-                            disabled={true}
-                            locale={locale}
-                            placeHolder={locale.CreatePost_PreviewPlaceHolder}
-                            max={10000}
-                            isEnableBrackets={false}
-                        />
+                                <AutoResizeTextArea
+                                    text={postTextBlur}
+                                    setPostText={handleSetPostText}
+                                    disabled={true}
+                                    locale={locale}
+                                    placeHolder={locale.CreatePost_PreviewPlaceHolder}
+                                    max={10000}
+                                    isEnableBrackets={false}
+                                />
+                            </>
+                        }
 
                         <div className='mt-2'>{locale.CreatePost_Additional}</div>
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_AdditionalDescription}</div>
