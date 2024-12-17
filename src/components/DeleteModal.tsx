@@ -56,7 +56,7 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
             <footer className="flex justify-end space-x-4">
               <Button
                 disabled={isDeletesing}
-                className="px-4 py-2 text-white"
+                className="px-4 py-2 text-white font-normal"
                 onClick={() => {
                   handleSubmit()
                 }}
@@ -65,7 +65,7 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
                 {locale.DeleteList_DeleteButton}
               </Button>
               <Button
-                className="px-4 py-2 text-black border-gray-400"
+                className="px-4 py-2 text-black border-gray-400 font-normal"
                 onClick={() => {
                   handleJustClose()
                 }}

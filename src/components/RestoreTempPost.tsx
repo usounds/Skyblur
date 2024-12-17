@@ -51,7 +51,7 @@ export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, o
                         <footer className="flex justify-end space-x-4">
                             <Button
                                 disabled={isDeletesing}
-                                className="px-4 py-2 text-white"
+                                className="px-4 py-2 text-white font-normal"
                                 onClick={() => {
                                     handleApply()
                                 }}
@@ -60,11 +60,11 @@ export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, o
                                 {locale.CreatePost_RestoreButton}
                             </Button>
                             <Button
-                                className="px-4 py-2 text-black border-gray-400"
+                                className="px-4 py-2 text-white font-normal"
                                 onClick={() => {
                                     handleClose()
                                 }}
-                                variant="outline"
+                                color="error"
                             >
                                 {locale.DeleteList_CancelButton}
                             </Button>
