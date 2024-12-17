@@ -9,7 +9,7 @@ import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { PostListItem, customTheme } from "@/types/types";
 import Image from 'next/image';
-import { Button, ThemeProvider, extendTheme, theme } from 'reablocks';
+import { Button, ThemeProvider, extendTheme, theme, DotsLoader } from 'reablocks';
 import { useState } from "react";
 
 
@@ -45,7 +45,6 @@ export default function Home() {
 
         <Header />
         <main className="text-gray-700 ">
-
           <div className="mx-auto max-w-screen-md ">
 
             {did === "" &&
@@ -55,14 +54,8 @@ export default function Home() {
 
                 <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
                   {isLoginProcess ?
-                    <div className="flex items-center">
-                      <span
-                        className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full"
-                        role="status"
-                        aria-label="loading"
-                      >
-                        <span className="sr-only">Loading...</span>
-                      </span>
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <p className="mb-2"><DotsLoader /></p>
                       {locale.Home_inAuthProgress}
                     </div>
                     :

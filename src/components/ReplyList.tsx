@@ -2,7 +2,7 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { PostView } from "@/types/types";
-import { Button, Input, Step, Stepper } from 'reablocks';
+import { Button, Input, Step, Stepper, DotsLoader } from 'reablocks';
 import { useEffect, useState } from "react";
 
 type ReplyListProps = {
@@ -92,6 +92,16 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                     {locale.ReplyList_Search}
                 </Button>
             </div>
+
+
+            {postList.length === 0 &&
+
+                <div className="flex flex-col items-center justify-center h-full text-gray-700">
+                    {isLoading && <p><DotsLoader /></p>}
+                    {!isLoading && locale.DeleteList_NoListItem}
+                </div>
+            }
+
             <Stepper animated className="bg-white mt-2">
 
                 {postList.map((item, index) => (
@@ -120,14 +130,6 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                         </div>
                     </Step>
                 ))}
-                {postList.length === 0 &&
-                    <Step>
-                        <div className="flex flex-col gap-1">
-                            <span className="font-medium">
-                                {isLoading ? locale.DeleteList_Loading : locale.DeleteList_NoListItem}
-                            </span>
-                        </div>
-                    </Step>}
             </Stepper >
 
             {(!isLoading && currentCursor) &&

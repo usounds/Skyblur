@@ -123,6 +123,11 @@ export const customTheme: PartialReablocksTheme = {
         toggle:{
             base:"flex items-center justify-start cursor-pointer bg-secondary box-border border border-panel-accent rounded-full hover:bg-primary-hover transition-[background-color] ease-in-out duration-300"
 
+
+        },
+        dotsLoader:{
+            dot:"rounded-[50%] bg-gray-900"
+
         }
     },
 };
