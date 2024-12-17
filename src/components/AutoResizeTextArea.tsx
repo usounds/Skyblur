@@ -1,4 +1,6 @@
 import { useRef, useEffect } from "react";
+import { ErrorCallout } from 'reablocks';
+import { Button } from 'reablocks';
 
 type AutoResizeTextAreaProps = {
     text: string;
@@ -8,6 +10,7 @@ type AutoResizeTextAreaProps = {
     locale: any;
     max: number;
     isEnableBrackets: boolean;
+    error?: string
 };
 
 const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
@@ -17,7 +20,8 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
     placeHolder,
     locale,
     max,
-    isEnableBrackets
+    isEnableBrackets,
+    error
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -69,14 +73,18 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
                 value={text}
                 onChange={handleTextChange}
                 disabled={disabled}
-                className="border bg-gray-50 text-gray-800 m-2 py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-gray-500 focus:ring-gray-500"
+                className="border bg-gray-50 text-gray-800 m-2 py-3 px-4 block w-full border-gray-300 rounded-lg text-sm focus:border-gray-500 focus:ring-gray-500"
                 placeholder={placeHolder}
                 style={{ overflow: "hidden", resize: "none", fontSize: "16px" }}
                 maxLength={max}
             />
+            {!disabled && <div className="block text-sm text-gray-600 mt-1">{text.length}/{max}</div>}
+            {error && <ErrorCallout text={error} variant="error" />}
             {isEnableBrackets &&
                 <div className="flex justify-center gap-4 mb-8">
-                    <button onClick={handleAddBrackets} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_AddBrackets}</button>
+                    <Button color="primary" size="large" className="text-white text-base font-normal" onClick={handleAddBrackets} disabled={text.length===0}>
+                        {locale.CreatePost_AddBrackets}
+                    </Button>
                 </div>
             }
         </div>

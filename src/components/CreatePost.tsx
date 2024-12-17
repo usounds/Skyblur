@@ -1,12 +1,18 @@
 "use client"
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
+import { ReplyList } from "@/components/ReplyList";
+import { RestoreTempPost } from "@/components/RestoreTempPost";
+import { transformUrl } from "@/logic/HandleBluesky";
+import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { COLLECTION, PostListItem } from "@/types/types";
+import { useTempPostStore } from "@/state/TempPost";
+import { COLLECTION, PostListItem, PostView } from "@/types/types";
 import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
+import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import Link from 'next/link';
+import { Button, IconButton, Toggle } from 'reablocks';
 import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -33,6 +39,17 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const did = useAtpAgentStore((state) => state.did);
+    const setTempText = useTempPostStore((state) => state.setText);
+    const setTempAdditional = useTempPostStore((state) => state.setAdditional);
+    const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
+    const tempText = useTempPostStore((state) => state.text);
+    const tempAdditional = useTempPostStore((state) => state.additional);
+    const tempSimpleMode = useTempPostStore((state) => state.simpleMode);
+    const [isTempRestore, setIsTempRestore] = useState<boolean>(false)
+    const [isReply, setIsReply] = useState<boolean>(false)
+    const [replyPost, setReplyPost] = useState<PostView | undefined>()
+    const tempReply = useTempPostStore((state) => state.reply);
+    const setTempReply = useTempPostStore((state) => state.setReply);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -45,6 +62,16 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         const lang2 = iso6393to1(lang3) || locale.CreatePost_Lang;
 
         return lang2;
+    }
+
+    function handleSetIsReply(param: boolean) {
+        setIsReply(param)
+        
+        if (!param) {
+            setReplyPost(undefined)
+            setTempReply('')
+        }
+
     }
 
     function containsFullWidthBrackets(input: string): boolean {
@@ -68,10 +95,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     function convertFullWidthToHalfWidthBrackets(): void {
-        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'))
+        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'),simpleMode)
     }
 
-    const setPostText = (text: string) => {
+    const handleSetReplyPost = async (post: PostView) => {
+        setReplyPost(post)
+        setTempReply(post.uri)
+        console.log(post)
+
+    }
+
+    const handleSetPostText =(text: string) => {
+        setPostText(text, simpleMode)
+        
+    }
+
+    const setPostText = (text: string, simpleMode:boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
         let postTextLocal = text
@@ -105,6 +144,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostTest(text)
         setPostTextForRecord(postTextLocal);
         setPostTextBlur(blurredText);
+
+        if (!prevBlur) setTempText(text)
 
         setIsIncludeFullBranket(containsFullWidthBrackets(text))
 
@@ -149,7 +190,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     const handleCrearePost = async () => {
-        if(!agent){
+        if (!agent) {
             console.error("未ログインです")
             return
         }
@@ -215,6 +256,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 via: 'Skyblur',
                 "uk.skyblur.post.uri": blurUri
             };
+
+            if (replyPost) {
+                const reply = {
+                    root: {
+                        cid: replyPost.record.reply?.root.cid || replyPost.cid,
+
+                        uri: replyPost.record.reply?.root.uri || replyPost.uri,
+                    },
+                    parent: {
+                        cid: replyPost.cid || '',
+                        uri: replyPost.uri || ''
+                    }
+                }
+                postObj.reply = reply
+
+            }
 
             postObj.facets = new Array(0);
 
@@ -343,6 +400,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
+            if (!prevBlur) handleTempDelete()
             setMode('menu')
         } else {
             console.error(ret)
@@ -355,15 +413,61 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
         if (prevBlur) {
-            setPostText(prevBlur.blur.text)
+            setPostText(prevBlur.blur.text,false)
             setAddText(prevBlur.blur.additional)
+        } else if (tempText || tempAdditional || tempReply) {
+            setIsTempRestore(true)
+
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, prevBlur]); // Make sure to use the correct second dependency
 
+
+    const handleCheckboxChange = (isChecked: boolean) => {
+        setSimpleMode(isChecked);
+        if (!prevBlur) setTempSimpleMode(isChecked);
+        setPostText('',isChecked); // テキストを空にします
+    };
+
+    const handleAddText = (addText: string) => {
+        setAddText(addText);
+        if (!prevBlur) setTempAdditional(addText);
+    };
+
+    const handleTempDelete = () => {
+        setTempText('')
+        setTempAdditional('')
+        setTempSimpleMode(false)
+        setTempReply('')
+    };
+
+    const handleTempApply = async () => {
+        console.log('handleTempApply')
+        setPostText(tempText,tempSimpleMode);
+        setAddText(tempAdditional)
+        setSimpleMode(tempSimpleMode)
+        if(tempReply && agent && tempReply.includes(did)){
+            const result  = await agent.app.bsky.feed.getPosts({
+                uris : [tempReply]
+            })
+
+            setIsReply(true)
+            setReplyPost(result.data.posts[0] as PostView)
+        }
+    };
+
+    const handleModalClose = () => {
+        setIsTempRestore(false)
+    };
+
+
     return (
         <>
             <div className="m-3">
+
+                {isTempRestore &&
+                    <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete} />
+                }
 
                 {(!appUrl) &&
                     <>
@@ -371,14 +475,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <label className="">{locale.CreatePost_Post}</label>
 
                         <div className="flex my-1">
-                            <input type="checkbox" checked={simpleMode} onChange={(event) => {
-                                setSimpleMode(event.target.checked);
-                                setPostText(''); // setPostTextは状態変更のために呼び出す
-                            }}
-                                className="shrink-0 mt-0.5 border-gray-200 rounded text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800" id="hs-checked-checkbox" />
-                            <label htmlFor="hs-checked-checkbox" className="text-sm mt-0.5 text-gray-500 ms-3">{locale.CreatePost_SimpleMode}</label>
+                            <p className="flex items-center">
+                                <Toggle
+                                    checked={simpleMode}
+                                    onChange={handleCheckboxChange} // Boolean を渡します
+                                />
+                                <span className="ml-2">{locale.CreatePost_SimpleMode}</span>
+                            </p>
                         </div>
-
                         {simpleMode ?
                             <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PostSimpleModeDescription}</div>
                             :
@@ -386,30 +490,28 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         }
                         <AutoResizeTextArea
                             text={postText}
-                            setPostText={setPostText}
+                            setPostText={handleSetPostText}
                             disabled={false}
                             locale={locale}
                             placeHolder={locale.CreatePost_PostPlaceHolder}
                             max={300}
                             isEnableBrackets={!simpleMode}
+                            error={warning}
                         />
-                        {warning && <div className="text-red-500 my-3">{warning}</div>}
-
                         <div className="flex justify-center gap-4 mb-8">
                             {isIncludeFullBranket &&
-                                <button onClick={convertFullWidthToHalfWidthBrackets} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">{locale.CreatePost_BracketFromFullToHalf}</button>
+                                <Button color="primary" size="large" className="text-white text-base font-normal mt-2" onClick={convertFullWidthToHalfWidthBrackets} disabled={isLoading}>
+                                    {locale.CreatePost_BracketFromFullToHalf}
+                                </Button>
                             }
                         </div>
-
-                        <div className="block text-sm text-gray-600 mt-1">{postText.length}/300</div>
-
 
                         <div className='mt-2'>{locale.CreatePost_Preview}</div>
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
 
                         <AutoResizeTextArea
                             text={postTextBlur}
-                            setPostText={setPostText}
+                            setPostText={handleSetPostText}
                             disabled={true}
                             locale={locale}
                             placeHolder={locale.CreatePost_PreviewPlaceHolder}
@@ -421,7 +523,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_AdditionalDescription}</div>
                         <AutoResizeTextArea
                             text={addText}
-                            setPostText={setAddText}
+                            setPostText={handleAddText}
                             disabled={false}
                             locale={locale}
                             placeHolder={locale.CreatePost_AdditionalPlaceHolder}
@@ -429,67 +531,76 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             isEnableBrackets={false}
                         />
 
-                        <div className="block text-sm text-gray-600 mt-1">{addText.length}/10000</div>
+                        {!prevBlur &&
+                            <div className='mb-6 '>
+                                <div className='mt-4 mb-2'>{locale.ReplyList_Reply}</div>
+                                <div className="block text-sm text-gray-400 mt-1">{locale.ReplyList_ReplyLabelDescription}</div>
+                                <p className="flex items-center mt-2">
+                                    <Toggle
+                                        checked={isReply}
+                                        onChange={handleSetIsReply} // Boolean を渡します
+                                    />
+                                    <span className="ml-2">{locale.ReplyList_UseReply}</span>
+                                </p>
+
+                                {isReply &&
+                                    <>
+                                        {replyPost &&
+                                            <div
+                                                className="p-2 m-2 bg-white rounded-md border border-gray-300 w-full "
+                                            >
+                                                <div>
+
+                                                    <div
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: DOMPurify.sanitize(replyPost.record.text.replace(/\n/g, '<br />')),
+                                                        }}
+                                                    ></div>
+                                                </div>
+
+                                                <div className="flex justify-between items-center gap-2 mt-2">
+                                                    <div className="text-sm text-gray-400">{formatDateToLocale(replyPost.record.createdAt)}</div>
+                                                    <div className="flex sm:gap-6 gap-4">
+                                                        <IconButton size="small" variant="text"  >
+                                                            <a href={transformUrl(replyPost.uri)} target="_blank">
+                                                                <svg width="20" height="20" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg"><path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" /></svg>
+                                                            </a>
+                                                        </IconButton>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        {!replyPost &&
+                                            <ReplyList handleSetPost={handleSetReplyPost} />
+                                        }
+                                    </>
+                                }
+                            </div>
+                        }
+
 
                         <div className="flex justify-center gap-4 mb-8">
-                            {warning ? <div className="text-red-500">{warning}</div> :
-                                <button onClick={handleCrearePost} disabled={isLoading} className="disabled:bg-gray-200 mt-3 relative z-0 h-12 rounded-full bg-blue-500 px-6 text-neutral-50 after:absolute after:left-0 after:top-0 after:-z-10 after:h-full after:w-full after:rounded-full hover:after:scale-x-125 hover:after:scale-y-150 hover:after:opacity-0 hover:after:transition hover:after:duration-500">
-                                    {prevBlur ?
-                                        <>{locale.CreatePost_UpdateButton}</>
-                                        :
-                                        <>{locale.CreatePost_CreateButton}</>
-                                    }
-                                </button>
-                            }
+                            {!warning && (
+                                (isReply && replyPost) || !isReply
+                            ) && (
+                                    <Button
+                                        color="primary"
+                                        size="large"
+                                        className="text-white text-base font-normal"
+                                        onClick={handleCrearePost}
+                                        disabled={isLoading || postText.length === 0}
+                                    >
+                                        {prevBlur ? (
+                                            <>{locale.CreatePost_UpdateButton}</>
+                                        ) : (
+                                            <>{locale.CreatePost_CreateButton}</>
+                                        )}
+                                    </Button>
+                                )}
                         </div>
                     </>
                 }
 
-                {appUrl &&
-                    <>
-                        <label className="block text-sm text-gray-600 mt-1">{locale.CreatePost_Success}</label>
-
-                        <div className="overflow-hidden break-words mt-2 text-center">
-                            <Link href={appUrl} target='_blank' className="flex items-center justify-center space-x-2">
-                                <span>{locale.CreatePost_LinkToBsky}</span>
-                                <svg
-                                    width="20px"
-                                    height="20px"
-                                    viewBox="0 0 800 800"
-                                    version="1.1"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    xmlnsXlink="http://www.w3.org/1999/xlink"
-                                    xmlSpace="preserve"
-                                    style={{
-                                        fillRule: 'evenodd',
-                                        clipRule: 'evenodd',
-                                        strokeLinecap: 'round',
-                                        strokeLinejoin: 'round',
-                                        strokeMiterlimit: 1
-                                    }}
-                                >
-                                    <g transform="matrix(1,0,0,1,-235,-1950)">
-                                        <g transform="matrix(2.02015,0,0,2.02017,-51.8034,1393.69)">
-                                            <rect x="142.327" y="275.741" width="396.011" height="396.011" style={{ fill: 'none' }} />
-                                            <g transform="matrix(0.495014,0,0,0.495007,3.15989,-102.548)">
-                                                <path
-                                                    d="M687.28,980.293L406.378,980.293L406.378,1438.97L865.059,1438.97L865.059,1159.34"
-                                                    style={{ fill: 'none', stroke: 'black', strokeWidth: '22.22px' }}
-                                                />
-                                            </g>
-                                            <g transform="matrix(0.145129,0.145127,-0.145129,0.145127,656.851,-26.082)">
-                                                <path
-                                                    d="M519.133,2352.46L519.133,2855.01L744,2855.01L744,2352.46L1108.68,2352.46L631.567,1875.35L154.455,2352.46L519.133,2352.46Z"
-                                                    style={{ fill: 'none', stroke: 'black', strokeWidth: '53.6px' }}
-                                                />
-                                            </g>
-                                        </g>
-                                    </g>
-                                </svg>
-                            </Link>
-                        </div>
-                    </>
-                }
             </div>
         </>
     )

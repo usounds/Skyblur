@@ -9,7 +9,7 @@ const messages = {
     Home_Landing003Descrtption: "[秘密だよ]の箇所の原文が表示されます。投稿を削除したいときもSkyblurから。",
     Menu_CreatePost: "新規の投稿",
     Menu_Logout: "ログアウト",
-    Menu_Back: "戻る",
+    Menu_Back: "← 戻る",
     Menu_TermOfUse: "利用規約",
     Menu_LoginMessage: "{1}さん、こんにちは！",
     Login_Title: "ハンドルを入力してログインをタップして「bsky.social」のドメインであることを確認してから「通常のパスワード」を使ってください。",
@@ -48,6 +48,8 @@ const messages = {
     CreatePost_BracketsUnbalanced: "カッコが正しくありません。[と]の数が一致しません。",
     CreatePost_isPrevBlurLoading: "前回の投稿内容を取得しています",
     CreatePost_UpdateButton: "更新する(Skyblurのみ反映されます)",
+    CreatePost_RestoreTitle: "途中まで入力した内容を復元しますか？",
+    CreatePost_RestoreButton: "復元",
     DeleteList_ChooseDeleteItem: "投稿一覧",
     DeleteList_NoListItem: "投稿がありません",
     DeleteList_ConfirmDelete: "この投稿を削除しますか？",
@@ -56,6 +58,12 @@ const messages = {
     DeleteList_Loading: "読み込み中",
     DeleteList_ReadMore: "さらに読み込み",
     DeleteList_ToHead: "再読み込み",
+    ReplyList_Reply: "返信",
+    ReplyList_ReplyLabelDescription: "自分の投稿に返信する場合、チェックしてください",
+    ReplyList_UseReply: "返信する",
+    ReplyList_ReplyToThis: "この投稿に返信する",
+    ReplyList_ReplyDescrition: "[ <- 返信 ] ",
+    ReplyList_Search: "絞り込む",
 }
 
 export default messages;
