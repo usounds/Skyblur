@@ -26,6 +26,14 @@ function validateBrackets(input: string): boolean {
   return openBracket; // 最後に閉じ括弧がない場合もエラー
 }
 
+const escapeTag = (str: string): string => {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
 
 function areBracketsUnbalanced(input: string): boolean {
   let openBracketsCount = 0;
@@ -42,9 +50,9 @@ function areBracketsUnbalanced(input: string): boolean {
   return openBracketsCount !== closeBracketsCount;
 }
 
-
 const PostTextWithBold = ({ postText ,isValidateBrackets}: { postText: string,isValidateBrackets:boolean }) => {
-  let processedText = postText;
+  let processedText = escapeHTML(postText);
+  processedText = escapeTag(processedText)
 
   // 括弧のバリデーションをチェックし、エラーがあれば括弧を削除
   if (isValidateBrackets && (validateBrackets(processedText) || areBracketsUnbalanced(processedText))) {
