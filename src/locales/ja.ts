@@ -58,6 +58,12 @@ const messages = {
     DeleteList_Loading: "読み込み中",
     DeleteList_ReadMore: "さらに読み込み",
     DeleteList_ToHead: "再読み込み",
+    ReplyList_Reply: "返信",
+    ReplyList_ReplyLabelDescription: "自分の投稿に返信する場合、チェックしてください",
+    ReplyList_UseReply: "返信する",
+    ReplyList_ReplyToThis: "この投稿に返信する",
+    ReplyList_ReplyDescrition: "[ <- 返信 ] ",
+    ReplyList_Search: "絞り込む",
 }
 
 export default messages;

@@ -4,7 +4,7 @@ import { Avatar } from "@/components/Avatar";
 import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
-import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
+import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";

@@ -1,14 +1,18 @@
 "use client"
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
+import { ReplyList } from "@/components/ReplyList";
 import { RestoreTempPost } from "@/components/RestoreTempPost";
+import { transformUrl } from "@/logic/HandleBluesky";
+import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
-import { COLLECTION, PostListItem } from "@/types/types";
+import { COLLECTION, PostListItem, PostView } from "@/types/types";
 import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
+import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { Button, Checkbox } from 'reablocks';
+import { Button, IconButton, Toggle } from 'reablocks';
 import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -42,6 +46,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const tempAdditional = useTempPostStore((state) => state.additional);
     const tempSimpleMode = useTempPostStore((state) => state.simpleMode);
     const [isTempRestore, setIsTempRestore] = useState<boolean>(false)
+    const [isReply, setIsReply] = useState<boolean>(false)
+    const [replyPost, setReplyPost] = useState<PostView | undefined>()
+    const tempReply = useTempPostStore((state) => state.reply);
+    const setTempReply = useTempPostStore((state) => state.setReply);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -54,6 +62,16 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         const lang2 = iso6393to1(lang3) || locale.CreatePost_Lang;
 
         return lang2;
+    }
+
+    function handleSetIsReply(param: boolean) {
+        setIsReply(param)
+        
+        if (!param) {
+            setReplyPost(undefined)
+            setTempReply('')
+        }
+
     }
 
     function containsFullWidthBrackets(input: string): boolean {
@@ -77,10 +95,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     function convertFullWidthToHalfWidthBrackets(): void {
-        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'))
+        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'),simpleMode)
     }
 
-    const setPostText = (text: string) => {
+    const handleSetReplyPost = async (post: PostView) => {
+        setReplyPost(post)
+        setTempReply(post.uri)
+        console.log(post)
+
+    }
+
+    const handleSetPostText =(text: string) => {
+        setPostText(text, simpleMode)
+        
+    }
+
+    const setPostText = (text: string, simpleMode:boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
         let postTextLocal = text
@@ -115,7 +145,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostTextForRecord(postTextLocal);
         setPostTextBlur(blurredText);
 
-        if(!prevBlur) setTempText(text)
+        if (!prevBlur) setTempText(text)
 
         setIsIncludeFullBranket(containsFullWidthBrackets(text))
 
@@ -226,6 +256,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 via: 'Skyblur',
                 "uk.skyblur.post.uri": blurUri
             };
+
+            if (replyPost) {
+                const reply = {
+                    root: {
+                        cid: replyPost.record.reply?.root.cid || '',
+
+                        uri: replyPost.record.reply?.root.uri || '',
+                    },
+                    parent: {
+                        cid: replyPost.cid || '',
+                        uri: replyPost.uri || ''
+                    }
+                }
+                postObj.reply = reply
+
+            }
 
             postObj.facets = new Array(0);
 
@@ -354,7 +400,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
-            if(!prevBlur)handleTempDelete()
+            if (!prevBlur) handleTempDelete()
             setMode('menu')
         } else {
             console.error(ret)
@@ -367,9 +413,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
         if (prevBlur) {
-            setPostText(prevBlur.blur.text)
+            setPostText(prevBlur.blur.text,false)
             setAddText(prevBlur.blur.additional)
-        } else if (tempText || tempAdditional) {
+        } else if (tempText || tempAdditional || tempReply) {
             setIsTempRestore(true)
 
         }
@@ -379,26 +425,35 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     const handleCheckboxChange = (isChecked: boolean) => {
         setSimpleMode(isChecked);
-        if(!prevBlur) setTempSimpleMode(isChecked);
-        setPostText(''); // テキストを空にします
+        if (!prevBlur) setTempSimpleMode(isChecked);
+        setPostText('',isChecked); // テキストを空にします
     };
 
     const handleAddText = (addText: string) => {
         setAddText(addText);
-        if(!prevBlur) setTempAdditional(addText);
+        if (!prevBlur) setTempAdditional(addText);
     };
 
     const handleTempDelete = () => {
         setTempText('')
         setTempAdditional('')
         setTempSimpleMode(false)
+        setTempReply('')
     };
 
-    const handleTempApply = () => {
+    const handleTempApply = async () => {
         console.log('handleTempApply')
-        setPostText(tempText);
+        setPostText(tempText,tempSimpleMode);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
+        if(tempReply && agent && tempReply.includes(did)){
+            const result  = await agent.app.bsky.feed.getPosts({
+                uris : [tempReply]
+            })
+
+            setIsReply(true)
+            setReplyPost(result.data.posts[0] as PostView)
+        }
     };
 
     const handleModalClose = () => {
@@ -411,7 +466,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             <div className="m-3">
 
                 {isTempRestore &&
-                    <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete}/>
+                    <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete} />
                 }
 
                 {(!appUrl) &&
@@ -420,11 +475,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <label className="">{locale.CreatePost_Post}</label>
 
                         <div className="flex my-1">
-                            <p>      <Checkbox
-                                checked={simpleMode}
-                                onChange={handleCheckboxChange} // Boolean を渡します
-                                label={locale.CreatePost_SimpleMode}
-                            /></p>
+                            <p className="flex items-center">
+                                <Toggle
+                                    checked={simpleMode}
+                                    onChange={handleCheckboxChange} // Boolean を渡します
+                                />
+                                <span className="ml-2">{locale.CreatePost_SimpleMode}</span>
+                            </p>
                         </div>
                         {simpleMode ?
                             <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PostSimpleModeDescription}</div>
@@ -433,7 +490,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         }
                         <AutoResizeTextArea
                             text={postText}
-                            setPostText={setPostText}
+                            setPostText={handleSetPostText}
                             disabled={false}
                             locale={locale}
                             placeHolder={locale.CreatePost_PostPlaceHolder}
@@ -454,7 +511,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                         <AutoResizeTextArea
                             text={postTextBlur}
-                            setPostText={setPostText}
+                            setPostText={handleSetPostText}
                             disabled={true}
                             locale={locale}
                             placeHolder={locale.CreatePost_PreviewPlaceHolder}
@@ -474,17 +531,72 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             isEnableBrackets={false}
                         />
 
-                        <div className="flex justify-center gap-4 mb-8">
-                            {!warning &&
+                        {!prevBlur &&
+                            <div className='mb-6 '>
+                                <div className='mt-4 mb-2'>{locale.ReplyList_Reply}</div>
+                                <div className="block text-sm text-gray-400 mt-1">{locale.ReplyList_ReplyLabelDescription}</div>
+                                <p className="flex items-center mt-2">
+                                    <Toggle
+                                        checked={isReply}
+                                        onChange={handleSetIsReply} // Boolean を渡します
+                                    />
+                                    <span className="ml-2">{locale.ReplyList_UseReply}</span>
+                                </p>
 
-                                <Button color="primary" size="large" className="text-white text-base font-normal" onClick={handleCrearePost} disabled={isLoading || postText.length === 0} >
-                                    {prevBlur ?
-                                        <>{locale.CreatePost_UpdateButton}</>
-                                        :
-                                        <>{locale.CreatePost_CreateButton}</>
-                                    }
-                                </Button>
-                            }
+                                {isReply &&
+                                    <>
+                                        {replyPost &&
+                                            <div
+                                                className="p-2 m-2 bg-white rounded-md border border-gray-400 w-full "
+                                            >
+                                                <div>
+
+                                                    <div
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: DOMPurify.sanitize(replyPost.record.text.replace(/\n/g, '<br />')),
+                                                        }}
+                                                    ></div>
+                                                </div>
+
+                                                <div className="flex justify-between items-center gap-2 mt-2">
+                                                    <div className="text-sm text-gray-400">{formatDateToLocale(replyPost.record.createdAt)}</div>
+                                                    <div className="flex sm:gap-6 gap-4">
+                                                        <IconButton size="small" variant="text"  >
+                                                            <a href={transformUrl(replyPost.uri)} target="_blank">
+                                                                <svg width="20" height="20" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg"><path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" /></svg>
+                                                            </a>
+                                                        </IconButton>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        {!replyPost &&
+                                            <ReplyList handleSetPost={handleSetReplyPost} />
+                                        }
+                                    </>
+                                }
+                            </div>
+                        }
+
+
+                        <div className="flex justify-center gap-4 mb-8">
+                            {!warning && (
+                                (isReply && replyPost) || !isReply
+                            ) && (
+                                    <Button
+                                        color="primary"
+                                        size="large"
+                                        className="text-white text-base font-normal"
+                                        onClick={handleCrearePost}
+                                        disabled={isLoading || postText.length === 0}
+                                    >
+                                        {prevBlur ? (
+                                            <>{locale.CreatePost_UpdateButton}</>
+                                        ) : (
+                                            <>{locale.CreatePost_CreateButton}</>
+                                        )}
+                                    </Button>
+                                )}
                         </div>
                     </>
                 }

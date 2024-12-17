@@ -1,6 +1,7 @@
 import { DeleteModal } from "@/components/DeleteModal";
 import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
+import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
@@ -139,21 +140,6 @@ export const PostList: React.FC<PostListProps> = ({
         // 実際の削除処理をここに追加
         console.log("削除されました:", selectedItem);
 
-    };
-
-    const transformUrl = (inputUrl: string): string => {
-
-        const parts = inputUrl.split('/');
-
-        if (parts[3] === 'app.bsky.feed.post') {
-            return `https://bsky.app/profile/${parts[2]}/post/${parts[4]}`;
-        }
-
-        if (parts[3] === 'uk.skyblur.post') {
-            return `https://${window.location.hostname}/post/${parts[2]}/${parts[4]}`;
-        }
-
-        return ''
     };
 
     useEffect(() => {

@@ -58,6 +58,12 @@ const messages = {
     DeleteList_Loading: "Loading",
     DeleteList_ReadMore: "Read More",
     DeleteList_ToHead: "Reload",
+    ReplyList_Reply: "Reply",
+    ReplyList_ReplyLabelDescription: "Please check when replying to your own specific post.",
+    ReplyList_UseReply: "Select Post",
+    ReplyList_ReplyToThis: "Select",
+    ReplyList_ReplyDescrition: "[ <- Reply ] ",
+    ReplyList_Search: "Search",
 }
 
 
