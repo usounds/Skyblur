@@ -15,7 +15,7 @@ module.exports = {
         DEFAULT: colorPalette.blue[400],
         active: colorPalette.blue[400],
         hover: colorPalette.blue[500],
-        inactive: colorPalette.blue[200]
+        inactive: colorPalette.blue[200],
       },
       secondary: {
         DEFAULT: colorPalette.gray[500],
