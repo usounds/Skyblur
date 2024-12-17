@@ -52,7 +52,7 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
       <Dialog open={open} onClose={handleJustClose} header={locale.DeleteList_ConfirmDelete} size="90%" >
         {() => (
           <>
-            <div className="mb-6 text-black">{content.replace(/\[|\]/g, '')}</div>
+            <div className="mb-6 text-gray-700">{content.replace(/\[|\]/g, '')}</div>
             <footer className="flex justify-end space-x-4">
               <Button
                 disabled={isDeletesing}
@@ -65,7 +65,7 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
                 {locale.DeleteList_DeleteButton}
               </Button>
               <Button
-                className="px-4 py-2 text-black border-gray-400 font-normal"
+                className="px-4 py-2 text-gray-700 border-gray-400 font-normal"
                 onClick={() => {
                   handleJustClose()
                 }}
