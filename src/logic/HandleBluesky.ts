@@ -27,3 +27,18 @@ export const fetchServiceEndpoint = async (did: string) => {
         console.error('Error fetching service endpoint:', error);
     }
 };
+
+export const transformUrl = (inputUrl: string): string => {
+
+    const parts = inputUrl.split('/');
+
+    if (parts[3] === 'app.bsky.feed.post') {
+        return `https://bsky.app/profile/${parts[2]}/post/${parts[4]}`;
+    }
+
+    if (parts[3] === 'uk.skyblur.post') {
+        return `https://${window.location.hostname}/post/${parts[2]}/${parts[4]}`;
+    }
+
+    return ''
+};

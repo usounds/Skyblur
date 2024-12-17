@@ -1,5 +1,5 @@
 "use client"
-import { fetchServiceEndpoint } from "@/logic/HandleGetBlurRecord";
+import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
