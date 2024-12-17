@@ -81,9 +81,14 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     return (
 
         <>
-            <div className="flex items-center m-2">
+            <div className="flex flex-row items-center justify-center m-2"> {/* Flexbox with centered alignment */}
                 <Input value={searchTerm} size="medium" onValueChange={handleValueChange} />
-                <Button color="primary" size="medium" className="text-white mx-2  font-normal" onClick={getPosts}>
+                <Button
+                    color="primary"
+                    size="medium"
+                    className="text-white mx-2 font-normal"
+                    onClick={getPosts}
+                >
                     {locale.ReplyList_Search}
                 </Button>
             </div>
@@ -119,7 +124,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                     <Step>
                         <div className="flex flex-col gap-1">
                             <span className="font-medium">
-                                {isLoading ? locale.DeleteList_Loading :locale.DeleteList_NoListItem}
+                                {isLoading ? locale.DeleteList_Loading : locale.DeleteList_NoListItem}
                             </span>
                         </div>
                     </Step>}
@@ -128,7 +133,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
             {(!isLoading && currentCursor) &&
                 <div className="flex justify-center">
                     <Button color="primary" size="medium" className="text-white mx-2 font-normal" onClick={getNext}>
-                        { locale.DeleteList_ReadMore}
+                        {locale.DeleteList_ReadMore}
                     </Button>
                 </div>
             }

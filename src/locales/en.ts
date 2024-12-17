@@ -61,7 +61,7 @@ const messages = {
     ReplyList_Reply: "Reply",
     ReplyList_ReplyLabelDescription: "Please check when replying to your own specific post.",
     ReplyList_UseReply: "Select Post",
-    ReplyList_ReplyToThis: "Select",
+    ReplyList_ReplyToThis: "Reply to this post",
     ReplyList_ReplyDescrition: "[ <- Reply ] ",
     ReplyList_Search: "Search",
 }
