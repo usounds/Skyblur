@@ -115,7 +115,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostTextForRecord(postTextLocal);
         setPostTextBlur(blurredText);
 
-        setTempText(text)
+        if(!prevBlur) setTempText(text)
 
         setIsIncludeFullBranket(containsFullWidthBrackets(text))
 
@@ -379,13 +379,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     const handleCheckboxChange = (isChecked: boolean) => {
         setSimpleMode(isChecked);
-        setTempSimpleMode(isChecked);
+        if(!prevBlur) setTempSimpleMode(isChecked);
         setPostText(''); // テキストを空にします
     };
 
     const handleAddText = (addText: string) => {
         setAddText(addText);
-        setTempAdditional(addText);
+        if(!prevBlur) setTempAdditional(addText);
     };
 
     const handleTempDelete = () => {
