@@ -17,15 +17,18 @@ import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
-
 type CreatePostProps = {
     setMode: (value: string) => void;
-    prevBlur?: PostListItem
+    prevBlur?: PostListItem;
+    notifySuccess: any;
+    notifyError:any
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
     setMode,
-    prevBlur
+    prevBlur,
+    notifySuccess,
+    notifyError
 }) => {
     const [postText, setPostTest] = useState("");
     const [postTextForRecord, setPostTextForRecord] = useState("");
@@ -466,10 +469,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
-            if (!prevBlur) handleTempDelete()
+            notifySuccess(locale.CreatePost_Complete)
             setMode('menu')
+            if (!prevBlur) handleTempDelete()
+            
         } else {
             console.error(ret)
+            notifyError(ret)
 
         }
         setIsLoading(false)
@@ -534,6 +540,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 {isTempRestore &&
                     <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete} />
                 }
+
+
+
 
                 {(!appUrl) &&
                     <>
