@@ -116,9 +116,13 @@ export const customTheme: PartialReablocksTheme = {
             step: {
                     base: "border-l translate-x-1/2 bg-white",
                     marker:{
-                        base:"rounded-full w-[9px] h-[9px] bg-surface"
+                        base:"rounded-full w-[9px] h-[9px] bg-secondary"
                     }
             }
+        },
+        toggle:{
+            base:"flex items-center justify-start cursor-pointer bg-secondary box-border border border-panel-accent rounded-full hover:bg-primary-hover transition-[background-color] ease-in-out duration-300"
+
         }
     },
 };
