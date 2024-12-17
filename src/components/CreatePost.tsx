@@ -354,7 +354,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setAppUrl(convertedUri)
             setPostTest('')
             setAddText('')
-            handleTempDelete()
+            if(!prevBlur)handleTempDelete()
             setMode('menu')
         } else {
             console.error(ret)
