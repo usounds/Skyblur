@@ -110,6 +110,63 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     }
 
+    type MatchInfo = {
+        detectedString: string;
+        startIndex: number;
+        endIndex: number;
+        did:string;
+    }
+
+    async function obtainAndAssignDid(matches: MatchInfo[], actors: string[]) {
+        if (!agent) return;
+    
+        const response = await agent.app.bsky.actor.getProfiles({
+            actors: actors
+        });
+    
+        response.data.profiles.forEach((profile) => {
+            matches.forEach((match) => {
+                // detectedString の最初の文字を削除したものと actors の位置づけで比較
+                if (profile.handle===match.detectedString.slice(1)) {
+                    match.did = profile.did; // did 情報を更新
+                }
+            });
+        });
+    }
+
+    async function detectPatternWithDetails(str: string): Promise<MatchInfo[]> {
+        const matches: MatchInfo[] = [];
+        const regex = /@[a-z]+(?:\.[a-z]+)+(?=\s|$|[\u3000-\uFFFD])/g;
+        let match: RegExpExecArray | null;
+        const actors: string[] = [];
+
+      
+        while ((match = regex.exec(str)) !== null) {
+            console.log(str)
+          matches.push({
+            detectedString: match[0],
+            startIndex: match.index,
+            endIndex: match.index + match[0].length,
+            did: ''
+          });
+          actors.push(match[0].slice(1));
+      
+          // batch actors to prevent exceeding the limit (25)
+          if (actors.length === 25) {
+            await obtainAndAssignDid(matches, actors);
+            actors.length = 0; // Clear the actors array
+          }
+        }
+      
+        // Process any remaining actors
+        if (actors.length > 0) {
+          await obtainAndAssignDid(matches, actors);
+        }
+        
+        return matches;
+      }
+      
+
     const setPostText = (text: string, simpleMode: boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
@@ -316,7 +373,37 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 console.log("指定された文字列が見つかりませんでした");
             }
 
+            //メンション
+            const mentions  = await detectPatternWithDetails(postTextBlurLocal)
+            console.log(mentions)
+
+
+            for (const obj of mentions) {
+                const fromText = postTextBlurLocal.slice(0, obj.startIndex);
+                const toText = postTextBlurLocal.slice(0, obj.endIndex);
+
+                //マルチバイト対応
+                const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
+                const toIndex = encodeURI(toText).replace(/%../g, "*").length;
+
+                postObj.facets.push(
+                    {
+                        index: {
+                            "byteStart": fromIndex,
+                            "byteEnd": toIndex
+                        },
+                        features: [
+                            {
+                                "$type": "app.bsky.richtext.facet#mention",
+                                "did": obj.did
+                            }
+                        ]
+                    }
+                );
+            }
+
             const hashTags = twitterText.extractHashtagsWithIndices(postTextBlurLocal);
+
 
             for (const obj of hashTags) {
                 //ハッシュタグまでの文字列とハッシュタグが終わる文字列を取得
@@ -505,7 +592,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 </Button>
                             }
                         </div>
-                        
+
                         {!prevBlur &&
                             <>
                                 <div className='mt-2'>{locale.CreatePost_Preview}</div>
@@ -583,7 +670,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         }
 
 
-                        <div className="flex justify-center gap-4 mb-8">
+                        <div className="flex justify-center gap-4 mb-8 mt-2">
                             {!warning && (
                                 (isReply && replyPost) || !isReply
                             ) && (
