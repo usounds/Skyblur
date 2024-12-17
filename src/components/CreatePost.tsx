@@ -117,51 +117,30 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         did:string;
     }
 
-    async function obtainAndAssignDid(matches: MatchInfo[], actors: string[]) {
-        if (!agent) return;
-    
-        const response = await agent.app.bsky.actor.getProfiles({
-            actors: actors
-        });
-    
-        response.data.profiles.forEach((profile) => {
-            matches.forEach((match) => {
-                // detectedString の最初の文字を削除したものと actors の位置づけで比較
-                if (profile.handle===match.detectedString.slice(1)) {
-                    match.did = profile.did; // did 情報を更新
-                }
-            });
-        });
-    }
-
     async function detectPatternWithDetails(str: string): Promise<MatchInfo[]> {
+        if(!agent) return []
         const matches: MatchInfo[] = [];
         const regex = /@[a-z]+(?:\.[a-z]+)+(?=\s|$|[\u3000-\uFFFD])/g;
         let match: RegExpExecArray | null;
-        const actors: string[] = [];
 
-      
         while ((match = regex.exec(str)) !== null) {
-            console.log(str)
-          matches.push({
-            detectedString: match[0],
-            startIndex: match.index,
-            endIndex: match.index + match[0].length,
-            did: ''
-          });
-          actors.push(match[0].slice(1));
-      
-          // batch actors to prevent exceeding the limit (25)
-          if (actors.length === 25) {
-            await obtainAndAssignDid(matches, actors);
-            actors.length = 0; // Clear the actors array
+          try{
+            const result = await agent.app.bsky.actor.getProfile({
+                actor: match[0].slice(1)
+            });
+
+            matches.push({
+                detectedString: match[0],
+                startIndex: match.index,
+                endIndex: match.index + match[0].length,
+                did: result.data.did
+              });
+          }catch(e){
+            console.error(e)
+            
           }
         }
       
-        // Process any remaining actors
-        if (actors.length > 0) {
-          await obtainAndAssignDid(matches, actors);
-        }
         
         return matches;
       }
