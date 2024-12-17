@@ -63,7 +63,7 @@ export const customTheme: PartialReablocksTheme = {
         },
         divider:{
             variant:{
-                secondary: "bg-gradient-to-r from-transparent to-transparent via-gray-400"
+                secondary: "bg-gradient-to-r from-transparent to-transparent via-gray-300"
             }
 
         }
