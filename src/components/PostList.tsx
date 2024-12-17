@@ -14,10 +14,14 @@ import { Button, IconButton } from 'reablocks';
 
 type PostListProps = {
     handleEdit: (input: PostListItem) => void;
+    notifySuccess:any;
+    notifyError:any;
 };
 
 export const PostList: React.FC<PostListProps> = ({
-    handleEdit
+    handleEdit,
+    notifySuccess,
+    notifyError
 }) => {
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
@@ -135,9 +139,11 @@ export const PostList: React.FC<PostListProps> = ({
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
+            notifyError(e)
             return
         }
         // 実際の削除処理をここに追加
+        notifySuccess(locale.DeleteList_Complete)
         console.log("削除されました:", selectedItem);
 
     };
