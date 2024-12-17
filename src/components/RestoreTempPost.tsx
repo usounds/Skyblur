@@ -55,7 +55,7 @@ export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, o
             <Dialog open={open} onClose={handleClose} header={locale.CreatePost_RestoreTitle} size="90%" >
                 {() => (
                     <>
-                        <div className="mb-6 text-black">{content.replace(/\[|\]/g, '')}</div>
+                        <div className="mb-6 text-gray-700">{content.replace(/\[|\]/g, '')}</div>
                         <footer className="flex justify-end space-x-4">
                             <Button
                                 disabled={isDeletesing}
@@ -77,7 +77,7 @@ export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, o
                                 {locale.DeleteList_DeleteButton}
                             </Button>
                             <Button
-                                className="px-4 py-2 font-normal"
+                                className="px-4 py-2 font-normal text-gray-700"
                                 onClick={() => {
                                     handleClose()
                                 }}

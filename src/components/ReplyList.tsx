@@ -105,7 +105,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                                 </div>
                             </div>
 
-                            <span>
+                            <span className="text-gray-600">
                                 {item.record.reply && locale.ReplyList_ReplyDescrition}
                                 {item.record.text}
                             </span>
@@ -113,7 +113,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                                 size="small"
                                 onClick={() => setPost(item)}
                                 variant="outline"
-                                className="ml-4 text-black border-gray-400 font-normal"
+                                className="ml-4 text-gray-700 border-gray-400 font-normal"
                             >
                                 {locale.ReplyList_ReplyToThis}
                             </Button>
