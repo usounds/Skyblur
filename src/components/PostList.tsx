@@ -9,19 +9,14 @@ import { COLLECTION, PostData, PostListItem } from "@/types/types";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
-
-import { Button, IconButton } from 'reablocks';
+import { Button, IconButton, useNotification } from 'reablocks';
 
 type PostListProps = {
     handleEdit: (input: PostListItem) => void;
-    notifySuccess:any;
-    notifyError:any;
 };
 
 export const PostList: React.FC<PostListProps> = ({
     handleEdit,
-    notifySuccess,
-    notifyError
 }) => {
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
@@ -31,6 +26,7 @@ export const PostList: React.FC<PostListProps> = ({
     const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { notifySuccess, notifyError } = useNotification();
 
     const getPosts = async (did: string, cursor: string) => {
 
@@ -139,7 +135,7 @@ export const PostList: React.FC<PostListProps> = ({
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
-            notifyError(e)
+            notifyError('Error:'+e)
             return
         }
         // 実際の削除処理をここに追加
