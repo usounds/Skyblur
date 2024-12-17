@@ -547,7 +547,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     <>
                                         {replyPost &&
                                             <div
-                                                className="p-2 m-2 bg-white rounded-md border border-gray-400 w-full "
+                                                className="p-2 m-2 bg-white rounded-md border border-gray-300 w-full "
                                             >
                                                 <div>
 
