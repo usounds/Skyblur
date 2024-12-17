@@ -12,15 +12,14 @@ import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { Button, IconButton, Toggle } from 'reablocks';
+import { Button, IconButton, Toggle, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
-
 type CreatePostProps = {
     setMode: (value: string) => void;
-    prevBlur?: PostListItem
+    prevBlur?: PostListItem;
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
@@ -50,6 +49,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [replyPost, setReplyPost] = useState<PostView | undefined>()
     const tempReply = useTempPostStore((state) => state.reply);
     const setTempReply = useTempPostStore((state) => state.setReply);
+    const { notifySuccess, notifyError } = useNotification();
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -66,7 +66,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     function handleSetIsReply(param: boolean) {
         setIsReply(param)
-        
+
         if (!param) {
             setReplyPost(undefined)
             setTempReply('')
@@ -95,7 +95,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     function convertFullWidthToHalfWidthBrackets(): void {
-        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'),simpleMode)
+        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'), simpleMode)
     }
 
     const handleSetReplyPost = async (post: PostView) => {
@@ -105,12 +105,48 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     }
 
-    const handleSetPostText =(text: string) => {
+    const handleSetPostText = (text: string) => {
         setPostText(text, simpleMode)
-        
+
     }
 
-    const setPostText = (text: string, simpleMode:boolean) => {
+    type MatchInfo = {
+        detectedString: string;
+        startIndex: number;
+        endIndex: number;
+        did: string;
+    }
+
+    async function detectPatternWithDetails(str: string): Promise<MatchInfo[]> {
+        if (!agent) return []
+        const matches: MatchInfo[] = [];
+        const regex = /@[a-z]+(?:\.[a-z]+)+(?=\s|$|[\u3000-\uFFFD])/g;
+        let match: RegExpExecArray | null;
+
+        while ((match = regex.exec(str)) !== null) {
+            try {
+                const result = await agent.app.bsky.actor.getProfile({
+                    actor: match[0].slice(1)
+                });
+
+                matches.push({
+                    detectedString: match[0],
+                    startIndex: match.index,
+                    endIndex: match.index + match[0].length,
+                    did: result.data.did
+                });
+            } catch (e) {
+                console.error(e)
+
+            }
+        }
+
+
+        return matches;
+    }
+
+
+    const setPostText = (text: string, simpleMode: boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
         let postTextLocal = text
@@ -198,212 +234,251 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setIsLoading(true)
         setAppUrl('')
 
-        let localPrevPostAturi
+        try {
+
+            let localPrevPostAturi
 
 
-        let rkey = TID.nextStr()
-        if (prevBlur && prevBlur.blurATUri) {
-            const regex = /\/([^/]+)$/;
-            const match = prevBlur.blurATUri.match(regex);
-            if (match) {
-                rkey = match[1];
+            let rkey = TID.nextStr()
+            if (prevBlur && prevBlur.blurATUri) {
+                const regex = /\/([^/]+)$/;
+                const match = prevBlur.blurATUri.match(regex);
+                if (match) {
+                    rkey = match[1];
+                }
+
+                localPrevPostAturi = prevBlur.blur.uri
             }
 
-            localPrevPostAturi = prevBlur.blur.uri
-        }
+            const url = '/post/' + did + "/" + rkey
+            const tempUrl = origin + url
+            const blurUri = `at://${did}/${COLLECTION}/${rkey}`
+            if (!prevBlur) {
+                //URLの判定
+                // titleからURLを抽出
+                const pattern =
+                    /https?:\/\/[-_.!~*\'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g;
+                const urls = postTextBlur.match(pattern);
 
-        const url = '/post/' + did + "/" + rkey
-        const tempUrl = origin + url
-        const blurUri = `at://${did}/${COLLECTION}/${rkey}`
-        if (!prevBlur) {
-            //URLの判定
-            // titleからURLを抽出
-            const pattern =
-                /https?:\/\/[-_.!~*\'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g;
-            const urls = postTextBlur.match(pattern);
+                // URLと出現位置を保持する配列を定義
+                const urlArray: { [urlKey: string]: number } = {};
 
-            // URLと出現位置を保持する配列を定義
-            const urlArray: { [urlKey: string]: number } = {};
+                //URLが取得できたら、URLが出現するまでのバイト数をカウントする
+                let pos = 0;
 
-            //URLが取得できたら、URLが出現するまでのバイト数をカウントする
-            let pos = 0;
-
-            if (urls != null) {
-                for (const url of urls) {
-                    pos = encodeURI(postTextBlur).replace(/%../g, "*").indexOf(url);
-                    //URLが見つからない場合は想定外とみなし処理を行わない（正規表現で想定外の検知をしたものは処理をしない）
-                    if (pos >= 0) {
-                        urlArray[url] = pos;
+                if (urls != null) {
+                    for (const url of urls) {
+                        pos = encodeURI(postTextBlur).replace(/%../g, "*").indexOf(url);
+                        //URLが見つからない場合は想定外とみなし処理を行わない（正規表現で想定外の検知をしたものは処理をしない）
+                        if (pos >= 0) {
+                            urlArray[url] = pos;
+                        }
                     }
                 }
-            }
 
 
-            //投稿
-            const postTextBlurLocal: string = postTextBlur;
-            const rt = new RichText({ text: postTextBlurLocal });
-            await rt.detectFacets(agent);
+                //投稿
+                const postTextBlurLocal: string = postTextBlur;
+                const rt = new RichText({ text: postTextBlurLocal });
+                await rt.detectFacets(agent);
 
 
-            const langs = [detectLanguage(postText)]
+                const langs = [detectLanguage(postText)]
 
-            const postObj: Partial<AppBskyFeedPost.Record> &
-                Omit<AppBskyFeedPost.Record, 'createdAt'> = {
-                $type: 'app.bsky.feed.post',
-                text: rt.text,
-                facets: rt.facets,
-                langs: langs,
-                via: 'Skyblur',
-                "uk.skyblur.post.uri": blurUri
-            };
+                const postObj: Partial<AppBskyFeedPost.Record> &
+                    Omit<AppBskyFeedPost.Record, 'createdAt'> = {
+                    $type: 'app.bsky.feed.post',
+                    text: rt.text,
+                    facets: rt.facets,
+                    langs: langs,
+                    via: 'Skyblur',
+                    "uk.skyblur.post.uri": blurUri
+                };
 
-            if (replyPost) {
-                const reply = {
-                    root: {
-                        cid: replyPost.record.reply?.root.cid || replyPost.cid,
+                if (replyPost) {
+                    const reply = {
+                        root: {
+                            cid: replyPost.record.reply?.root.cid || replyPost.cid,
 
-                        uri: replyPost.record.reply?.root.uri || replyPost.uri,
-                    },
-                    parent: {
-                        cid: replyPost.cid || '',
-                        uri: replyPost.uri || ''
-                    }
-                }
-                postObj.reply = reply
-
-            }
-
-            postObj.facets = new Array(0);
-
-            // TextEncoder を使用して UTF-8 バイト配列に変換
-            const encoder = new TextEncoder();
-            const postTextBytes = encoder.encode(postTextBlurLocal);
-            const fixedTextBytes = encoder.encode(tempUrl);
-
-            // バイト列を検索するためのインデックス取得
-            let startIndex = -1;
-            for (let i = 0; i <= postTextBytes.length - fixedTextBytes.length; i++) {
-                // バイト列が一致するかを比較
-                if (postTextBytes.slice(i, i + fixedTextBytes.length).every((byte, index) => byte === fixedTextBytes[index])) {
-                    startIndex = i;
-                    break;
-                }
-            }
-
-            if (startIndex !== -1) {
-                // 見つかった場合、その位置を byteStart として設定
-                const byteStart = startIndex;
-
-                // byteEnd は byteStart に locale.CreatePost_Fixed の長さを加算
-                const byteEnd = byteStart + encodeURI(tempUrl).replace(/%../g, "*").length;
-
-                // postObj.facets に追加するオブジェクトを作成
-                postObj.facets.push(
-                    {
-                        index: {
-                            byteStart: byteStart,
-                            byteEnd: byteEnd
+                            uri: replyPost.record.reply?.root.uri || replyPost.uri,
                         },
-                        features: [
-                            {
-                                "$type": "app.bsky.richtext.facet#link",
-                                "uri": tempUrl
-                            }
-                        ]
+                        parent: {
+                            cid: replyPost.cid || '',
+                            uri: replyPost.uri || ''
+                        }
                     }
-                );
-            } else {
-                console.log("指定された文字列が見つかりませんでした");
-            }
+                    postObj.reply = reply
 
-            const hashTags = twitterText.extractHashtagsWithIndices(postTextBlurLocal);
+                }
 
-            for (const obj of hashTags) {
-                //ハッシュタグまでの文字列とハッシュタグが終わる文字列を取得
-                const fromText = postTextBlurLocal.slice(0, obj.indices[0]);
-                const toText = postTextBlurLocal.slice(0, obj.indices[1]);
+                postObj.facets = new Array(0);
 
-                //マルチバイト対応
-                const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
-                const toIndex = encodeURI(toText).replace(/%../g, "*").length;
+                // TextEncoder を使用して UTF-8 バイト配列に変換
+                const encoder = new TextEncoder();
+                const postTextBytes = encoder.encode(postTextBlurLocal);
+                const fixedTextBytes = encoder.encode(tempUrl);
 
-                postObj.facets.push(
-                    {
-                        index: {
-                            "byteStart": fromIndex,
-                            "byteEnd": toIndex
-                        },
-                        features: [
-                            {
-                                "$type": "app.bsky.richtext.facet#tag",
-                                "tag": obj.hashtag
-                            }
-                        ]
+                // バイト列を検索するためのインデックス取得
+                let startIndex = -1;
+                for (let i = 0; i <= postTextBytes.length - fixedTextBytes.length; i++) {
+                    // バイト列が一致するかを比較
+                    if (postTextBytes.slice(i, i + fixedTextBytes.length).every((byte, index) => byte === fixedTextBytes[index])) {
+                        startIndex = i;
+                        break;
                     }
-                );
-            }
+                }
 
-            const localDesc = locale.CreatePost_OGPDescription
+                if (startIndex !== -1) {
+                    // 見つかった場合、その位置を byteStart として設定
+                    const byteStart = startIndex;
 
-            // OGP設定
-            postObj.embed = {
-                $type: 'app.bsky.embed.external',
-                external: {
-                    uri: tempUrl,
-                    title: locale.CreatePost_OGPTitle,
-                    description: localDesc,
-                },
-            };
+                    // byteEnd は byteStart に locale.CreatePost_Fixed の長さを加算
+                    const byteEnd = byteStart + encodeURI(tempUrl).replace(/%../g, "*").length;
 
-            //URLをリンク化
-            Object.keys(urlArray).forEach(function (key) {
-                if (typeof postObj.facets !== "undefined") {
+                    // postObj.facets に追加するオブジェクトを作成
                     postObj.facets.push(
                         {
                             index: {
-                                "byteStart": urlArray[key],
-                                "byteEnd": urlArray[key] + key.length
+                                byteStart: byteStart,
+                                byteEnd: byteEnd
                             },
                             features: [
                                 {
                                     "$type": "app.bsky.richtext.facet#link",
-                                    "uri": key
+                                    "uri": tempUrl
+                                }
+                            ]
+                        }
+                    );
+                } else {
+                    console.log("指定された文字列が見つかりませんでした");
+                }
+
+                //メンション
+                const mentions = await detectPatternWithDetails(postTextBlurLocal)
+                console.log(mentions)
+
+
+                for (const obj of mentions) {
+                    const fromText = postTextBlurLocal.slice(0, obj.startIndex);
+                    const toText = postTextBlurLocal.slice(0, obj.endIndex);
+
+                    //マルチバイト対応
+                    const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
+                    const toIndex = encodeURI(toText).replace(/%../g, "*").length;
+
+                    postObj.facets.push(
+                        {
+                            index: {
+                                "byteStart": fromIndex,
+                                "byteEnd": toIndex
+                            },
+                            features: [
+                                {
+                                    "$type": "app.bsky.richtext.facet#mention",
+                                    "did": obj.did
                                 }
                             ]
                         }
                     );
                 }
-            });
 
-            const result = await agent.post(postObj);
-
-            localPrevPostAturi = result.uri
+                const hashTags = twitterText.extractHashtagsWithIndices(postTextBlurLocal);
 
 
-        }
+                for (const obj of hashTags) {
+                    //ハッシュタグまでの文字列とハッシュタグが終わる文字列を取得
+                    const fromText = postTextBlurLocal.slice(0, obj.indices[0]);
+                    const toText = postTextBlurLocal.slice(0, obj.indices[1]);
 
-        const postObject = {
-            repo: did,
-            collection: COLLECTION,
-            rkey: rkey,
-            record: {
-                uri: localPrevPostAturi,
-                text: postTextForRecord,
-                additional: addText,
-                createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
-            },
-        }
+                    //マルチバイト対応
+                    const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
+                    const toIndex = encodeURI(toText).replace(/%../g, "*").length;
 
-        const ret = await agent.com.atproto.repo.putRecord(postObject)
-        if (ret.success) {
-            const convertedUri = "completed";
-            setAppUrl(convertedUri)
-            setPostTest('')
-            setAddText('')
-            if (!prevBlur) handleTempDelete()
-            setMode('menu')
-        } else {
-            console.error(ret)
+                    postObj.facets.push(
+                        {
+                            index: {
+                                "byteStart": fromIndex,
+                                "byteEnd": toIndex
+                            },
+                            features: [
+                                {
+                                    "$type": "app.bsky.richtext.facet#tag",
+                                    "tag": obj.hashtag
+                                }
+                            ]
+                        }
+                    );
+                }
+
+                const localDesc = locale.CreatePost_OGPDescription
+
+                // OGP設定
+                postObj.embed = {
+                    $type: 'app.bsky.embed.external',
+                    external: {
+                        uri: tempUrl,
+                        title: locale.CreatePost_OGPTitle,
+                        description: localDesc,
+                    },
+                };
+
+                //URLをリンク化
+                Object.keys(urlArray).forEach(function (key) {
+                    if (typeof postObj.facets !== "undefined") {
+                        postObj.facets.push(
+                            {
+                                index: {
+                                    "byteStart": urlArray[key],
+                                    "byteEnd": urlArray[key] + key.length
+                                },
+                                features: [
+                                    {
+                                        "$type": "app.bsky.richtext.facet#link",
+                                        "uri": key
+                                    }
+                                ]
+                            }
+                        );
+                    }
+                });
+
+                const result = await agent.post(postObj);
+
+                localPrevPostAturi = result.uri
+
+
+            }
+
+            const postObject = {
+                repo: did,
+                collection: COLLECTION,
+                rkey: rkey,
+                record: {
+                    uri: localPrevPostAturi,
+                    text: postTextForRecord,
+                    additional: addText,
+                    createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
+                },
+            }
+
+            const ret = await agent.com.atproto.repo.putRecord(postObject)
+            if (ret.success) {
+                const convertedUri = "completed";
+                setAppUrl(convertedUri)
+                setPostTest('')
+                setAddText('')
+                notifySuccess(locale.CreatePost_Complete)
+                setMode('menu')
+                if (!prevBlur) handleTempDelete()
+
+            } else {
+                console.error(ret)
+                notifyError("Error:"+ret)
+
+            }
+        } catch (e) {
+            notifyError("Error:"+e)
 
         }
         setIsLoading(false)
@@ -413,7 +488,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
         if (prevBlur) {
-            setPostText(prevBlur.blur.text,false)
+            setPostText(prevBlur.blur.text, false)
             setAddText(prevBlur.blur.additional)
         } else if (tempText || tempAdditional || tempReply) {
             setIsTempRestore(true)
@@ -426,7 +501,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const handleCheckboxChange = (isChecked: boolean) => {
         setSimpleMode(isChecked);
         if (!prevBlur) setTempSimpleMode(isChecked);
-        setPostText('',isChecked); // テキストを空にします
+        setPostText('', isChecked); // テキストを空にします
     };
 
     const handleAddText = (addText: string) => {
@@ -443,12 +518,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     const handleTempApply = async () => {
         console.log('handleTempApply')
-        setPostText(tempText,tempSimpleMode);
+        setPostText(tempText, tempSimpleMode);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
-        if(tempReply && agent && tempReply.includes(did)){
-            const result  = await agent.app.bsky.feed.getPosts({
-                uris : [tempReply]
+        if (tempReply && agent && tempReply.includes(did)) {
+            const result = await agent.app.bsky.feed.getPosts({
+                uris: [tempReply]
             })
 
             setIsReply(true)
@@ -468,6 +543,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 {isTempRestore &&
                     <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete} />
                 }
+
+
+
 
                 {(!appUrl) &&
                     <>
@@ -506,18 +584,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             }
                         </div>
 
-                        <div className='mt-2'>{locale.CreatePost_Preview}</div>
-                        <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
+                        {!prevBlur &&
+                            <>
+                                <div className='mt-2'>{locale.CreatePost_Preview}</div>
+                                <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
 
-                        <AutoResizeTextArea
-                            text={postTextBlur}
-                            setPostText={handleSetPostText}
-                            disabled={true}
-                            locale={locale}
-                            placeHolder={locale.CreatePost_PreviewPlaceHolder}
-                            max={10000}
-                            isEnableBrackets={false}
-                        />
+                                <AutoResizeTextArea
+                                    text={postTextBlur}
+                                    setPostText={handleSetPostText}
+                                    disabled={true}
+                                    locale={locale}
+                                    placeHolder={locale.CreatePost_PreviewPlaceHolder}
+                                    max={10000}
+                                    isEnableBrackets={false}
+                                />
+                            </>
+                        }
 
                         <div className='mt-2'>{locale.CreatePost_Additional}</div>
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_AdditionalDescription}</div>
@@ -579,7 +661,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         }
 
 
-                        <div className="flex justify-center gap-4 mb-8">
+                        <div className="flex justify-center gap-4 mb-8 mt-2">
                             {!warning && (
                                 (isReply && replyPost) || !isReply
                             ) && (
