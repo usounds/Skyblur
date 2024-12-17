@@ -28,6 +28,7 @@ export default function Home() {
     setMode("create")
 
   };
+  
 
   const handleNew = () => {
     setPrevBlur(undefined)
@@ -49,10 +50,7 @@ export default function Home() {
 
           <Notifications>
             <NotificationsContext.Consumer>
-              {({
-                notifySuccess,
-                notifyError
-              }) => <>
+              {() => <>
 
                   <div className="mx-auto max-w-screen-md ">
 
@@ -101,14 +99,14 @@ export default function Home() {
 
                                   </div>
 
-                                  <PostList handleEdit={handleEdit} notifySuccess={notifySuccess} notifyError={notifyError}/>
+                                  <PostList handleEdit={handleEdit} />
 
                                 </div>
                               </>
                             }
                             {mode === 'create' &&
                               <>
-                                <CreatePostForm setMode={setMode} prevBlur={prevBlur} notifySuccess={notifySuccess} notifyError={notifyError}/>
+                                <CreatePostForm setMode={setMode} prevBlur={prevBlur}/>
 
                                 <div className="flex justify-center mt-4"></div>
 
