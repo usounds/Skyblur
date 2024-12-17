@@ -13,7 +13,7 @@ import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Button, ThemeProvider, extendTheme, theme } from 'reablocks';
+import { Button, ThemeProvider, extendTheme, theme, Divider } from 'reablocks';
 import { useEffect, useState } from "react";
 
 const PostPage = () => {
@@ -124,7 +124,8 @@ const PostPage = () => {
                         <PostTextWithBold postText={postText} isValidateBrackets={true} />
                       </div>
                       {addText &&
-                        <div className="mt-2">
+                        <div className="">
+                          <Divider  variant="secondary"  />
                           <PostTextWithBold postText={addText} isValidateBrackets={false} />
                         </div>
                       }
@@ -150,7 +151,7 @@ const PostPage = () => {
                       <>
                         <div className="flex justify-center mt-10">
                           <Link href="/">
-                            <Button color="secondary" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
+                            <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
                           </Link>
                         </div>
                       </>
