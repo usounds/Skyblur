@@ -128,6 +128,17 @@ export const customTheme: PartialReablocksTheme = {
         dotsLoader:{
             dot:"rounded-[50%] bg-gray-900"
 
+        },
+        notification:{
+            positions:"fixed z-[9998] h-auto -translate-x-2/4 mb-1 px-24 py-0 left-2/4 top-[80px]",
+            notification:{
+                base:"flex relative text-base w-[350px] rounded-sm mb-2.5 py-2 px-4 bg-panel text-text-primary border-panel-accent border mx-3",
+                variants:{
+                    success:{
+                        base : "mx-4 bg-white border border-success"
+                    }
+                }
+            }
         }
     },
 };
