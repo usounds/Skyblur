@@ -23,7 +23,7 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
         },
       },
       button: {
-        base:"inline-flex whitespace-no-wrap select-none items-center justify-center px-2.5 py-1 rounded-lg font-sans text-text-primary font-semibold",
+        base:"inline-flex whitespace-no-wrap select-none items-center justify-center px-2.5 py-1 rounded-lg font-sans text-primary font-semibold",
     },
     },
   };

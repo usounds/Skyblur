@@ -55,7 +55,7 @@ module.exports = {
       },
       surface: {
         DEFAULT: colorPalette['charade'],
-        accent: colorPalette.blue[500]
+        accent: colorPalette.blue[400]
       },
       typography: {
         DEFAULT: colorPalette['athens-gray'],
