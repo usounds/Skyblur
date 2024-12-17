@@ -140,6 +140,14 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                 </div>
             }
 
+            {(isLoading && postList.length!==0)&&
+
+                <div className="flex flex-col items-center justify-center h-full text-gray-700">
+                    {isLoading && <p><DotsLoader /></p>}
+                </div>
+            }
+
+
         </>
     )
 }
