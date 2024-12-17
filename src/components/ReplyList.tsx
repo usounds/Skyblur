@@ -92,7 +92,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                     {locale.ReplyList_Search}
                 </Button>
             </div>
-            <Stepper animated className="bg-white">
+            <Stepper animated className="bg-white mt-2">
 
                 {postList.map((item, index) => (
                     <Step key={index}>
