@@ -402,7 +402,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     };
 
     const handleModalClose = () => {
-        handleTempDelete()
         setIsTempRestore(false)
     };
 
@@ -412,7 +411,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             <div className="m-3">
 
                 {isTempRestore &&
-                    <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} />
+                    <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete}/>
                 }
 
                 {(!appUrl) &&
