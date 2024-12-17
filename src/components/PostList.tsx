@@ -239,7 +239,7 @@ export const PostList: React.FC<PostListProps> = ({
 
                 {!isLoading &&
                     <div className="flex justify-center gap-4 mt-6">
-                        <Button color="secondary" className="text-white text-base font-normal" disabled={isLoading} onClick={() => getPosts(did, cursor)} >
+                        <Button color="secondary" size="large" className="text-white text-base font-normal" disabled={isLoading} onClick={() => getPosts(did, cursor)} >
                             {deleteList.length == 10 ? locale.DeleteList_ReadMore : locale.DeleteList_ToHead}
                         </Button>
                     </div>
