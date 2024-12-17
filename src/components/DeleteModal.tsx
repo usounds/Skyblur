@@ -22,6 +22,9 @@ export const DeleteModal: React.FC<DeleteModalProp> = ({ content, onConfirm, onC
           text: theme.components.dialog.header.text + ' text-gray-800 text-xl ',
         },
       },
+      button: {
+        base:"inline-flex whitespace-no-wrap select-none items-center justify-center px-2.5 py-1 rounded-lg font-sans text-text-primary font-semibold",
+    },
     },
   };
 

@@ -44,10 +44,7 @@ export type PostListItem = {
 export const customTheme: PartialReablocksTheme = {
     components: {
         button: {
-            colors: {
-                primary: {
-                },
-            }
+            base:"inline-flex whitespace-no-wrap select-none items-center justify-center px-2.5 py-1 rounded-lg font-sans text-text-primary font-semibold",
         },
         checkbox: {
             label: {
