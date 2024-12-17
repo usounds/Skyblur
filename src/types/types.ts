@@ -44,7 +44,7 @@ export type PostListItem = {
 export const customTheme: PartialReablocksTheme = {
     components: {
         button: {
-            base:"inline-flex whitespace-no-wrap select-none items-center justify-center px-2.5 py-1 rounded-lg font-sans text-text-primary font-semibold",
+            base:"inline-flex whitespace-no-wrap select-none items-center justify-center px-2.5 py-1 rounded-lg font-sans text-primary font-semibold",
         },
         checkbox: {
             label: {
@@ -66,6 +66,10 @@ export const customTheme: PartialReablocksTheme = {
                 secondary: "bg-gradient-to-r from-transparent to-transparent via-gray-300"
             }
 
+        },
+        textarea:{
+            base:"flex relative flex-row items-center flex-nowrap box-border transition-colors rounded-lg bg-panel border border-gray-300 text-text-primary hover:border-gray-300 hover:after:bg-[radial-gradient(circle,_#105EFF_0%,_#105EFF_36%,_#D1D5DB_100%)] hover:after:content-[\"\"] hover:after:absolute hover:after:mx-1 hover:after:h-px after:z-[2] hover:after:rounded hover:after:-bottom-[1px] hover:after:inset-x-0.5 disabled-within:hover:after:content-none",
+            disabled: "border-gray-300"
         }
     },
 };

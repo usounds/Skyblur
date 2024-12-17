@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { ErrorCallout } from 'reablocks';
-import { Button } from 'reablocks';
+import { Button,Textarea } from 'reablocks';
 
 type AutoResizeTextAreaProps = {
     text: string;
@@ -26,11 +26,6 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-            textarea.style.height = "auto"; // 高さをリセット
-            textarea.style.height = `${textarea.scrollHeight}px`; // 内容に応じた高さを設定
-        }
         setPostText(event.target.value);
     };
 
@@ -58,27 +53,12 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
         textarea.selectionStart = textarea.selectionEnd = start + selectedText.length + 2;
     };
 
-    useEffect(() => {
-        if (textareaRef.current) {
-            const textarea = textareaRef.current;
-            textarea.style.height = "auto"; // 高さをリセット
-            textarea.style.height = `${textarea.scrollHeight}px`; // 内容に応じた高さを設定
-        }
-    }, [text]);
 
     return (
         <div className="space-y-2">
-            <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={handleTextChange}
-                disabled={disabled}
-                className="border bg-gray-50 text-gray-800 m-2 py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-gray-500 focus:ring-gray-500"
-                placeholder={placeHolder}
-                style={{ overflow: "hidden", resize: "none", fontSize: "16px" }}
-                maxLength={max}
-            />
+            <Textarea fullWidth value={text} onChange={handleTextChange} disabled={disabled} size="medium"placeholder={placeHolder}maxLength={max} error={error?true:false} />
             {error && <ErrorCallout text={error} variant="error" />}
+            {!disabled && <div className="block text-sm text-gray-600 mt-1">{text.length}/{max}</div>}
             {isEnableBrackets &&
                 <div className="flex justify-center gap-4 mb-8">
                     <Button color="primary" size="large" className="text-white text-base font-normal" onClick={handleAddBrackets} disabled={text.length===0}>
