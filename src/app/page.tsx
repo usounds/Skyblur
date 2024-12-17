@@ -93,7 +93,7 @@ export default function Home() {
 
                           <div className="flex justify-center gap-4 mb-8">
 
-                            <Button color="primary" className="text-white text-base font-normal" onClick={() => handleNew()}>
+                            <Button color="primary" size="large" className="text-white text-base font-normal" onClick={() => handleNew()}>
                               {locale.Menu_CreatePost}
                             </Button>
 
@@ -112,7 +112,7 @@ export default function Home() {
 
                         <div className="flex justify-center mt-4">
 
-                          <Button color="secondary" className="text-white text-base font-normal" onClick={() => {
+                          <Button color="secondary" size="large" className="text-white text-base font-normal" onClick={() => {
                             setMode("menu");
                             window.scrollTo(0, 0); // ページを一番上までスクロール
                           }} >
