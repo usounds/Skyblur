@@ -81,7 +81,7 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
             {error && <ErrorCallout text={error} variant="error" />}
             {isEnableBrackets &&
                 <div className="flex justify-center gap-4 mb-8">
-                    <Button color="primary" className="text-white text-base font-normal" onClick={handleAddBrackets} disabled={text.length===0}>
+                    <Button color="primary" size="large" className="text-white text-base font-normal" onClick={handleAddBrackets} disabled={text.length===0}>
                         {locale.CreatePost_AddBrackets}
                     </Button>
                 </div>

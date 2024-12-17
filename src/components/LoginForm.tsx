@@ -134,7 +134,7 @@ export const LoginForm: React.FC = ({
         />
       </div>
 
-      <Button color="primary" className="text-white text-base font-normal w-full disabled:bg-blue-500" onClick={blueskyOAuthLogin} disabled={isLoading} >
+      <Button color="primary" size="large" className="text-white text-base font-normal w-full disabled:bg-blue-500" onClick={blueskyOAuthLogin} disabled={isLoading} >
         {isLoading ? <>
           <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
             <span className="sr-only">Loading...</span>
