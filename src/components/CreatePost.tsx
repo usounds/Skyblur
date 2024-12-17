@@ -260,9 +260,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             if (replyPost) {
                 const reply = {
                     root: {
-                        cid: replyPost.record.reply?.root.cid || '',
+                        cid: replyPost.record.reply?.root.cid || replyPost.cid,
 
-                        uri: replyPost.record.reply?.root.uri || '',
+                        uri: replyPost.record.reply?.root.uri || replyPost.uri,
                     },
                     parent: {
                         cid: replyPost.cid || '',
