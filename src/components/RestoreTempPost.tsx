@@ -6,10 +6,11 @@ import React, { useState } from "react";
 interface RestoreTempPostModalProp {
     content: string;
     onApply: () => void;
+    onDelete: () => void;
     onClose: () => void;
 }
 
-export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, onApply, onClose }) => {
+export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, onApply,onDelete, onClose }) => {
     const [open, setOpen] = useState<boolean>(true)
     const [isDeletesing, setIsDeletesing] = useState<boolean>(false)
 
@@ -34,6 +35,13 @@ export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, o
         setIsDeletesing(true)
         await onApply();
         handleClose()
+    };
+    const handleDelete = () => {
+        onDelete()
+        setOpen(false);
+        setTimeout(() => {
+            onClose();
+        }, MODAL_TIME);
     };
     const handleClose = () => {
         setOpen(false);
@@ -62,9 +70,18 @@ export const RestoreTempPost: React.FC<RestoreTempPostModalProp> = ({ content, o
                             <Button
                                 className="px-4 py-2 text-white font-normal"
                                 onClick={() => {
-                                    handleClose()
+                                    handleDelete()
                                 }}
                                 color="error"
+                            >
+                                {locale.DeleteList_DeleteButton}
+                            </Button>
+                            <Button
+                                className="px-4 py-2 font-normal"
+                                onClick={() => {
+                                    handleClose()
+                                }}
+                                variant="outline"
                             >
                                 {locale.DeleteList_CancelButton}
                             </Button>
