@@ -78,6 +78,7 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
                 style={{ overflow: "hidden", resize: "none", fontSize: "16px" }}
                 maxLength={max}
             />
+            {!disabled && <div className="block text-sm text-gray-600 mt-1">{text.length}/{max}</div>}
             {error && <ErrorCallout text={error} variant="error" />}
             {isEnableBrackets &&
                 <div className="flex justify-center gap-4 mb-8">

@@ -402,6 +402,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     };
 
     const handleModalClose = () => {
+        handleTempDelete()
         setIsTempRestore(false)
     };
 
@@ -449,9 +450,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             }
                         </div>
 
-                        <div className="block text-sm text-gray-600 mt-1">{postText.length}/300</div>
-
-
                         <div className='mt-2'>{locale.CreatePost_Preview}</div>
                         <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PreviewDescription}</div>
 
@@ -476,8 +474,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             max={10000}
                             isEnableBrackets={false}
                         />
-
-                        <div className="block text-sm text-gray-600 mt-1">{addText.length}/10000</div>
 
                         <div className="flex justify-center gap-4 mb-8">
                             {!warning &&
