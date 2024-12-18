@@ -1,9 +1,9 @@
 
-import { AppBskyActorDefs } from '@atproto/api';
+import type { AppBskyActorDefs as AtCuteAppBskyActorDefs, } from '@atcute/client/lexicons';
 import Image from 'next/image';
 
 type AvatarProp = {
-    userProf: AppBskyActorDefs.ProfileViewDetailed
+    userProf: AtCuteAppBskyActorDefs.ProfileViewDetailed
     time?: string
 };
 

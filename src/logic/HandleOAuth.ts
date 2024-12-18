@@ -1,81 +1,71 @@
-import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
-import { Agent } from '@atproto/api';
+import { XRPC } from '@atcute/client';
+import { OAuthUserAgent, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
+import { configureOAuth } from '@atcute/oauth-browser-client';
+import { getClientMetadata } from '@/types/ClientMetadataContext';
 
-export async function handleOAuth(
-    getClientMetadata: () => any,
-    setAgent: (agent: Agent) => void,
+export function isDidString(value: string): value is `did:${string}` {
+    return value.startsWith('did:');
+}
+
+export async function handleAtCuteOauth(
     setUserProf: (profile: any) => void,
-    setIsLoginProcess: (isLoginProcess: boolean) => void,
-    setDid: (did: string) => void,
+    setLoginXrpc: (loginXrpc: XRPC) => void,
+    did: string,
     setBlueskyLoginMessage: (message: string) => void
 ): Promise<boolean> {
-    let result;
 
-    const localState = window.localStorage.getItem('oauth.code_verifier');
-    const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl');
+
+    const metadata = getClientMetadata();
+
+    configureOAuth({
+        metadata: {
+            client_id: metadata?.client_id || '',
+            redirect_uri: metadata?.redirect_uris[0] || '',
+        },
+    });
+
+    let session
 
     try {
-        if (localState && localPdsUrl) {
-            const browserClient = new BrowserOAuthClient({
-                clientMetadata: getClientMetadata(),
-                handleResolver: localPdsUrl,
-            });
 
-            result = await browserClient.init() as undefined | { session: OAuthSession; state?: string | undefined };
-        }
-    } catch (e) {
-        console.error(e);
+        const params = new URLSearchParams(location.hash.slice(1));
+        console.log(params)
+        if (params.size === 3) {
+            console.log(`認証`)
+            history.replaceState(null, '', location.pathname + location.search);
+            session = await finalizeAuthorization(params);
 
-        // エラーメッセージ取得の処理
-        let errorMessage = "Unexpected Error";
-        if (typeof e === 'string') {
-            errorMessage = e;
-        } else if (e instanceof Error) {
-            errorMessage = e.message;
-        }
 
-        setBlueskyLoginMessage(errorMessage);
-        return false
-    }
+        } else if (did && isDidString(did)) {
+            console.log(`復元`)
+            session = await getSession(did, { allowStale: true });
 
-    if (result) {
-        const { session, state } = result
-        //OAuth認証から戻ってきた場合
-        if (state != null) {
-          //stateがズレている場合はエラー
-          if (state !== localState) {
-            setBlueskyLoginMessage("stateが一致しません")
+        } else {
+            console.log(`OAuth未認証です`)
             return false
 
-          }
-
-          const agent = new Agent(session)
-          setAgent(agent)
-
-          console.log(`${agent.assertDid} was successfully authenticated (state: ${state})`)
-          const userProfile = await agent.getProfile({ actor: agent.assertDid })
-          setUserProf(userProfile.data)
-          setIsLoginProcess(false)
-          setDid(agent.assertDid)
-          return true
-
-          //セッションのレストア
-        } else {
-          console.log(`${session.sub} was restored (last active session)`)
-          const agent = new Agent(session)
-          setAgent(agent)
-          const userProfile = await agent.getProfile({ actor: agent.assertDid })
-          setUserProf(userProfile.data)
-          setIsLoginProcess(false)
-          setDid(agent.assertDid)
-          return true
-
         }
 
-      } else {
-        console.log(`OAuth未認証です`)
-        setIsLoginProcess(false)
+        const agent = new OAuthUserAgent(session);
+
+        if (agent) {
+            const xrpc = new XRPC({ handler: agent });
+
+            setLoginXrpc(xrpc)
+
+            const ret = await xrpc.get("app.bsky.actor.getProfile", { params: { actor: agent.sub } })
+            setUserProf(ret.data)
+
+            return true
+        }
+    } catch (e) {
+        console.error(`OAuth未認証です:${e}`)
+        setBlueskyLoginMessage("Error:"+e)
         return false
-      }
+
+    }
+
+    console.error(`OAuth未認証です`)
+    return false
 
 }

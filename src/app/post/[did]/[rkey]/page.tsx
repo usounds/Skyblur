@@ -6,17 +6,20 @@ import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
+import { useXrpcStore } from "@/state/Xrpc";
 import { COLLECTION, PostData, customTheme } from '@/types/types';
-import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
+import '@atcute/bluesky/lexicons';
+import { CredentialManager, XRPC } from '@atcute/client';
+import type { AppBskyActorDefs, } from '@atcute/client/lexicons';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Button, ThemeProvider, extendTheme, theme, Divider } from 'reablocks';
+import { Button, Divider, ThemeProvider, extendTheme, theme } from 'reablocks';
 import { useEffect, useState } from "react";
 
-const PostPage = () => {
+export default function Home() {
+  const [isClient, setIsClient] = useState(false)
   const { did, rkey } = useParams();
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [postText, setPostText] = useState<string>('')
@@ -26,41 +29,47 @@ const PostPage = () => {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const locale = useLocaleStore((state) => state.localeData);
-  const apiAgent = useAtpAgentStore((state) => state.publicAgent);
+  const apiXrpc = useXrpcStore((state) => state.apiXrpc);
   const searchParams = useSearchParams();
-  const agent = useAtpAgentStore((state) => state.agent);
   const q = searchParams.get('q');
 
   const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
 
+
   useEffect(() => {
+    setIsClient(true)
+    console.log('Current locale:', locale);
     if (did && rkey) {
+      let repo = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
+      repo = repo.replace(/%3A/g, ':');
+      const rkeyParam = Array.isArray(rkey) ? rkey[0] : rkey; // 配列なら最初の要素を使う
+      setIsLoading(true);
+      setErrorMessage('')
 
 
       const fetchRecord = async () => {
 
         try {
-          let repo = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
-          repo = repo.replace(/%3A/g, ':');
-          const rkeyParam = Array.isArray(rkey) ? rkey[0] : rkey; // 配列なら最初の要素を使う
-          setIsLoading(true);
-          setErrorMessage('')
-
           const pdsUrl = await fetchServiceEndpoint(repo)
-
-          const pdsAgent = new AtpAgent({
-            service: pdsUrl || ''
-          })
 
           try {
             // getProfileとgetRecordを並行して呼び出す
+
+            const pdsmanager = new CredentialManager({ service: pdsUrl || "" });
+            const pdsSrpc = new XRPC({ handler: pdsmanager });
+
             const [userProfileResponse, postResponse] = await Promise.all([
-              apiAgent.getProfile({ actor: repo }),
-              pdsAgent.com.atproto.repo.getRecord({
-                repo: repo,
-                collection: COLLECTION,
-                rkey: rkeyParam,
-              }),
+              await apiXrpc.get("app.bsky.actor.getProfile", { params: { actor: repo } })
+              ,
+              await pdsSrpc.get("com.atproto.repo.getRecord",
+                {
+                  params: {
+                    repo: repo,
+                    collection: COLLECTION,
+                    rkey: rkeyParam,
+                  }
+                }
+              )
             ]);
 
             // userProfileのデータをセット
@@ -68,7 +77,6 @@ const PostPage = () => {
 
             // postDataのデータをセット
             const postData: PostData = postResponse.data.value as PostData;
-
 
             const tempPostText = postData.text
 
@@ -96,82 +104,87 @@ const PostPage = () => {
       fetchRecord();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [did, rkey]); // did または rkey が変更された場合に再実行
+  }, [did, rkey, locale]); // did または rkey が変更された場合に再実行
 
 
   return (
     <>
-      <Header />
-      <link rel="alternate" href={aturi} />
+      {isClient ?
+        <>
+          <Header />
+          <link rel="alternate" href={aturi} />
+          <ThemeProvider theme={extendTheme(theme, customTheme)}>
 
-      <ThemeProvider theme={extendTheme(theme, customTheme)}>
-        <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
-          <div className="mx-auto rounded-lg">
-            {userProf &&
-              <Avatar userProf={userProf} />
-            }
+            <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
+              <div className="mx-auto rounded-lg">
+                {userProf &&
 
-            {isLoading ?
-              <div className="">
-                <PostLoading />
-              </div>
-              :
-              <>
-                {!errorMessage &&
+                  <Avatar userProf={userProf} />
+                }
+
+                {isLoading ?
+                  <div className="">
+                    <PostLoading />
+                  </div>
+                  :
                   <>
-                    <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
-                      <div className="overflow-hidden break-words">
-                        <PostTextWithBold postText={postText} isValidateBrackets={true} />
-                      </div>
-                      {addText &&
-                        <div className="">
-                          <Divider  variant="secondary"  />
-                          <PostTextWithBold postText={addText} isValidateBrackets={false} />
-                        </div>
-                      }
-
-                      <div className="flex justify-between items-center mt-2">
-                        <div className="text-sm text-gray-400">{postDate}</div>
-                        <div className="flex gap-2">
-                          <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
-                            <Image
-                              src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                              alt="Trash Icon"
-                              width={20} // 必要に応じて幅を指定
-                              height={20} // 必要に応じて高さを指定
-                            />
-                          </a>
-                        </div>
-                      </div>
-
-
-                    </div>
-
-                    {(q == 'preview' && agent) &&
+                    {!errorMessage &&
                       <>
-                        <div className="flex justify-center mt-10">
-                          <Link href="/">
-                            <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
-                          </Link>
+                        <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
+                          <div className="overflow-hidden break-words">
+                            <PostTextWithBold postText={postText} isValidateBrackets={true} />
+                          </div>
+                          {addText &&
+                            <div className="">
+                              <Divider variant="secondary" />
+                              <PostTextWithBold postText={addText} isValidateBrackets={false} />
+                            </div>
+                          }
+
+                          <div className="flex justify-between items-center mt-2">
+                            <div className="text-sm text-gray-400">{postDate}</div>
+                            <div className="flex gap-2">
+                              <a className="text-sm text-gray-500 mx-2" href={bskyUrl} target="_blank">
+                                <Image
+                                  src="https://backet.skyblur.uk/bluesky-brands-solid.svg" // public フォルダ内のファイルは / からの相対パスで指定
+                                  alt="Trash Icon"
+                                  width={20} // 必要に応じて幅を指定
+                                  height={20} // 必要に応じて高さを指定
+                                />
+                              </a>
+                            </div>
+                          </div>
+
+
                         </div>
+
+                        {(q == 'preview') &&
+                          <>
+                            <div className="flex justify-center mt-10">
+                              <Link href="/">
+                                <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
+                              </Link>
+                            </div>
+                          </>
+                        }
+
                       </>
                     }
-
                   </>
                 }
-              </>
-            }
 
-            {errorMessage &&
-              <div className="whitespace-pre-wrap break-words text-red-800">
-                {errorMessage}
+                {errorMessage &&
+                  <div className="whitespace-pre-wrap break-words text-red-800">
+                    {errorMessage}
+                  </div>
+                }
               </div>
-            }
-          </div>
-        </div >
-      </ThemeProvider>
+            </div >
+          </ThemeProvider>
+        </>
+        :
+        <></>
+      }
     </>
   );
 };
-
-export default PostPage;

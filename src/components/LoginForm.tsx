@@ -1,11 +1,10 @@
 "use client"
-import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
+import { useXrpcStore } from "@/state/Xrpc";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
-import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import { useState, useEffect } from "react";
 import { Button } from 'reablocks';
+import { configureOAuth, resolveFromIdentity, createAuthorizationUrl } from '@atcute/oauth-browser-client';
 
 export const LoginForm: React.FC = ({
 }) => {
@@ -14,19 +13,17 @@ export const LoginForm: React.FC = ({
   const metadata = getClientMetadata();
   const [handle, setHandle] = useState("");
   const locale = useLocaleStore((state) => state.localeData);
-  const publicAgent = useAtpAgentStore((state) => state.publicAgent);
+  const setDid = useXrpcStore((state) => state.setDid);
 
-  function generateRandomState(length: number = 32): string {
-    const array = new Uint8Array(length);
-    window.crypto.getRandomValues(array);
-    // バイナリデータを Base64 にエンコードし、URL 安全な形式に変換
-    return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-') // Base64 の + を - に置換
-      .replace(/\//g, '_') // Base64 の / を _ に置換
-      .replace(/=+$/, ''); // Base64 の末尾の = を削除
+  useEffect(() => {
+    setHandle(window.localStorage.getItem('oauth.handle') || '');
+  }, [])
+
+  function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  const blueskyOAuthLogin = async (): Promise<void> => {
+  const atcuteOauth = async (): Promise<void> => {
     setBlueskyLoginMessage("")
     setIsLoading(true)
 
@@ -36,83 +33,51 @@ export const LoginForm: React.FC = ({
       return
     }
 
-    let obj
-    let pds
-    let host
-    if (!handle.endsWith('bsky.social')) {
-      try {
-        setBlueskyLoginMessage(locale.Login_DidResolve)
-        obj = await publicAgent.getProfile({ actor: handle })
-      } catch (e) {
-        console.error(e)
-        setBlueskyLoginMessage(locale.Login_InvalidHandle)
-        setIsLoading(false)
-        return
 
-      }
+    window.localStorage.setItem('oauth.handle',handle)
 
-      if (!obj.success) {
-        setBlueskyLoginMessage(locale.Login_InvalidHandle)
-        setIsLoading(false)
-        return
+    configureOAuth({
+      metadata: {
+        client_id: metadata?.client_id || '',
+        redirect_uri: metadata?.redirect_uris[0] || '',
+      },
+    });
+    console.log(handle)
 
-      }
-      setBlueskyLoginMessage(locale.Login_PDSResolve)
-      pds = await fetchServiceEndpoint(obj.data.did) || ""
+    setBlueskyLoginMessage(locale.Login_PDSResolve)
+    try{
+      const { identity, metadata: userMetadata } = await resolveFromIdentity(handle);
 
-      const match = pds.match(/https?:\/\/([^/]+)/);
-      if (!match) {
-        throw new Error("Invalid URL");
-      }
+      setDid(identity.id)
 
-      host = match[1];
-
-      // "bsky.network" を "bsky.social" に置き換え
+      let host = identity.pds.hostname
+  
       if (host.endsWith("bsky.network")) {
         host = "bsky.social";
       }
-    } else {
-      pds = 'https://bsky.social/'
-      host = "bsky.social";
-    }
-
-    const browserClient = new BrowserOAuthClient({
-      clientMetadata: metadata,
-      handleResolver: pds || ''
-    })
-
-    //認証用ランダム値生成
-    const state = generateRandomState()
-
-    //ランダム値を保存
-    window.localStorage.setItem('oauth.code_verifier', state)
-    window.localStorage.setItem('oauth.pdsUrl', pds || '')
-    window.localStorage.setItem('oauth.handle', handle)
-
-    try {
-
+  
       setBlueskyLoginMessage(locale.Login_Redirect.replace("{1}", host))
-      await browserClient.signIn(handle, {
-        state: state,
-        prompt: 'consent', // Attempt to sign in without user interaction (SSO)
-        ui_locales: 'ja-JP', // Only supported by some OAuth servers (requires OpenID Connect support + i18n support)
-        signal: new AbortController().signal, // Optional, allows to cancel the sign in (and destroy the pending authorization, for better security)
-      }
-      )
+  
+      const authUrl = await createAuthorizationUrl({
+        metadata: userMetadata,
+        identity: identity,
+        scope: metadata?.scope || 'atproto transition:generic',
+      });
+  
+      await sleep(200);
+  
+      // redirect the user to sign in and authorize the app
+      window.location.assign(authUrl);
 
-    } catch (err) {
-      console.log(err)
-      setBlueskyLoginMessage(locale.Login_RedirectFailed + err)
+    }catch(e){
+      console.error(e)
+      setBlueskyLoginMessage(locale.Login_InvalidHandle)
       setIsLoading(false)
       return
+
     }
 
-    setIsLoading(false)
   }
-
-  useEffect(() => {
-    setHandle(window.localStorage.getItem('oauth.handle') || '');
-  }, [])
 
   return (
     <div className="w-[350px]">
@@ -134,7 +99,7 @@ export const LoginForm: React.FC = ({
         />
       </div>
 
-      <Button color="primary" size="large" className="text-white text-base font-normal w-full disabled:bg-blue-500" onClick={blueskyOAuthLogin} disabled={isLoading} >
+      <Button color="primary" size="large" className="text-white text-base font-normal w-full disabled:bg-blue-500" onClick={atcuteOauth} disabled={isLoading} >
         {isLoading ? <>
           <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
             <span className="sr-only">Loading...</span>
@@ -156,7 +121,6 @@ export const LoginForm: React.FC = ({
             {locale.Login_Login}
           </>}
       </Button>
-
 
 
       {(!isLoading && blueskyLoginMessage) &&

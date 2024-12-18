@@ -4,7 +4,7 @@ import { CreatePostForm } from "@/components/CreatePost";
 import Header from "@/components/Header";
 import { LoginForm } from "@/components/LoginForm";
 import { PostList } from "@/components/PostList";
-import { useAtpAgentStore } from "@/state/AtpAgent";
+import { useXrpcStore } from "@/state/Xrpc";
 import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { PostListItem, customTheme } from "@/types/types";
@@ -15,28 +15,24 @@ import { useState } from "react";
 
 export default function Home() {
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
-  const did = useAtpAgentStore((state) => state.did);
   const locale = useLocaleStore((state) => state.localeData);
-  const userProf = useAtpAgentStore((state) => state.userProf);
-  const blueskyLoginMessage = useAtpAgentStore((state) => state.blueskyLoginMessage);
+  const userProf = useXrpcStore((state) => state.userProf);
+  const blueskyLoginMessage = useXrpcStore((state) => state.blueskyLoginMessage);
   const mode = useModeStore((state) => state.mode);
   const setMode = useModeStore((state) => state.setMode);
-  const isLoginProcess = useAtpAgentStore((state) => state.isLoginProcess);
+  const isLoginProcess = useXrpcStore((state) => state.isLoginProcess);
 
   const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
     setMode("create")
 
   };
-  
 
   const handleNew = () => {
     setPrevBlur(undefined)
     setMode("create")
 
   };
-
-
 
   return (
 
@@ -51,85 +47,83 @@ export default function Home() {
           <Notifications>
             <NotificationsContext.Consumer>
               {() => <>
+                {(isLoginProcess && mode === 'login') &&
+                  <div className="flex flex-col items-center justify-center h-full mt-4">
+                    <p className="mb-2"><DotsLoader /></p>
+                    {locale.Home_inAuthProgress}
+                  </div>
+                }
+                {!isLoginProcess &&
+                  <>
+                    {mode === 'login' &&
+                      <>
+                        <div className="mx-auto max-w-screen-md ">
 
-                  <div className="mx-auto max-w-screen-md ">
+                          <div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
+                            {locale.Home_Welcome}
+                          </div>
 
-                    {did === "" &&
-                      <><div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
-                        {locale.Home_Welcome}
-                      </div>
-
-                        <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
-                          {isLoginProcess ?
-                            <div className="flex flex-col items-center justify-center h-full">
-                              <p className="mb-2"><DotsLoader /></p>
-                              {locale.Home_inAuthProgress}
-                            </div>
-                            :
+                          <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
                             <LoginForm />
+                          </div>
+
+                          {blueskyLoginMessage &&
+                            <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
+                              <p className="mt-2">{blueskyLoginMessage}</p>
+                            </div>
                           }
                         </div>
-
                       </>
                     }
-                    {blueskyLoginMessage &&
-                      <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
-                        <p className="mt-2">{blueskyLoginMessage}</p>
-                      </div>
-                    }
 
-                    {did &&
 
+                    <div className="w-full">
                       <>
-
-                        <div className="w-full">
+                        {mode === 'menu' &&
                           <>
-                            {mode === 'menu' &&
-                              <>
-                                <div className="mx-auto max-w-screen-sm flex flex-col  ">
-                                  <div className="flex justify-center my-4">
-                                    {locale.Menu_LoginMessage.replace("{1}", userProf?.displayName || 'No Name')}
-                                  </div>
+                            <div className="mx-auto max-w-screen-sm flex flex-col  ">
+                              <div className="flex justify-center my-4">
+                                {locale.Menu_LoginMessage.replace("{1}", userProf?.displayName || 'No Name')}
+                              </div>
 
-                                  <div className="flex justify-center gap-4 mb-8">
+                              <div className="flex justify-center gap-4 mb-8">
 
-                                    <Button color="primary" size="large" className="text-white text-base font-normal" onClick={() => handleNew()}>
-                                      {locale.Menu_CreatePost}
-                                    </Button>
+                                <Button color="primary" size="large" className="text-white text-base font-normal" onClick={() => handleNew()}>
+                                  {locale.Menu_CreatePost}
+                                </Button>
 
-                                  </div>
+                              </div>
 
-                                  <PostList handleEdit={handleEdit} />
+                              <PostList handleEdit={handleEdit} />
 
-                                </div>
-                              </>
-                            }
-                            {mode === 'create' &&
-                              <>
-                                <CreatePostForm setMode={setMode} prevBlur={prevBlur}/>
-
-                                <div className="flex justify-center mt-4"></div>
-
-                                <div className="flex justify-center mt-4">
-
-                                  <Button color="secondary" size="large" className="text-white text-base font-normal" onClick={() => {
-                                    setMode("menu");
-                                    window.scrollTo(0, 0); // ページを一番上までスクロール
-                                  }} >
-                                    {locale.Menu_Back}
-                                  </Button>
-                                </div>
-                              </>
-                            }
+                            </div>
                           </>
-                        </div>
+                        }
+                        {mode === 'create' &&
+                          <>
+                            <CreatePostForm setMode={setMode} prevBlur={prevBlur} />
 
+                            <div className="flex justify-center mt-4"></div>
+
+                            <div className="flex justify-center mt-4">
+
+                              <Button color="secondary" size="large" className="text-white text-base font-normal" onClick={() => {
+                                setMode("menu");
+                                window.scrollTo(0, 0); // ページを一番上までスクロール
+                              }} >
+                                {locale.Menu_Back}
+                              </Button>
+                            </div>
+                          </>
+                        }
                       </>
+                    </div>
 
-                    }
+                  </>
+                }
 
-                  </div>
-                  {(mode == 'login' && !isLoginProcess) &&
+
+{(mode == 'login' && !isLoginProcess) &&
                     <section className="bg-white mt-4">
                       <div className="container px-6 py-12 mx-auto">
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -187,12 +181,16 @@ export default function Home() {
                       </div>
                     </section>
                   }
-                </>}
-            </NotificationsContext.Consumer>
-          </Notifications>
-        </main>
-      </ThemeProvider>
 
-    </div>
+              </>}
+
+
+
+          </NotificationsContext.Consumer>
+        </Notifications>
+      </main>
+    </ThemeProvider>
+
+    </div >
   );
 }

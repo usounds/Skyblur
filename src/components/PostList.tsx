@@ -3,13 +3,13 @@ import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { COLLECTION, PostData, PostListItem } from "@/types/types";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import { Button, IconButton, useNotification } from 'reablocks';
+import { useXrpcStore } from "@/state/Xrpc";
 
 type PostListProps = {
     handleEdit: (input: PostListItem) => void;
@@ -22,19 +22,18 @@ export const PostList: React.FC<PostListProps> = ({
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [selectedItem, setSelectedItem] = useState<PostListItem | null>(null);
-    const did = useAtpAgentStore((state) => state.did);
-    const agent = useAtpAgentStore((state) => state.agent);
+    const did = useXrpcStore((state) => state.did);
     const locale = useLocaleStore((state) => state.localeData);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { notifySuccess, notifyError } = useNotification();
+    const loginXrpc = useXrpcStore((state) => state.loginXrpc);
 
     const getPosts = async (did: string, cursor: string) => {
 
-        if (!agent) {
+        if (!loginXrpc) {
             console.error("未ログインです")
             return
         }
-
 
         setIsLoading(true)
         setDeleteList([])
@@ -48,18 +47,18 @@ export const PostList: React.FC<PostListProps> = ({
                 limit: 10
             };
 
-            const bookMark = await agent.com.atproto.repo.listRecords(param);
+            const ret = await loginXrpc.get("com.atproto.repo.listRecords", { params: param })
 
             // 新しいカーソルを設定
-            if (bookMark.data.records.length === 10) {
-                setCursor(bookMark.data.cursor || '');
+            if (ret.data.records.length === 10) {
+                setCursor(ret.data.cursor || '');
             } else {
                 setCursor('');
 
             }
 
             // records を処理して deleteList を更新
-            for (const obj of bookMark.data.records) {
+            for (const obj of ret.data.records) {
                 const value = obj.value as PostData;
                 deleteList.push({
                     blurATUri: obj.uri,
@@ -116,13 +115,14 @@ export const PostList: React.FC<PostListProps> = ({
     };
 
     const deleteRecord = async (aturi: string) => {
-        if (!agent) {
+        if (!loginXrpc) {
             console.error("未ログインです")
             return
         }
 
         const param = convertAtUrlToObject(aturi)
-        await agent.com.atproto.repo.deleteRecord(param)
+
+        await loginXrpc.call("com.atproto.repo.deleteRecord", { data: param })
 
     }
 
@@ -135,7 +135,7 @@ export const PostList: React.FC<PostListProps> = ({
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
-            notifyError('Error:'+e)
+            notifyError('Error:' + e)
             return
         }
         // 実際の削除処理をここに追加

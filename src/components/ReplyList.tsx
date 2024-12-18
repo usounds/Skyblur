@@ -1,5 +1,5 @@
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
+import { useXrpcStore } from "@/state/Xrpc";
 import { useLocaleStore } from "@/state/Locale";
 import { PostView } from "@/types/types";
 import { Button, Input, Step, Stepper, DotsLoader } from 'reablocks';
@@ -14,7 +14,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
 }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentCursor, setCursor] = useState("");
-    const agent = useAtpAgentStore((state) => state.agent);
+    const loginXrpc = useXrpcStore((state) => state.loginXrpc);
     const LIMIT = 10
     const [postList, setPostList] = useState<PostView[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -28,14 +28,15 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     };
 
     const getPosts = async () => {
-        if (!agent) return
+        if (!loginXrpc) return
         setIsLoading(true)
         setPostList([])
-        const result = await agent.app.bsky.feed.searchPosts({
+
+        const result = await loginXrpc.get("app.bsky.feed.searchPosts", { params: {
             q: "from:me " + searchTerm,
             limit: LIMIT,
             cursor: ''
-        })
+        } })
 
         setCursor(result.data.cursor || "")
 
@@ -50,16 +51,17 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     }
 
     const getNext = async () => {
-        if (!agent) return
+        if (!loginXrpc) return
         setIsLoading(true)
-        const result = await agent.app.bsky.feed.searchPosts({
+
+
+        const result = await loginXrpc.get("app.bsky.feed.searchPosts", { params: {
             q: "from:me " + searchTerm,
             limit: LIMIT,
-            cursor: currentCursor
-        })
+            cursor: ''
+        } })
 
         setCursor(result.data.cursor || "")
-
         addPostsToPostList(result.data.posts as PostView[])
         setIsLoading(false)
 

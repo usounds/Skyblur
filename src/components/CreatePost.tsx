@@ -2,13 +2,15 @@
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { ReplyList } from "@/components/ReplyList";
 import { RestoreTempPost } from "@/components/RestoreTempPost";
+import '@/lib/skyblur/lexicons';
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
+import { useXrpcStore } from "@/state/Xrpc";
 import { COLLECTION, PostListItem, PostView } from "@/types/types";
-import { AppBskyFeedPost, RichText } from '@atproto/api';
+import '@atcute/bluesky/lexicons';
+import type { Brand, ComAtprotoRepoApplyWrites, UkSkyblurPost } from '@atcute/client/lexicons';
 import { TID } from '@atproto/common-web';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
@@ -35,9 +37,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
-    const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
-    const did = useAtpAgentStore((state) => state.did);
+    const did = useXrpcStore((state) => state.did);
     const setTempText = useTempPostStore((state) => state.setText);
     const setTempAdditional = useTempPostStore((state) => state.setAdditional);
     const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
@@ -50,6 +51,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const tempReply = useTempPostStore((state) => state.reply);
     const setTempReply = useTempPostStore((state) => state.setReply);
     const { notifySuccess, notifyError } = useNotification();
+    const loginXrpc = useXrpcStore((state) => state.loginXrpc);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -117,17 +119,46 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         did: string;
     }
 
+    type ExternalEmbed = {
+        $type: 'app.bsky.embed.external';
+        external: {
+            uri: string;
+            title: string;
+            description: string;
+        };
+    };
+
+    type CustomPostRecord = {
+        $type: string;
+        createdAt: string;
+        text: string;
+        langs: string[];
+        "uk.skyblur.post.uri": string;
+        via: string;
+        reply?: {  // オプショナルなプロパティとして 'reply' を追加
+            root: {
+                cid: string;
+                uri: string;
+            };
+            parent: {
+                cid: string;
+                uri: string;
+            };
+        };
+        embed?: ExternalEmbed;
+        facets?: any[]
+    }
+
     async function detectPatternWithDetails(str: string): Promise<MatchInfo[]> {
-        if (!agent) return []
+        if (!loginXrpc) return []
         const matches: MatchInfo[] = [];
         const regex = /@[a-z]+(?:\.[a-z]+)+(?=\s|$|[\u3000-\uFFFD])/g;
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(str)) !== null) {
             try {
-                const result = await agent.app.bsky.actor.getProfile({
-                    actor: match[0].slice(1)
-                });
+
+                const result = await loginXrpc.get("app.bsky.actor.getProfile", { params: { actor: match[0].slice(1) } })
 
                 matches.push({
                     detectedString: match[0],
@@ -226,7 +257,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     }
 
     const handleCrearePost = async () => {
-        if (!agent) {
+        if (!loginXrpc) {
             console.error("未ログインです")
             return
         }
@@ -237,6 +268,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         try {
 
             let localPrevPostAturi
+
+
+            const writes: Brand.Union<ComAtprotoRepoApplyWrites.Create>[] = [];
+            const createdAt = new Date().toISOString()
 
 
             let rkey = TID.nextStr()
@@ -279,20 +314,16 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 //投稿
                 const postTextBlurLocal: string = postTextBlur;
-                const rt = new RichText({ text: postTextBlurLocal });
-                await rt.detectFacets(agent);
-
-
                 const langs = [detectLanguage(postText)]
 
-                const postObj: Partial<AppBskyFeedPost.Record> &
-                    Omit<AppBskyFeedPost.Record, 'createdAt'> = {
+
+                const record: CustomPostRecord = {
                     $type: 'app.bsky.feed.post',
-                    text: rt.text,
-                    facets: rt.facets,
+                    createdAt: createdAt,
+                    text: postTextBlurLocal,
                     langs: langs,
-                    via: 'Skyblur',
-                    "uk.skyblur.post.uri": blurUri
+                    "uk.skyblur.post.uri": blurUri,
+                    via: "Skyblur"
                 };
 
                 if (replyPost) {
@@ -307,11 +338,11 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             uri: replyPost.uri || ''
                         }
                     }
-                    postObj.reply = reply
+                    record.reply = reply;
 
                 }
 
-                postObj.facets = new Array(0);
+                const facets = new Array(0);
 
                 // TextEncoder を使用して UTF-8 バイト配列に変換
                 const encoder = new TextEncoder();
@@ -336,7 +367,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     const byteEnd = byteStart + encodeURI(tempUrl).replace(/%../g, "*").length;
 
                     // postObj.facets に追加するオブジェクトを作成
-                    postObj.facets.push(
+                    facets.push(
                         {
                             index: {
                                 byteStart: byteStart,
@@ -367,7 +398,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
                     const toIndex = encodeURI(toText).replace(/%../g, "*").length;
 
-                    postObj.facets.push(
+                    facets.push(
                         {
                             index: {
                                 "byteStart": fromIndex,
@@ -395,7 +426,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
                     const toIndex = encodeURI(toText).replace(/%../g, "*").length;
 
-                    postObj.facets.push(
+                    facets.push(
                         {
                             index: {
                                 "byteStart": fromIndex,
@@ -414,7 +445,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 const localDesc = locale.CreatePost_OGPDescription
 
                 // OGP設定
-                postObj.embed = {
+                record["embed"] = {
                     $type: 'app.bsky.embed.external',
                     external: {
                         uri: tempUrl,
@@ -425,8 +456,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 //URLをリンク化
                 Object.keys(urlArray).forEach(function (key) {
-                    if (typeof postObj.facets !== "undefined") {
-                        postObj.facets.push(
+                    if (typeof facets !== "undefined") {
+                        facets.push(
                             {
                                 index: {
                                     "byteStart": urlArray[key],
@@ -443,27 +474,46 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     }
                 });
 
-                const result = await agent.post(postObj);
 
-                localPrevPostAturi = result.uri
+                if (facets) {
+                    record.facets = facets
+                }
+
+                writes.push({
+                    $type: 'com.atproto.repo.applyWrites#create',
+                    collection: 'app.bsky.feed.post',
+                    rkey: rkey,
+                    value: record,
+                });
+
+                localPrevPostAturi = "at://" + did + "/app.bsky.feed.post/" + rkey
 
 
             }
 
-            const postObject = {
-                repo: did,
+            const record2: UkSkyblurPost.Record & { $type: 'uk.skyblur.post' } = {
+                $type: 'uk.skyblur.post',
+                uri: localPrevPostAturi || '',
+                text: postTextForRecord,
+                additional: addText,
+                createdAt: prevBlur?.blur.createdAt || createdAt
+            };
+
+            writes.push({
+                $type: 'com.atproto.repo.applyWrites#create',
                 collection: COLLECTION,
                 rkey: rkey,
-                record: {
-                    uri: localPrevPostAturi,
-                    text: postTextForRecord,
-                    additional: addText,
-                    createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
-                },
-            }
+                value: record2,
+            });
 
-            const ret = await agent.com.atproto.repo.putRecord(postObject)
-            if (ret.success) {
+            const ret = await loginXrpc.call('com.atproto.repo.applyWrites', {
+                data: {
+                    repo: did,
+                    writes: writes,
+                },
+            });
+
+            if (ret.data.results) {
                 const convertedUri = "completed";
                 setAppUrl(convertedUri)
                 setPostTest('')
@@ -474,11 +524,11 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             } else {
                 console.error(ret)
-                notifyError("Error:"+ret)
+                notifyError("Error:" + ret)
 
             }
         } catch (e) {
-            notifyError("Error:"+e)
+            notifyError("Error:" + e)
 
         }
         setIsLoading(false)
@@ -521,10 +571,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostText(tempText, tempSimpleMode);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
-        if (tempReply && agent && tempReply.includes(did)) {
-            const result = await agent.app.bsky.feed.getPosts({
-                uris: [tempReply]
-            })
+        if (tempReply && loginXrpc && tempReply.includes(did)) {
+
+            const result = await loginXrpc.get("app.bsky.feed.getPosts", { params: { uris: [tempReply] } })
 
             setIsReply(true)
             setReplyPost(result.data.posts[0] as PostView)

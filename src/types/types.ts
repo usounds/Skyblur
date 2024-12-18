@@ -1,6 +1,6 @@
 
 import { PartialReablocksTheme } from 'reablocks';
-import { AppBskyEmbedImages, AppBskyActorDefs, AppBskyEmbedVideo, AppBskyEmbedExternal, AppBskyEmbedRecordWithMedia, ComAtprotoLabelDefs, } from '@atproto/api';
+import { AppBskyEmbedImages, AppBskyActorDefs, AppBskyEmbedVideo, AppBskyEmbedExternal, AppBskyEmbedRecordWithMedia, ComAtprotoLabelDefs, } from '@atcute/client/lexicons';
 
 export type DIDDocument = {
     '@context': string[];

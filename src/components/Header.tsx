@@ -1,51 +1,45 @@
 "use client"
 import LanguageSelect from "@/components/LanguageSelect";
-import { useAtpAgentStore } from "@/state/AtpAgent";
+import { handleAtCuteOauth, isDidString } from "@/logic/HandleOAuth";
 import { useLocaleStore } from "@/state/Locale";
-import { getClientMetadata } from '@/types/ClientMetadataContext';
-import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-import Link from 'next/link';
-import React from 'react';
-import { useEffect } from "react";
-import { handleOAuth } from "@/logic/HandleOAuth"
 import { useModeStore } from "@/state/Mode";
+import { useXrpcStore } from "@/state/Xrpc";
+import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
+import Link from 'next/link';
+import React, { useEffect } from 'react';
 
 const Header = () => {
   const locale = useLocaleStore((state) => state.localeData);
-  const agent = useAtpAgentStore((state) => state.agent);
-  const setAgent = useAtpAgentStore((state) => state.setAgent);
-  const did = useAtpAgentStore((state) => state.did);
-  const setUserProf = useAtpAgentStore((state) => state.setUserProf);
-  const setIsLoginProcess = useAtpAgentStore((state) => state.setIsLoginProcess);
-  const setDid = useAtpAgentStore((state) => state.setDid);
-  const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
+  const setUserProf = useXrpcStore((state) => state.setUserProf);
+  const setIsLoginProcess = useXrpcStore((state) => state.setIsLoginProcess);
+  const setDid = useXrpcStore((state) => state.setDid);
+  const setBlueskyLoginMessage = useXrpcStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
+  const did = useXrpcStore((state) => state.did);
+  const setLoginXrpc = useXrpcStore((state) => state.setLoginXrpc);
+  const loginXrpc = useXrpcStore((state) => state.loginXrpc);
 
   let ignore = false
 
   useEffect(() => {
+
     if (ignore) {
       console.log("useEffect duplicate call")
       return
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    ignore = true
-
-    if (did) {
-      console.log("has active session")
-      return
-    }
+    ignore = true;
 
     (
       async function () {
+
+        if(loginXrpc) return
         setIsLoginProcess(true)
 
-        const ret = await handleOAuth(
-          getClientMetadata,
-          setAgent,
+        const ret = await handleAtCuteOauth(
           setUserProf,
-          setIsLoginProcess,
-          setDid,
+          setLoginXrpc,
+          did,
           setBlueskyLoginMessage
         );
 
@@ -61,30 +55,27 @@ const Header = () => {
     // クリーンアップ
     return () => {
     };    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [locale])
 
   const logout = async (): Promise<void> => {
+
+    if (!isDidString(did)) return
     try {
 
-      const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl') || 'https://bsky.social'
+      const session = await getSession(did, { allowStale: true });
 
-      const browserClient = new BrowserOAuthClient({
-        clientMetadata: getClientMetadata(),
-        handleResolver: localPdsUrl,
-      })
+      const agent = new OAuthUserAgent(session);
+      await agent.signOut();
 
-      browserClient.revoke(did)
-
-      setAgent(null)
+      setLoginXrpc(undefined)
       setDid('')
       setIsLoginProcess(false)
-
-      window.localStorage.removeItem('oauth.code_verifier')
-      window.localStorage.removeItem('oauth.pdsUrl')
+      setMode('login')
       window.localStorage.removeItem('oauth.handle')
 
 
     } catch (e) {
+      deleteStoredSession(did)
       console.error(e)
     }
 
@@ -98,7 +89,7 @@ const Header = () => {
         </Link>
         <div className="flex flex-row items-center gap-2 text-gray-800 mt-2 sm:mt-0">
 
-          {agent &&
+          {loginXrpc &&
             <>
               <div className="flex-none text-sm font-semibold text-white mr-2" onClick={logout}>
                 {locale.Menu_Logout}

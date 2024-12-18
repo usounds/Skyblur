@@ -6,12 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate": "lex-cli generate src/lexicons/uk/skyblur/post.json > src/lib/skyblur/lexicons.ts"
   },
   "dependencies": {
-    "@atproto/api": "^0.13.20",
+    "@atcute/bluesky": "^1.0.11",
+    "@atcute/client": "^2.0.6",
+    "@atcute/oauth-browser-client": "^1.0.7",
     "@atproto/common-web": "^0.3.1",
-    "@atproto/oauth-client-browser": "^0.3.4",
+    "@atproto/oauth-types": "^0.2.1",
     "dompurify": "^3.2.3",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
@@ -25,6 +28,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@atcute/lex-cli": "^1.0.3",
     "@types/node": "^20",
     "@types/react": "^18.3.16",
     "@types/react-dom": "^18.3.5",
