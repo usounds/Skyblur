@@ -4,7 +4,7 @@ import { Avatar } from "@/components/Avatar";
 import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
-import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
+import { resolveFromIdentity } from '@atcute/oauth-browser-client';
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { useXrpcStore } from "@/state/Xrpc";
@@ -19,15 +19,15 @@ import { Button, Divider, ThemeProvider, extendTheme, theme } from 'reablocks';
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [isClient, setIsClient] = useState(false)
   const { did, rkey } = useParams();
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [postText, setPostText] = useState<string>('')
   const [addText, setAddText] = useState("");
   const [bskyUrl, setBskyUrl] = useState("");
   const [postDate, setPostDate] = useState<string>('')
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
+  const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed | undefined>()
+  const loginXrpc = useXrpcStore((state) => state.loginXrpc);
   const locale = useLocaleStore((state) => state.localeData);
   const apiXrpc = useXrpcStore((state) => state.apiXrpc);
   const searchParams = useSearchParams();
@@ -37,25 +37,23 @@ export default function Home() {
 
 
   useEffect(() => {
-    setIsClient(true)
-    console.log('Current locale:', locale);
+    setIsLoading(true)
     if (did && rkey) {
       let repo = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
       repo = repo.replace(/%3A/g, ':');
       const rkeyParam = Array.isArray(rkey) ? rkey[0] : rkey; // 配列なら最初の要素を使う
-      setIsLoading(true);
       setErrorMessage('')
 
 
       const fetchRecord = async () => {
 
         try {
-          const pdsUrl = await fetchServiceEndpoint(repo)
+          const { identity } = await resolveFromIdentity(repo);
 
           try {
             // getProfileとgetRecordを並行して呼び出す
 
-            const pdsmanager = new CredentialManager({ service: pdsUrl || "" });
+            const pdsmanager = new CredentialManager({ service: identity.pds.origin || "" });
             const pdsSrpc = new XRPC({ handler: pdsmanager });
 
             const [userProfileResponse, postResponse] = await Promise.all([
@@ -109,38 +107,41 @@ export default function Home() {
 
   return (
     <>
-      {isClient ?
-        <>
-          <Header />
-          <link rel="alternate" href={aturi} />
-          <ThemeProvider theme={extendTheme(theme, customTheme)}>
+      <>
+        <Header />
+        <link rel="alternate" href={aturi} />
+        <ThemeProvider theme={extendTheme(theme, customTheme)}>
 
-            <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
-              <div className="mx-auto rounded-lg">
-                {userProf &&
-
-                  <Avatar userProf={userProf} />
-                }
-
-                {isLoading ?
-                  <div className="">
-                    <PostLoading />
-                  </div>
-                  :
-                  <>
-                    {!errorMessage &&
-                      <>
-                        <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
-                          <div className="overflow-hidden break-words">
-                            <PostTextWithBold postText={postText} isValidateBrackets={true} />
+          <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
+            <div className="mx-auto rounded-lg">
+              {(!postText && !isLoading) &&
+                <div className="">
+                  <PostLoading />
+                </div>
+              }
+              {isLoading ?
+                <div className="">
+                  <PostLoading />
+                </div>
+                :
+                <>
+                  {!errorMessage &&
+                    <>
+                      {userProf &&
+                        <Avatar userProf={userProf} />
+                      }
+                      <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
+                        <div className="overflow-hidden break-words">
+                          <PostTextWithBold postText={postText} isValidateBrackets={true} />
+                        </div>
+                        {addText &&
+                          <div className="">
+                            <Divider variant="secondary" />
+                            <PostTextWithBold postText={addText} isValidateBrackets={false} />
                           </div>
-                          {addText &&
-                            <div className="">
-                              <Divider variant="secondary" />
-                              <PostTextWithBold postText={addText} isValidateBrackets={false} />
-                            </div>
-                          }
+                        }
 
+                        {postText &&
                           <div className="flex justify-between items-center mt-2">
                             <div className="text-sm text-gray-400">{postDate}</div>
                             <div className="flex gap-2">
@@ -154,37 +155,36 @@ export default function Home() {
                               </a>
                             </div>
                           </div>
-
-
-                        </div>
-
-                        {(q == 'preview') &&
-                          <>
-                            <div className="flex justify-center mt-10">
-                              <Link href="/">
-                                <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
-                              </Link>
-                            </div>
-                          </>
                         }
 
-                      </>
-                    }
-                  </>
-                }
+                      </div>
 
-                {errorMessage &&
-                  <div className="whitespace-pre-wrap break-words text-red-800">
-                    {errorMessage}
-                  </div>
-                }
-              </div>
-            </div >
-          </ThemeProvider>
-        </>
-        :
-        <></>
-      }
+                      {(q == 'preview' && loginXrpc) &&
+                        <>
+                          <div className="flex justify-center mt-10">
+                            <Link href="/">
+                              <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
+                            </Link>
+                          </div>
+                        </>
+                      }
+
+                    </>
+                  }
+                </>
+              }
+
+              {errorMessage &&
+                <div className="whitespace-pre-wrap break-words text-red-800">
+                  {errorMessage}
+                </div>
+              }
+            </div>
+          </div >
+        </ThemeProvider>
+      </>
+      :
+      <></>
     </>
   );
 };
