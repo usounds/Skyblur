@@ -91,23 +91,24 @@ const PostPage = () => {
 
   async function getPostResponse(repo: string, rkey: string) {
 
+    const pdsUrl = await fetchServiceEndpoint(repo)
+    /*
     const ret = await fetch("https://api.skyblur.uk/getpds/" + repo);
     const data = await ret.json()
 
+      */
     let pdsAgent = new AtpAgent({
-      service: data.pds || ''
+      service: pdsUrl || ''
     })
 
 
     try {
-
-
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,
         collection: COLLECTION,
         rkey: rkey,
       })
-  
+
     } catch (e) {
       console.error(e)
 
@@ -118,7 +119,7 @@ const PostPage = () => {
       })
 
 
-   fetch("https://api.skyblur.uk/deletepds/" + repo);
+      fetch("https://api.skyblur.uk/deletepds/" + repo);
 
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,
@@ -155,7 +156,7 @@ const PostPage = () => {
                       </div>
                       {addText &&
                         <div className="">
-                          <Divider  variant="secondary"  />
+                          <Divider variant="secondary" />
                           <PostTextWithBold postText={addText} isValidateBrackets={false} />
                         </div>
                       }
