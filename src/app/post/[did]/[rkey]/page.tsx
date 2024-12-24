@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Button, ThemeProvider, extendTheme, theme, Divider } from 'reablocks';
 import { useEffect, useState } from "react";
+import Head from 'next/head';
 
 const PostPage = () => {
   const { did, rkey } = useParams();
@@ -132,6 +133,9 @@ const PostPage = () => {
 
   return (
     <>
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <Header />
       <link rel="alternate" href={aturi} />
 
