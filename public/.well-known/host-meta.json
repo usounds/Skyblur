@@ -1,0 +1,11 @@
+{
+    "links": [
+      {
+        "rel": "http://hopper.at/rel/link",
+        "template": "https://skyblur.uk/post/{identity}/{rkey}",
+        "properties": {
+            "http://hopper.at/ns/collection": "uk.skyblur.post"
+        }
+      }
+    ]
+  }

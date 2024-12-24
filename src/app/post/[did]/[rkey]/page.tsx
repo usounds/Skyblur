@@ -46,21 +46,11 @@ const PostPage = () => {
           setIsLoading(true);
           setErrorMessage('')
 
-          const pdsUrl = await fetchServiceEndpoint(repo)
-
-          const pdsAgent = new AtpAgent({
-            service: pdsUrl || ''
-          })
-
           try {
             // getProfileとgetRecordを並行して呼び出す
             const [userProfileResponse, postResponse] = await Promise.all([
               apiAgent.getProfile({ actor: repo }),
-              pdsAgent.com.atproto.repo.getRecord({
-                repo: repo,
-                collection: COLLECTION,
-                rkey: rkeyParam,
-              }),
+              getPostResponse(repo, rkeyParam),
             ]);
 
             // userProfileのデータをセット
@@ -99,6 +89,47 @@ const PostPage = () => {
   }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
+  async function getPostResponse(repo: string, rkey: string) {
+
+    const pdsUrl = await fetchServiceEndpoint(repo)
+    /*
+    const ret = await fetch("https://api.skyblur.uk/getpds/" + repo);
+    const data = await ret.json()
+
+      */
+    let pdsAgent = new AtpAgent({
+      service: pdsUrl || ''
+    })
+
+
+    try {
+      return pdsAgent.com.atproto.repo.getRecord({
+        repo: repo,
+        collection: COLLECTION,
+        rkey: rkey,
+      })
+
+    } catch (e) {
+      console.error(e)
+
+      const pdsUrl = await fetchServiceEndpoint(repo)
+
+      pdsAgent = new AtpAgent({
+        service: pdsUrl || ''
+      })
+
+
+      fetch("https://api.skyblur.uk/deletepds/" + repo);
+
+      return pdsAgent.com.atproto.repo.getRecord({
+        repo: repo,
+        collection: COLLECTION,
+        rkey: rkey,
+      })
+
+    }
+  }
+
   return (
     <>
       <Header />
@@ -125,7 +156,7 @@ const PostPage = () => {
                       </div>
                       {addText &&
                         <div className="">
-                          <Divider  variant="secondary"  />
+                          <Divider variant="secondary" />
                           <PostTextWithBold postText={addText} isValidateBrackets={false} />
                         </div>
                       }
