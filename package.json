@@ -9,13 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@atproto/api": "^0.13.20",
+    "@atproto/api": "^0.13.23",
     "@atproto/common-web": "^0.3.1",
-    "@atproto/oauth-client-browser": "^0.3.4",
+    "@atproto/oauth-client-browser": "^0.3.5",
     "dompurify": "^3.2.3",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
-    "next": "^14.2.20",
+    "next": "^14.2.21",
     "preline": "^2.6.0",
     "reablocks": "^8.7.3",
     "react": "^18.3.1",
