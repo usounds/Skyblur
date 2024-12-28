@@ -16,7 +16,7 @@ export const getClientMetadata: () => OAuthClientMetadataInput | undefined = () 
         env = 'local';
     }
 
-    return clientMetadataByEnv[env];
+    return clientMetadataByEnv[env]
 };
 
 
@@ -49,7 +49,7 @@ export const clientMetadataByEnv: ClientMetadataByEnv = {
         application_type: "web",
         dpop_bound_access_tokens: true,
     },
-    production2: {
+    apprun: {
         client_id: "https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp/api/client-metadata.json",
         client_name: "Skyblur",
         client_uri: "https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp",
