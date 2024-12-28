@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+.dockerignore
+.git
+.gitignore
+.next/cache
+*.env
+Dockerfile
+create_app.json
+build.sh

@@ -7,13 +7,13 @@ export async function GET(request: Request) {
   if (process.env.NODE_ENV === 'production') {
     if (origin.includes('preview')) {
       envLocal = 'preview'
-    } else {
+    } else if (origin.includes('skyblur.uk')) {
       envLocal = 'production'
+    } else {
+      envLocal = 'apprun'
     }
-
   } else {
     envLocal = 'local'
-
   }
 
   const obj = clientMetadataByEnv[envLocal]
