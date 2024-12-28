@@ -23,6 +23,30 @@ fi
 
 # PATCH リクエストの実行
 echo "---Deploy to Sakura App Run---"
+current_datetime=$(date +"%Y-%m-%d %H:%M:%S")
+cat <<EOF > create_app.json
+{
+    "name": "Skyblur $current_datetime",
+    "timeout_seconds": 60,
+    "port": 3000,
+    "min_scale": 0,
+    "max_scale": 1,
+    "components": [
+        {
+            "name": "Skyblur $current_datetime",
+            "max_cpu": "1",
+            "max_memory": "512Mi",
+            "deploy_source": {
+                "container_registry": {
+                    "image": "usounds.sakuracr.jp/skyblur:latest"
+                }
+            }
+        }
+    ],
+    "all_traffic_available": true
+}
+EOF
+
 RESPONSE=$(curl -su "$API_USER:$API_PASS" \
   -X PATCH \
   -H "Content-Type: application/json" \
