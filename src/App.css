@@ -1,0 +1,4 @@
+html[data-theme='dark'] .my-button.Mui-disabled {
+  background-color: #424242; /* ダークモード時の背景色 */
+  color: rgba(0, 0, 0, 0.3); /* ダークモード時の無効状態の文字色 */
+}
