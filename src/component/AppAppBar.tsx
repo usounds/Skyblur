@@ -17,12 +17,14 @@ import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
+import Stack from '@mui/material/Stack';
 import MenuItem from '@mui/material/MenuItem';
 import { alpha, styled } from '@mui/material/styles';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { Link as InnerLink, useNavigate } from 'react-router-dom';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     display: 'flex',
@@ -81,6 +83,7 @@ export default function AppAppBar() {
 
         if (!isDidString(did)) return
         try {
+            handleCloseUserMenu()
             handleBackDropOpen()
 
             const session = await getSession(did, { allowStale: true });
@@ -92,7 +95,7 @@ export default function AppAppBar() {
             setDid('')
             setUserProf(null)
             handleBackDropClose()
-            navigate("/")
+            navigate("/login")
             window.localStorage.removeItem('oauth.handle')
 
 
@@ -105,7 +108,7 @@ export default function AppAppBar() {
 
     return (
         <AppBar
-            position="static"
+            position="fixed"
             enableColorOnDark
             sx={{
                 boxShadow: 0,
@@ -114,7 +117,6 @@ export default function AppAppBar() {
                 mt: 'calc(var(--template-frame-height, 0px) + 28px)',
             }}
         >
-
             <Backdrop
                 sx={(theme) => ({
                     color: '#fff',
@@ -129,7 +131,7 @@ export default function AppAppBar() {
                 <StyledToolbar variant="dense" disableGutters>
 
                     <Box >
-                        <InnerLink to={did ? "/mypage" : "/"} style={{ textDecoration: 'none' }}>
+                        <InnerLink to={"/"} style={{ textDecoration: 'none' }}>
                             <Button variant="text" color="info">
                                 Skyblur
                             </Button>
@@ -160,7 +162,7 @@ export default function AppAppBar() {
                             <Box sx={{ flexGrow: 0, width: '2.25rem', height: '2.25rem' }}>
                                 <IconButton
                                     onClick={handleOpenUserMenu}
-                                    sx={{ p: 0, width: '2.25rem', height: '2.25rem' }}
+                                    sx={{ p: 0, width: '2.25rem', height: '2.25rem',border: 'none'  }}
                                 >
                                     <Avatar alt={userProf?.handle} src={userProf?.avatar} />
                                 </IconButton>
@@ -182,13 +184,31 @@ export default function AppAppBar() {
                                     }}
                                     sx={{ mt: '45px' }}
                                 >
-                                    <MenuItem disabled={true}>
-                                        <Typography sx={{ textAlign: 'center' }}>{userProf.displayName}</Typography>
-                                    </MenuItem>
-                                    <MenuItem disabled={true}>
-                                        <Typography sx={{ textAlign: 'center', fontSize: 'small' }}>@{userProf.handle}</Typography>
-                                    </MenuItem>
+                                    <Stack
+                                        direction="row"
+                                        sx={{
+                                            p: 1,
+                                            gap: 1,
+                                            alignItems: 'center',
+                                            borderColor: 'divider',
+                                        }}
+                                    >
+                                        <Avatar
+                                            sizes="small"
+                                            src={userProf?.avatar}
+                                            sx={{ width: 36, height: 36 }}
+                                        />
+                                        <Box sx={{ mr: 'auto' }}>
+                                            <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
+                                                {userProf.displayName}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                                @{userProf.handle}
+                                            </Typography>
+                                        </Box>
+                                    </Stack>
                                     <MenuItem onClick={logout}>
+                                        <LogoutIcon sx={{ marginRight: 1 }} />
                                         <Typography sx={{ textAlign: 'center' }}>{locale.Menu_Logout}</Typography>
                                     </MenuItem>
                                 </Menu>
@@ -229,12 +249,12 @@ export default function AppAppBar() {
                                         <CloseRoundedIcon />
                                     </IconButton>
                                 </Box>
-                                <Typography sx={{ textAlign: 'center', textTransform: 'lowercase' }} onClick={handleTermOfUse}>{locale.Menu_TermOfUse}aaaa</Typography>
+                                <Typography sx={{ textAlign: 'center', textTransform: 'lowercase' }} onClick={handleTermOfUse}>{locale.Menu_TermOfUse}</Typography>
                                 <Divider sx={{ my: 3 }} />
                                 <MenuItem>
                                     {userProf &&
                                         <Box sx={{ flexGrow: 0 }}>
-                                            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                                            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, border: 'none' }}>
                                                 <Avatar alt={userProf?.handle} src={userProf?.avatar} />
                                             </IconButton>
                                             <Menu
@@ -253,13 +273,31 @@ export default function AppAppBar() {
                                                 open={Boolean(anchorElUser)}
                                                 onClose={handleCloseUserMenu}
                                             >
-                                                <MenuItem disabled={true}>
-                                                    <Typography sx={{ textAlign: 'center' }}>{userProf.displayName}</Typography>
-                                                </MenuItem>
-                                                <MenuItem disabled={true}>
-                                                    <Typography sx={{ textAlign: 'center', fontSize: 'small' }}>@{userProf.handle}</Typography>
-                                                </MenuItem>
+                                                <Stack
+                                                    direction="row"
+                                                    sx={{
+                                                        p: 1,
+                                                        gap: 1,
+                                                        alignItems: 'center',
+                                                        borderColor: 'divider',
+                                                    }}
+                                                >
+                                                    <Avatar
+                                                        sizes="small"
+                                                        src={userProf?.avatar}
+                                                        sx={{ width: 36, height: 36 }}
+                                                    />
+                                                    <Box sx={{ mr: 'auto' }}>
+                                                        <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
+                                                            {userProf.displayName}
+                                                        </Typography>
+                                                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                                            @{userProf.handle}
+                                                        </Typography>
+                                                    </Box>
+                                                </Stack>
                                                 <MenuItem onClick={logout}>
+                                                    <LogoutIcon sx={{ marginRight: 1 }} />
                                                     <Typography sx={{ textAlign: 'center' }}>{locale.Menu_Logout}</Typography>
                                                 </MenuItem>
                                             </Menu>

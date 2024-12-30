@@ -15,17 +15,19 @@ const OauthCallBack = () => {
     const setUserProf = useXrpcStore((state) => state.setUserProf);
     const setLoginXrpc = useXrpcStore((state) => state.setLoginXrpc);
     const setDid = useXrpcStore((state) => state.setDid);
+    const setIsLoginProcess = useXrpcStore((state) => state.setIsLoginProcess);
     const navigate = useNavigate();
-        const locale = useLocaleStore((state) => state.localeData);
+    const locale = useLocaleStore((state) => state.localeData);
 
     useEffect(() => {
         setBlueskyLoginMessage('')
+        setIsLoginProcess(true)
         const params = new URLSearchParams(location.hash.slice(1));
         console.log(params.size)
         if (params.size === 4) {
             setBlueskyLoginMessage('認証に失敗しました')
             console.log(params)
-            navigate('/');
+            navigate('/login');
             return
         }
         console.log('isAuth')
@@ -60,8 +62,9 @@ const OauthCallBack = () => {
                 const ret = await xrpc.get("app.bsky.actor.getProfile", { params: { actor: agent.sub } })
                 setUserProf(ret.data)
                 setDid(agent.sub)
+                setIsLoginProcess(false)
 
-                navigate('/mypage');
+                navigate('/');
 
             }
         };

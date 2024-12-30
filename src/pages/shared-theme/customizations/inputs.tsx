@@ -95,18 +95,24 @@ export const inputsCustomizations: Components<Theme> = {
             },
             style: {
               color: 'white',
-              backgroundColor: brand[300],
-              backgroundImage: `linear-gradient(to bottom, ${alpha(brand[400], 0.8)}, ${brand[500]})`,
-              boxShadow: `inset 0 2px 0 ${alpha(brand[200], 0.2)}, inset 0 -2px 0 ${alpha(brand[700], 0.4)}`,
-              border: `1px solid ${brand[500]}`,
+              backgroundColor: brand[600],
+              backgroundImage: `linear-gradient(to bottom, ${brand[600]}, ${brand[700]})`,
+              boxShadow: `inset 0 2px 0 ${alpha(brand[600], 0.2)}, inset 0 -2px 0 ${alpha(brand[700], 0.4)}`,
+              border: `1px solid ${brand[700]}`,
               '&:hover': {
-                backgroundColor: brand[700],
+                backgroundImage: 'none',
+                backgroundColor: brand[500],
                 boxShadow: 'none',
               },
               '&:active': {
-                backgroundColor: brand[700],
-                backgroundImage: 'none',
+                backgroundColor: brand[400],
               },
+              '&.Mui-disabled': {
+                color:gray[300],
+                backgroundColor: gray[700], // 希望の色を指定
+                backgroundImage: 'none',
+                border: `1px solid ${gray[600]}`,
+              }
             },
           },
           {
@@ -174,6 +180,9 @@ export const inputsCustomizations: Components<Theme> = {
               },
               '&:active': {
                 backgroundColor: alpha(brand[200], 0.7),
+              },
+              '&.Mui-disabled': {
+                backgroundColor: 'rgb(111, 111, 111)', // 希望の色を指定
               },
               ...theme.applyStyles('dark', {
                 color: brand[50],

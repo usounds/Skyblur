@@ -30,17 +30,20 @@ export default function TermOfUse() {
                     }
                 ]}
             >
-                <Stack
-                    sx={{
-                        minWidth: '0',
-                        width: {
-                            xs: '100%',
-                            sm: '600px',
-                            md: '720px',
-                        },
-                    }}
-                    spacing={2} // 子要素間のギャップを設定（例: 2 = 8px）
-                >
+<Stack
+    sx={{
+        minWidth: '0',
+        width: {
+            sm: '600px',  // smサイズ以上で指定したい幅
+            md: '720px',  // mdサイズ以上で指定したい幅
+        },
+        marginX: {
+            xs: 2,  // xsサイズの時のみ左右にマージン
+            sm: 0,  // sm以上のサイズではマージンなし
+        },
+    }}
+    spacing={2} // 子要素間のギャップ
+>
                     <Typography variant="h2">利用規約</Typography>
                     <Typography >
                         Skyblur（以下，「本サイト」といいます。）は、以下のとおりプライバシーポリシー並びに利用規約を定めます。

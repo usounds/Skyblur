@@ -1,9 +1,8 @@
-import React, { useEffect } from "react";
+import { isDidString } from "@/logic/HandleBluesky";
 import { useXrpcStore } from '@/state/Xrpc';
-import { isDidString } from "@/logic/HandleBluesky"
-import { configureOAuth, getSession, OAuthUserAgent } from '@atcute/oauth-browser-client';
 import { XRPC } from '@atcute/client';
-import { useNavigate } from 'react-router-dom';
+import { configureOAuth, getSession, OAuthUserAgent } from '@atcute/oauth-browser-client';
+import React, { useEffect } from "react";
 
 const BlueskySession: React.FC = () => {
     const did = useXrpcStore((state) => state.did);
@@ -12,12 +11,16 @@ const BlueskySession: React.FC = () => {
     const setUserProf = useXrpcStore((state) => state.setUserProf);
     const setIsLoginProcess = useXrpcStore((state) => state.setIsLoginProcess);
     const setHandleMessage = useXrpcStore((state) => state.setBlueskyLoginMessage);
-    const navigate = useNavigate();
+    const isLoginProcess = useXrpcStore((state) => state.isLoginProcess);
 
     useEffect(() => {
+        console.log('useEffect BlueskySession')
+        console.log(isLoginProcess)
+        if(isLoginProcess) return
         // 非同期関数を定義
         const fetchSession = async () => {
             if (!loginXrpc && did && isDidString(did)) {
+                setIsLoginProcess(true)
                 try {
                     configureOAuth({
                         metadata: {
@@ -27,17 +30,15 @@ const BlueskySession: React.FC = () => {
                     });
 
                     const session = await getSession(did, { allowStale: true });
-                    if (session.token.expires_at && session.token.expires_at > Date.now()) {
-
-                        const agent = new OAuthUserAgent(session);
-                        const xrpc = new XRPC({ handler: agent });
-
-                        setLoginXrpc(xrpc)
-                        const ret = await xrpc.get("app.bsky.actor.getProfile", { params: { actor: agent.sub } })
-                        console.log(ret.headers.status)
+                    const agent = new OAuthUserAgent(session);
+                    const xrpc = new XRPC({ handler: agent });
+                    const ret = await xrpc.get("app.bsky.actor.getProfile", { params: { actor: agent.sub } })
+                    if (agent.session.token.expires_at && agent.session.token.expires_at > Date.now()) {
                         if (ret.headers.status !== '401') {
+                            setLoginXrpc(xrpc)
                             setUserProf(ret.data)
-                            navigate('/mypage')
+                            setIsLoginProcess(false)
+                            return
                         }
                     } else {
                         setHandleMessage('7日間経過したので、再ログインしてください')
@@ -56,10 +57,7 @@ const BlueskySession: React.FC = () => {
         return () => { };
 
         // 注意: 依存配列には必要な変数を含めてください
-    }, [loginXrpc, did]);
-
-
-
+    }, [loginXrpc, did,isLoginProcess]);
 
     return (
         <>

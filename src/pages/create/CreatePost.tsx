@@ -38,7 +38,7 @@ export default function CreatePost(props: { disableCustomTheme?: boolean }) {
     };
     const handleBack = () => {
         if (activeStep === 0) {
-            navigate('/mypage')
+            navigate('/')
         } else {
             setActiveStep(activeStep - 1);
         }
@@ -172,7 +172,7 @@ export default function CreatePost(props: { disableCustomTheme?: boolean }) {
                                         { justifyContent: 'space-between' },
                                     ]}
                                 >
-                                    <InnerLink to="/mypage"  style={{ textDecoration: 'none' }}>
+                                    <InnerLink to="/"  style={{ textDecoration: 'none' }}>
                                         <Button
                                             startIcon={<ChevronLeftRoundedIcon />}
                                             onClick={handleBack}

@@ -15,6 +15,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 //import OauthCallBack from './pages/oauth/OauthCallback'
 //const SignInSide = React.lazy(() => import('./pages/login/SignInSide'));
 //const CreatePost = lazy(() => import('./pages/create/CreatePost'));
+import Footer from "@/component/Footer"
 
 const AppRoutes = () => {
   return (
@@ -24,18 +25,22 @@ const AppRoutes = () => {
         <Stack
           direction="column"
           component="main"
+          sx={{
+            mt: 'calc(var(--template-frame-height, 0px) + 28px + 64px)', // AppBarの高さを加える
+          }}
         >
           <AppTheme >
             <AppAppBar />
             <BlueskySession />
 
             <Routes>
-              <Route path="/" element={<SignInSide />} />
+              <Route path="/login" element={<SignInSide />} />
               <Route path="/termofuse" element={<TermOfUse />} />
               <Route path="/oauth" element={<OauthCallBack />} />
-              <Route path="/mypage" element={<MyPage />} />
+              <Route path="/" element={<MyPage />} />
               <Route path="/create" element={<CreatePost />} />
             </Routes>
+            <Footer />
           </AppTheme >
 
         </Stack>

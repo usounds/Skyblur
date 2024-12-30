@@ -41,7 +41,8 @@ export default function SignInCard() {
   const setHandleMessage = useXrpcStore((state) => state.setBlueskyLoginMessage);
   const locale = useLocaleStore((state) => state.localeData);
   const [blueskyLoginMessage, setBlueskyLoginMessage] = React.useState("");
-  const [handle, setHandle] = React.useState('');
+  const handle = useXrpcStore((state) => state.handle);
+  const setHandle = useXrpcStore((state) => state.setHandle);
   const [isAuth, setIsAuth] = React.useState(false);
   const loginXrpc = useXrpcStore((state) => state.loginXrpc);
 
@@ -53,7 +54,7 @@ export default function SignInCard() {
 
   React.useEffect(() => {
     if (loginXrpc) {
-      navigate("/mypage")
+      navigate("/")
     }
 
   }, [loginXrpc]);
@@ -140,7 +141,7 @@ export default function SignInCard() {
 
     }else if (!event.target.value.includes('.')) {
       setHandleError(true);
-      setHandleMessage('ハンドルはドット(.)が必要です。.bsky.socialを忘れていないか確認してください');
+      setHandleMessage('ハンドルはドット(.)が必要です。bsky.socialを忘れていないか確認してください');
 
 
     } else {
@@ -152,13 +153,6 @@ export default function SignInCard() {
 
   return (
     <Card variant="outlined">
-      <Typography
-        component="h1"
-        variant="h4"
-        sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
-      >
-        {locale.Login_Login}
-      </Typography>
       <Box
         component="form"
         onSubmit={handleSubmit}
@@ -197,10 +191,10 @@ export default function SignInCard() {
         <Button
           type="submit"
           fullWidth
-          variant="contained"
           onClick={validateInputs}
           disabled={isAuth}
-          style={{ display: 'flex', alignItems: 'center' }}
+          color="secondary"
+          variant= 'contained'
         >
           {isAuth ?
             <>
