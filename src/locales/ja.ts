@@ -1,4 +1,5 @@
 const messages = {
+    Label: "日本語",
     Home_inAuthProgress: "認可処理中です",
     Home_Welcome: "Skyblurへようこそ。Blueskyへ伏せ字を使った文章をポストできます。",
     Home_Landing001Title: "Skyblurから投稿",

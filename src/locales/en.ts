@@ -1,4 +1,5 @@
 const messages = {
+    Label: "English",
     Home_inAuthProgress: "Authorization is in progress",
     Home_Welcome: "Skyblur is content warning and spoilers protection tool for Bluesky.",
     Home_Landing001Title: "Post contents from Skyblur",

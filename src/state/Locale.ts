@@ -9,13 +9,13 @@ type LocaleInfo = {
   label: string;
 };
 
-export type Locales = 'en' | 'ja' 
+export type Locales = 'en' | 'ja'
 type LocaleData = typeof en;
 
 export const localeDataMap: Record<Locales, LocaleInfo> = {
-  ja: { data: ja, label: 'Japanese' },
-  en: { data: en, label: 'English' },
-//  kr: { data: kr, label: 'Korean' },
+  ja: { data: ja, label: ja.Label },
+  en: { data: en, label: en.Label },
+  //  kr: { data: kr, label: 'Korean' },
 };
 
 type State = {
@@ -31,7 +31,7 @@ export const getUserLocale = (): Locales => {
   if (typeof window !== "undefined" && typeof navigator !== "undefined") {
     const userLanguages = navigator.language;
     if (userLanguages.startsWith('ja')) return 'ja';
- //   if (userLanguages.startsWith('kr')) return 'kr';
+    //   if (userLanguages.startsWith('kr')) return 'kr';
     return 'en';
   }
   return 'en';
