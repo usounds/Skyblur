@@ -12,6 +12,7 @@ const BlueskySession: React.FC = () => {
     const setIsLoginProcess = useXrpcStore((state) => state.setIsLoginProcess);
     const setHandleMessage = useXrpcStore((state) => state.setBlueskyLoginMessage);
     const isLoginProcess = useXrpcStore((state) => state.isLoginProcess);
+    const setBlueskyLoginMessage = useXrpcStore((state) => state.setBlueskyLoginMessage);
 
     useEffect(() => {
         console.log('useEffect BlueskySession')
@@ -20,6 +21,7 @@ const BlueskySession: React.FC = () => {
         // 非同期関数を定義
         const fetchSession = async () => {
             if (!loginXrpc && did && isDidString(did)) {
+                setBlueskyLoginMessage('')
                 setIsLoginProcess(true)
                 try {
                     configureOAuth({

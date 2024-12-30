@@ -49,6 +49,7 @@ export default function AppAppBar() {
     const setUserProf = useXrpcStore((state) => state.setUserProf);
     const setLoginXrpc = useXrpcStore((state) => state.setLoginXrpc);
     const setDid = useXrpcStore((state) => state.setDid);
+    const setBlueskyLoginMessage = useXrpcStore((state) => state.setBlueskyLoginMessage);
     const navigate = useNavigate();
 
     const [openBackDrop, setOpenBackDrop] = React.useState(false);
@@ -91,6 +92,7 @@ export default function AppAppBar() {
             const agent = new OAuthUserAgent(session);
             await agent.signOut();
 
+            setBlueskyLoginMessage('')
             setLoginXrpc(undefined)
             setDid('')
             setUserProf(null)
@@ -162,7 +164,7 @@ export default function AppAppBar() {
                             <Box sx={{ flexGrow: 0, width: '2.25rem', height: '2.25rem' }}>
                                 <IconButton
                                     onClick={handleOpenUserMenu}
-                                    sx={{ p: 0, width: '2.25rem', height: '2.25rem',border: 'none'  }}
+                                    sx={{ p: 0, width: '2.25rem', height: '2.25rem', border: 'none' }}
                                 >
                                     <Avatar alt={userProf?.handle} src={userProf?.avatar} />
                                 </IconButton>
