@@ -2,10 +2,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Stack from '@mui/material/Stack';
 import SignInCard from './SignInCard';
 import Content from './Content';
-import { useXrpcStore } from '../../state/Xrpc';
 
 export default function SignInSide() {
-  const isLoginProcess = useXrpcStore((state) => state.isLoginProcess);
 
   return (
     <>
@@ -54,12 +52,10 @@ export default function SignInSide() {
               m: 'auto',
             }}
           >
-            {(!isLoginProcess) &&
               <>
                 <Content />
                 <SignInCard />
               </>
-            }
           </Stack>
         </Stack>
       </Stack>

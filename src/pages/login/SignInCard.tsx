@@ -14,7 +14,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { useLocaleStore } from "../../state/Locale";
 import CircularProgress from '@mui/material/CircularProgress';
 import { useXrpcStore } from '../../state/Xrpc';
-import { useNavigate } from 'react-router-dom';
+//import { useNavigate } from 'react-router-dom';
+import BlueskySession from '@/component/BlueskySession';
 import LanguageSelect from "../../component/LanguageSelect"
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -44,20 +45,10 @@ export default function SignInCard() {
   const handle = useXrpcStore((state) => state.handle);
   const setHandle = useXrpcStore((state) => state.setHandle);
   const [isAuth, setIsAuth] = React.useState(false);
-  const loginXrpc = useXrpcStore((state) => state.loginXrpc);
-
-  const navigate = useNavigate();
 
   function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
-  React.useEffect(() => {
-    if (loginXrpc) {
-      navigate("/")
-    }
-
-  }, [loginXrpc]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     // デフォルトのフォーム送信を防ぐ
@@ -153,6 +144,7 @@ export default function SignInCard() {
 
   return (
     <Card variant="outlined">
+      <BlueskySession />
       <Box
         component="form"
         onSubmit={handleSubmit}

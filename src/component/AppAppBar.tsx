@@ -98,7 +98,6 @@ export default function AppAppBar() {
             setUserProf(null)
             handleBackDropClose()
             navigate("/login")
-            window.localStorage.removeItem('oauth.handle')
 
 
         } catch (e) {

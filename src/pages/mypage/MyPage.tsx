@@ -22,10 +22,10 @@ import { Link as InnerLink, useNavigate } from 'react-router-dom';
 import DeleteModal from "@/component/DeleteModal";
 import Modal from "@/component/Modal";
 import PostTextWithBold from "@/component/PostTextWithBold";
-import { transformUrl } from "@/logic/HandleBluesky";
+import { transformUrl, fetchSession } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
-import { useXrpcStore } from '@/state/Xrpc';
+import { useXrpcStore,State } from '@/state/Xrpc';
 import { COLLECTION, PostData, PostListItem } from "@/type/types";
 import AppTheme from '../shared-theme/AppTheme';
 
@@ -42,7 +42,7 @@ const MyPage = () => {
     const [isModal, setIsModal] = useState(false)
     const isLoginProcess = useXrpcStore((state) => state.isLoginProcess);
 
-    const getPosts = async (cursor: string) => {
+    const getPosts = async (cursor: string,loginXrpc:State['loginXrpc']) => {
 
         if (!loginXrpc) {
             console.error("未ログインです")
@@ -85,6 +85,12 @@ const MyPage = () => {
                     });
                 }
             }
+
+
+            // createdAtで降順ソート
+            postList.sort((a, b) => {
+                return new Date(b.blur.createdAt).getTime() - new Date(a.blur.createdAt).getTime();
+            });
 
             setPostList(postList)
             setIsLoading(false);
@@ -173,15 +179,29 @@ const MyPage = () => {
 
         console.log('useEffect')
 
-        if (!isLoginProcess && !loginXrpc) {
-            navigate('/login');
-            return
-
-        }
-
         // 非同期関数をuseEffect内に定義
         const fetchData = async () => {
-            getPosts(cursor)
+            console.log('pattern1')
+            console.log(isLoginProcess)
+            console.log(loginXrpc)
+
+            if (!isLoginProcess && !loginXrpc) {
+                const ret = await fetchSession(loginXrpc, did, setMessage, useXrpcStore.getState().setIsLoginProcess, useXrpcStore.getState().setLoginXrpc, useXrpcStore.getState().setUserProf)
+
+                if (!ret) {
+                    navigate('/login');
+                    return
+                }else{
+                    getPosts(cursor,ret)
+
+                }
+
+            }else if(loginXrpc){
+                console.log('pattern2')
+                getPosts(cursor,loginXrpc)
+
+            }
+
         };
 
         // 非同期関数を即座に呼び出し
@@ -270,6 +290,7 @@ const MyPage = () => {
                                                 variant="outlined"
                                                 aria-label="Basic button group"
                                                 size="small"
+
                                                 sx={{ display: 'flex', justifyContent: 'flex-end' }} // 右寄せ
                                             >
                                                 <Tooltip title={locale.DeleteList_DeleteButton}>

@@ -9,7 +9,7 @@ import TermOfUse from './pages/termofuse/TermOfUse';
 //const MyPage = React.lazy(() => import('./pages/mypage/MyPage'));
 const OauthCallBack = React.lazy(() => import('./pages/oauth/OauthCallback'));
 //const TermOfUse = React.lazy(() => import('./pages/termofuse/termofuse'));
-import BlueskySession from './component/BlueskySession';
+//import BlueskySession from './component/BlueskySession';
 import MyPage from './pages/mypage/MyPage'
 import CssBaseline from '@mui/material/CssBaseline';
 //import OauthCallBack from './pages/oauth/OauthCallback'
@@ -31,7 +31,6 @@ const AppRoutes = () => {
         >
           <AppTheme >
             <AppAppBar />
-            <BlueskySession />
 
             <Routes>
               <Route path="/login" element={<SignInSide />} />

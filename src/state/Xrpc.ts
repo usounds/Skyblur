@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { XRPC, CredentialManager } from '@atcute/client';
 import type { AppBskyActorDefs } from '@atcute/client/lexicons';
 
-type State = {
+export type State = {
     apiXrpc: XRPC;
     loginXrpc: XRPC | undefined;
     did: string;
@@ -13,7 +13,7 @@ type State = {
     blueskyLoginMessage: string;
 };
 
-type Action = {
+export type Action = {
     setLoginXrpc: (loginXrpc: XRPC | undefined) => void;
     setDid: (did: string) => void;
     setHandle: (handle: string) => void;
