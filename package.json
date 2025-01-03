@@ -12,7 +12,7 @@
   "dependencies": {
     "@atcute/bluesky": "^1.0.11",
     "@atcute/client": "^2.0.6",
-    "@atcute/oauth-browser-client": "^1.0.8",
+    "@atcute/oauth-browser-client": "^1.0.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.3.0",
