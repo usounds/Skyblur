@@ -12,12 +12,14 @@ import * as React from 'react';
 import { useLocaleStore } from "../state/Locale";
 
 interface DeleteModalProp {
+  title: string;
+  execLabel: string;
   content: string;
   onConfirm: () => void;
   onClose: () => void;
 }
 
-  export const AlertDialog: React.FC<DeleteModalProp> = ({ content, onConfirm, onClose }) => {
+  export const AlertDialog: React.FC<DeleteModalProp> = ({ title,execLabel, content, onConfirm, onClose }) => {
   const [open, setOpen] = React.useState(true);
   const locale = useLocaleStore((state) => state.localeData);
 
@@ -79,7 +81,7 @@ interface DeleteModalProp {
           aria-describedby="alert-dialog-description"
         >
           <DialogTitle id="alert-dialog-title">
-            {locale.DeleteList_ConfirmDelete}
+            {title}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
@@ -89,7 +91,7 @@ interface DeleteModalProp {
           <DialogActions>
             <Button color="inherit" onClick={handleClose}>{locale.DeleteList_CancelButton}</Button>
             <Button variant="outlined" color="warning"onClick={onConfirm}>
-              {locale.DeleteList_DeleteButton}
+              {execLabel}
             </Button>
           </DialogActions>
         </Dialog>

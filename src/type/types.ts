@@ -31,6 +31,13 @@ export type PostData = {
     uri: string;
 }
 
+export type MatchInfo = {
+    detectedString: string;
+    startIndex: number;
+    endIndex: number;
+    did: string;
+}
+
 export const COLLECTION = 'uk.skyblur.post';
 export const MODAL_TIME = 600;
 

@@ -9,7 +9,6 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 export default function Content() {
   const locale = useLocaleStore((state) => state.localeData);
 
-
   const items = [
     {
       icon: <HomeIcon sx={{ color: 'text.secondary' }} />,

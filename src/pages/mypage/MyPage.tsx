@@ -1,8 +1,18 @@
+import DeleteModal from "@/component/DeleteModal";
+import Modal from "@/component/Modal";
+import PostTextWithBold from "@/component/PostTextWithBold";
+import { fetchSession, transformUrl } from "@/logic/HandleBluesky";
+import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { useLocaleStore } from "@/state/Locale";
+import { State, useXrpcStore } from '@/state/Xrpc';
+import { COLLECTION, PostData, PostListItem } from "@/type/types";
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import ExpandCircleDownIcon from '@mui/icons-material/ExpandCircleDown';
 import PreviewIcon from '@mui/icons-material/Preview';
+import LoadingButton from '@mui/lab/LoadingButton';
 import Timeline from '@mui/lab/Timeline';
 import TimelineConnector from '@mui/lab/TimelineConnector';
 import TimelineContent from '@mui/lab/TimelineContent';
@@ -19,18 +29,11 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from "react";
 import { Link as InnerLink, useNavigate } from 'react-router-dom';
-import DeleteModal from "@/component/DeleteModal";
-import Modal from "@/component/Modal";
-import PostTextWithBold from "@/component/PostTextWithBold";
-import { transformUrl, fetchSession } from "@/logic/HandleBluesky";
-import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useLocaleStore } from "@/state/Locale";
-import { useXrpcStore,State } from '@/state/Xrpc';
-import { COLLECTION, PostData, PostListItem } from "@/type/types";
 import AppTheme from '../shared-theme/AppTheme';
 
 const MyPage = () => {
     const did = useXrpcStore((state) => state.did);
+    const pageNationLimit = 10;
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const loginXrpc = useXrpcStore((state) => state.loginXrpc);
@@ -40,9 +43,10 @@ const MyPage = () => {
     const [postList, setPostList] = useState<PostListItem[]>([]);
     const [message, setMessage] = useState('')
     const [isModal, setIsModal] = useState(false)
+    const [isLoadMore, setIsLoadMore] = useState(false)
     const isLoginProcess = useXrpcStore((state) => state.isLoginProcess);
 
-    const getPosts = async (cursor: string,loginXrpc:State['loginXrpc']) => {
+    const getPosts = async (cursor: string, loginXrpc: State['loginXrpc']) => {
 
         if (!loginXrpc) {
             console.error("未ログインです")
@@ -56,20 +60,26 @@ const MyPage = () => {
                 repo: did,
                 collection: COLLECTION,
                 cursor: cursor,
-                limit: 10
+                limit: pageNationLimit
             };
 
             const ret = await loginXrpc.get("com.atproto.repo.listRecords", { params: param })
 
             // 新しいカーソルを設定
-            if (ret.data.records.length === 10) {
+            if (ret.data.records.length === pageNationLimit) {
                 setCursor(ret.data.cursor || '');
             } else {
                 setCursor('');
 
             }
 
-            for (const obj of ret.data.records) {
+            const sortedRecords = ret.data.records.sort((a, b) => {
+                const dateA = new Date((a.value as PostData).createdAt).getTime();
+                const dateB = new Date((b.value as PostData).createdAt).getTime();
+                return dateB - dateA;
+            });
+
+            for (const obj of sortedRecords) {
                 const value = obj.value as PostData;
 
                 // すでに同一の blurATUri が postList に存在するかチェック
@@ -85,12 +95,6 @@ const MyPage = () => {
                     });
                 }
             }
-
-
-            // createdAtで降順ソート
-            postList.sort((a, b) => {
-                return new Date(b.blur.createdAt).getTime() - new Date(a.blur.createdAt).getTime();
-            });
 
             setPostList(postList)
             setIsLoading(false);
@@ -175,6 +179,15 @@ const MyPage = () => {
     };
 
 
+    const handleLoadMore = () => {
+        setIsLoadMore(true)
+
+        getPosts(cursor, loginXrpc)
+
+
+        setIsLoadMore(false)
+    };
+
     useEffect(() => {
 
         console.log('useEffect')
@@ -191,14 +204,14 @@ const MyPage = () => {
                 if (!ret) {
                     navigate('/login');
                     return
-                }else{
-                    getPosts(cursor,ret)
+                } else {
+                    getPosts(cursor, ret)
 
                 }
 
-            }else if(loginXrpc){
+            } else if (loginXrpc) {
                 console.log('pattern2')
-                getPosts(cursor,loginXrpc)
+                getPosts(cursor, loginXrpc)
 
             }
 
@@ -335,22 +348,44 @@ const MyPage = () => {
 
                                 ))}
 
-                                {postList.length > 0 &&
+                                {(!cursor &&  postList.length>0 )&&
                                     <TimelineItem>
                                         <TimelineSeparator>
                                             <TimelineDot />
                                         </TimelineSeparator>
                                         <TimelineContent>
-                                            {!cursor && "過去の投稿はありません"}
+                                            {locale.DeleteList_NoListItem}
                                         </TimelineContent>
                                     </TimelineItem>
                                 }
+                                {(cursor && postList.length>0) && (
+                                    <>
+                                    <LoadingButton
+                                        variant="contained"
+                                        loading={isLoadMore}
+                                        disabled={isLoadMore}
+                                        loadingPosition="start"
+                                        onClick={handleLoadMore}
+                                        startIcon={<ExpandCircleDownIcon />}
+                                        sx={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            width: { xs: '100%', sm: 'fit-content' },
+                                            mx: 'auto', // 中央揃え（外側のマージンで調整）
+                                        }}
+                                    >
+                                            {locale.DeleteList_ReadMore}
+                                    </LoadingButton>
+                                    </>
+                                )}
+
                             </Timeline>
                         </Stack>
 
 
                         {selectedItem &&
-                            <DeleteModal content={selectedItem.blur.text} onConfirm={handleDeleteItem} onClose={handleClose} />
+                            <DeleteModal content={selectedItem.blur.text} onConfirm={handleDeleteItem} onClose={handleClose} title={locale.DeleteList_ConfirmDelete} execLabel={locale.DeleteList_DeleteButton}/>
                         }
 
                         {(!isLoading && postList?.length === 0) && <p className="text-m text-gray-800">{locale.DeleteList_NoListItem}</p>}
