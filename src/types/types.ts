@@ -7,7 +7,7 @@ export type DIDDocument = {
     id: string;
     alsoKnownAs?: string[];
     verificationMethod?: any[];
-    service?: Service[]; // serviceはundefinedの可能性がある
+    service?: Service[]; 
 }
 
 export type DIDResponse = {
@@ -30,9 +30,13 @@ export type PostData = {
     uri: string;
 }
 
-export const COLLECTION = 'uk.skyblur.post';
-export const MODAL_TIME = 600;
+export type Preference = {
+    isUseMyPage: boolean
+}
 
+export const POST_COLLECTION = 'uk.skyblur.post';
+export const PREFERENCE_COLLECTION = 'uk.skyblur.preference';
+export const MODAL_TIME = 600;
 
 export type PostListItem = {
     blur: PostData;

@@ -37,7 +37,7 @@ const messages = {
     CreatePost_Create: "Post",
     CreatePost_CreateDescription: "Press the button below to post if you're ready.",
     CreatePost_CreateButton: "Post now",
-    CreatePost_Lang:"en",
+    CreatePost_Lang: "en",
     CreatePost_OGPTitle: "Skyblur",
     CreatePost_OGPDescription: "Refer to the unblurred text.",
     CreatePost_Success: "Post is successed.",
@@ -60,12 +60,19 @@ const messages = {
     DeleteList_ReadMore: "Read More",
     DeleteList_ToHead: "Reload",
     DeleteList_Complete: "Delete completed!",
+    DeleteList_URLCopy: "URL has been copied!",
     ReplyList_Reply: "Reply",
     ReplyList_ReplyLabelDescription: "Please check when replying to your own specific post.",
     ReplyList_UseReply: "Select Post",
     ReplyList_ReplyToThis: "Reply to this post",
     ReplyList_ReplyDescrition: "[ <- Reply ] ",
     ReplyList_Search: "Search",
+    Pref_Title: "Settings",
+    Pref_MyPage: "My Page",
+    Pref_MyPagePublish: "Publish",
+    Pref_MyPagePublishDescription: "When you publish your My Page, your post list will be accessible by other users.",
+    Profile_NotPublish: "This user has not published their My Page. If you are the owner of this user and wish to publish the My Page, please log in to Skyblur and publish it from the gear icon in the top right."
+
 }
 
 

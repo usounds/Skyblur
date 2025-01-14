@@ -1,5 +1,5 @@
 "use client"
-import LanguageSelect from "@/components/LanguageSelect";
+import LanguageToggle from "@/components/LanguageToggle";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
@@ -9,6 +9,8 @@ import React from 'react';
 import { useEffect } from "react";
 import { handleOAuth } from "@/logic/HandleOAuth"
 import { useModeStore } from "@/state/Mode";
+import { GrSettingsOption } from "react-icons/gr";
+import { useRouter } from 'next/navigation'; // App Router 用の useRouter
 
 const Header = () => {
   const locale = useLocaleStore((state) => state.localeData);
@@ -20,6 +22,7 @@ const Header = () => {
   const setDid = useAtpAgentStore((state) => state.setDid);
   const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
+  const router = useRouter(); // useRouterを取得
 
   let ignore = false
 
@@ -83,6 +86,7 @@ const Header = () => {
       window.localStorage.removeItem('oauth.pdsUrl')
       window.localStorage.removeItem('oauth.handle')
 
+      router.push('/')
 
     } catch (e) {
       console.error(e)
@@ -108,7 +112,12 @@ const Header = () => {
           <Link href="/termofuse" className="flex-none text-sm font-semibold text-white mr-2">
             {locale.Menu_TermOfUse}
           </Link>
-          <LanguageSelect />
+          <LanguageToggle />
+          {agent &&
+          <Link href="/settings" className="text-xl font-semibold text-white ml-2">
+            <GrSettingsOption size={24} color="white" />
+            </Link>
+          }
         </div>
       </nav>
     </div>
