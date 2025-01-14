@@ -17,7 +17,7 @@ const LanguageToggle: React.FC = () => {
             <button
                 onClick={toggleLocale}
             >
-                <GrLanguage size={24} color="white" />
+                <GrLanguage size={20} color="white" />
             </button>
         </div>
     );
