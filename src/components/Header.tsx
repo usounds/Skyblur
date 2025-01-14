@@ -120,7 +120,7 @@ const Header = () => {
           <LanguageToggle />
           {agent &&
           <Link href="/settings" className="text-xl font-semibold text-white ml-2">
-            <GrSettingsOption size={24} color="white" />
+            <GrSettingsOption size={20} color="white" />
             </Link>
           }
         </div>

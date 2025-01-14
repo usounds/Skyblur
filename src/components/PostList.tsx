@@ -195,9 +195,11 @@ export const PostList: React.FC<PostListProps> = ({
                                 }
                             </div>
 
-                            <div className="flex justify-between items-center gap-2 mt-2">
-                                <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
-                                <div className="flex sm:gap-6 gap-4">
+                            <div className="flex items-end gap-2">
+  <div className="text-sm text-gray-400 sm:text-base">
+    {formatDateToLocale(item.blur.createdAt)}
+  </div>
+                                <div className="flex sm:gap-4 gap-1">
                                     {handleEdit &&
                                         <>
                                             <IconButton size="small" variant="text" onClick={() => handleSelectItem(item)}>
