@@ -1,7 +1,8 @@
 import DOMPurify from 'dompurify';
 import Typography from '@mui/material/Typography';
 import { MatchInfo } from "@/type/types";
-import{ useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
 
 // HTMLエスケープ用の関数
 const escapeHTML = (str: string): string => {
@@ -50,40 +51,39 @@ function areBracketsUnbalanced(input: string): boolean {
   return openBracketsCount !== closeBracketsCount;
 }
 
-const PostTextWithBold = ({ postText, isValidateBrackets,mention }: { postText: string, isValidateBrackets: boolean ,mention: MatchInfo[]}) => {
+const PostTextWithBold = ({ postText, isValidateBrackets, mention }: { postText: string, isValidateBrackets: boolean, mention: MatchInfo[] }) => {
   const [processedText, setProcessedText] = useState<string>('');
-
 
   useEffect(() => {
     const processText = async () => {
       let text = escapeHTML(postText);
       text = escapeTag(text);
       console.log(text)
-    
+
       // 括弧のバリデーションをチェックし、エラーがあれば括弧を削除
       if (isValidateBrackets && (validateBrackets(text) || areBracketsUnbalanced(text))) {
         text = text.replace(/[\[\]]/g, "");
         console.log("Updated postText:", text);
       }
-    
-      // HTMLエスケープ後にカスタム処理を適用
+
+      if (isValidateBrackets) {
+        text = text
+          .replace(/\[(.*?)\]/gs, (_, p1) => {
+            return `<strong>${p1}</strong>`;
+          })
+
+      }
+
+      // URL処理
       text = text
-        .replace(/\[(.*?)\]/gs, (_, p1) => {
-          return `<strong>${p1}</strong>`;
-        })
         .replace(
           /https?:\/\/[-_.!~*'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g,
           (url) => `<a href="${url}" target="_blank" class="text-blue-700">${url}</a>`
         )
-        .replace(/\n/g, '<br>');
 
-        // detectedPatternWithDetailsを使用してリンクを置き換える
-        for (const match of mention) {
-          const link = `<a href="https://bsky.app/profile/${match.did}">${match.detectedString}</a>`;
-          const regex = new RegExp(match.detectedString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); // 正規表現の特殊文字をエスケープ
-          text = text.replace(regex, link);
-        }
-    
+      //改行処理
+      text = text
+        .replace(/\n/g, '<br>');
       setProcessedText(text);
     };
 
@@ -92,10 +92,22 @@ const PostTextWithBold = ({ postText, isValidateBrackets,mention }: { postText: 
 
   // dangerouslySetInnerHTMLを使ってレンダリング
   return (
-    <Typography
-      className="whitespace-pre-wrap break-words text-gray-800"
-      dangerouslySetInnerHTML={{ __html: processedText }}
-    />
+    <Box
+      sx={{
+        maxHeight: '20vh', // 最大高さを制限
+        overflowY: 'auto', // スクロールを有効化
+      }}
+    >
+      <Typography
+        className="whitespace-pre-wrap break-words text-gray-800"
+        dangerouslySetInnerHTML={{ __html: processedText }}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column', // 縦方向に並べる
+          maxHeight: '20vh', // ビューポート全体の高さを確保
+        }}
+      />
+    </Box>
   );
 };
 

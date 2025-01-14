@@ -1,4 +1,11 @@
-import * as React from 'react';
+import Step1 from '@/pages/create/Step1';
+import Step2 from '@/pages/create/Step2';
+import { useLocaleStore } from "@/state/Locale";
+import { useTempPostStore } from "@/state/TempPost";
+import { useXrpcStore } from "@/state/Xrpc";
+import { MatchInfo } from "@/type/types";
+import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -8,32 +15,26 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Stepper from '@mui/material/Stepper';
 import Typography from '@mui/material/Typography';
-import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import AppTheme from '../shared-theme/AppTheme';
-import Content from '../login/Content';
-import { useNavigate } from 'react-router-dom';
-import { useLocaleStore } from "@/state/Locale";
-import Step1 from '@/pages/create/Step1';
-import Step2 from '@/pages/create/Step2';
+import * as React from 'react';
 import { useState } from "react";
-import { useTempPostStore } from "@/state/TempPost";
-import { MatchInfo } from "@/type/types";
-import { useXrpcStore } from '@/state/Xrpc';
-import twitterText from 'twitter-text';
+import { useNavigate } from 'react-router-dom';
+import Content from '../login/Content';
+import AppTheme from '../shared-theme/AppTheme';
+import { MENTION_REGEX,TAG_REGEX,TRAILING_PUNCTUATION_REGEX } from "@/type/regex";
+import BlueskySession from '@/component/BlueskySession';
 
 export default function CreatePost(props: { disableCustomTheme?: boolean }) {
     const [activeStep, setActiveStep] = React.useState(0);
     const locale = useLocaleStore((state) => state.localeData);
     const [warning, setWarning] = useState("");
+    const steps = [locale.CreatePost_Post, locale.CreatePost_PreviewStep];
     const text = useTempPostStore((state) => state.text);
-    const setBlurredText = useTempPostStore((state) => state.setBlurredText);
-    const apiXrpc = useXrpcStore((state) => state.apiXrpc);
-    const setHashtag = useTempPostStore((state) => state.setHashtag);
-    const setMention = useTempPostStore((state) => state.setMention);
     const simpleMode = useTempPostStore((state) => state.simpleMode);
-
-    const steps = [locale.CreatePost_Post, locale.CreatePost_PreviewStep, locale.ReplyList_Reply,];
+    const setBlurredText = useTempPostStore((state) => state.setBlurredText);
+    const setMention = useTempPostStore((state) => state.setMention);
+    const setHashtag = useTempPostStore((state) => state.setHashtag);
+    const apiXrpc = useXrpcStore((state) => state.apiXrpc);
+    const [isLoading, setIsLoading] = React.useState(false);
 
     const navigate = useNavigate();
 
@@ -50,71 +51,97 @@ export default function CreatePost(props: { disableCustomTheme?: boolean }) {
         }
     }
 
-
-    const detectPatternWithDetails = async (str: string): Promise<MatchInfo[]> => {
-        if (!apiXrpc) return [];
+    async function detectMention(str: string): Promise<MatchInfo[]> {
+        if (!apiXrpc) return []
         const matches: MatchInfo[] = [];
-        const regex = /@[a-z]+(?:\.[a-z]+)+(?=\s|$|[\u3000-\uFFFD])/g;
         let match: RegExpExecArray | null;
 
-        while ((match = regex.exec(str)) !== null) {
+        while ((match = MENTION_REGEX.exec(str)) !== null) {
             try {
-                const result = await apiXrpc.get("app.bsky.actor.getProfile", { params: { actor: match[0].slice(1) } });
+                const handle = match[0].trim()
+                console.log(handle)
+                const result = await apiXrpc.get("app.bsky.actor.getProfile", { params: { actor: handle.slice(1) } })
 
                 matches.push({
                     detectedString: match[0],
                     startIndex: match.index,
                     endIndex: match.index + match[0].length,
-                    did: result.data.did,
+                    key: result.data.did
                 });
             } catch (e) {
-                console.error(e);
+                console.error(e)
+
             }
         }
 
         return matches;
-    };
+    }
 
+    async function detectHashtag(str: string): Promise<MatchInfo[]> {
+        const matches: MatchInfo[] = [];
+        let match: RegExpExecArray | null;
+
+        while ((match = TAG_REGEX.exec(str)) !== null) {
+            try {
+                const hashtag = match[0].trim().replace(TRAILING_PUNCTUATION_REGEX, '')
+                if (hashtag.length === 0 || hashtag.length > 64) continue
+
+                matches.push({
+                    detectedString: hashtag,
+                    startIndex: match.index,
+                    endIndex: match.index +hashtag.length,
+                    key: hashtag.slice(1)
+                });
+            } catch (e) {
+                console.error(e)
+
+            }
+        }
+
+        return matches;
+    }
 
     const handleNext = async () => {
-        if (!text) return
         if (!warning) {
-            if(activeStep==0){
-
+            if (activeStep === 0) {
+                if (!text) return
+                setIsLoading(true);
                 let newBlurredText = text;
                 if (simpleMode) {
-                  const lines = text.split('\n');
-                  // 行数が2行以上の場合にのみ処理を実行
-                  if (lines.length > 1) {
-                    newBlurredText = lines.map((line, index, lines) => {
-                      // 2行目の最初に "[" を追加
-                      if (index === 1) {
-                        line = `[${line}`;
-                      }
-                      // 最後の行に "]" を追加
-                      if (index === lines.length - 1) {
-                        line = `${line}]`;
-                      }
-                      return line;
-                    }).join('\n');
-                  }
+                    const lines = text.split('\n');
+                    // 行数が2行以上の場合にのみ処理を実行
+                    if (lines.length > 1) {
+                        newBlurredText = lines.map((line, index, lines) => {
+                            // 2行目の最初に "[" を追加
+                            if (index === 1) {
+                                line = `[${line}`;
+                            }
+                            // 最後の行に "]" を追加
+                            if (index === lines.length - 1) {
+                                line = `${line}]`;
+                            }
+                            return line;
+                        }).join('\n');
+                    }
                 }
-            
-                newBlurredText = newBlurredText.replace(/\[(.*?)\]/gs, (_, match) => {
-                  // マッチした文字列内の改行を維持しつつ ommitChar で置換
-                  return match.replace(/./g, locale.CreatePost_OmmitChar);
-                });
-            
-                setBlurredText(newBlurredText);
 
-                const mentions = await detectPatternWithDetails(text);
+                newBlurredText = newBlurredText.replace(/\[(.*?)\]/gs, (_, match) => {
+                    // マッチした文字列内の改行を維持しつつ ommitChar で置換
+                    return match.replace(/./g, locale.CreatePost_OmmitChar);
+                });
+
+                setBlurredText(newBlurredText);
+                const mentions = await detectMention(newBlurredText);
                 console.log(mentions)
                 setMention(mentions);
-                setHashtag(twitterText.extractHashtagsWithIndices(text))
+                const hashtags = await detectHashtag(newBlurredText);
+                setHashtag(hashtags)
+                setIsLoading(false);
             }
             setActiveStep(activeStep + 1);
         }
     };
+
     const handleBack = () => {
         if (activeStep === 0) {
             navigate('/')
@@ -150,6 +177,7 @@ export default function CreatePost(props: { disableCustomTheme?: boolean }) {
                         alignItems: 'start',
                         pt: { xs: 0, sm: 2 },
                         gap: { xs: 3, md: 3 },
+                        marginX: { xs: 2, sm: 0 },
                     }}
                 >
                     <Box
@@ -214,7 +242,7 @@ export default function CreatePost(props: { disableCustomTheme?: boolean }) {
                                     key={label}
                                 >
                                     <StepLabel
-                                        sx={{ '.MuiStepLabel-labelContainer': { maxWidth: '70px' } }}
+                                        sx={{ '.MuiStepLabel-labelContainer': { maxWidth: '120px' } }}
                                     >
                                         {label}
                                     </StepLabel>
@@ -276,9 +304,11 @@ export default function CreatePost(props: { disableCustomTheme?: boolean }) {
                                         variant="contained"
                                         endIcon={<ChevronRightRoundedIcon />}
                                         onClick={handleNext}
+                                        disabled={isLoading}
                                         sx={{ width: { xs: '100%', sm: 'fit-content' } }}
                                     >
-                                        {activeStep === steps.length - 1 ? 'Place order' : locale.CreatePost_PreviewStep}
+                                        {activeStep === 0 && locale.CreatePost_PreviewStep}
+                                        {activeStep === 1 && locale.CreatePost_CreateButton}
                                     </Button>
                                 </Box>
                             </React.Fragment>
@@ -286,6 +316,7 @@ export default function CreatePost(props: { disableCustomTheme?: boolean }) {
                     </Box>
                 </Grid>
             </Grid>
+            <BlueskySession />
         </AppTheme>
     );
 }

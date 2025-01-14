@@ -1,3 +1,4 @@
+// Step1.tsx
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
@@ -6,13 +7,12 @@ import ExtendTextareaAutosize from '@/component/ExtendTextareaAutosize';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import { useTempPostStore } from "@/state/TempPost";
-import DeleteModal from "@/component/DeleteModal";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Box from '@mui/material/Box';
 
 interface ContentProps {
   warning: string;
-  setWarning: (warning: string) => void; // setWarning の型を指定
+  setWarning: (warning: string) => void;
 }
 
 export default function Content({ warning, setWarning }: ContentProps) {
@@ -23,26 +23,14 @@ export default function Content({ warning, setWarning }: ContentProps) {
   const setText = useTempPostStore((state) => state.setText);
   const additional = useTempPostStore((state) => state.additional);
   const setAdditional = useTempPostStore((state) => state.setAdditional);
-  const [isModal, setIsModal] = useState<boolean>(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
 
-  const handleConfirm = () => {
-    setSimpleMode(!simpleMode)
-    setText('')
-    setAdditional('')
-    setIsModal(false)
-
-  }
-  const handleClose = () => {
-    setIsModal(false)
-
-  }
   const handleChangeMode = (checked: boolean) => {
     setSimpleMode(checked)
     handleTextChange(text)
-
   }
+
   function containsFullWidthBrackets(input: string): boolean {
     const fullWidthBracketsPattern = /［|］/;
     return fullWidthBracketsPattern.test(input);
@@ -58,21 +46,6 @@ export default function Content({ warning, setWarning }: ContentProps) {
     handleTextChange(text.replace(/［/g, '[').replace(/］/g, ']'))
   }
 
-
-  function areBracketsUnbalanced(input: string): boolean {
-    let openBracketsCount = 0;
-    let closeBracketsCount = 0;
-
-    for (const char of input) {
-      if (char === '[') {
-        openBracketsCount++;
-      } else if (char === ']') {
-        closeBracketsCount++;
-      }
-    }
-
-    return openBracketsCount !== closeBracketsCount;
-  }
 
   function validateBrackets(input: string): boolean {
     let insideBracket = false; // 現在 `[` の中にいるかどうかを追跡
@@ -99,7 +72,6 @@ export default function Content({ warning, setWarning }: ContentProps) {
     return false; // エラーがなければ `error: false`
   }
 
-
   const handleTextChange = (value: string) => {
     setWarning('')
     if (!simpleMode) {
@@ -111,7 +83,7 @@ export default function Content({ warning, setWarning }: ContentProps) {
         setWarning(locale.CreatePost_BracketsUnbalanced)
       }
     } else {
-      if(containsHalfWidthBrackets(value)){
+      if (containsHalfWidthBrackets(value)) {
         setWarning(locale.CreatePost_SimplewithBranket)
       }
 
@@ -121,7 +93,6 @@ export default function Content({ warning, setWarning }: ContentProps) {
     setText(value)
 
   }
-
   const handleAddBrackets = () => {
     console.log('handleAddBrackets')
     if (!textareaRef.current) return;
@@ -133,6 +104,8 @@ export default function Content({ warning, setWarning }: ContentProps) {
     if (start === end) {
       return;
     }
+
+    console.log(textarea)
 
     const value = textarea.value;
     const selectedText = value.substring(start, end);
@@ -146,6 +119,24 @@ export default function Content({ warning, setWarning }: ContentProps) {
     textarea.focus();
     textarea.selectionStart = textarea.selectionEnd = start + selectedText.length + 2;
   };
+
+  function areBracketsUnbalanced(input: string): boolean {
+    let openBracketsCount = 0;
+    let closeBracketsCount = 0;
+
+    for (const char of input) {
+      if (char === '[') {
+        openBracketsCount++;
+      } else if (char === ']') {
+        closeBracketsCount++;
+      }
+    }
+
+    return openBracketsCount !== closeBracketsCount;
+  }
+  useEffect(() => {
+    handleTextChange(text)
+  }, [text, additional, simpleMode]); // 空の依存配列を使用して、コンポーネントのマウント時にのみ実行
 
   return (
     <Stack
@@ -164,6 +155,9 @@ export default function Content({ warning, setWarning }: ContentProps) {
         <Typography gutterBottom sx={{ fontWeight: 'medium' }}>
           モードの切り替え
         </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          通常モードはご自身で伏せるところを選べ、シンプルモードは2行目以降が自動で伏せられます。
+        </Typography>
         <FormControlLabel
           control={
             <Switch
@@ -173,19 +167,15 @@ export default function Content({ warning, setWarning }: ContentProps) {
           }
           label={locale.CreatePost_SimpleMode}
         />
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          通常モードはご自身で伏せるところを選べ、シンプルモードは2行目以降が自動で伏せられます。
-        </Typography>
-
-        {isModal &&
-          <DeleteModal content={'モードを切り替えると、本文がクリアされます。モードを切り替えますか？'} onConfirm={handleConfirm} onClose={handleClose} title={'モードの切り替え'} execLabel={"切り替える"} />
-        }
 
       </Stack>
 
-      <Stack direction="column" sx={{ gap: 0.5 }}>
+      <Stack direction="column" >
         <Typography gutterBottom sx={{ fontWeight: 'medium' }}>
           {locale.CreatePost_Post}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          {simpleMode ? locale.CreatePost_PostSimpleModeDescription : locale.CreatePost_PostComplexDescription}
         </Typography>
         <ExtendTextareaAutosize placeholder={locale.CreatePost_PostPlaceHolder} value={text} onChange={handleTextChange} ref={textareaRef} maxLength={300} />
         {warning &&
@@ -193,15 +183,13 @@ export default function Content({ warning, setWarning }: ContentProps) {
             {warning}
           </Typography>
         }
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {simpleMode ? locale.CreatePost_PostSimpleModeDescription : locale.CreatePost_PostComplexDescription}
-        </Typography>
         {!simpleMode &&
           <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
             <Button
               variant="contained"
               sx={{ width: 'fit-content' }}
               onClick={handleAddBrackets}
+              disabled={text.length===0}
             >
               {locale.CreatePost_AddBrackets}
             </Button>
@@ -224,10 +212,10 @@ export default function Content({ warning, setWarning }: ContentProps) {
         <Typography gutterBottom sx={{ fontWeight: 'medium' }}>
           {locale.CreatePost_Additional}
         </Typography>
-        <ExtendTextareaAutosize placeholder={locale.CreatePost_AdditionalPlaceHolder} value={additional} onChange={setAdditional} maxLength={100000} />
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           {locale.CreatePost_AdditionalDescription}
         </Typography>
+        <ExtendTextareaAutosize placeholder={locale.CreatePost_AdditionalPlaceHolder} value={additional} onChange={setAdditional} maxLength={100000} />
       </Stack>
     </Stack >
   );

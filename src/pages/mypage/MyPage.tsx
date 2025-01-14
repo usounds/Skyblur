@@ -192,11 +192,7 @@ const MyPage = () => {
 
         console.log('useEffect')
 
-        // 非同期関数をuseEffect内に定義
         const fetchData = async () => {
-            console.log('pattern1')
-            console.log(isLoginProcess)
-            console.log(loginXrpc)
 
             if (!isLoginProcess && !loginXrpc) {
                 const ret = await fetchSession(loginXrpc, did, setMessage, useXrpcStore.getState().setIsLoginProcess, useXrpcStore.getState().setLoginXrpc, useXrpcStore.getState().setUserProf)
@@ -210,16 +206,14 @@ const MyPage = () => {
                 }
 
             } else if (loginXrpc) {
-                console.log('pattern2')
                 getPosts(cursor, loginXrpc)
 
             }
 
         };
 
-        // 非同期関数を即座に呼び出し
         fetchData();
-    }, [loginXrpc, isLoginProcess]); // 空の依存配列を使用して、コンポーネントのマウント時にのみ実行
+    }, [loginXrpc, isLoginProcess]); 
 
     return (
         <AppTheme >
@@ -297,26 +291,26 @@ const MyPage = () => {
                                                 {formatDateToLocale(item.blur.createdAt)}
                                             </Typography>
                                             <div style={{ marginBottom: '6px', marginTop: '4px' }}>
-                                                <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} />
+                                                <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} mention={[]} />
                                             </div>
                                             <ButtonGroup
                                                 variant="outlined"
                                                 aria-label="Basic button group"
                                                 size="small"
-
                                                 sx={{ display: 'flex', justifyContent: 'flex-end' }} // 右寄せ
                                             >
                                                 <Tooltip title={locale.DeleteList_DeleteButton}>
-                                                    <Button onClick={() => handleDeleteItemClicked(item)}><DeleteIcon /></Button>
+                                                <Button onClick={() => handleDeleteItemClicked(item)}><DeleteIcon sx={{color: 'text.secondary' }}/>
+                                                </Button>
                                                 </Tooltip>
                                                 <Tooltip title={locale.CreatePost_UpdateButton}>
-                                                    <Button><EditIcon /></Button>
+                                                    <Button><EditIcon sx={{color: 'text.secondary' }} /></Button>
                                                 </Tooltip>
                                                 <Tooltip title="URLコピー">
-                                                    <Button onClick={() => handleCopyClicked(item)}><ContentCopyIcon /></Button>
+                                                    <Button onClick={() => handleCopyClicked(item)}><ContentCopyIcon sx={{color: 'text.secondary' }}/></Button>
                                                 </Tooltip>
                                                 <Tooltip title="Skyblurで確認">
-                                                    <Button><PreviewIcon /></Button>
+                                                    <Button><PreviewIcon  sx={{color: 'text.secondary' }}/></Button>
                                                 </Tooltip>
                                                 <Tooltip title="Blueskyで確認">
                                                     <Link
@@ -325,7 +319,7 @@ const MyPage = () => {
                                                         target="_blank"
                                                         sx={{ textDecoration: 'none' }}
                                                     >
-                                                        <Button>
+                                                        <Button  sx={{color: 'text.secondary' }}>
                                                             <svg
                                                                 className="h-5 w-5"
                                                                 width="20"

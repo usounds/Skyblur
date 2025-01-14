@@ -1,13 +1,13 @@
 import { fetchSession } from "@/logic/HandleBluesky";
 import { useXrpcStore } from '@/state/Xrpc';
 import React, { useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
+//import { useNavigate } from 'react-router-dom';
 
 const BlueskySession: React.FC = () => {
     const did = useXrpcStore((state) => state.did);
     const loginXrpc = useXrpcStore((state) => state.loginXrpc);
     const isLoginProcess = useXrpcStore((state) => state.isLoginProcess);
-    const navigate = useNavigate();
+    //const navigate = useNavigate();
 
     useEffect(() => {
         console.log('useEffect BlueskySession')
@@ -23,7 +23,6 @@ const BlueskySession: React.FC = () => {
                 }
 
             }else if(loginXrpc){
-                navigate('/');
 
             }
         };

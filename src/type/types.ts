@@ -35,7 +35,7 @@ export type MatchInfo = {
     detectedString: string;
     startIndex: number;
     endIndex: number;
-    did: string;
+    key: string;
 }
 
 export const COLLECTION = 'uk.skyblur.post';

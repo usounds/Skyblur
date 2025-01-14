@@ -24,6 +24,7 @@ const Footer: React.FC = () => {
                                 color: 'inherit', // 親要素から色を継承
                                 '&:hover': {
                                     backgroundColor: 'transparent', // ホバー時にも背景色を透明に設定
+                                    color:'text.primary'
                                 },
                                 '&.MuiIconButton-root': {
                                     backgroundColor: 'transparent', // ダークモードの影響を避ける
@@ -42,6 +43,7 @@ const Footer: React.FC = () => {
                                 color: 'inherit', // 親要素から色を継承
                                 '&:hover': {
                                     backgroundColor: 'transparent', // ホバー時にも背景色を透明に設定
+                                    color:'text.primary'
                                 },
                                 '&.MuiIconButton-root': {
                                     backgroundColor: 'transparent', // ダークモードの影響を避ける

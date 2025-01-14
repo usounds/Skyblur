@@ -85,7 +85,7 @@ interface DeleteModalProp {
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              <PostTextWithBold postText={content} isValidateBrackets={true} />
+              <PostTextWithBold postText={content} isValidateBrackets={true} mention={[]} />
             </DialogContentText>
           </DialogContent>
           <DialogActions>

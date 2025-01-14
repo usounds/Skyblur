@@ -29,7 +29,7 @@ const messages = {
     CreatePost_PostComplexDescription: "伏せたい箇所を[]でくくるか、伏せたいところを選択して下の「括る」ボタンを使ってください",
     CreatePost_OmmitChar: "○",
     CreatePost_SimpleMode: "シンプルモード",
-    CreatePost_Preview: "Blueskyに投稿されるポストのプレビュー",
+    CreatePost_Preview: "Blueskyへの投稿内容のプレビュー",
     CreatePost_PreviewDescription: "Skyblurへのリンクは自動で挿入されます",
     CreatePost_PreviewPlaceHolder: "本文を入力すると自動で設定されます",
     CreatePost_Additional: "補足",

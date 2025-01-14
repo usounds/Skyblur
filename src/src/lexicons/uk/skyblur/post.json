@@ -1,0 +1,54 @@
+{
+    "lexicon": 1,
+    "id": "uk.skyblur.post",
+    "defs": {
+        "main": {
+            "type": "record",
+            "description": "Record containing a Skyblur post.",
+            "key": "tid",
+            "record": {
+                "type": "object",
+                "required": [
+                    "text",
+                    "createdAt",
+                    "uri"
+                ],
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "maxLength": 3000,
+                        "maxGraphemes": 300,
+                        "description": "The post main contents."
+                    },
+                    "textFacets": {
+                        "type": "array",
+                        "description": "Annotations of text (mentions, URLs, hashtags, etc)",
+                        "items": {
+                            "type": "ref",
+                            "ref": "app.bsky.richtext.facet"
+                        }
+                    },
+                    "additional": {
+                        "type": "string",
+                        "maxLength": 1000000,
+                        "maxGraphemes": 100000,
+                        "description": "The post additional contents."
+                    },
+                    "uri": {
+                        "type": "string",
+                        "format": "at-uri"
+                    },
+                    "version": {
+                        "type": "number",
+                        "description": "Record number of records"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "datetime",
+                        "description": "Created date assigen by client"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -45,6 +45,12 @@ export default defineConfig({
     minify: 'esbuild',
     target: 'esnext', // 最新の ES モジュールをターゲットに
   },
+  esbuild: {
+    target: 'es2020',  // これにより、`Intl.Segmenter` をサポートする環境向けにビルド
+  },
+  define: {
+    global: {},  // これを追加して、globalオブジェクトを使えるようにする
+  },
   plugins: [
     react({
       babel: {

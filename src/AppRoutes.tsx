@@ -27,6 +27,8 @@ const AppRoutes = () => {
           component="main"
           sx={{
             mt: 'calc(var(--template-frame-height, 0px) + 28px + 64px)', // AppBarの高さを加える
+            flexDirection: 'column', // 子要素を縦方向に配置
+            minHeight: '80vh', // 画面全体の高さをカバー
           }}
         >
           <AppTheme >

@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react';
 import TextareaAutosize2 from '@mui/material/TextareaAutosize';
 import { styled } from '@mui/system';
 import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 interface ExtendTextareaAutosizeProps {
   placeholder?: string;
@@ -52,15 +53,31 @@ const ExtendTextareaAutosize = forwardRef<HTMLTextAreaElement, ExtendTextareaAut
 
     return (
       <>
-        <TextareaAutosizeStyled
-          aria-label="textarea"
-          placeholder={placeholder}
-          value={value}
-          onChange={handleChange}
-          ref={ref}
-          maxLength={maxLength}
-        />
-        <Typography variant="body2" sx={{ color: 'text.secondary' ,padding: '1px 5px'}}>{value ? value.length : 0} / {maxLength}
+        <Box
+          sx={{
+            maxHeight: '20vh', // 最大高さを制限
+            overflowY: 'auto', // スクロールを有効化
+          }}
+        >
+          <TextareaAutosizeStyled
+            aria-label="textarea"
+            placeholder={placeholder}
+            value={value}
+            onChange={handleChange}
+            ref={ref}
+            maxLength={maxLength}
+            style={{
+              resize: 'none', // 手動リサイズを無効化
+              width: '100%',  // 必要に応じて幅を指定
+            }}
+          />
+        </Box>
+        <Typography variant="body2" sx={{
+          color: 'text.secondary',
+          padding: '1px 5px',
+          textAlign: 'right'
+        }}>
+          {value ? value.length : 0} / {maxLength}
         </Typography>
       </>
     );

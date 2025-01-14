@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import twitterText from 'twitter-text';
 import { MatchInfo } from "@/type/types";
 
 export type State = {
@@ -10,7 +9,7 @@ export type State = {
   simpleMode: boolean;
   reply?: string;
   mention?: MatchInfo[]|undefined;
-  hashtag?: twitterText.HashtagWithIndices[]|undefined;
+  hashtag?: MatchInfo[]|undefined;
 };
 
 export type Action = {
@@ -20,7 +19,7 @@ export type Action = {
   setSimpleMode: (simpleMode: boolean) => void;
   setReply: (reply: string) => void;
   setMention: (mention: MatchInfo[]) => void;
-  setHashtag: (hashtag: twitterText.HashtagWithIndices[]) => void;
+  setHashtag: (hashtag: MatchInfo[]) => void;
 };
 
 export const useTempPostStore = create(
@@ -38,7 +37,7 @@ export const useTempPostStore = create(
       setSimpleMode: (simpleMode: boolean) => set({ simpleMode }),
       setReply: (reply: string) => set({ reply }),
       setMention: (mention: MatchInfo[]) => set({ mention }),
-      setHashtag: (hashtag: twitterText.HashtagWithIndices[]) => set({ hashtag }),
+      setHashtag: (hashtag: MatchInfo[]) => set({ hashtag }),
     }),
     {
       name: 'zustand.temptext', // name of the item in the storage
