@@ -11,6 +11,7 @@ import { handleOAuth } from "@/logic/HandleOAuth"
 import { useModeStore } from "@/state/Mode";
 import { GrSettingsOption } from "react-icons/gr";
 import { useRouter } from 'next/navigation'; // App Router 用の useRouter
+import LanguageSelect from "./LanguageSelect";
 
 const Header = () => {
   const locale = useLocaleStore((state) => state.localeData);
@@ -22,6 +23,8 @@ const Header = () => {
   const setDid = useAtpAgentStore((state) => state.setDid);
   const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
+    const localeString = useLocaleStore((state) => state.locale);
+    const setLocale = useLocaleStore((state) => state.setLocale);
   const router = useRouter(); // useRouterを取得
 
   let ignore = false
@@ -33,6 +36,8 @@ const Header = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ignore = true
+
+    setLocale(localeString)
 
     if (did) {
       console.log("has active session")
