@@ -50,7 +50,7 @@ function areBracketsUnbalanced(input: string): boolean {
   return openBracketsCount !== closeBracketsCount;
 }
 
-const PostTextWithBold = ({ postText ,isValidateBrackets}: { postText: string,isValidateBrackets:boolean }) => {
+const PostTextWithBold = ({ postText ,isValidateBrackets,isMask}: { postText: string,isValidateBrackets:boolean ,isMask:string|null}) => {
   let processedText = escapeHTML(postText);
   processedText = escapeTag(processedText)
 
@@ -63,7 +63,8 @@ const PostTextWithBold = ({ postText ,isValidateBrackets}: { postText: string,is
   // HTMLエスケープ後にカスタム処理を適用
   processedText = escapeHTML(processedText)
     .replace(/\[(.*?)\]/gs, (match, p1) => {
-      return `<strong>${p1}</strong>`;
+      if(isMask) return `${'○'.repeat(p1.length)}`;
+      else return `<strong>${p1}</strong>`;
     })
     .replace(
       /https?:\/\/[-_.!~*'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g,

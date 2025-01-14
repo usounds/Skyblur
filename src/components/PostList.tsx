@@ -3,47 +3,50 @@ import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { COLLECTION, PostData, PostListItem } from "@/types/types";
-import Image from 'next/image';
+import { POST_COLLECTION, PostData, PostListItem } from "@/types/types";
+import { Agent, AtpAgent } from '@atproto/api';
 import Link from 'next/link';
-import { useEffect, useState } from "react";
 import { Button, IconButton, useNotification } from 'reablocks';
+import { useEffect, useState } from "react";
+import { FiEdit } from "react-icons/fi";
+import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
+import { FaRegArrowAltCircleRight } from "react-icons/fa";
 
 type PostListProps = {
-    handleEdit: (input: PostListItem) => void;
+    handleEdit: ((input: PostListItem) => void) | null;
+    agent: AtpAgent | Agent;
+    did: string | null
 };
 
 export const PostList: React.FC<PostListProps> = ({
     handleEdit,
+    agent,
+    did
 }) => {
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [selectedItem, setSelectedItem] = useState<PostListItem | null>(null);
-    const did = useAtpAgentStore((state) => state.did);
-    const agent = useAtpAgentStore((state) => state.agent);
+    //const did = useAtpAgentStore((state) => state.did);
+    //  const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { notifySuccess, notifyError } = useNotification();
 
-    const getPosts = async (did: string, cursor: string) => {
-
+    const getPosts = async (cursor: string) => {
         if (!agent) {
             console.error("未ログインです")
             return
         }
 
-
         setIsLoading(true)
         setDeleteList([])
-        //console.log('call');
         const deleteList: any[] = []; // 初期化
         try {
             const param = {
-                repo: did,
-                collection: COLLECTION,
+                repo: did || agent.assertDid,
+                collection: POST_COLLECTION,
                 cursor: cursor,
                 limit: 10
             };
@@ -88,6 +91,20 @@ export const PostList: React.FC<PostListProps> = ({
         setIsModalOpen(true)
         setSelectedItem(item);
     };
+
+
+    const handleCopyToClipboard = async (item:PostListItem) => {
+        try {
+          if (item.blurURL) {
+            await navigator.clipboard.writeText(item.blurURL);
+            notifySuccess(locale.DeleteList_URLCopy); // 通知関数を呼び出す
+          } else {
+            console.error('URLが無効です');
+          }
+        } catch (error) {
+          console.error('クリップボードへのコピーに失敗しました', error);
+        }
+      };
 
     // 削除確認ダイアログを閉じる関数
     const handleCloseOverlay = (isDeleted: boolean) => {
@@ -135,7 +152,7 @@ export const PostList: React.FC<PostListProps> = ({
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
-            notifyError('Error:'+e)
+            notifyError('Error:' + e)
             return
         }
         // 実際の削除処理をここに追加
@@ -145,7 +162,7 @@ export const PostList: React.FC<PostListProps> = ({
     };
 
     useEffect(() => {
-        getPosts(did, cursor);
+        getPosts(cursor);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -171,46 +188,58 @@ export const PostList: React.FC<PostListProps> = ({
                             className="py-3 px-2 mb-2 mx-2 bg-white rounded-md border border-gray-400 w-full "
                         >
                             <div>
-                                <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} />
+                                {handleEdit ?
+                                    <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} isMask={null} />
+                                    :
+                                    <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} isMask={locale.CreatePost_OmmitChar} />
+                                }
                             </div>
 
                             <div className="flex justify-between items-center gap-2 mt-2">
                                 <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
                                 <div className="flex sm:gap-6 gap-4">
-                                    <IconButton size="small" variant="text" onClick={() => handleSelectItem(item)}>
-                                        <Image
-                                            src="https://backet.skyblur.uk/trash2.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                                            alt="Trash Icon"
-                                            width={20} // 必要に応じて幅を指定
-                                            height={20} // 必要に応じて高さを指定
-                                            unoptimized
-                                        />
+                                    {handleEdit &&
+                                        <>
+                                            <IconButton size="small" variant="text" onClick={() => handleSelectItem(item)}>
+                                                <LuTrash2
+                                                    size={24} color="gray"
+                                                />
+                                            </IconButton>
+                                            <IconButton size="small" variant="text" onClick={() => handleEdit(item)} >
+                                                <FiEdit
+                                                    size={24} color="gray"
+                                                />
+                                            </IconButton>
+                                            <IconButton size="small" variant="text" onClick={() => handleCopyToClipboard(item)} >
+                                                <LuClipboardCheck
+                                                    size={24} color="gray"
+                                                />
+                                            </IconButton>
+                                        </>
+                                    }
+                                    <IconButton size="small" variant="text">
+                                        {handleEdit ? (
+                                            <Link href={`${item.blurURL || ''}?q=preview`}>
+                                                <FaRegArrowAltCircleRight
+                                                    size={24} color="gray"
+                                                />
+                                            </Link>
+                                        ) : (
+                                            <Link href={`${item.blurURL || ''}?q=profile`}>
+                                                <FaRegArrowAltCircleRight
+                                                    size={24} color="gray"
+                                                />
+                                            </Link>
+                                        )}
                                     </IconButton>
-                                    <IconButton size="small" variant="text" onClick={() => handleEdit(item)} >
-                                        <Image
-                                            src="https://backet.skyblur.uk/edit.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                                            alt="Export Icon"
-                                            width={20} // 必要に応じて幅を指定
-                                            height={20} // 必要に応じて高さを指定
-                                            unoptimized
-                                        />
-                                    </IconButton>
-                                    <IconButton size="small" variant="text"  >
-                                        <Link href={`${item.blurURL || ''}?q=preview`}>
-                                            <Image
-                                                src="https://backet.skyblur.uk/right-arrow.svg" // public フォルダ内のファイルは / からの相対パスで指定
-                                                alt="Export Icon"
-                                                width={20} // 必要に応じて幅を指定
-                                                height={20} // 必要に応じて高さを指定
-                                                unoptimized
-                                            />
-                                        </Link>
-                                    </IconButton>
-                                    <IconButton size="small" variant="text"  >
-                                        <a href={item.postURL} target="_blank">
-                                            <svg width="20" height="20" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg"><path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" /></svg>
-                                        </a>
-                                    </IconButton>
+
+                                    {handleEdit &&
+                                        <IconButton size="small" variant="text"  >
+                                            <a href={item.postURL} target="_blank" className="text-gray-500">
+                                                <svg width="24" height="24" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg"><path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" /></svg>
+                                            </a>
+                                        </IconButton>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -227,7 +256,7 @@ export const PostList: React.FC<PostListProps> = ({
 
                 {!isLoading &&
                     <div className="flex justify-center gap-4 mt-6">
-                        <Button color="secondary" size="large" className="text-white text-base font-normal" disabled={isLoading} onClick={() => getPosts(did, cursor)} >
+                        <Button color="secondary" size="large" className="text-white text-base font-normal" disabled={isLoading} onClick={() => getPosts(cursor)} >
                             {deleteList.length == 10 ? locale.DeleteList_ReadMore : locale.DeleteList_ToHead}
                         </Button>
                     </div>

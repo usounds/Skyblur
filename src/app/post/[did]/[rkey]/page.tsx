@@ -4,11 +4,11 @@ import { Avatar } from "@/components/Avatar";
 import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
-import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
+import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { COLLECTION, PostData, customTheme } from '@/types/types';
+import { POST_COLLECTION, PostData, customTheme } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -20,6 +20,7 @@ import Head from 'next/head';
 const PostPage = () => {
   const { did, rkey } = useParams();
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isMyPage, setIsMyPage] = useState<boolean>(false)
   const [postText, setPostText] = useState<string>('')
   const [addText, setAddText] = useState("");
   const [bskyUrl, setBskyUrl] = useState("");
@@ -32,7 +33,7 @@ const PostPage = () => {
   const agent = useAtpAgentStore((state) => state.agent);
   const q = searchParams.get('q');
 
-  const aturi = 'at://' + did + "/" + COLLECTION + "/" + rkey
+  const aturi = 'at://' + did + "/" + POST_COLLECTION + "/" + rkey
 
   useEffect(() => {
     if (did && rkey) {
@@ -72,6 +73,7 @@ const PostPage = () => {
             const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
             setBskyUrl(convertedUri)
             setIsLoading(false); // ローディング状態を終了
+
           } catch (err) {
             // エラーハンドリング
             setErrorMessage(err + '');
@@ -104,11 +106,20 @@ const PostPage = () => {
 
 
     try {
+      const preference = await getPreference(pdsAgent, repo)
+      if (preference.isUseMyPage) setIsMyPage(true)
+    } catch (e) {
+    }
+
+
+
+    try {
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,
-        collection: COLLECTION,
+        collection: POST_COLLECTION,
         rkey: rkey,
       })
+
 
     } catch (e) {
       console.error(e)
@@ -124,7 +135,7 @@ const PostPage = () => {
 
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,
-        collection: COLLECTION,
+        collection: POST_COLLECTION,
         rkey: rkey,
       })
 
@@ -156,12 +167,12 @@ const PostPage = () => {
                   <>
                     <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
                       <div className="overflow-hidden break-words">
-                        <PostTextWithBold postText={postText} isValidateBrackets={true} />
+                        <PostTextWithBold postText={postText} isValidateBrackets={true} isMask={null} />
                       </div>
                       {addText &&
                         <div className="">
                           <Divider variant="secondary" />
-                          <PostTextWithBold postText={addText} isValidateBrackets={false} />
+                          <PostTextWithBold postText={addText} isValidateBrackets={false} isMask={null} />
                         </div>
                       }
 
@@ -190,6 +201,27 @@ const PostPage = () => {
                           </Link>
                         </div>
                       </>
+                    }
+
+                    {q == 'profile' &&
+                      <>
+                        <div className="flex justify-center mt-10">
+                          <Link href={`/profile/${did}`}>
+                            <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
+                          </Link>
+                        </div>
+                      </>
+                    }
+
+                    {(q === null || q === '') && isMyPage && (
+                      <>
+                        <div className="flex justify-center mt-10">
+                          <Link href={`/profile/${did}`}>
+                            <Button color="secondary" size="large" className="text-white text-base font-normal" >このユーザーのマイページへ</Button>
+                          </Link>
+                        </div>
+                      </>
+                    )
                     }
 
                   </>

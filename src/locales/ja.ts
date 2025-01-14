@@ -60,12 +60,18 @@ const messages = {
     DeleteList_ReadMore: "さらに読み込み",
     DeleteList_ToHead: "再読み込み",
     DeleteList_Complete: "削除しました！",
+    DeleteList_URLCopy: "URLをコピーしました！",
     ReplyList_Reply: "返信",
     ReplyList_ReplyLabelDescription: "自分の投稿に返信する場合、チェックしてください",
     ReplyList_UseReply: "返信する",
     ReplyList_ReplyToThis: "この投稿に返信する",
     ReplyList_ReplyDescrition: "[ <- 返信 ] ",
     ReplyList_Search: "絞り込む",
+    Pref_Title: "設定",
+    Pref_MyPage: "マイページ",
+    Pref_MyPagePublish: "公開する",
+    Pref_MyPagePublishDescription: "マイページを公開すると、投稿一覧が他のユーザーから参照できるようになります。",
+    Profile_NotPublish: "このユーザーはマイページを公開していません。あなたがこのユーザーの持ち主でマイページの公開を希望する場合、Skyblurにログインして右上の歯車アイコンからマイページを公開してください。",
 }
 
 export default messages;
