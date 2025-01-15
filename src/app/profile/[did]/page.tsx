@@ -131,8 +131,8 @@ const PostPage = () => {
                         }
 
                         {errorMessage &&
-                            <div className="whitespace-pre-wrap break-words text-red-800">
-                                {errorMessage}
+                            <div className="whitespace-pre-wrap break-words text-blue-500">
+                                {locale.Profile_NotPublish}
                             </div>
                         }
                     </div>
