@@ -71,6 +71,13 @@ const messages = {
     Pref_MyPage: "My Page",
     Pref_MyPagePublish: "Publish",
     Pref_MyPagePublishDescription: "When you publish your My Page, your post list will be accessible by other users.",
+    Pref_CustomFeed: "Custom Feed",
+    Pref_CustomFeedPublish: "Publish",
+    Pref_CustomFeedPublishDescription: "By publishing the custom feed, your Skyblur posts will become part of the custom feed.",
+    Pref_CustomFeedButton: "Save",
+    Pref_CustomFeedName: "Feed Name",
+    Pref_CustomFeedDefaltName: "{1}'s feed",
+    Pref_CustomFeedDescription: "Feed Description",
     Profile_NotPublish: "This user has not published their My Page. If you are the owner of this user and wish to publish the My Page, please log in to Skyblur and publish it from the gear icon in the top right."
 
 }

@@ -70,7 +70,14 @@ const messages = {
     Pref_Title: "設定",
     Pref_MyPage: "マイページ",
     Pref_MyPagePublish: "公開する",
-    Pref_MyPagePublishDescription: "マイページを公開すると、投稿一覧が他のユーザーから参照できるようになります。",
+    Pref_MyPagePublishDescription: "マイページを公開すると、Skyblurのサイト上で投稿一覧が他のユーザーから参照できるようになります。",
+    Pref_CustomFeed: "カスタムフィード",
+    Pref_CustomFeedPublish: "公開する",
+    Pref_CustomFeedPublishDescription: "カスタムフィードを公開すると、投稿一覧がBlueskyのカスタムフィードになります。",
+    Pref_CustomFeedButton: "保存",
+    Pref_CustomFeedName: "フィードの名前",
+    Pref_CustomFeedDefaltName: "{1}のフィード",
+    Pref_CustomFeedDescription: "フィードの説明",
     Profile_NotPublish: "このユーザーはマイページを公開していません。あなたがこのユーザーの持ち主でマイページの公開を希望する場合、Skyblurにログインして右上の歯車アイコンからマイページを公開してください。",
 }
 
