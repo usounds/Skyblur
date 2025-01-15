@@ -1,6 +1,6 @@
 import { Locales, useLocaleStore } from "@/state/Locale";
 import React from "react";
-import { GrLanguage } from "react-icons/gr";
+import { IoLanguageSharp } from "react-icons/io5";
 
 const LanguageToggle: React.FC = () => {
     const localeString = useLocaleStore((state) => state.locale); // 現在のlocale
@@ -17,7 +17,7 @@ const LanguageToggle: React.FC = () => {
             <button
                 onClick={toggleLocale}
             >
-                <GrLanguage size={20} color="white" />
+                <IoLanguageSharp size={20} color="white" />
             </button>
         </div>
     );
