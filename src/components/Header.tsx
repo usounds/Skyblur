@@ -11,7 +11,7 @@ import { handleOAuth } from "@/logic/HandleOAuth"
 import { useModeStore } from "@/state/Mode";
 import { GrSettingsOption } from "react-icons/gr";
 import { useRouter } from 'next/navigation'; // App Router 用の useRouter
-import LanguageSelect from "./LanguageSelect";
+import { GoGear } from "react-icons/go";
 
 const Header = () => {
   const locale = useLocaleStore((state) => state.localeData);
@@ -120,7 +120,7 @@ const Header = () => {
           <LanguageToggle />
           {agent &&
           <Link href="/settings" className="text-xl font-semibold text-white ml-2">
-            <GrSettingsOption size={20} color="white" />
+            <GoGear size={22} color="white" />
             </Link>
           }
         </div>
