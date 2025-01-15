@@ -93,18 +93,18 @@ export const PostList: React.FC<PostListProps> = ({
     };
 
 
-    const handleCopyToClipboard = async (item:PostListItem) => {
+    const handleCopyToClipboard = async (item: PostListItem) => {
         try {
-          if (item.blurURL) {
-            await navigator.clipboard.writeText(item.blurURL);
-            notifySuccess(locale.DeleteList_URLCopy); // 通知関数を呼び出す
-          } else {
-            console.error('URLが無効です');
-          }
+            if (item.blurURL) {
+                await navigator.clipboard.writeText(item.blurURL);
+                notifySuccess(locale.DeleteList_URLCopy); // 通知関数を呼び出す
+            } else {
+                console.error('URLが無効です');
+            }
         } catch (error) {
-          console.error('クリップボードへのコピーに失敗しました', error);
+            console.error('クリップボードへのコピーに失敗しました', error);
         }
-      };
+    };
 
     // 削除確認ダイアログを閉じる関数
     const handleCloseOverlay = (isDeleted: boolean) => {
@@ -195,10 +195,10 @@ export const PostList: React.FC<PostListProps> = ({
                                 }
                             </div>
 
-                            <div className="flex items-end gap-2">
-  <div className="text-sm text-gray-400 sm:text-base">
-    {formatDateToLocale(item.blur.createdAt)}
-  </div>
+                            <div className="flex justify-between gap-2 mt-2 items-end ">
+                                <div className="text-sm text-gray-400 sm:text-base">
+                                    {formatDateToLocale(item.blur.createdAt)}
+                                </div>
                                 <div className="flex sm:gap-4 gap-1">
                                     {handleEdit &&
                                         <>

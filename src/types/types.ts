@@ -94,6 +94,9 @@ export const customTheme: PartialReablocksTheme = {
                 'rounded-lg focus-within:after:bg-[radial-gradient(circle,_#105EFF_10%,_#105EFF_12%,_#D1D5DB_100%)] focus-within:after:content-[""] focus-within:after:absolute focus-within:after:mx-0 focus-within:after:h-px after:z-[2] focus-within:after:rounded focus-within:after:-bottom-[1px] focus-within:after:inset-x-1.5'
             
         },
+        textarea: {
+            base:"flex relative flex-row items-center flex-nowrap box-border transition-colors rounded-lg bg-panel border border-gray-300 text-text-primary hover:border-gray-300 hover:after:bg-[radial-gradient(circle,_#105EFF_0%,_#105EFF_55%,_#D1D5DB_90%)]  hover:after:content-[\"\"] hover:after:absolute hover:after:mx-1 hover:after:h-px after:z-[2] hover:after:rounded hover:after:-bottom-[1px] hover:after:inset-x-0.5",
+        },
         checkbox: {
             label: {
                 base: "text-gray-600",
