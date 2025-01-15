@@ -5,23 +5,66 @@ import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import Link from 'next/link';
+import React from 'react';
 import { useEffect } from "react";
+import { handleOAuth } from "@/logic/HandleOAuth"
+import { useModeStore } from "@/state/Mode";
 import { GrSettingsOption } from "react-icons/gr";
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // App Router 用の useRouter
+import LanguageSelect from "./LanguageSelect";
 
 const Header = () => {
   const locale = useLocaleStore((state) => state.localeData);
   const agent = useAtpAgentStore((state) => state.agent);
   const setAgent = useAtpAgentStore((state) => state.setAgent);
   const did = useAtpAgentStore((state) => state.did);
+  const setUserProf = useAtpAgentStore((state) => state.setUserProf);
   const setIsLoginProcess = useAtpAgentStore((state) => state.setIsLoginProcess);
   const setDid = useAtpAgentStore((state) => state.setDid);
-  const localeString = useLocaleStore((state) => state.locale);
-  const setLocale = useLocaleStore((state) => state.setLocale);
-  const router = useRouter();
+  const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
+  const setMode = useModeStore((state) => state.setMode);
+    const localeString = useLocaleStore((state) => state.locale);
+    const setLocale = useLocaleStore((state) => state.setLocale);
+  const router = useRouter(); // useRouterを取得
+
+  let ignore = false
 
   useEffect(() => {
+    if (ignore) {
+      console.log("useEffect duplicate call")
+      return
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ignore = true
+
     setLocale(localeString)
+
+    if (did) {
+      console.log("has active session")
+      return
+    }
+
+    (
+      async function () {
+        setIsLoginProcess(true)
+
+        const ret = await handleOAuth(
+          getClientMetadata,
+          setAgent,
+          setUserProf,
+          setIsLoginProcess,
+          setDid,
+          setBlueskyLoginMessage
+        );
+
+        if (ret) {
+          setMode('menu')
+
+        }
+        setIsLoginProcess(false)
+
+      })();
+
 
     // クリーンアップ
     return () => {
@@ -76,8 +119,8 @@ const Header = () => {
           </Link>
           <LanguageToggle />
           {agent &&
-            <Link href="/settings" className="text-xl font-semibold text-white ml-2">
-              <GrSettingsOption size={20} color="white" />
+          <Link href="/settings" className="text-xl font-semibold text-white ml-2">
+            <GrSettingsOption size={20} color="white" />
             </Link>
           }
         </div>
