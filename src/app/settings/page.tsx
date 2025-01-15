@@ -23,6 +23,7 @@ export default function Home() {
   const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', agent?.assertDid || '') || '')
   const [feedDescription, setFeedDescription] = useState<string>('')
   const [feedUpdateMessage, setFeedUpdateMessage] = useState<string>('')
+  const [feedUpdateCompleted, setFeedUpdateCompleted] = useState<boolean>(false)
   const [feedAvatarImg, setFeedAvatarImg] = useState('')
   const [feedAvatar, setFeedAvatar] = useState<File>()
 
@@ -105,6 +106,7 @@ export default function Home() {
 
   const submitFeedRecord = async () => {
     if (!agent || !did) return
+
 
     let avatarRef: BlobRef | undefined
     let encoding: string = ''
@@ -198,10 +200,13 @@ export default function Home() {
 
   const handleSave = async () => {
     if (!agent || !did) return
+    setFeedUpdateMessage("")
+    setFeedUpdateCompleted(false)
     setIsSave(true)
     try {
       await handleCustomFeed(isCustomFeed)
       await handleIsUseMyPage(isUseMyPage)
+      setFeedUpdateCompleted(true)
     } catch (e) {
       setFeedUpdateMessage('Error:' + e)
     }
@@ -279,7 +284,7 @@ export default function Home() {
                             </>
                           )}
 
-                          <div className="flex flex-col items-center gap-4 mt-6">
+                          <div className="flex flex-col items-center gap-2 mt-6">
                             <Button
                               color="primary"
                               size="large"
@@ -290,6 +295,7 @@ export default function Home() {
                               {locale.Pref_CustomFeedButton}
                             </Button>
                             <div className="text-red-500 mb-1">{feedUpdateMessage}</div>
+                            {feedUpdateCompleted && !feedUpdateMessage && <div className="text-blue-500 mb-1">{locale.Pref_SaveCompleted}</div>}
                           </div>
                         </>
                       </>

@@ -80,6 +80,7 @@ const messages = {
     Pref_CustomFeedDescription: "フィードの説明",
     Pref_CustomFeedAvatar: "フィードの画像",
     Pref_FileType:"ファイル形式はPNGかJPGです",
+    Pref_SaveCompleted:"完了しました！",
     Menu_URLCopy:"URLコピー",
     Profile_NotPublish: "このユーザーはマイページを公開していません。あなたがこのユーザーの持ち主でマイページの公開を希望する場合、Skyblurにログインして右上の歯車アイコンからマイページを公開してください。",
 }

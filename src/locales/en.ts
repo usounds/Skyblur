@@ -80,6 +80,7 @@ const messages = {
     Pref_CustomFeedDescription: "Feed Description",
     Pref_CustomFeedAvatar: "Feed Avatar",
     Pref_FileType:"File accepts jpg or png images",
+    Pref_SaveCompleted:"Save Completed!",
     Menu_URLCopy:"URL Copy",
     Profile_NotPublish: "This user has not published their My Page. If you are the owner of this user and wish to publish the My Page, please log in to Skyblur and publish it from the gear icon in the top right."
 
