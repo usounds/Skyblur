@@ -27,11 +27,12 @@ const PostPage = () => {
     const [agent, setAgent] = useState<AtpAgent | null>(null)
     const q = searchParams.get('q');
     const [repo, setRepo] = useState<string>('')
+    const pdsAgent = new AtpAgent({
+      service: 'https://bsky.social'
+    })
 
     useEffect(() => {
         if (did) {
-
-
             const fetchRecord = async () => {
 
                 try {
@@ -70,15 +71,7 @@ const PostPage = () => {
 
 
     async function getPostResponse(repo: string) {
-        console.log(repo)
-        const pdsUrl = await fetchServiceEndpoint(repo)
-
-        let pdsAgent = new AtpAgent({
-            service: pdsUrl || ''
-        })
-
         try {
-
             const value =await getPreference(pdsAgent,repo)
             if (value.isUseMyPage) {
                 setAgent(pdsAgent)

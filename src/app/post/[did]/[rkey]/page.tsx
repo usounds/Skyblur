@@ -32,6 +32,9 @@ const PostPage = () => {
   const searchParams = useSearchParams();
   const agent = useAtpAgentStore((state) => state.agent);
   const q = searchParams.get('q');
+  const pdsAgent = new AtpAgent({
+    service: 'https://bsky.social'
+  })
 
   const aturi = 'at://' + did + "/" + POST_COLLECTION + "/" + rkey
 
@@ -53,6 +56,7 @@ const PostPage = () => {
             const [userProfileResponse, postResponse] = await Promise.all([
               apiAgent.getProfile({ actor: repo }),
               getPostResponse(repo, rkeyParam),
+              getPreferenceProcess(repo)
             ]);
 
             // userProfileのデータをセット
@@ -60,7 +64,6 @@ const PostPage = () => {
 
             // postDataのデータをセット
             const postData: PostData = postResponse.data.value as PostData;
-
 
             const tempPostText = postData.text
 
@@ -92,25 +95,16 @@ const PostPage = () => {
   }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
-  async function getPostResponse(repo: string, rkey: string) {
-
-    const pdsUrl = await fetchServiceEndpoint(repo)
-    /*
-    const ret = await fetch("https://api.skyblur.uk/getpds/" + repo);
-    const data = await ret.json()
-
-      */
-    let pdsAgent = new AtpAgent({
-      service: pdsUrl || ''
-    })
-
-
+  async function getPreferenceProcess(repo: string) {
     try {
       const preference = await getPreference(pdsAgent, repo)
       if (preference.isUseMyPage) setIsMyPage(true)
     } catch (e) {
-    }
 
+    }
+  }
+
+  async function getPostResponse(repo: string, rkey: string) {
 
 
     try {
@@ -122,16 +116,6 @@ const PostPage = () => {
 
 
     } catch (e) {
-      console.error(e)
-
-      const pdsUrl = await fetchServiceEndpoint(repo)
-
-      pdsAgent = new AtpAgent({
-        service: pdsUrl || ''
-      })
-
-
-      fetch("https://api.skyblur.uk/deletepds/" + repo);
 
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,
