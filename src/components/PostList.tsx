@@ -7,7 +7,7 @@ import { useLocaleStore } from "@/state/Locale";
 import { POST_COLLECTION, PostData, PostListItem } from "@/types/types";
 import { Agent, AtpAgent } from '@atproto/api';
 import Link from 'next/link';
-import { Button, IconButton, useNotification } from 'reablocks';
+import { Button,Divider, IconButton, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
 import { FiEdit } from "react-icons/fi";
 import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
@@ -42,7 +42,7 @@ export const PostList: React.FC<PostListProps> = ({
 
         setIsLoading(true)
         setDeleteList([])
-        const deleteList: any[] = []; // 初期化
+        const deleteList: PostListItem[] = []; // 初期化
         try {
             const param = {
                 repo: did || agent.assertDid,
@@ -69,7 +69,8 @@ export const PostList: React.FC<PostListProps> = ({
                     blur: value,
                     postURL: transformUrl(value.uri),
                     blurURL: transformUrl(obj.uri),
-                    modal: false
+                    modal: false,
+                    isDetailDisplay: false,
                 });
             }
             // createdAtで降順ソート
@@ -167,6 +168,19 @@ export const PostList: React.FC<PostListProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const handleDisplay = (item: PostListItem) => {
+        console.log("handleDisplay");
+
+        const updatedList = deleteList.map((currentItem) =>
+            currentItem === item
+                ? { ...currentItem, isDetailDisplay: !currentItem.isDetailDisplay }
+                : currentItem
+        );
+
+        setDeleteList(updatedList);
+    };
+
+
     return (
         <>
             <div className="max-w-screen-sm">
@@ -187,53 +201,75 @@ export const PostList: React.FC<PostListProps> = ({
                             key={index}
                             className="py-3 px-2 mb-2 mx-2 bg-white rounded-md border border-gray-400 w-full "
                         >
-                            <div>
-                                {handleEdit ?
-                                    <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} isMask={null} />
-                                    :
-                                    <PostTextWithBold postText={item.blur.text} isValidateBrackets={true} isMask={locale.CreatePost_OmmitChar} />
-                                }
+                            <div onClick={() => handleDisplay(item)}>
+                                {item.isDetailDisplay ? (
+                                    <>
+                                        <PostTextWithBold
+                                            postText={item.blur.text}
+                                            isValidateBrackets={true}
+                                            isMask={null}
+                                        />
+                                        {item.blur.additional && (
+                                            <div>
+                                                <Divider variant="secondary" />
+                                                <PostTextWithBold
+                                                    postText={item.blur.additional}
+                                                    isValidateBrackets={false}
+                                                    isMask={null}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                ) : handleEdit ? (
+                                    <PostTextWithBold
+                                        postText={item.blur.text}
+                                        isValidateBrackets={true}
+                                        isMask={null}
+                                    />
+                                ) : (
+                                    <PostTextWithBold
+                                        postText={item.blur.text}
+                                        isValidateBrackets={true}
+                                        isMask={locale.CreatePost_OmmitChar}
+                                    />
+                                )}
+
                             </div>
 
                             <div className="flex justify-between gap-2 mt-2 items-end ">
                                 <div className="text-sm text-gray-400 sm:text-base">
                                     {formatDateToLocale(item.blur.createdAt)}
                                 </div>
-                                <div className="flex sm:gap-4 gap-1">
+                                <div className="flex sm:gap-4 gap-2">
                                     {handleEdit &&
                                         <>
                                             <IconButton size="small" variant="text" onClick={() => handleSelectItem(item)}>
                                                 <LuTrash2
-                                                    size={24} color="gray"
+                                                    size={20} color="gray"
                                                 />
                                             </IconButton>
                                             <IconButton size="small" variant="text" onClick={() => handleEdit(item)} >
                                                 <FiEdit
-                                                    size={24} color="gray"
+                                                    size={20} color="gray"
                                                 />
                                             </IconButton>
                                             <IconButton size="small" variant="text" onClick={() => handleCopyToClipboard(item)} >
                                                 <LuClipboardCheck
-                                                    size={24} color="gray"
+                                                    size={20} color="gray"
                                                 />
                                             </IconButton>
                                         </>
                                     }
-                                    <IconButton size="small" variant="text">
-                                        {handleEdit ? (
+
+                                    {handleEdit &&
+                                        <IconButton size="small" variant="text">
                                             <Link href={`${item.blurURL || ''}?q=preview`}>
                                                 <FaRegArrowAltCircleRight
-                                                    size={24} color="gray"
+                                                    size={20} color="gray"
                                                 />
                                             </Link>
-                                        ) : (
-                                            <Link href={`${item.blurURL || ''}?q=profile`}>
-                                                <FaRegArrowAltCircleRight
-                                                    size={24} color="gray"
-                                                />
-                                            </Link>
-                                        )}
-                                    </IconButton>
+                                        </IconButton>
+                                    }
 
                                     {handleEdit &&
                                         <IconButton size="small" variant="text"  >
