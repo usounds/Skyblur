@@ -8,6 +8,8 @@ import { customTheme } from "@/types/types";
 import { Button, Notifications, NotificationsContext, ThemeProvider, Toggle, extendTheme, theme, Input, Textarea } from 'reablocks';
 import { useEffect, useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
+import URLCopyButton from "@/components/URLCopyButton";
+import { BlobRef } from '@atproto/api';
 
 export default function Home() {
   const agent = useAtpAgentStore((state) => state.agent);
@@ -21,6 +23,8 @@ export default function Home() {
   const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', agent?.assertDid || '') || '')
   const [feedDescription, setFeedDescription] = useState<string>('')
   const [feedUpdateMessage, setFeedUpdateMessage] = useState<string>('')
+  const [feedAvatarImg, setFeedAvatarImg] = useState('')
+  const [feedAvatar, setFeedAvatar] = useState<File>()
 
   useEffect(() => {
     if (!agent || !did) return
@@ -37,15 +41,11 @@ export default function Home() {
 
       try {
 
-        const ret = await agent.com.atproto.repo.getRecord({
-          repo: did,
-          collection: 'app.bsky.feed.generator',
-          rkey: 'skyblurCustomFeed'
-        });
-
-        const recordValue = ret.data.value as { displayName: string, description: string };
-        setFeedName(recordValue.displayName)
-        setFeedDescription(recordValue.description)
+        const feedATUri = 'at://' + did + '/app.bsky.feed.generator/skyblurCustomFeed'
+        const result = await agent.app.bsky.feed.getFeedGenerator({ feed: feedATUri })
+        setFeedName(result.data.view.displayName)
+        setFeedDescription(result.data.view.description || '')
+        setFeedAvatarImg(result.data.view.avatar || '')
         setIsCustomFeed(true)
 
       } catch (e) {
@@ -63,8 +63,22 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [did]);
 
+
+  const changeFeedAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const imgObject = e.target.files[0];
+    setFeedAvatar(imgObject)
+    if (imgObject) {
+      setFeedAvatarImg(window.URL.createObjectURL(imgObject))
+    } else {
+      setFeedAvatarImg('')
+
+    }
+
+  };
+
   const handleIsUseMyPage = async (param: boolean) => {
-    console.log('handleIsUseMyPage')
     if (!agent || !did) return
     setIsSave(true)
 
@@ -91,6 +105,61 @@ export default function Home() {
 
   const submitFeedRecord = async () => {
     if (!agent || !did) return
+
+    let avatarRef: BlobRef | undefined
+    let encoding: string = ''
+
+    if (feedAvatar?.name.endsWith('png')) {
+      encoding = 'image/png'
+    } else if (feedAvatar?.name.endsWith('jpg') || feedAvatar?.name.endsWith('jpeg')) {
+      encoding = 'image/jpeg'
+    } else if (feedAvatar !== undefined) {
+      setFeedUpdateMessage(locale.Pref_FileType)
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      //agent.refreshIfNeeded
+    } catch (e) {
+      setFeedUpdateMessage('Error:' + e)
+      setIsLoading(false)
+      return
+    }
+
+    if (feedAvatar) {
+      const fileUint = new Uint8Array(await feedAvatar.arrayBuffer())
+
+      const blobRes = await agent.uploadBlob(fileUint, {
+        encoding,
+      })
+      avatarRef = blobRes.data.blob
+
+
+    } else if (feedAvatarImg) {
+      let parts = feedAvatarImg.split('/')
+      parts = parts[7].split('@')
+
+      const ret = await agent.com.atproto.sync.getBlob({
+        did: agent.assertDid,
+        cid: parts[0]
+      })
+
+      if (parts[1].endsWith('png')) {
+        encoding = 'image/png'
+      } else if (parts[1].endsWith('jpg') || parts[1].endsWith('jpeg')) {
+        encoding = 'image/jpeg'
+      }
+
+      const fileUint = new Uint8Array(await ret.data.buffer)
+
+      const blobRes = await agent.uploadBlob(fileUint, {
+        encoding,
+      })
+      avatarRef = blobRes.data.blob
+
+    }
+
     await agent.com.atproto.repo.putRecord({
       repo: did,
       collection: 'app.bsky.feed.generator',
@@ -100,6 +169,7 @@ export default function Home() {
         displayName: feedName,
         description: feedDescription,
         createdAt: new Date().toISOString(),
+        avatar: avatarRef,
       }
     });
   }
@@ -159,6 +229,7 @@ export default function Home() {
                       <>
                         <>
                           <span>{locale.Pref_MyPage}</span>
+                          <div className="block text-sm text-gray-400 mt-1">{locale.Pref_MyPagePublishDescription}</div>
                           <div className="flex items-center mt-2 space-x-2">
                             <Toggle
                               checked={isUseMyPage}
@@ -167,30 +238,17 @@ export default function Home() {
                             />
                             <span>{locale.Pref_MyPagePublish}</span>
                           </div>
-                          <div className="block text-sm text-gray-400 mt-1">{locale.Pref_MyPagePublishDescription}</div>
                           {isUseMyPage && (
-                            <div className="block text-sm text-gray-400 mt-1">
-                              <a
-                                target="_blank"
-                                href={`https://skyblur.uk/profile/${did}`}
-                                onClick={(e) => {
-                                  e.preventDefault(); // デフォルトのリンク動作を防ぐ
-                                  navigator.clipboard.writeText(`https://skyblur.uk/profile/${did}`).then(() => {
-                                    // コピーが成功した場合の処理
-                                    alert(locale.DeleteList_URLCopy);
-                                  }).catch((err) => {
-                                    // コピー失敗時の処理
-                                    console.error('コピーに失敗しました: ', err);
-                                  });
-                                }}
-                              >
-                                https://skyblur.uk/profile/{did}
-                              </a>
+                            <div className="block text-sm text-gray-600 mt-1">
+                              <div className="flex flex-col items-center ">
+                                <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
+                              </div>
                             </div>
                           )}
                         </>
                         <>
                           <div className="mt-4">{locale.Pref_CustomFeed}</div>
+                          <div className="block text-sm text-gray-400 mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
                           <div className="flex items-center mt-2 space-x-2">
                             <Toggle
                               checked={isCustomFeed}
@@ -199,33 +257,25 @@ export default function Home() {
                             />
                             <span>{locale.Pref_CustomFeedPublish}</span>
                           </div>
-                          <div className="block text-sm text-gray-400 mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
                           {isCustomFeed && (
                             <>
-                              <div className="block text-sm text-gray-400 mt-1">
-                                <a
-                                  target="_blank"
-                                  href={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`}
-                                  onClick={(e) => {
-                                    e.preventDefault(); // デフォルトのリンク動作を防ぐ
-                                    navigator.clipboard.writeText(`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`).then(() => {
-                                      // コピーが成功した場合の処理
-                                      alert(locale.DeleteList_URLCopy);
-                                    }).catch((err) => {
-                                      // コピー失敗時の処理
-                                      console.error('コピーに失敗しました: ', err);
-                                    });
-                                  }}
-                                >
-                                  https://bsky.app/profile/{did}/feed/skyblurCustomFeed
-                                </a>
+                              <div className="block text-sm text-gray-600 mt-1">
+                                <div className="flex flex-col items-center ">
+                                  <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
+                                </div>
                               </div>
 
                               <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedName}</div>
                               <Input value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
                               <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedDescription}</div>
                               <Textarea value={feedDescription} onChange={(e) => setFeedDescription(e.target.value)} maxLength={200} />
-
+                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedAvatar}</div>
+                              {feedAvatarImg &&
+                                <p>
+                                  <img src={feedAvatarImg} width='100px' />
+                                </p>
+                              }
+                              <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />
                             </>
                           )}
 
