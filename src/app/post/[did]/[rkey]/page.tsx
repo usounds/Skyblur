@@ -187,16 +187,6 @@ const PostPage = () => {
                       </>
                     }
 
-                    {q == 'profile' &&
-                      <>
-                        <div className="flex justify-center mt-10">
-                          <Link href={`/profile/${did}`}>
-                            <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
-                          </Link>
-                        </div>
-                      </>
-                    }
-
                     {(q === null || q === '') && isMyPage && (
                       <>
                         <div className="flex justify-center mt-10">
