@@ -8,13 +8,11 @@ import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { PostListItem, customTheme } from "@/types/types";
-import { Agent } from '@atproto/api';
-import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
 import Image from 'next/image';
-import { Button, Notifications, NotificationsContext, ThemeProvider, extendTheme, theme } from 'reablocks';
-import { useEffect, useState } from "react";
+import { Button, ThemeProvider, extendTheme, theme, Notifications, NotificationsContext } from 'reablocks';
+import { useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
-import { getClientMetadata } from '@/types/ClientMetadataContext';
+
 
 export default function Home() {
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
@@ -26,12 +24,6 @@ export default function Home() {
   const mode = useModeStore((state) => state.mode);
   const setMode = useModeStore((state) => state.setMode);
   const isLoginProcess = useAtpAgentStore((state) => state.isLoginProcess);
-  const setLocale = useLocaleStore((state) => state.setLocale);
-  const localeString = useLocaleStore((state) => state.locale);
-  const setIsLoginProcess = useAtpAgentStore((state) => state.setIsLoginProcess as (value: boolean) => void);
-  const setAgent = useAtpAgentStore((state) => state.setAgent);
-  const setDid = useAtpAgentStore((state) => state.setDid);
-  const setUserProf = useAtpAgentStore((state) => state.setUserProf);
 
   const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
@@ -44,55 +36,6 @@ export default function Home() {
     setMode("create")
 
   };
-
-  useEffect(() => {
-    setLocale(localeString)
-
-    if (did) {
-      console.log("has active session")
-      return
-    }
-
-    (
-      async function () {
-        setIsLoginProcess(true)
-
-        const localPdsUrl = window.localStorage.getItem('oauth.pdsUrl');
-
-        if(!localPdsUrl) {
-          setIsLoginProcess(false)
-          return
-        }
-
-        console.log(localPdsUrl)
-        const browserClient = new BrowserOAuthClient({
-          clientMetadata: getClientMetadata(),
-          handleResolver: localPdsUrl || '',
-        });
-
-        const result = await browserClient.init() as undefined | { session: OAuthSession; state?: string | undefined };
-
-        if (result) {
-          const { session, state } = result
-
-          const agent = new Agent(session)
-          setAgent(agent)
-          const userProfile = await agent.getProfile({ actor: agent.assertDid })
-          setUserProf(userProfile.data)
-          setIsLoginProcess(false)
-          setDid(agent.assertDid)
-          setMode('menu')
-        }
-
-        setIsLoginProcess(false)
-
-      })();
-
-
-    // クリーンアップ
-    return () => {
-    };    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return (
 
@@ -155,7 +98,7 @@ export default function Home() {
                                 </div>
 
                                 {agent &&
-                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} />
+                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid}/>
                                 }
 
                               </div>

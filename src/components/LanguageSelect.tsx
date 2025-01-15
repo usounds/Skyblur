@@ -20,7 +20,7 @@ const LanguageSelect: React.FC = () => {
   return (
     <>
       <select
-        className="py-2 px-3 block border rounded-lg border-gray-300 text-m w-full focus:outline-transparent focus:border-transparent"
+        className="py-2 px-3 block border rounded-lg border-gray-300 text-sm w-full focus:outline-transparent focus:border-transparent"
         value={localeString}
         onChange={handleLocaleChange}
       >
