@@ -71,6 +71,7 @@ const messages = {
     Pref_MyPage: "My Page",
     Pref_MyPagePublish: "Publish",
     Pref_MyPagePublishDescription: "When you publish the My Page, your Skyblur posts list will be accessible by other user on Skyblur site.",
+    Pref_MyPageDesc: "My Page Description",
     Pref_CustomFeed: "Custom Feed",
     Pref_CustomFeedPublish: "Publish",
     Pref_CustomFeedPublishDescription: "When you publish the Custom Feed, your Skyblur posts will be shown as Bluesky Custom Feed.",

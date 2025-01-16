@@ -4,7 +4,6 @@ import { Avatar } from "@/components/Avatar";
 import Header from "@/components/Header";
 import { PostList } from "@/components/PostList";
 import PostLoading from "@/components/PostLoading";
-import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { customTheme } from '@/types/types';
@@ -21,6 +20,7 @@ const PostPage = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
+    const [myPageDescription, setMyPageDescription] = useState<string>('')
     const locale = useLocaleStore((state) => state.localeData);
     const apiAgent = useAtpAgentStore((state) => state.publicAgent);
     const searchParams = useSearchParams();
@@ -73,7 +73,8 @@ const PostPage = () => {
     async function getPostResponse(repo: string) {
         try {
             const value = await getPreference(pdsAgent, repo)
-            if (value.isUseMyPage) {
+            if (value.myPage.isUseMyPage) {
+                setMyPageDescription(value.myPage.description)
                 setAgent(pdsAgent)
                 return
             }
@@ -101,6 +102,13 @@ const PostPage = () => {
                         {userProf &&
                             <div className="px-2 mb-2">
                                 <Avatar userProf={userProf} />
+                            </div>
+                        }
+
+
+                        {myPageDescription &&
+                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 mb-2">
+                                {myPageDescription}
                             </div>
                         }
 
