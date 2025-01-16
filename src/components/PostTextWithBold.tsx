@@ -21,7 +21,7 @@ function validateBrackets(input: string): boolean {
     }
   }
 
-  
+
 
   return openBracket; // 最後に閉じ括弧がない場合もエラー
 }
@@ -40,17 +40,17 @@ function areBracketsUnbalanced(input: string): boolean {
   let closeBracketsCount = 0;
 
   for (const char of input) {
-      if (char === '[') {
-          openBracketsCount++;
-      } else if (char === ']') {
-          closeBracketsCount++;
-      }
+    if (char === '[') {
+      openBracketsCount++;
+    } else if (char === ']') {
+      closeBracketsCount++;
+    }
   }
 
   return openBracketsCount !== closeBracketsCount;
 }
 
-const PostTextWithBold = ({ postText ,isValidateBrackets,isMask}: { postText: string,isValidateBrackets:boolean ,isMask:string|null}) => {
+const PostTextWithBold = ({ postText, isValidateBrackets, isMask }: { postText: string, isValidateBrackets: boolean, isMask: string | null }) => {
   let processedText = escapeHTML(postText);
   processedText = escapeTag(processedText)
 
@@ -63,8 +63,12 @@ const PostTextWithBold = ({ postText ,isValidateBrackets,isMask}: { postText: st
   // HTMLエスケープ後にカスタム処理を適用
   processedText = escapeHTML(processedText)
     .replace(/\[(.*?)\]/gs, (match, p1) => {
-      if(isMask) return `${'○'.repeat(p1.length)}`;
-      else return `<strong>${p1}</strong>`;
+      if (isMask) {
+        const maskLength = Math.min(p1.length, 35); 
+        return `${'○'.repeat(maskLength)}`;
+      } else {
+        return `<strong>${p1}</strong>`;
+      }
     })
     .replace(
       /https?:\/\/[-_.!~*'a-zA-Z0-9;\/?:\@&=+\$,%#\u3000-\u30FE\u4E00-\u9FA0\uFF01-\uFFE3]+/g,
