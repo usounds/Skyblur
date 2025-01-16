@@ -6,6 +6,7 @@ import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import { useState, useEffect } from "react";
 import { Button } from 'reablocks';
+import LanguageSelect from "./LanguageSelect";
 
 export const LoginForm: React.FC = ({
 }) => {
@@ -157,16 +158,19 @@ export const LoginForm: React.FC = ({
           </>}
       </Button>
 
-
-
       {(!isLoading && blueskyLoginMessage) &&
 
-        <p>
+        <div>
           <a href={"https://bsky.app/profile/" + handle} target="_blank" className="mt-4">{blueskyLoginMessage}
             {locale.Login_TapToLinkProfile}
           </a>
-        </p>
+        </div>
       }
+
+      <div className="mt-2">
+        <div className="text-gray-500 mb-1">Language</div>
+        <LanguageSelect />
+      </div>
 
     </div>
   );

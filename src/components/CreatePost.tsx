@@ -7,7 +7,7 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
-import { COLLECTION, PostListItem, PostView } from "@/types/types";
+import { POST_COLLECTION, PostListItem, PostView } from "@/types/types";
 import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
 import DOMPurify from 'dompurify';
@@ -252,7 +252,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             const url = '/post/' + did + "/" + rkey
             const tempUrl = origin + url
-            const blurUri = `at://${did}/${COLLECTION}/${rkey}`
+            const blurUri = `at://${did}/${POST_COLLECTION}/${rkey}`
             if (!prevBlur) {
                 //URLの判定
                 // titleからURLを抽出
@@ -452,7 +452,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             const postObject = {
                 repo: did,
-                collection: COLLECTION,
+                collection: POST_COLLECTION,
                 rkey: rkey,
                 record: {
                     uri: localPrevPostAturi,
@@ -483,6 +483,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         }
         setIsLoading(false)
     }
+
 
     useEffect(() => {
 

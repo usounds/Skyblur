@@ -10,11 +10,13 @@ export const getClientMetadata: () => OAuthClientMetadataInput | undefined = () 
         env = 'production';
     } else if (origin.includes('preview')) {
         env = 'preview';
+    } else if (origin.includes('sakura.ne.jp')) {
+        env = 'apprun';
     } else {
         env = 'local';
     }
 
-    return clientMetadataByEnv[env];
+    return clientMetadataByEnv[env]
 };
 
 
@@ -40,6 +42,21 @@ export const clientMetadataByEnv: ClientMetadataByEnv = {
         tos_uri: "https://preview.skyblur.pages.dev/termofuse",
         policy_uri: "https://preview.skyblur.pages.dev/termofuse",
         redirect_uris: ["https://preview.skyblur.pages.dev/"],
+        scope: "atproto transition:generic",
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+        application_type: "web",
+        dpop_bound_access_tokens: true,
+    },
+    apprun: {
+        client_id: "https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp/api/client-metadata.json",
+        client_name: "Skyblur",
+        client_uri: "https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp",
+        logo_uri: "https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp/favicon.ico",
+        tos_uri: "https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp/termofuse",
+        policy_uri: "https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp/termofuse",
+        redirect_uris: ["https://app-a900e098-8b94-4893-814e-43ee8ae5f484.ingress.apprun.sakura.ne.jp/"],
         scope: "atproto transition:generic",
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
