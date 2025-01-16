@@ -84,7 +84,7 @@ const messages = {
     Pref_SaveCompleted:"Save Completed!",
     Post_GoMyPage:"Go to My Page",
     Menu_URLCopy:"URL Copy",
-    Profile_NotPublish: "The profile page is private. If you are a user of this account and wish to make the profile page public, please log in to Skyblur and publish My Page from the gear icon in the top right corner."
+    Profile_NotPublish: "The profile page is private."
 
 }
 

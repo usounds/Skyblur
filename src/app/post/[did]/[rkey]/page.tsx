@@ -10,7 +10,6 @@ import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { POST_COLLECTION, PostData, customTheme } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Button, ThemeProvider, extendTheme, theme, Divider } from 'reablocks';
@@ -135,11 +134,11 @@ const PostPage = () => {
       <link rel="alternate" href={aturi} />
 
       <ThemeProvider theme={extendTheme(theme, customTheme)}>
-        <div className="mx-auto max-w-screen-sm md:px-8 mt-8 text-gray-800">
+        <div className="mx-auto max-w-screen-sm md:mt-8 mt-2 mx-2 text-gray-800">
           <div className="mx-auto rounded-lg">
             {userProf &&
-              <div className="px-2 mb-2">
-                <Avatar userProf={userProf} />
+              <div className="mb-2 mx-2">
+                <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
               </div>
             }
 
@@ -151,7 +150,7 @@ const PostPage = () => {
               <>
                 {!errorMessage &&
                   <>
-                    <div className="border rounded-lg p-2 border-gray-300 max-w-screen-sm">
+                    <div className="border rounded-lg p-2 mx-2 border-gray-300 max-w-screen-sm">
                       <div className="overflow-hidden break-words">
                         <PostTextWithBold postText={postText} isValidateBrackets={true} isMask={null} />
                       </div>

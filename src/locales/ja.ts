@@ -84,7 +84,7 @@ const messages = {
     Pref_SaveCompleted:"保存しました！",
     Post_GoMyPage:"このユーザーのマイページへ",
     Menu_URLCopy:"URLコピー",
-    Profile_NotPublish: "マイページは非公開です。このアカウントの利用者でマイページの公開を希望する場合、Skyblurにログインして右上の歯車アイコンからマイページを公開してください。",
+    Profile_NotPublish: "マイページは非公開です。",
 }
 
 export default messages;
