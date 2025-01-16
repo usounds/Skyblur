@@ -84,6 +84,7 @@ const messages = {
     Pref_SaveCompleted:"Save Completed!",
     Post_GoMyPage:"Go to My Page",
     Menu_URLCopy:"URL Copy",
+    Menu_GoSite:"Go to Page",
     Profile_NotPublish: "The profile page is private."
 
 }

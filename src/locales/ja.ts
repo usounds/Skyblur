@@ -84,6 +84,7 @@ const messages = {
     Pref_SaveCompleted:"保存しました！",
     Post_GoMyPage:"このユーザーのマイページへ",
     Menu_URLCopy:"URLコピー",
+    Menu_GoSite:"ページへ移動",
     Profile_NotPublish: "マイページは非公開です。",
 }
 
