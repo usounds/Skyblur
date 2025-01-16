@@ -18,7 +18,7 @@ const URLCopyButton: React.FC<URLCopyButtonProps> = ({ url }) => {
 
     return (
         <>
-            <div className="flex gap-3">
+            <div className="flex gap-3 my-2">
                 <Link href={url} target="_blank">
                 <Button
                     size="small"
