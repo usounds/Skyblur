@@ -99,7 +99,7 @@ const PostPage = () => {
             <Header />
 
             <ThemeProvider theme={extendTheme(theme, customTheme)}>
-                <div className="mx-auto max-w-screen-sm mt-2 text-gray-800">
+                <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2 text-gray-800">
                     <div className="mx-auto rounded-lg">
                         {userProf &&
                             <div className="mb-2 mx-2">
@@ -109,7 +109,7 @@ const PostPage = () => {
 
 
                         {myPageDescription &&
-                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 my-4">
+                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-3 my-4">
                                 {myPageDescription}
                             </div>
                         }
