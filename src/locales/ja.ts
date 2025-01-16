@@ -71,6 +71,7 @@ const messages = {
     Pref_MyPage: "マイページ",
     Pref_MyPagePublish: "公開する",
     Pref_MyPagePublishDescription: "マイページを公開すると、Skyblurのサイト上で投稿一覧が他のユーザーから参照できるようになります。",
+    Pref_MyPageDesc: "マイページの説明",
     Pref_CustomFeed: "カスタムフィード",
     Pref_CustomFeedPublish: "公開する",
     Pref_CustomFeedPublishDescription: "カスタムフィードを公開すると、投稿一覧がBlueskyのカスタムフィードになります。",

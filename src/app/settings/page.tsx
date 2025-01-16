@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
 import URLCopyButton from "@/components/URLCopyButton";
 import { BlobRef } from '@atproto/api';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const agent = useAtpAgentStore((state) => state.agent);
@@ -17,6 +19,7 @@ export default function Home() {
   const did = useAtpAgentStore((state) => state.did);
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isUseMyPage, setIsUseMyPage] = useState<boolean>(false)
+  const [myPageDescription, setMyPageDescription] = useState<string>('')
   const [isCustomFeed, setIsCustomFeed] = useState<boolean>(false)
   const [isSave, setIsSave] = useState<boolean>(false)
   const locale = useLocaleStore((state) => state.localeData);
@@ -26,15 +29,20 @@ export default function Home() {
   const [feedUpdateCompleted, setFeedUpdateCompleted] = useState<boolean>(false)
   const [feedAvatarImg, setFeedAvatarImg] = useState('')
   const [feedAvatar, setFeedAvatar] = useState<File>()
+  const router = useRouter();
 
   useEffect(() => {
-    if (!agent || !did) return
+    if (!agent || !did) {
+      router.push('/')
+      return
+    }
     setIsLoading(true)
     const fetchData = async () => {
       try {
 
         const value = await getPreference(agent, did)
-        if (value.isUseMyPage) setIsUseMyPage(true)
+        if (value.myPage.isUseMyPage) setIsUseMyPage(true)
+        setMyPageDescription(value.myPage.description)
 
       } catch (e) {
         console.error(e)
@@ -89,7 +97,11 @@ export default function Home() {
         collection: 'uk.skyblur.preference',
         rkey: 'self',
         record: {
-          isUseMyPage: param
+          myPage: {
+            isUseMyPage: param,
+            description: myPageDescription
+          }
+
         }
       });
 
@@ -244,11 +256,13 @@ export default function Home() {
                             <span>{locale.Pref_MyPagePublish}</span>
                           </div>
                           {isUseMyPage && (
-                            <div className="block text-sm text-gray-600 mt-1">
-                              <div className="flex flex-col items-center ">
+                            <>
+                              <div className="flex flex-col items-center mt-1 ">
                                 <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
                               </div>
-                            </div>
+                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_MyPageDesc}</div>
+                              <Textarea value={myPageDescription} onChange={(e) => setMyPageDescription(e.target.value)} maxLength={1000} />
+                            </>
                           )}
                         </>
                         <>
@@ -302,14 +316,15 @@ export default function Home() {
                     }
                   </div>
                   <div className="flex flex-col items-center gap-4 mt-6">
-                    <Button
-                      color="secondary"
-                      size="large"
-                      className="text-white text-base font-normal"
-                      onClick={() => window.history.back()} // ブラウザバックを実行
-                    >
-                      {locale.Menu_Back}
-                    </Button>
+                    <Link href="/">
+                      <Button
+                        color="secondary"
+                        size="large"
+                        className="text-white text-base font-normal"
+                      >
+                        {locale.Menu_Back}
+                      </Button>
+                    </Link>
                   </div>
                 </>
               )}

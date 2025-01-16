@@ -9,8 +9,7 @@ import React from 'react';
 import { useEffect } from "react";
 import { handleOAuth } from "@/logic/HandleOAuth"
 import { useModeStore } from "@/state/Mode";
-import { GrSettingsOption } from "react-icons/gr";
-import { useRouter } from 'next/navigation'; // App Router 用の useRouter
+import { useRouter } from 'next/navigation';
 import { GoGear } from "react-icons/go";
 
 const Header = () => {
@@ -23,9 +22,9 @@ const Header = () => {
   const setDid = useAtpAgentStore((state) => state.setDid);
   const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
-    const localeString = useLocaleStore((state) => state.locale);
-    const setLocale = useLocaleStore((state) => state.setLocale);
-  const router = useRouter(); // useRouterを取得
+  const localeString = useLocaleStore((state) => state.locale);
+  const setLocale = useLocaleStore((state) => state.setLocale);
+  const router = useRouter(); 
 
   let ignore = false
 
@@ -119,8 +118,8 @@ const Header = () => {
           </Link>
           <LanguageToggle />
           {agent &&
-          <Link href="/settings" className="text-xl font-semibold text-white ml-2">
-            <GoGear size={22} color="white" />
+            <Link href="/settings" className="text-xl font-semibold text-white ml-2">
+              <GoGear size={22} color="white" />
             </Link>
           }
         </div>

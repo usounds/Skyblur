@@ -31,7 +31,10 @@ export type PostData = {
 }
 
 export type Preference = {
-    isUseMyPage: boolean
+    myPage:{
+        isUseMyPage: boolean
+        description: string
+    }
 }
 
 export const POST_COLLECTION = 'uk.skyblur.post';
