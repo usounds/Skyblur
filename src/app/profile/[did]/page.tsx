@@ -28,7 +28,7 @@ const PostPage = () => {
     const q = searchParams.get('q');
     const [repo, setRepo] = useState<string>('')
     const pdsAgent = new AtpAgent({
-      service: 'https://bsky.social'
+        service: 'https://bsky.social'
     })
 
     useEffect(() => {
@@ -72,14 +72,14 @@ const PostPage = () => {
 
     async function getPostResponse(repo: string) {
         try {
-            const value =await getPreference(pdsAgent,repo)
+            const value = await getPreference(pdsAgent, repo)
             if (value.isUseMyPage) {
                 setAgent(pdsAgent)
                 return
             }
 
         } catch (e) {
-            console.error('エラーだよ'+e)
+            console.error('エラーだよ' + e)
 
         }
 
@@ -96,10 +96,12 @@ const PostPage = () => {
             <Header />
 
             <ThemeProvider theme={extendTheme(theme, customTheme)}>
-                <div className="mx-auto max-w-screen-sm px-4 md:px-8 mt-8 text-gray-800">
+                <div className="mx-auto max-w-screen-sm md:px-8 mt-8 text-gray-800">
                     <div className="mx-auto rounded-lg">
                         {userProf &&
-                            <Avatar userProf={userProf} />
+                            <div className="px-2 mb-2">
+                                <Avatar userProf={userProf} />
+                            </div>
                         }
 
                         {isLoading ?
@@ -112,7 +114,7 @@ const PostPage = () => {
                                     <>
 
                                         {agent &&
-                                            <PostList agent={agent} handleEdit={null} did={repo}/>
+                                            <PostList agent={agent} handleEdit={null} did={repo} />
                                         }
 
                                         {(q == 'preview' && agent) &&
