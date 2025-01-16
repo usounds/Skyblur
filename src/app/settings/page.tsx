@@ -257,11 +257,11 @@ export default function Home() {
                           </div>
                           {isUseMyPage && (
                             <>
+                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_MyPageDesc}</div>
+                              <Textarea value={myPageDescription} onChange={(e) => setMyPageDescription(e.target.value)} maxLength={1000} />
                               <div className="flex flex-col items-center mt-1 ">
                                 <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
                               </div>
-                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_MyPageDesc}</div>
-                              <Textarea value={myPageDescription} onChange={(e) => setMyPageDescription(e.target.value)} maxLength={1000} />
                             </>
                           )}
                         </>
@@ -278,11 +278,6 @@ export default function Home() {
                           </div>
                           {isCustomFeed && (
                             <>
-                              <div className="block text-sm text-gray-600 mt-1">
-                                <div className="flex flex-col items-center ">
-                                  <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
-                                </div>
-                              </div>
 
                               <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedName}</div>
                               <Input value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
@@ -295,6 +290,11 @@ export default function Home() {
                                 </p>
                               }
                               <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />
+                              <div className="block text-sm text-gray-600 mt-1">
+                                <div className="flex flex-col items-center ">
+                                  <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
+                                </div>
+                              </div>
                             </>
                           )}
 
