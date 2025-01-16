@@ -266,7 +266,7 @@ export default function Home() {
                           )}
                         </>
                         <>
-                          <div className="mt-4">{locale.Pref_CustomFeed}</div>
+                          <div className="mt-6">{locale.Pref_CustomFeed}</div>
                           <div className="block text-sm text-gray-400 mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
                           <div className="flex items-center mt-2 space-x-2">
                             <Toggle
