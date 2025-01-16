@@ -11,7 +11,8 @@ import { Button, Divider, IconButton, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
 import { FiEdit } from "react-icons/fi";
 import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
-import { FaRegArrowAltCircleRight } from "react-icons/fa";
+import { IoMdEye } from "react-icons/io";
+import { IoMdEyeOff } from "react-icons/io";
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -259,6 +260,22 @@ export const PostList: React.FC<PostListProps> = ({
                                                 />
                                             </IconButton>
                                         </>
+                                    }
+
+                                    {!handleEdit &&
+
+                                        <IconButton size="small" variant="text" onClick={() => handleDisplay(item)} >
+                                            {item.isDetailDisplay ? (
+
+                                                <IoMdEyeOff
+                                                    size={22} color="gray"
+                                                />
+                                            ) : (
+                                                <IoMdEye
+                                                    size={22} color="gray"
+                                                />
+                                            )}
+                                        </IconButton>
                                     }
 
                                     <IconButton size="small" variant="text"  >
