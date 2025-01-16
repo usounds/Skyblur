@@ -134,7 +134,7 @@ const PostPage = () => {
       <link rel="alternate" href={aturi} />
 
       <ThemeProvider theme={extendTheme(theme, customTheme)}>
-        <div className="mx-auto max-w-screen-sm md:mt-8 mt-2 mx-2 text-gray-800">
+        <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2 text-gray-800">
           <div className="mx-auto rounded-lg">
             {userProf &&
               <div className="mb-2 mx-2">
