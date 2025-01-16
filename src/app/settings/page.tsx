@@ -134,58 +134,58 @@ export default function Home() {
     }
 
     try {
-      //agent.refreshIfNeeded
+
+      if (feedAvatar) {
+        const fileUint = new Uint8Array(await feedAvatar.arrayBuffer())
+
+        const blobRes = await agent.uploadBlob(fileUint, {
+          encoding,
+        })
+        avatarRef = blobRes.data.blob
+
+
+      } else if (feedAvatarImg) {
+        let parts = feedAvatarImg.split('/')
+        parts = parts[7].split('@')
+
+        const ret = await agent.com.atproto.sync.getBlob({
+          did: agent.assertDid,
+          cid: parts[0]
+        })
+
+        if (parts[1].endsWith('png')) {
+          encoding = 'image/png'
+        } else if (parts[1].endsWith('jpg') || parts[1].endsWith('jpeg')) {
+          encoding = 'image/jpeg'
+        }
+
+        const fileUint = new Uint8Array(await ret.data.buffer)
+
+        const blobRes = await agent.uploadBlob(fileUint, {
+          encoding,
+        })
+        avatarRef = blobRes.data.blob
+
+      }
+
+      await agent.com.atproto.repo.putRecord({
+        repo: did,
+        collection: 'app.bsky.feed.generator',
+        rkey: 'skyblurCustomFeed',
+        record: {
+          did: 'did:web:feed.skyblur.uk',
+          displayName: feedName,
+          description: feedDescription,
+          createdAt: new Date().toISOString(),
+          avatar: avatarRef,
+        }
+      });
     } catch (e) {
       setFeedUpdateMessage('Error:' + e)
-      setIsLoading(false)
+      setIsSave(false)
       return
     }
 
-    if (feedAvatar) {
-      const fileUint = new Uint8Array(await feedAvatar.arrayBuffer())
-
-      const blobRes = await agent.uploadBlob(fileUint, {
-        encoding,
-      })
-      avatarRef = blobRes.data.blob
-
-
-    } else if (feedAvatarImg) {
-      let parts = feedAvatarImg.split('/')
-      parts = parts[7].split('@')
-
-      const ret = await agent.com.atproto.sync.getBlob({
-        did: agent.assertDid,
-        cid: parts[0]
-      })
-
-      if (parts[1].endsWith('png')) {
-        encoding = 'image/png'
-      } else if (parts[1].endsWith('jpg') || parts[1].endsWith('jpeg')) {
-        encoding = 'image/jpeg'
-      }
-
-      const fileUint = new Uint8Array(await ret.data.buffer)
-
-      const blobRes = await agent.uploadBlob(fileUint, {
-        encoding,
-      })
-      avatarRef = blobRes.data.blob
-
-    }
-
-    await agent.com.atproto.repo.putRecord({
-      repo: did,
-      collection: 'app.bsky.feed.generator',
-      rkey: 'skyblurCustomFeed',
-      record: {
-        did: 'did:web:feed.skyblur.uk',
-        displayName: feedName,
-        description: feedDescription,
-        createdAt: new Date().toISOString(),
-        avatar: avatarRef,
-      }
-    });
   }
 
   const handleCustomFeed = async (param: boolean) => {
