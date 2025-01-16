@@ -1,19 +1,22 @@
 
 import { AppBskyActorDefs } from '@atproto/api';
 import Image from 'next/image';
+import Link from 'next/link';
 
 type AvatarProp = {
     userProf: AppBskyActorDefs.ProfileViewDetailed
-    time?: string
+    href: string
+    target:string
 };
 
 export const Avatar: React.FC<AvatarProp> = ({
     userProf,
-
+    href,
+    target
 }) => {
     return (
 
-        <a className="flex items-center gap-x-2 mb-3" href={"https://bsky.app/profile/" + userProf.handle} target="_blank">
+        <Link className="flex items-center gap-x-2 mb-3" href={href||''} target={target||''}>
             {userProf.avatar ? (
                 <Image
                     className="object-cover w-10 h-10 rounded-full"
@@ -46,7 +49,7 @@ export const Avatar: React.FC<AvatarProp> = ({
 
                 <p className="text-sm text-gray-500 ">@{userProf.handle}</p>
             </div>
-        </a>
+        </Link>
     );
 };
 

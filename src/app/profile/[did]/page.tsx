@@ -27,6 +27,7 @@ const PostPage = () => {
     const [agent, setAgent] = useState<AtpAgent | null>(null)
     const q = searchParams.get('q');
     const [repo, setRepo] = useState<string>('')
+    const [isMyPage, setIsMyPage] = useState<boolean>(false)
     const pdsAgent = new AtpAgent({
         service: 'https://bsky.social'
     })
@@ -75,6 +76,7 @@ const PostPage = () => {
             const value = await getPreference(pdsAgent, repo)
             if (value.myPage.isUseMyPage) {
                 setMyPageDescription(value.myPage.description)
+                setIsMyPage(value.myPage.isUseMyPage)
                 setAgent(pdsAgent)
                 return
             }
@@ -97,17 +99,17 @@ const PostPage = () => {
             <Header />
 
             <ThemeProvider theme={extendTheme(theme, customTheme)}>
-                <div className="mx-auto max-w-screen-sm md:px-8 mt-8 text-gray-800">
+                <div className="mx-auto max-w-screen-sm mt-2 text-gray-800">
                     <div className="mx-auto rounded-lg">
                         {userProf &&
-                            <div className="px-2 mb-2">
-                                <Avatar userProf={userProf} />
+                            <div className="mb-2 mx-2">
+                                <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
                             </div>
                         }
 
 
                         {myPageDescription &&
-                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 mb-2">
+                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 my-4">
                                 {myPageDescription}
                             </div>
                         }
@@ -122,7 +124,9 @@ const PostPage = () => {
                                     <>
 
                                         {agent &&
-                                            <PostList agent={agent} handleEdit={null} did={repo} />
+                                            <div className="mx-auto max-w-screen-sm">
+                                                <PostList agent={agent} handleEdit={null} did={repo} />
+                                            </div>
                                         }
 
                                         {(q == 'preview' && agent) &&
@@ -141,8 +145,10 @@ const PostPage = () => {
                         }
 
                         {errorMessage &&
-                            <div className="whitespace-pre-wrap break-words text-blue-500">
-                                {locale.Profile_NotPublish}
+                            <div className="flex justify-center">
+                                <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 mt-4">
+                                    {locale.Profile_NotPublish}
+                                </div>
                             </div>
                         }
                     </div>
