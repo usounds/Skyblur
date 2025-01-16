@@ -2,8 +2,9 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { PostView } from "@/types/types";
-import { Button, Input, Step, Stepper, DotsLoader } from 'reablocks';
+import { Button, Input, Step, Stepper } from 'reablocks';
 import { useEffect, useState } from "react";
+import BeatLoader from "react-spinners/BeatLoader";
 
 type ReplyListProps = {
     handleSetPost: (input: PostView) => void;
@@ -97,7 +98,12 @@ export const ReplyList: React.FC<ReplyListProps> = ({
             {postList.length === 0 &&
 
                 <div className="flex flex-col items-center justify-center h-full text-gray-700">
-                    {isLoading && <p><DotsLoader /></p>}
+                    {isLoading && (
+                        <div className="flex justify-center items-center">
+                            <BeatLoader />
+                        </div>
+                    )}
+
                     {!isLoading && locale.DeleteList_NoListItem}
                 </div>
             }
@@ -140,10 +146,15 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                 </div>
             }
 
-            {(isLoading && postList.length!==0)&&
+            {(isLoading && postList.length !== 0) &&
 
                 <div className="flex flex-col items-center justify-center h-full text-gray-700">
-                    {isLoading && <p><DotsLoader /></p>}
+                    {isLoading && (
+                        <div className="flex justify-center items-center">
+                            <BeatLoader />
+                        </div>
+                    )}
+
                 </div>
             }
 

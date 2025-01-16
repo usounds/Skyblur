@@ -1,5 +1,5 @@
 "use client"
-import LanguageSelect from "@/components/LanguageSelect";
+import LanguageToggle from "@/components/LanguageToggle";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
@@ -9,6 +9,8 @@ import React from 'react';
 import { useEffect } from "react";
 import { handleOAuth } from "@/logic/HandleOAuth"
 import { useModeStore } from "@/state/Mode";
+import { useRouter } from 'next/navigation';
+import { GoGear } from "react-icons/go";
 
 const Header = () => {
   const locale = useLocaleStore((state) => state.localeData);
@@ -20,6 +22,9 @@ const Header = () => {
   const setDid = useAtpAgentStore((state) => state.setDid);
   const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
   const setMode = useModeStore((state) => state.setMode);
+  const localeString = useLocaleStore((state) => state.locale);
+  const setLocale = useLocaleStore((state) => state.setLocale);
+  const router = useRouter(); 
 
   let ignore = false
 
@@ -30,6 +35,8 @@ const Header = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ignore = true
+
+    setLocale(localeString)
 
     if (did) {
       console.log("has active session")
@@ -83,6 +90,7 @@ const Header = () => {
       window.localStorage.removeItem('oauth.pdsUrl')
       window.localStorage.removeItem('oauth.handle')
 
+      router.push('/')
 
     } catch (e) {
       console.error(e)
@@ -108,7 +116,12 @@ const Header = () => {
           <Link href="/termofuse" className="flex-none text-sm font-semibold text-white mr-2">
             {locale.Menu_TermOfUse}
           </Link>
-          <LanguageSelect />
+          <LanguageToggle />
+          {agent &&
+            <Link href="/settings" className="text-xl font-semibold text-white ml-2">
+              <GoGear size={22} color="white" />
+            </Link>
+          }
         </div>
       </nav>
     </div>
