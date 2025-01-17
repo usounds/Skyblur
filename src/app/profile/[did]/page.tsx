@@ -4,10 +4,10 @@ import { Avatar } from "@/components/Avatar";
 import Header from "@/components/Header";
 import { PostList } from "@/components/PostList";
 import PostLoading from "@/components/PostLoading";
+import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { customTheme } from '@/types/types';
-import { getPreference } from "@/logic/HandleBluesky";
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -28,13 +28,17 @@ const PostPage = () => {
     const q = searchParams.get('q');
     const [repo, setRepo] = useState<string>('')
     const [isMyPage, setIsMyPage] = useState<boolean>(false)
-    const pdsAgent = new AtpAgent({
-        service: 'https://bsky.social'
-    })
 
     useEffect(() => {
         if (did) {
             const fetchRecord = async () => {
+
+                const pdsUrl = await fetchServiceEndpoint(repo)
+
+                const pdsAgent = new AtpAgent({
+                    service: pdsUrl || ''
+                })
+
 
                 try {
                     let repoLocal = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
@@ -47,7 +51,7 @@ const PostPage = () => {
                         // getProfileとgetRecordを並行して呼び出す
                         const [userProfileResponse, postResponse] = await Promise.all([
                             apiAgent.getProfile({ actor: repoLocal }),
-                            getPostResponse(repoLocal),
+                            getPostResponse(repoLocal,pdsAgent),
                         ]);
 
                         // userProfileのデータをセット
@@ -71,9 +75,9 @@ const PostPage = () => {
     }, [did]); // did または rkey が変更された場合に再実行
 
 
-    async function getPostResponse(repo: string) {
+    async function getPostResponse(repo: string, pdsAgent:AtpAgent) {
         try {
-            const value = await getPreference(pdsAgent, repo)
+            const value = await getPreference(pdsAgent, repo,)
             if (value.myPage.isUseMyPage) {
                 setMyPageDescription(value.myPage.description)
                 setIsMyPage(value.myPage.isUseMyPage)

@@ -4,17 +4,17 @@ import { Avatar } from "@/components/Avatar";
 import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
-import { getPreference } from "@/logic/HandleBluesky";
+import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { POST_COLLECTION, PostData, customTheme } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
+import Head from 'next/head';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Button, ThemeProvider, extendTheme, theme, Divider } from 'reablocks';
+import { Button, Divider, ThemeProvider, extendTheme, theme } from 'reablocks';
 import { useEffect, useState } from "react";
-import Head from 'next/head';
 
 const PostPage = () => {
   const { did, rkey } = useParams();
@@ -31,10 +31,6 @@ const PostPage = () => {
   const searchParams = useSearchParams();
   const agent = useAtpAgentStore((state) => state.agent);
   const q = searchParams.get('q');
-  const pdsAgent = new AtpAgent({
-    service: 'https://bsky.social'
-  })
-
   const aturi = 'at://' + did + "/" + POST_COLLECTION + "/" + rkey
 
   useEffect(() => {
@@ -50,12 +46,18 @@ const PostPage = () => {
           setIsLoading(true);
           setErrorMessage('')
 
+          const pdsUrl = await fetchServiceEndpoint(repo)
+
+          const pdsAgent = new AtpAgent({
+            service:pdsUrl||''
+          })
+
           try {
             // getProfileとgetRecordを並行して呼び出す
             const [userProfileResponse, postResponse] = await Promise.all([
               apiAgent.getProfile({ actor: repo }),
-              getPostResponse(repo, rkeyParam),
-              getPreferenceProcess(repo)
+              getPostResponse(repo, rkeyParam, pdsAgent),
+              getPreferenceProcess(repo, pdsAgent)
             ]);
 
             // userProfileのデータをセット
@@ -94,7 +96,7 @@ const PostPage = () => {
   }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
-  async function getPreferenceProcess(repo: string) {
+  async function getPreferenceProcess(repo: string,pdsAgent:AtpAgent) {
     try {
       const preference = await getPreference(pdsAgent, repo)
       if (preference.myPage.isUseMyPage) setIsMyPage(true)
@@ -103,7 +105,7 @@ const PostPage = () => {
     }
   }
 
-  async function getPostResponse(repo: string, rkey: string) {
+  async function getPostResponse(repo: string, rkey: string,pdsAgent:AtpAgent) {
 
 
     try {
