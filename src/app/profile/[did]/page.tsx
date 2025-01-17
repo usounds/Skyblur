@@ -33,16 +33,16 @@ const PostPage = () => {
         if (did) {
             const fetchRecord = async () => {
 
-                const pdsUrl = await fetchServiceEndpoint(repo)
-
-                const pdsAgent = new AtpAgent({
-                    service: pdsUrl || ''
-                })
 
 
                 try {
                     let repoLocal = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
                     repoLocal = repoLocal.replace(/%3A/g, ':');
+                    const pdsUrl = await fetchServiceEndpoint(repoLocal)
+                    const pdsAgent = new AtpAgent({
+                        service: pdsUrl || ''
+                    })
+    
                     setRepo(repoLocal)
                     setIsLoading(true);
                     setErrorMessage('')
