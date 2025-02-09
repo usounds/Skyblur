@@ -29,15 +29,15 @@ const Reaction: React.FC<Props> = ({ atUriPost,atUriBlur }) => {
         setRepostCount(count);
         setLikeCount(data.links?.["app.bsky.feed.like"]?.[".subject.uri"]?.records || 0)
         setQuoteCount(data.links?.["app.bsky.feed.post"]?.[".embed.record.uri"]?.records || 0)
-
         const response2 = await fetch(
           `https://links.bsky.bad-example.com/links/all?target=${encodeURIComponent(transformUrl(atUriBlur))}`
         );
         if (!response2.ok) {
           throw new Error("Network response was not ok");
         }
-        const data2 = await response.json();
-        setIntent(data2.links?.["app.bsky.feed.post"]?.[".facets[].features[app.bsky.richtext.facet#link].uri"]?.records || 0)
+        const data2 = await response2.json();
+        const intent = data2.links?.["app.bsky.feed.post"]?.[".facets[].features[app.bsky.richtext.facet#link].uri"]?.records || 0
+        setIntent(intent)
       } catch (error) {
         console.error("Error fetching data:", error);
       }
