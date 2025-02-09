@@ -30,7 +30,7 @@ const Reaction: React.FC<Props> = ({ atUriPost,atUriBlur }) => {
         setLikeCount(data.links?.["app.bsky.feed.like"]?.[".subject.uri"]?.records || 0)
         setQuoteCount(data.links?.["app.bsky.feed.post"]?.[".embed.record.uri"]?.records || 0)
         const response2 = await fetch(
-          `https://links.bsky.bad-example.com/links/all?target=${encodeURIComponent(transformUrl(atUriBlur))}`
+          `https://links.bsky.bad-example.com/links/all?target=${transformUrl(atUriBlur)}`
         );
         if (!response2.ok) {
           throw new Error("Network response was not ok");
