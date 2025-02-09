@@ -9,15 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@atproto/api": "^0.13.25",
-    "@atproto/common-web": "^0.3.1",
-    "@atproto/oauth-client-browser": "^0.3.5",
-    "dompurify": "^3.2.3",
+    "@atproto/api": "^0.13.32",
+    "@atproto/common-web": "^0.3.2",
+    "@atproto/oauth-client-browser": "^0.3.8",
+    "dompurify": "^3.2.4",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
-    "next": "^14.2.22",
+    "next": "^14.2.23",
     "preline": "^2.7.0",
-    "reablocks": "^8.7.3",
+    "reablocks": "^8.7.5",
     "react": "^18.3.1",
     "react-content-loader": "^7.0.2",
     "react-dom": "^18.3.1",
@@ -27,8 +27,8 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18.3.16",
+    "@types/node": "^20.17.16",
+    "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/twitter-text": "^3.1.10",
     "autoprefixer": "^10.4.20",
