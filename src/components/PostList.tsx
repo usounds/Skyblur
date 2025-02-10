@@ -238,12 +238,12 @@ export const PostList: React.FC<PostListProps> = ({
                             </div>
 
                             {item.isDetailDisplay && handleEdit &&
-                                <div className="mt-4 ">
+                                <div className="mt-1">
                                     <Reaction atUriPost={item.blur.uri} atUriBlur={item.blurATUri} />
                                 </div>
                             }
 
-                            <div className="flex justify-between items-button gap-2 mt-2 items-end ">
+                            <div className="flex justify-between items-button gap-2 items-end ">
                                 <div className="flex items-center gap-2">
                                     <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
                                     {item.isDetailDisplay && !handleEdit &&
