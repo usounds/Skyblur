@@ -86,8 +86,8 @@ const messages = {
     Menu_URLCopy:"URLコピー",
     Menu_GoSite:"ページへ移動",
     Profile_NotPublish: "マイページは非公開です。",
-    Post_ViewReactions:"リアクション数を表示",
-    Post_HideReactions:"リアクション数を非表示",
+    Post_ViewReactions:"リアクションを表示",
+    Post_HideReactions:"リアクションを非表示",
 }
 
 export default messages;

@@ -86,8 +86,8 @@ const messages = {
     Menu_URLCopy:"URL Copy",
     Menu_GoSite:"Go to Page",
     Profile_NotPublish: "The profile page is private.",
-    Post_ViewReactions:"View Reaction Counts",
-    Post_HideReactions:"Hide Reaction Counts",
+    Post_ViewReactions:"View Reactions",
+    Post_HideReactions:"Hide Reactions",
 
 }
 
