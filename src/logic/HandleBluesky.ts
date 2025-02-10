@@ -39,7 +39,7 @@ export const transformUrl = (inputUrl: string): string => {
     }
 
     if (parts[3] === 'uk.skyblur.post') {
-        return `https://${window.location.hostname}/post/${parts[2]}/${parts[4]}`;
+        return `https://skyblur.uk/post/${parts[2]}/${parts[4]}`;
     }
 
     return ''

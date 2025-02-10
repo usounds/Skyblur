@@ -6,13 +6,13 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { POST_COLLECTION, PostData, PostListItem } from "@/types/types";
 import { Agent, AtpAgent } from '@atproto/api';
-import Link from 'next/link';
 import { Button, Divider, IconButton, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
 import { FiEdit } from "react-icons/fi";
 import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
 import { IoMdEye } from "react-icons/io";
 import { IoMdEyeOff } from "react-icons/io";
+import Reaction from "@/components/Reaction";
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -237,9 +237,18 @@ export const PostList: React.FC<PostListProps> = ({
 
                             </div>
 
-                            <div className="flex justify-between gap-2 mt-2 items-end ">
-                                <div className="text-sm text-gray-400 sm:text-base">
-                                    {formatDateToLocale(item.blur.createdAt)}
+                            {item.isDetailDisplay && handleEdit &&
+                                <div className="mt-4 ">
+                                    <Reaction atUriPost={item.blur.uri} atUriBlur={item.blurATUri} />
+                                </div>
+                            }
+
+                            <div className="flex justify-between items-button gap-2 mt-2 items-end ">
+                                <div className="flex items-center gap-2">
+                                    <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
+                                    {item.isDetailDisplay && !handleEdit &&
+                                        <Reaction atUriPost={item.blur.uri} atUriBlur={item.blurATUri} />
+                                    }
                                 </div>
                                 <div className="flex sm:gap-6 gap-3">
                                     {handleEdit &&
