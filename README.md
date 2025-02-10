@@ -16,5 +16,5 @@ If necessary, please create a pull request that modifies this source. Adding new
 
 ## Special Thanks
 
-phil, deleoper of [constellation](https://links.bsky.bad-example.com/).
-Skyblur retrieves Like, Repost, and Intent reactions from Constellation.
+phil, developer of [constellation](https://links.bsky.bad-example.com/).
+Skyblur retrieves Like, Repost, and Intent reactions from constellation.
