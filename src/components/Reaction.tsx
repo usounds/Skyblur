@@ -25,7 +25,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
       try {
 
         const intentResult = await fetch(
-          `https://links.bsky.bad-example.com/links?target=${encodeURIComponent(transformUrl(atUriBlur))}&collection=app.bsky.feed.post&path=.facets%5B%5D.features%5Bapp.bsky.richtext.facet%23link%5D.uri`
+          `https://links.bsky.bad-example.com/links?target=${transformUrl(atUriBlur)}&collection=app.bsky.feed.post&path=.facets%5B%5D.features%5Bapp.bsky.richtext.facet%23link%5D.uri`
         );
 
         if (!intentResult.ok) {
