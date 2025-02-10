@@ -9,7 +9,7 @@ interface Props {
   atUriBlur: string;
 }
 
-const Reaction: React.FC<Props> = ({ atUriPost,atUriBlur }) => {
+const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
   const [repostCount, setRepostCount] = useState<number | null>(null);
   const [quoteCount, setQuoteCount] = useState<number | null>(null);
   const [likeCount, setLikeCount] = useState<number | null>(null);
@@ -44,26 +44,26 @@ const Reaction: React.FC<Props> = ({ atUriPost,atUriBlur }) => {
     };
 
     fetchData();
-  }, [atUriPost,atUriBlur]);
+  }, [atUriPost, atUriBlur]);
 
   return (
-    <div className="flex items-center gap-8 mr-2 text-base text-gray-800">
-      {likeCount !== null && likeCount > 0 && (
-        <div className="flex items-center gap-0.5">
-          <BiHeart size={20}/>
-          <span>{likeCount}</span>
-        </div>
-      )}
-      {repostCount !== null && quoteCount != null && repostCount+quoteCount > 0 && (
-        <div className="flex items-center gap-0.5">
-          <BiRepost size={24} />
-          <span>{repostCount+quoteCount}</span>
-        </div>
-      )}
+    <div className="flex items-center gap-6 mr-2 text-base text-gray-800">
       {intent !== null && intent > 0 && (
         <div className="flex items-center gap-0.5">
-          <BiCommentCheck size={20}/>
+          <BiCommentCheck size={20} />
           <span>{intent}</span>
+        </div>
+      )}
+      {repostCount !== null && quoteCount != null && repostCount + quoteCount > 0 && (
+        <div className="flex items-center gap-0.5">
+          <BiRepost size={24} />
+          <span>{repostCount + quoteCount}</span>
+        </div>
+      )}
+      {likeCount !== null && likeCount > 0 && (
+        <div className="flex items-center gap-0.5">
+          <BiHeart size={20} />
+          <span>{likeCount}</span>
         </div>
       )}
     </div>
