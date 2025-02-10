@@ -87,7 +87,6 @@ const messages = {
     Menu_GoSite:"Go to Page",
     Profile_NotPublish: "The profile page is private.",
     Post_ViewReactions:"View Reactions",
-    Post_HideReactions:"Hide Reactions",
 
 }
 
