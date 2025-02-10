@@ -79,8 +79,6 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
               <span>{likeCount}</span>
             </div>
           )}
-          {intent == 0 && repostCount == 0 && quoteCount == 0 && likeCount == 0 &&
-            locale.Post_HideReactions}
         </>
       )}
     </div>
