@@ -13,3 +13,8 @@ npm run dev
 
 Please check [locales](https://github.com/usounds/Skyblur/tree/main/src/locales) directory.
 If necessary, please create a pull request that modifies this source. Adding new languages is also welcome.
+
+## Special Thanks
+
+phil, developer of [constellation](https://links.bsky.bad-example.com/).
+Skyblur retrieves Like, Repost, and Intent reactions from constellation.
