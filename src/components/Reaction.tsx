@@ -23,6 +23,17 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+
+        const intentResult = await fetch(
+          `https://links.bsky.bad-example.com/links?target=${encodeURIComponent(transformUrl(atUriBlur))}&collection=app.bsky.feed.post&path=.facets%5B%5D.features%5Bapp.bsky.richtext.facet%23link%5D.uri`
+        );
+
+        if (!intentResult.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const intentResultJson = await intentResult.json();
+        const intent = intentResultJson.total || 0
+
         const response = await fetch(
           `https://links.bsky.bad-example.com/links/all?target=${encodeURIComponent(atUriPost)}`
         );
@@ -34,15 +45,6 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
         setRepostCount(count);
         setLikeCount(data.links?.["app.bsky.feed.like"]?.[".subject.uri"]?.records || 0)
         setQuoteCount(data.links?.["app.bsky.feed.post"]?.[".embed.record.uri"]?.records || 0)
-        const intentResult = await fetch(
-          `https://links.bsky.bad-example.com/links?target=${encodeURIComponent(transformUrl(atUriBlur))}&collection=app.bsky.feed.post&path=.facets%5B%5D.features%5Bapp.bsky.richtext.facet%23link%5D.uri`
-        );
-
-        if (!intentResult.ok) {
-          throw new Error("Network response was not ok");
-        }
-        const intentResultJson = await intentResult.json();
-        const intent = intentResultJson.total || 0
         setIntent(intent)
       } catch (error) {
         console.error("Error fetching data:", error);
