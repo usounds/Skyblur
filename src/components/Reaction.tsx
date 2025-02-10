@@ -5,6 +5,7 @@ import { BiCommentCheck } from "react-icons/bi";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useViewerStore } from "@/state/Viewer";
+import BeatLoader from "react-spinners/BeatLoader";
 
 interface Props {
   atUriPost: string;
@@ -19,6 +20,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
   const isHideReactions = useViewerStore((state) => state.isHideReactions);
   const setIsHideReactions = useViewerStore((state) => state.setIsHideReactions);
   const locale = useLocaleStore((state) => state.localeData);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +48,9 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
         setLikeCount(data.links?.["app.bsky.feed.like"]?.[".subject.uri"]?.records || 0)
         setQuoteCount(data.links?.["app.bsky.feed.post"]?.[".embed.record.uri"]?.records || 0)
         setIntent(intent)
+
+        setIsLoading(false);
+
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -55,7 +60,9 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
   }, [atUriPost, atUriBlur]);
 
   return (
-    <div className="flex items-center gap-4 text-sm text-gray-600" onClick={() => setIsHideReactions(!isHideReactions)}>
+    <div className="flex items-center gap-3 text-sm text-gray-600" onClick={() => setIsHideReactions(!isHideReactions)}>
+
+      {isLoading && <BeatLoader size={12} color="#4B5563"/>}
 
       {isHideReactions ? (
         locale.Post_ViewReactions
