@@ -27,7 +27,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
       try {
 
         const intentResult = await fetch(
-          `https://links.bsky.bad-example.com/links?target=${transformUrl(atUriBlur)}&collection=app.bsky.feed.post&path=.facets%5B%5D.features%5Bapp.bsky.richtext.facet%23link%5D.uri`
+          `https://constellation.microcosm.blue/links?target=${transformUrl(atUriBlur)}&collection=app.bsky.feed.post&path=.facets%5B%5D.features%5Bapp.bsky.richtext.facet%23link%5D.uri`
         );
 
         if (!intentResult.ok) {
@@ -37,7 +37,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
         const intent = intentResultJson.total || 0
 
         const response = await fetch(
-          `https://links.bsky.bad-example.com/links/all?target=${encodeURIComponent(atUriPost)}`
+          `https://constellation.microcosm.blue/links/all?target=${encodeURIComponent(atUriPost)}`
         );
         if (!response.ok) {
           throw new Error("Network response was not ok");
