@@ -1,30 +1,58 @@
 
-import { DIDResponse, Service } from '@/types/types';
+import { DIDResponse, Service, VerificationMethod } from '@/types/types';
 import { Agent, AtpAgent } from '@atproto/api';
-import { Preference, SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
+import { Preference, SKYBLUR_PREFERENCE_COLLECTION, DIDDocument } from '@/types/types';
+import * as didJWT from 'did-jwt';
+import { getResolver } from "@/logic/DidPlcResolver"
+import { Resolver, ResolverRegistry, DIDResolver } from 'did-resolver'
+import { getResolver as getWebResolver } from 'web-did-resolver'
+
+const myResolver = getResolver()
+const web = getWebResolver()
+const resolver: ResolverRegistry = {
+    'plc': myResolver.DidPlcResolver as unknown as DIDResolver,
+    'web': web as unknown as DIDResolver,
+}
+const resolverInstance = new Resolver(resolver)
 
 export const fetchServiceEndpoint = async (did: string) => {
-    const encodedDid = encodeURIComponent(did); // URLエンコード
-    const didUrl = `https://dev.uniresolver.io/1.0/identifiers/${encodedDid}`;
-
     try {
-        const response = await fetch(didUrl);
-        if (!response.ok) {
-            throw new Error('Failed to fetch DID document');
+        const response = await fetchDiDDocument(did);
+        if (!response) {
+            throw new Error('Invalid DID document response');
         }
 
-        const data: DIDResponse = await response.json(); // レスポンスの全体を型定義
-        const didDocument = data.didDocument; // didDocument部分を取り出す
+        const didDocument = response as unknown as DIDDocument;
 
         // didDocument.serviceが存在するかチェック
         const service = didDocument.service?.find((s: Service) => s.id === '#atproto_pds');
 
         if (service && service.serviceEndpoint) {
-            console.log('Service Endpoint:', service.serviceEndpoint);
             return service.serviceEndpoint;
         } else {
             throw new Error('Service with id #atproto_pds not found or no service endpoint available');
         }
+    } catch (error) {
+        console.error('Error fetching service endpoint:', error);
+    }
+};
+
+export const fetchDiDDocument = async (did: string) => {
+    try {
+        const didDocument = await resolverInstance.resolve(did)
+        return didDocument
+    } catch (error) {
+        console.error('Error fetching service endpoint:', error);
+    }
+};
+
+export const verifyJWT = async (jwtToken: string, audience: string) => {
+    try {
+        const result = await didJWT.verifyJWT(jwtToken, {
+            resolver: resolverInstance,
+            audience: audience
+        })
+        return result
     } catch (error) {
         console.error('Error fetching service endpoint:', error);
     }

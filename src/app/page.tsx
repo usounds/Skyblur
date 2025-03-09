@@ -37,6 +37,17 @@ export default function Home() {
 
   };
 
+  const handleTest = async () => {
+    const init: RequestInit = {
+      method: 'GET',
+    }
+    const host = new URL(origin).host;
+    const response = await agent?.withProxy('skyblur', `did:web:${host}`).fetchHandler(
+      '/xrpc/uk.skyblur.post.test',
+      init
+    )
+  }
+
   return (
 
     <div className="">
@@ -97,7 +108,7 @@ export default function Home() {
                                 </div>
 
                                 {agent &&
-                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={window.localStorage.getItem('oauth.pdsUrl')||'https://bsky.social'}/>
+                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={window.localStorage.getItem('oauth.pdsUrl') || 'https://bsky.social'} />
                                 }
 
                               </div>
