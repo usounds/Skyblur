@@ -201,8 +201,6 @@ export const PostList: React.FC<PostListProps> = ({
     const handleDecrypt = async (item: typeof deleteList[number]) => {
         setIsDecrypting(true)
 
-        console.log(item)
-
         try {
 
             const init: RequestInit = {
@@ -214,13 +212,6 @@ export const PostList: React.FC<PostListProps> = ({
                     password: item.encryptKey
                 })
             }
-            const host = new URL(origin).host;
-            const response2 = await agent.withProxy('skyblur', `did:web:${host}`).fetchHandler(
-                '/xrpc/uk.skyblur.post.decryptByCid',
-                init
-            )
-
-            console.log(await response2.json)
 
             const response = await fetch("/xrpc/uk.skyblur.post.decryptByCid", {
                 method: "POST",
@@ -231,7 +222,7 @@ export const PostList: React.FC<PostListProps> = ({
                     pds: pds,
                     repo: did,
                     cid: item.blur.encryptBody?.ref.toString(),
-                    password: item.encryptKey
+                    //password: item.encryptKey
                 })
             });
 
@@ -255,7 +246,30 @@ export const PostList: React.FC<PostListProps> = ({
                     )
                 );
             } else {
-                throw new Error("Failed to decrypt")
+                if(response.status==403){
+                    setDeleteList((prevList) =>
+                        prevList.map((listItem) =>
+                            listItem === item
+                                ? {
+                                    ...listItem,
+                                    encryptMessage: locale.DeleteList_DecryptErrorMessage
+                                }
+                                : listItem
+                        )
+                    );
+                }else{
+                    const data = await response.json() as { error: string }
+                    setDeleteList((prevList) =>
+                        prevList.map((listItem) =>
+                            listItem === item
+                                ? {
+                                    ...listItem,
+                                    encryptMessage: data.error
+                                }
+                                : listItem
+                        )
+                    );
+                }
             }
         } catch (e) {
             setDeleteList((prevList) =>
@@ -263,12 +277,11 @@ export const PostList: React.FC<PostListProps> = ({
                     listItem === item
                         ? {
                             ...listItem,
-                            encryptMessage: locale.DeleteList_DecryptErrorMessage
+                            encryptMessage: 'Error:'+e
                         }
                         : listItem
                 )
             );
-            console.error(e)
         }
 
 
