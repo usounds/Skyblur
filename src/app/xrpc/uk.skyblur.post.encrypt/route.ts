@@ -2,6 +2,18 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from "next/server";
 import { deriveKey } from "@/logic/HandleEncrypt";
 import { verifyJWT } from "@/logic/HandleBluesky"
+import * as didJWT from 'did-jwt';
+import { getResolver } from "@/logic/DidPlcResolver"
+import { Resolver, ResolverRegistry, DIDResolver } from 'did-resolver'
+import { getResolver as getWebResolver } from 'web-did-resolver'
+
+const myResolver = getResolver()
+const web = getWebResolver()
+const resolver: ResolverRegistry = {
+  'plc': myResolver.DidPlcResolver as unknown as DIDResolver,
+  'web': web as unknown as DIDResolver,
+}
+const resolverInstance = new Resolver(resolver)
 
 export async function POST(req: NextRequest) {
   const authorization = req.headers.get('Authorization') || ''
@@ -9,7 +21,11 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get('host') || ''
 
   try {
-    const result = await verifyJWT(decodeJWT, `did:web:${origin}`)
+
+    const result = await didJWT.verifyJWT(decodeJWT, {
+      resolver: resolverInstance,
+      audience: `did:web:${origin}`
+    })
 
     if (!result || !result.verified) {
       const aaa = result?.verified
