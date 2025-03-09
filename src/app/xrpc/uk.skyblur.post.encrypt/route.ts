@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
     const result = await verifyJWT(decodeJWT, `did:web:${origin}`)
 
     if (!result || !result.verified) {
-      return NextResponse.json({ error: result }, { status: 400 });
+      const aaa = result?.verified || 'null'
+      return NextResponse.json({ error: `verified:${aaa} Host:${origin} JWT:${decodeJWT}` }, { status: 400 });
     }
   } catch (e) {
     return NextResponse.json({ error: e }, { status: 400 });
