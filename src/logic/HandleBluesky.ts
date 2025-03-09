@@ -1,7 +1,7 @@
 
 import { DIDResponse, Service } from '@/types/types';
 import { Agent, AtpAgent } from '@atproto/api';
-import { Preference, PREFERENCE_COLLECTION } from '@/types/types';
+import { Preference, SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
 
 export const fetchServiceEndpoint = async (did: string) => {
     const encodedDid = encodeURIComponent(did); // URLエンコード
@@ -48,7 +48,7 @@ export const transformUrl = (inputUrl: string): string => {
 export const getPreference = async (agent: Agent | AtpAgent, did: string): Promise<Preference> => {
     const preference = await agent.com.atproto.repo.getRecord({
         repo: did,
-        collection: PREFERENCE_COLLECTION,
+        collection: SKYBLUR_PREFERENCE_COLLECTION,
         rkey: 'self'
     });
 

@@ -28,12 +28,11 @@ const PostPage = () => {
     const q = searchParams.get('q');
     const [repo, setRepo] = useState<string>('')
     const [isMyPage, setIsMyPage] = useState<boolean>(false)
+    const [pdsUrl, setPdsUrl] = useState<string>('')
 
     useEffect(() => {
         if (did) {
             const fetchRecord = async () => {
-
-
 
                 try {
                     let repoLocal = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
@@ -42,7 +41,8 @@ const PostPage = () => {
                     const pdsAgent = new AtpAgent({
                         service: pdsUrl || ''
                     })
-    
+
+                    setPdsUrl(pdsUrl||'')
                     setRepo(repoLocal)
                     setIsLoading(true);
                     setErrorMessage('')
@@ -129,7 +129,7 @@ const PostPage = () => {
 
                                         {agent &&
                                             <div className="mx-auto max-w-screen-sm">
-                                                <PostList agent={agent} handleEdit={null} did={repo} />
+                                                <PostList agent={agent} handleEdit={null} did={repo} pds={pdsUrl}/>
                                             </div>
                                         }
 
