@@ -7,12 +7,12 @@ export async function POST(req: NextRequest) {
   const authorization = req.headers.get('Authorization') || ''
   const decodeJWT = authorization.replace('Bearer ', '').trim()
   const origin = req.headers.get('host') || ''
-  
+
   try {
     const result = await verifyJWT(decodeJWT, `did:web:${origin}`)
 
     if (!result || !result.verified) {
-      return NextResponse.json({ error: "Invalid Token" }, { status: 400 });
+      return NextResponse.json({ error: `Invalid Host:${origin} JWT:${decodeJWT}` }, { status: 400 });
     }
   } catch (e) {
     return NextResponse.json({ error: e }, { status: 400 });
