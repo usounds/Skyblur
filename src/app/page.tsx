@@ -9,7 +9,7 @@ import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { PostListItem, customTheme } from "@/types/types";
 import Image from 'next/image';
-import { Button, ThemeProvider, extendTheme, theme, Notifications, NotificationsContext } from 'reablocks';
+import { Button, Notifications, NotificationsContext, ThemeProvider, extendTheme, theme } from 'reablocks';
 import { useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
 

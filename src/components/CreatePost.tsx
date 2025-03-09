@@ -7,14 +7,13 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
-import { SKYBLUR_POST_COLLECTION, VISIBILITY_PUBLIC, VISIBILITY_PASSWORD, PostListItem, PostView } from "@/types/types";
+import { PostListItem, PostView, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { Button, IconButton, Toggle, useNotification, Input } from 'reablocks';
+import { Button, IconButton, Input, Toggle, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
-import twitterText from 'twitter-text';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
 type CreatePostProps = {
