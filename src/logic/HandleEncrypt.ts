@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { EncryptBody } from "@/types/types";
-const SALT = process.env.SALT || "salt";
+const SALT = process.env.SECRET_KEY || "salt";
 
 export async function deriveKey(password: string): Promise<CryptoKey> {
     const encoder = new TextEncoder();
@@ -25,6 +25,11 @@ export async function deriveKey(password: string): Promise<CryptoKey> {
         ["encrypt", "decrypt"]
     );
 }
+
+export function containsControlCharacters(str: string): boolean {
+    const controlCharRegex = /[\x00-\x1F\x7F]/;
+    return controlCharRegex.test(str);
+  }
 
 export async function decryption(pds: string, repo: string, cid: string, password: string): Promise<NextResponse> {
     const url = `${pds}/xrpc/com.atproto.sync.getBlob?did=${repo}&cid=${cid}`;

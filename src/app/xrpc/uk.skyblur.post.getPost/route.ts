@@ -5,8 +5,6 @@ import { PostData, SKYBLUR_POST_COLLECTION } from '@/types/types';
 import { AtpAgent } from '@atproto/api';
 import { NextRequest, NextResponse } from "next/server";
 
-const SALT = process.env.SALT || "salt";
-
 export async function POST(req: NextRequest) {
     try {
         // リクエストボディから値を取得
