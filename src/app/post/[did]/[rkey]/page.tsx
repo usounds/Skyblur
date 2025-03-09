@@ -62,8 +62,6 @@ const PostPage = () => {
 
           setPdsUrl(pdsUrl || '')
 
-          console.log(pdsUrl)
-
           try {
             // getProfileとgetRecordを並行して呼び出す
             const [userProfileResponse, postResponse] = await Promise.all([
