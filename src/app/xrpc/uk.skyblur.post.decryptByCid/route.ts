@@ -1,6 +1,6 @@
 export const runtime = 'edge';
 import { NextRequest, NextResponse } from "next/server";
-import { deriveKey,decryption } from "@/logic/HandleEncrypt";
+import { decryption } from "@/logic/HandleEncrypt";
 
 export async function POST(req: NextRequest) {
     try {

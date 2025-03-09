@@ -1,21 +1,19 @@
 import { DeleteModal } from "@/components/DeleteModal";
 import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
+import Reaction from "@/components/Reaction";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { SKYBLUR_POST_COLLECTION, VISIBILITY_PUBLIC, VISIBILITY_PASSWORD, PostData, PostListItem } from "@/types/types";
+import { PostData, PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import { Agent, AtpAgent } from '@atproto/api';
 import { Button, Divider, IconButton, Input, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
+import { CiLock, CiUnlock } from "react-icons/ci";
 import { FiEdit } from "react-icons/fi";
+import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
-import { IoMdEye } from "react-icons/io";
-import { IoMdEyeOff } from "react-icons/io";
-import Reaction from "@/components/Reaction";
-import { CiLock } from "react-icons/ci";
-import { CiUnlock } from "react-icons/ci";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
