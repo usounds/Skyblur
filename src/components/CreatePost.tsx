@@ -51,6 +51,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [isEncrypt, setIsEncrypt] = useState<boolean>(false)
     const encryptKey = useTempPostStore((state) => state.encryptKey) || '';
     const setEncryptKey = useTempPostStore((state) => state.setEncryptKey);
+    const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
     const { notifySuccess, notifyError } = useNotification();
 
 
@@ -508,6 +509,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 }
 
                 const host = new URL(origin).host;
+
+                setButtonName(locale.CreatePost_EncryptInProgress)
                 const response = await agent.withProxy('skyblur', `did:web:${host}`).fetchHandler(
                     '/xrpc/uk.skyblur.post.encrypt',
                     init
@@ -521,6 +524,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     const arrayBuffer = await blob.arrayBuffer();
                     const uint8Array = new Uint8Array(arrayBuffer);
 
+                    setButtonName(locale.CreatePost_BlobUploadInProgress)
                     const ret = await agent?.com.atproto.repo.uploadBlob(uint8Array);
 
                     postObject = {
@@ -563,6 +567,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             }
 
+            if (isEncrypt) setButtonName('(3/3)' + locale.CreatePost_PostInProgress)
+            else setButtonName(locale.CreatePost_PostInProgress)
+
             const ret = await agent.com.atproto.repo.applyWrites({
                 repo: did,
                 writes: writes
@@ -587,13 +594,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             notifyError("Error:" + e)
 
         }
+        handleInitButton()
         setIsLoading(false)
     }
 
-
     useEffect(() => {
         if (prevBlur) {
-            console.log(prevBlur)
+            handleInitButton()
             setPostText(prevBlur.blur.text, false)
             setAddText(prevBlur.blur.additional)
             if (prevBlur.encryptKey) {
@@ -607,6 +614,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, prevBlur]); // Make sure to use the correct second dependency
+
+    const handleInitButton = () => {
+        if (prevBlur)
+            setButtonName(locale.CreatePost_UpdateButton)
+        else
+            setButtonName(locale.CreatePost_CreateButton)
+    };
 
 
     const handleCheckboxChange = (isChecked: boolean) => {
@@ -629,7 +643,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     };
 
     const handleTempApply = async () => {
-        console.log('handleTempApply')
         setPostText(tempText, tempSimpleMode);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
@@ -787,8 +800,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                             {isEncrypt &&
                                 <div className=''>
-                                    <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PasswordInputDescription}</div>
-                                    <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} max={20} />
+                                    <div className="block text-sm text-gray-400 my-1">{locale.CreatePost_PasswordInputDescription}</div>
+                                    <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} max={20}  placeholder="test"/>
                                     {encStr}
                                 </div>
 
@@ -808,11 +821,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                         onClick={handleCrearePost}
                                         disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0)}
                                     >
-                                        {prevBlur ? (
-                                            <>{locale.CreatePost_UpdateButton}</>
-                                        ) : (
-                                            <>{locale.CreatePost_CreateButton}</>
-                                        )}
+                                        {buttonName}
                                     </Button>
                                 )}
                         </div>
