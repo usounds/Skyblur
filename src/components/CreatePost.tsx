@@ -541,7 +541,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 } else {
                     console.error("❌ Encryption Error:", data.error);
-                    notifyError("Error:" + data.error)
+                    notifyError(data.error)
                     setIsLoading(false)
                     return
                 }

@@ -23,6 +23,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ encryptedText });
   } catch (error) {
-    return NextResponse.json({ error: "Encryption failed" }, { status: 500 });
+    return NextResponse.json({ error: "Encryption failed. "+error }, { status: 500 });
   }
 }
