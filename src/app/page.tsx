@@ -37,6 +37,24 @@ export default function Home() {
 
   };
 
+  const handleTest = async () => {
+    const init: RequestInit = {
+      method: 'POST',
+      body: JSON.stringify({
+        pds: window.localStorage.getItem('oauth.pdsUrl')||'https://bsky.social', 
+        repo: 'aaa',
+        text : 'test',
+      })
+  }
+    const host = new URL(origin).host;
+    const response = await agent?.withProxy('skyblur', `did:web:${host}`).fetchHandler(
+      '/xrpc/uk.skyblur.post.create',
+      init
+  )
+
+  };
+
+
   return (
 
     <div className="">
@@ -49,7 +67,6 @@ export default function Home() {
           <Notifications>
             <NotificationsContext.Consumer>
               {() => <>
-
                 <div className="mx-auto max-w-screen-md ">
 
                   {did === "" &&
@@ -98,7 +115,7 @@ export default function Home() {
                                 </div>
 
                                 {agent &&
-                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid}/>
+                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={window.localStorage.getItem('oauth.pdsUrl')||'https://bsky.social'}/>
                                 }
 
                               </div>

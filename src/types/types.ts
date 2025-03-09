@@ -22,12 +22,27 @@ export type Service = {
     serviceEndpoint: string;
 }
 
+export type EncryptBody = {
+    text: string;
+    additional: string;
+}
+
+
 export type PostData = {
     text: string;
     additional: string;
     $type: string;
     createdAt: string;
     uri: string;
+    encryptBody?: {
+        $type: string;
+        ref: {
+            $link: string;
+        };
+        mimeType: string;
+        size: number;
+    };
+    visibility?: string;
 }
 
 export type Preference = {
@@ -37,9 +52,11 @@ export type Preference = {
     }
 }
 
-export const POST_COLLECTION = 'uk.skyblur.post';
-export const PREFERENCE_COLLECTION = 'uk.skyblur.preference';
+export const SKYBLUR_POST_COLLECTION = 'uk.skyblur.post';
+export const SKYBLUR_PREFERENCE_COLLECTION = 'uk.skyblur.preference';
 export const MODAL_TIME = 600;
+export const VISIBILITY_PUBLIC = 'public' as string;
+export const VISIBILITY_PASSWORD = 'password' as string;
 
 export type PostListItem = {
     blur: PostData;
@@ -48,9 +65,10 @@ export type PostListItem = {
     blurURL?: string;
     modal:boolean;
     isDetailDisplay:boolean;
+    isDecrypt:boolean;
+    encryptKey?: string;
+    encryptMessage?: string;
 }
-
-
 
 export interface PostView {
     uri: string

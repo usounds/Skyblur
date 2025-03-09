@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 4500",
+    "lexGen": "lex gen-ts-obj ./lexicon/*/*.json ./src/skyblurApi",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,12 +13,13 @@
     "@atproto/api": "^0.13.32",
     "@atproto/common-web": "^0.3.2",
     "@atproto/oauth-client-browser": "^0.3.8",
+    "crypto-js": "^4.2.0",
     "dompurify": "^3.2.4",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
-    "next": "^14.2.23",
+    "next": "^14.2.24",
     "preline": "^2.7.0",
-    "reablocks": "^8.7.5",
+    "reablocks": "^8.7.11",
     "react": "^18.3.1",
     "react-content-loader": "^7.0.2",
     "react-dom": "^18.3.1",
@@ -27,6 +29,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@atproto/lex-cli": "^0.6.2",
     "@types/node": "^20.17.16",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

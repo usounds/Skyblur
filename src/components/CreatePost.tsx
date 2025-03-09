@@ -7,12 +7,12 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
-import { POST_COLLECTION, PostListItem, PostView } from "@/types/types";
+import { SKYBLUR_POST_COLLECTION, VISIBILITY_PUBLIC, VISIBILITY_PASSWORD, PostListItem, PostView } from "@/types/types";
 import { AppBskyFeedPost, RichText } from '@atproto/api';
 import { TID } from '@atproto/common-web';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { Button, IconButton, Toggle, useNotification } from 'reablocks';
+import { Button, IconButton, Toggle, useNotification, Input } from 'reablocks';
 import { useEffect, useState } from "react";
 import twitterText from 'twitter-text';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -49,7 +49,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [replyPost, setReplyPost] = useState<PostView | undefined>()
     const tempReply = useTempPostStore((state) => state.reply);
     const setTempReply = useTempPostStore((state) => state.setReply);
+    const [isEncrypt, setIsEncrypt] = useState<boolean>(false)
+    const encryptKey = useTempPostStore((state) => state.encryptKey) || '';
+    const setEncryptKey = useTempPostStore((state) => state.setEncryptKey);
     const { notifySuccess, notifyError } = useNotification();
+
+
+    const [encStr, setEngStr] = useState("");
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -185,7 +191,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
         setIsIncludeFullBranket(containsFullWidthBrackets(text))
 
-
         if (validateBrackets(text)) {
             setWarning(locale.CreatePost_ErrorDuplicateBranket)
             return
@@ -235,11 +240,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setAppUrl('')
 
         try {
-
-            let localPrevPostAturi
-
-
             let rkey = TID.nextStr()
+
             if (prevBlur && prevBlur.blurATUri) {
                 const regex = /\/([^/]+)$/;
                 const match = prevBlur.blurATUri.match(regex);
@@ -247,13 +249,24 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     rkey = match[1];
                 }
 
-                localPrevPostAturi = prevBlur.blur.uri
             }
+
+            let localPrevPostAturi = `at://${did}/app.bsky.feed.post/${rkey}`
 
             const url = '/post/' + did + "/" + rkey
             const tempUrl = origin + url
-            const blurUri = `at://${did}/${POST_COLLECTION}/${rkey}`
+            const blurUri = `at://${did}/${SKYBLUR_POST_COLLECTION}/${rkey}`
+
+            //createRecord用
+            const writes = [];
+
+            //参照範囲
+            let visibility = VISIBILITY_PUBLIC
+            if (isEncrypt) visibility = VISIBILITY_PASSWORD
+
+
             if (!prevBlur) {
+
                 //URLの判定
                 // titleからURLを抽出
                 const pattern =
@@ -276,15 +289,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     }
                 }
 
-
                 //投稿
                 const postTextBlurLocal: string = postTextBlur;
                 const rt = new RichText({ text: postTextBlurLocal });
                 await rt.detectFacets(agent);
 
-
                 const langs = [detectLanguage(postText)]
 
+                /*
                 const postObj: Partial<AppBskyFeedPost.Record> &
                     Omit<AppBskyFeedPost.Record, 'createdAt'> = {
                     $type: 'app.bsky.feed.post',
@@ -292,8 +304,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     facets: rt.facets,
                     langs: langs,
                     via: 'Skyblur',
-                    "uk.skyblur.post.uri": blurUri
+                    "uk.skyblur.post.uri": blurUri,
+                    "uk.skyblur.post.encrypt": isEncrypt
                 };
+                */
+
+                let appBskyFeedPost: Partial<AppBskyFeedPost.Record> = {
+                    text: rt.text,
+                    facets: rt.facets,
+                    langs: langs,
+                    via: 'Skyblur',
+                    "uk.skyblur.post.uri": blurUri,
+                    "uk.skyblur.post.visibility": visibility,
+                    createdAt: new Date().toISOString()
+                };
+
+                console.log(rt.facets)
 
                 if (replyPost) {
                     const reply = {
@@ -307,12 +333,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             uri: replyPost.uri || ''
                         }
                     }
-                    postObj.reply = reply
+                    appBskyFeedPost.reply = reply
 
                 }
 
-                postObj.facets = new Array(0);
+                //postObj.facets = new Array(0);
 
+
+                /*
                 // TextEncoder を使用して UTF-8 バイト配列に変換
                 const encoder = new TextEncoder();
                 const postTextBytes = encoder.encode(postTextBlurLocal);
@@ -411,10 +439,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     );
                 }
 
+                */
+
                 const localDesc = locale.CreatePost_OGPDescription
 
                 // OGP設定
-                postObj.embed = {
+                appBskyFeedPost.embed = {
                     $type: 'app.bsky.embed.external',
                     external: {
                         uri: tempUrl,
@@ -425,8 +455,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 //URLをリンク化
                 Object.keys(urlArray).forEach(function (key) {
-                    if (typeof postObj.facets !== "undefined") {
-                        postObj.facets.push(
+                    if (typeof appBskyFeedPost.facets !== "undefined") {
+                        appBskyFeedPost.facets.push(
                             {
                                 index: {
                                     "byteStart": urlArray[key],
@@ -443,42 +473,118 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     }
                 });
 
-                const result = await agent.post(postObj);
-
-                localPrevPostAturi = result.uri
-
+                writes.push({
+                    $type: 'com.atproto.repo.applyWrites#create',
+                    collection: 'app.bsky.feed.post',
+                    rkey: rkey,
+                    value: appBskyFeedPost,
+                })
 
             }
 
-            const postObject = {
-                repo: did,
-                collection: POST_COLLECTION,
-                rkey: rkey,
-                record: {
+            let postObject
+            let applyKey
+
+            if (prevBlur) {
+                applyKey = 'com.atproto.repo.applyWrites#update'
+            } else {
+                applyKey = 'com.atproto.repo.applyWrites#create'
+
+            }
+
+            if (isEncrypt) {
+
+                let encBody = {
+                    text: postText,
+                    additional: addText
+                }
+
+                const init: RequestInit = {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        body: JSON.stringify(encBody),
+                        password: encryptKey
+                    })
+                }
+
+                const host = new URL(origin).host;
+                const response = await agent.withProxy('skyblur', `did:web:${host}`).fetchHandler(
+                    '/xrpc/uk.skyblur.post.encrypt',
+                    init
+                )
+
+                const data = await response.json();
+                if (response.ok) {
+                    const blob = new Blob([data.encryptedText], { type: "text/plain" });
+
+                    // BlobをUint8Arrayに変換
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+
+                    const ret = await agent?.com.atproto.repo.uploadBlob(uint8Array);
+
+                    postObject = {
+                        uri: localPrevPostAturi,
+                        text: postTextBlur,
+                        additional: '',
+                        createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
+                        encryptBody: ret.data.blob,
+                        visibility: visibility,
+                    }
+
+                    writes.push({
+                        $type: applyKey,
+                        collection: SKYBLUR_POST_COLLECTION,
+                        rkey: rkey,
+                        value: postObject,
+                    })
+
+                } else {
+                    console.error("❌ Encryption Error:", data.error);
+                    notifyError("Error:" + data.error)
+                    setIsLoading(false)
+                    return
+                }
+            } else {
+                postObject = {
                     uri: localPrevPostAturi,
                     text: postTextForRecord,
                     additional: addText,
                     createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
-                },
+                    visibility: visibility,
+                }
+
+                writes.push({
+                    $type: applyKey,
+                    collection: SKYBLUR_POST_COLLECTION,
+                    rkey: rkey,
+                    value: postObject,
+                })
+
             }
 
-            const ret = await agent.com.atproto.repo.putRecord(postObject)
+            const ret = await agent.com.atproto.repo.applyWrites({
+                repo: did,
+                writes: writes
+            })
+
             if (ret.success) {
                 const convertedUri = "completed";
+                notifySuccess(locale.CreatePost_Complete)
                 setAppUrl(convertedUri)
                 setPostTest('')
                 setAddText('')
-                notifySuccess(locale.CreatePost_Complete)
                 setMode('menu')
+                setEncryptKey('')
                 if (!prevBlur) handleTempDelete()
 
             } else {
                 console.error(ret)
-                notifyError("Error:"+ret)
+                notifyError("Error:" + ret)
 
             }
         } catch (e) {
-            notifyError("Error:"+e)
+            notifyError("Error:" + e)
 
         }
         setIsLoading(false)
@@ -486,11 +592,15 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
     useEffect(() => {
-
-
         if (prevBlur) {
+            console.log(prevBlur)
             setPostText(prevBlur.blur.text, false)
             setAddText(prevBlur.blur.additional)
+            if (prevBlur.encryptKey) {
+                setEncryptKey(prevBlur.encryptKey)
+                setIsEncrypt(true)
+            }
+
         } else if (tempText || tempAdditional || tempReply) {
             setIsTempRestore(true)
 
@@ -515,6 +625,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setTempAdditional('')
         setTempSimpleMode(false)
         setTempReply('')
+        setEncryptKey('')
     };
 
     const handleTempApply = async () => {
@@ -530,6 +641,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setIsReply(true)
             setReplyPost(result.data.posts[0] as PostView)
         }
+        if (encryptKey) setIsEncrypt(true)
     };
 
     const handleModalClose = () => {
@@ -661,6 +773,29 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             </div>
                         }
 
+                        <div className='mb-6 '>
+                            <div className='mt-4 mb-2'>{locale.CreatePost_PasswordTitle}</div>
+                            <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PasswordDescription}</div>
+                            <p className="flex items-center mt-2">
+                                <Toggle
+                                    checked={isEncrypt}
+                                    onChange={setIsEncrypt} // Boolean を渡します
+                                    disabled={prevBlur ? true : false}
+                                />
+                                <span className="ml-2">{locale.CreatePost_PasswordRadio}</span>
+                            </p>
+
+                            {isEncrypt &&
+                                <div className=''>
+                                    <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PasswordInputDescription}</div>
+                                    <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} max={20} />
+                                    {encStr}
+                                </div>
+
+
+                            }
+
+                        </div>
 
                         <div className="flex justify-center gap-4 mb-8 mt-2">
                             {!warning && (
@@ -671,7 +806,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                         size="large"
                                         className="text-white text-base font-normal"
                                         onClick={handleCrearePost}
-                                        disabled={isLoading || postText.length === 0}
+                                        disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0)}
                                     >
                                         {prevBlur ? (
                                             <>{locale.CreatePost_UpdateButton}</>
