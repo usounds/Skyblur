@@ -18,35 +18,46 @@ export async function POST(req: NextRequest) {
         }
 
         // `at://` を削除して `/` で分割
-        const cleanedUri = uri.replace("at://", ""); 
+        const cleanedUri = uri.replace("at://", "");
         const parts = cleanedUri.split("/");
 
         if (parts.length < 3) {
             return NextResponse.json({ error: "Invalid uri format" }, { status: 400 });
         }
 
-        const repo = parts[0]; 
-        const collection = parts[1]; 
-        const rkey = parts[2];  
+        const repo = parts[0];
+        const collection = parts[1];
+        const rkey = parts[2];
 
         if (collection !== SKYBLUR_POST_COLLECTION) {
             return NextResponse.json({ error: 'Collection should be \'uk.skyblur.post\'' }, { status: 400 });
         }
 
-        console.log(repo)
-
         // PDSを取得
-        const pdsUrl = await fetchServiceEndpoint(repo) || '';
+        let pdsUrl
+        try {
+            pdsUrl = await fetchServiceEndpoint(repo) || '';
+            if(!pdsUrl) throw new Error('Failed to get record')
+        } catch (e) {
+            return NextResponse.json({ error: `Cannot detect did[${repo}]'s pds.` }, { status: 404 });
+        }
 
         const pdsAgent = new AtpAgent({
             service: pdsUrl || ''
         })
 
-        const skyblurPost = await pdsAgent.com.atproto.repo.getRecord({
-            repo: repo,
-            collection: SKYBLUR_POST_COLLECTION,
-            rkey: rkey,
-        })
+        let skyblurPost
+
+        try {
+            skyblurPost = await pdsAgent.com.atproto.repo.getRecord({
+                repo: repo,
+                collection: SKYBLUR_POST_COLLECTION,
+                rkey: rkey,
+            })
+            if(!skyblurPost.success) throw new Error('Failed to get record')
+        } catch (e) {
+            return NextResponse.json({ error: `Cannot get record from pds[${pdsUrl}] did[${repo}] collection[${SKYBLUR_POST_COLLECTION}] rkey[${rkey}].` }, { status: 404 });
+        }
 
         const skyblurPostObj = skyblurPost.data.value as PostData
 
