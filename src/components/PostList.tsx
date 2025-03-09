@@ -197,6 +197,19 @@ export const PostList: React.FC<PostListProps> = ({
     };
 
     const handleDecrypt = async (item: typeof deleteList[number]) => {
+        if(!item.encryptKey){
+            setDeleteList((prevList) =>
+                prevList.map((listItem) =>
+                    listItem === item
+                        ? {
+                            ...listItem,
+                            encryptMessage: locale.DeleteList_DecryptRequired
+                        }
+                        : listItem
+                )
+            );
+            return
+        }
         setIsDecrypting(true)
 
         try {
@@ -352,12 +365,12 @@ export const PostList: React.FC<PostListProps> = ({
                                 <>
                                     <div className="block text-sm text-gray-400 mt-1">{locale.DeleteList_EncryptDescription}</div>
                                     <div className="flex flex-row items-center justify-center m-2"> {/* Flexbox with centered alignment */}
-                                        <Input value={item.encryptKey} size="medium"
+                                        <Input value={item.encryptKey}  className='h-6'
                                             onValueChange={(value) => setEncryptKey(value, item)} />
                                         <Button
                                             color="primary"
                                             size="medium"
-                                            className="text-white mx-2 font-normal"
+                                            className="text-white mx-2 h-9 font-normal"
                                             onClick={() => handleDecrypt(item)}
                                             disabled={isDecrypting}
                                         >

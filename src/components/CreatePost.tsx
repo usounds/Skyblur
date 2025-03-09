@@ -440,15 +440,16 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 */
 
-                const localDesc = locale.CreatePost_OGPDescription
-
                 // OGP設定
+                let ogpDescription = locale.CreatePost_OGPDescription;
+                if (isEncrypt) ogpDescription = ogpDescription + locale.CreatePost_OGPDescriptionPassword;
+
                 appBskyFeedPost.embed = {
                     $type: 'app.bsky.embed.external',
                     external: {
                         uri: tempUrl,
                         title: locale.CreatePost_OGPTitle,
-                        description: localDesc,
+                        description: ogpDescription,
                     },
                 };
 
