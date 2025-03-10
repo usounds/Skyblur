@@ -11,9 +11,15 @@ export async function GET(req: Request) {
     "id": `did:web:${host}`,
     "service": [
       {
-        "id": "#skyblur",
-        "type": "SkyblurAPIService",
+        "id": "#skyblur_appview",
+        "type": "SkyblurAppView",
         "serviceEndpoint": `https://${host}`
+      },
+
+      {
+        "id": "#skyblur_api",
+        "type": "SkyblurAPI",
+        "serviceEndpoint": `https://api.skyblur.uk`
       }
     ]
   };

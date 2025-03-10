@@ -224,7 +224,7 @@ export const PostList: React.FC<PostListProps> = ({
                 })
             }
 
-            const response = await fetch("/xrpc/uk.skyblur.post.decryptByCid", {
+            const response = await fetch("https://api.skyblur.uk/xrpc/uk.skyblur.post.decryptByCid", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -233,15 +233,16 @@ export const PostList: React.FC<PostListProps> = ({
                     pds: pds,
                     repo: did,
                     cid: item.blur.encryptBody?.ref.toString(),
-                    password: item.encryptKey
+                    password: item.encryptKey,
+                    salt: item.blur.encryptSalt
                 })
             });
 
             if (response.ok) {
-                const data = await response.json() as { text: string, additional: string }
+                const data = await response.json();
                 setDeleteList((prevList) =>
                     prevList.map((listItem) =>
-                        listItem === item
+                        listItem.blurATUri === item.blurATUri 
                             ? {
                                 ...listItem,
                                 blur: {
@@ -256,6 +257,7 @@ export const PostList: React.FC<PostListProps> = ({
                             : listItem
                     )
                 );
+                
             } else {
                 if(response.status==403){
                     setDeleteList((prevList) =>
