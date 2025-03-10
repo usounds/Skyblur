@@ -50,6 +50,7 @@ export type PostData = {
         mimeType: string;
         size: number;
     };
+    encryptSalt?: string;
     visibility?: string;
 }
 
@@ -174,6 +175,9 @@ export const customTheme: PartialReablocksTheme = {
                 variants: {
                     success: {
                         base: "mx-4 bg-white border border-success"
+                    },
+                    error: {
+                        base: "mx-4 bg-white border border-error"
                     }
                 }
             }

@@ -511,14 +511,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 const host = new URL(origin).host;
 
                 setButtonName(locale.CreatePost_EncryptInProgress)
-                const response = await agent.withProxy('skyblur', `did:web:${host}`).fetchHandler(
+                const response = await agent.withProxy('skyblur_api', `did:web:api.skyblur.uk`).fetchHandler(
                     '/xrpc/uk.skyblur.post.encrypt',
                     init
                 )
 
-                const data = await response.json();
+                const data = await response.json() 
                 if (response.ok) {
-                    const blob = new Blob([data.encryptedText], { type: "text/plain" });
+                    const blob = new Blob([data.body], { type: "text/plain" });
 
                     // BlobをUint8Arrayに変換
                     const arrayBuffer = await blob.arrayBuffer();
@@ -533,6 +533,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         additional: '',
                         createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
                         encryptBody: ret.data.blob,
+                        encryptSalt: data.salt,
                         visibility: visibility,
                     }
 
@@ -544,8 +545,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     })
 
                 } else {
-                    console.error("❌ Encryption Error:", data.error);
-                    notifyError(data.error)
+                    console.error("❌ Encryption Error:", data.message);
+                    handleInitButton()
+                    notifyError(data.message)
                     setIsLoading(false)
                     return
                 }
@@ -587,10 +589,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             } else {
                 console.error(ret)
+                handleInitButton()
                 notifyError("Error:" + ret)
 
             }
         } catch (e) {
+            handleInitButton()
             notifyError("Error:" + e)
 
         }
