@@ -48,6 +48,7 @@ export const fetchDiDDocument = async (did: string) => {
 
 export const verifyJWT = async (jwtToken: string, audience: string) => {
     try {
+        console.log(didJWT.decodeJWT(jwtToken))
         const result = await didJWT.verifyJWT(jwtToken, {
             resolver: resolverInstance,
             audience: audience
