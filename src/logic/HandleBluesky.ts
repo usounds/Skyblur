@@ -2,7 +2,6 @@
 import { DIDResponse, Service, VerificationMethod } from '@/types/types';
 import { Agent, AtpAgent } from '@atproto/api';
 import { Preference, SKYBLUR_PREFERENCE_COLLECTION, DIDDocument } from '@/types/types';
-import * as didJWT from 'did-jwt';
 import { getResolver } from "@/logic/DidPlcResolver"
 import { Resolver, ResolverRegistry, DIDResolver } from 'did-resolver'
 import { getResolver as getWebResolver } from 'web-did-resolver'
@@ -45,20 +44,6 @@ export const fetchDiDDocument = async (did: string) => {
         console.error('Error fetching service endpoint:', error);
     }
 };
-
-export const verifyJWT = async (jwtToken: string, audience: string) => {
-    try {
-        console.log(didJWT.decodeJWT(jwtToken))
-        const result = await didJWT.verifyJWT(jwtToken, {
-            resolver: resolverInstance,
-            audience: audience
-        })
-        return result
-    } catch (error) {
-        console.error('Error fetching service endpoint:', error);
-    }
-};
-
 export const transformUrl = (inputUrl: string): string => {
 
     const parts = inputUrl.split('/');

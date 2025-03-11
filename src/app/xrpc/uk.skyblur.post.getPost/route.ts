@@ -4,13 +4,12 @@ import { decryption } from "@/logic/HandleEncrypt";
 import { PostData, SKYBLUR_POST_COLLECTION } from '@/types/types';
 import { AtpAgent } from '@atproto/api';
 import { NextRequest, NextResponse } from "next/server";
-import { verifyJWT } from "@/logic/HandleBluesky"
-
 export async function POST(req: NextRequest) {
     const authorization = req.headers.get('Authorization') || ''
     const decodeJWT = authorization.replace('Bearer ', '').trim()
     const host = new URL(origin).host;
 
+    /*
     try {
         const result = await verifyJWT(decodeJWT, `did:web:${host}`)
 
@@ -21,6 +20,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: e }, { status: 400 });
 
     }
+        */
 
     try {
         // リクエストボディから値を取得
