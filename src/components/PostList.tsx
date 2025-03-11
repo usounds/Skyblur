@@ -234,7 +234,6 @@ export const PostList: React.FC<PostListProps> = ({
                     repo: did,
                     cid: item.blur.encryptBody?.ref.toString(),
                     password: item.encryptKey,
-                    salt: item.blur.encryptSalt
                 })
             });
 

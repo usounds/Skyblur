@@ -34,7 +34,6 @@ const PostPage = () => {
   const agent = useAtpAgentStore((state) => state.agent);
   const [encryptKey, setEncryptKey] = useState("");
   const [encryptCid, setEncryptCid] = useState('')
-  const [encryptSalt, setEncryptSalt] = useState('')
   const [isDecrypt, setIsDecrypt] = useState<boolean>(false)
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
   const [pdsUrl, setPdsUrl] = useState("");
@@ -90,7 +89,6 @@ const PostPage = () => {
             setPostAtUri(postData.uri)
 
             if (postData.encryptBody) setEncryptCid(postData.encryptBody.ref.toString())
-            if (postData.encryptSalt) setEncryptSalt(postData.encryptSalt)
 
             setIsLoading(false); // ローディング状態を終了
 
@@ -136,7 +134,6 @@ const PostPage = () => {
           repo: did,
           cid: encryptCid,
           password: encryptKey,
-          salt: encryptSalt
         })
       });
 

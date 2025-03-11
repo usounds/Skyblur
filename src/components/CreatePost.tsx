@@ -533,7 +533,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         additional: '',
                         createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
                         encryptBody: ret.data.blob,
-                        encryptSalt: data.salt,
                         visibility: visibility,
                     }
 
