@@ -50,7 +50,6 @@ export type PostData = {
         mimeType: string;
         size: number;
     };
-    encryptSalt?: string;
     visibility?: string;
 }
 
