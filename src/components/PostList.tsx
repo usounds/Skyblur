@@ -270,13 +270,13 @@ export const PostList: React.FC<PostListProps> = ({
                         )
                     );
                 }else{
-                    const data = await response.json() as { error: string }
+                    const data = await response.json() as { message: string }
                     setDeleteList((prevList) =>
                         prevList.map((listItem) =>
                             listItem === item
                                 ? {
                                     ...listItem,
-                                    encryptMessage: data.error
+                                    encryptMessage: data.message
                                 }
                                 : listItem
                         )
