@@ -137,24 +137,27 @@ export const PostList: React.FC<PostListProps> = ({
 
         throw new Error("Invalid URL format");
     };
-
-    const deleteRecord = async (aturi: string) => {
-        if (!agent) {
-            console.error("未ログインです")
-            return
-        }
-
-        const param = convertAtUrlToObject(aturi)
-        await agent.com.atproto.repo.deleteRecord(param)
-
-    }
-
     // 投稿を削除する関数
     const handleDeleteItem = async () => {
         try {
-            // 非同期操作を待つ
-            await deleteRecord(selectedItem?.blur.uri || '')
-            await deleteRecord(selectedItem?.blurATUri || '')
+            const writes = [];
+
+            writes.push({
+                $type: 'com.atproto.repo.applyWrites#delete',
+                collection: 'uk.skyblur.post',
+                rkey: selectedItem?.blurATUri.split('/').pop() || '',
+            })
+
+            writes.push({
+                $type: 'com.atproto.repo.applyWrites#delete',
+                collection: 'app.bsky.feed.post',
+                rkey: selectedItem?.blur.uri.split('/').pop() || '',
+            })
+
+            const ret = await agent.com.atproto.repo.applyWrites({
+                repo: did||'',
+                writes: writes
+            })
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
