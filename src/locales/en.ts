@@ -40,7 +40,7 @@ const messages = {
     CreatePost_Lang: "en",
     CreatePost_OGPTitle: "Skyblur",
     CreatePost_OGPDescription: "Refer to the unblurred text.",
-    CreatePost_OGPDescriptionPassword: " [A password is required to view this post]",
+    CreatePost_OGPDescriptionPassword: " [A password is required to view this posts]",
     CreatePost_Success: "Post is successed.",
     CreatePost_LinkToBsky: "View in Bluesky",
     CreatePost_AddBrackets: "Enclose the selected text with []",
