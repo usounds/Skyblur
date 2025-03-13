@@ -816,7 +816,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     <Button
                                         color="primary"
                                         size="large"
-                                        className={`text-white text-base font-normal ${prevBlur ? 'w-[300px]' : 'w-[200px]'}`}
+                                        className={`text-white text-base font-normal ${prevBlur ? 'w-[300px]' : 'w-[230px]'}`}
                                         onClick={handleCrearePost}
                                         disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0)}
                                     >
