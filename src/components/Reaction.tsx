@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
-import { BiRepost } from "react-icons/bi";
-import { BiHeart } from "react-icons/bi";
-import { BiCommentCheck } from "react-icons/bi";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useViewerStore } from "@/state/Viewer";
+import { useEffect, useState } from "react";
+import { BiCommentCheck, BiHeart, BiRepost } from "react-icons/bi";
 import BeatLoader from "react-spinners/BeatLoader";
 
 interface Props {

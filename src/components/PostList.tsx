@@ -1,39 +1,42 @@
 import { DeleteModal } from "@/components/DeleteModal";
 import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
+import Reaction from "@/components/Reaction";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { POST_COLLECTION, PostData, PostListItem } from "@/types/types";
+import { PostData, PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import { Agent, AtpAgent } from '@atproto/api';
-import { Button, Divider, IconButton, useNotification } from 'reablocks';
+import { Button, Divider, IconButton, Input, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
+import { CiLock, CiUnlock } from "react-icons/ci";
 import { FiEdit } from "react-icons/fi";
+import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
-import { IoMdEye } from "react-icons/io";
-import { IoMdEyeOff } from "react-icons/io";
-import Reaction from "@/components/Reaction";
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
     agent: AtpAgent | Agent;
-    did: string | null
+    did: string | null;
+    pds: string | null;
 };
 
 export const PostList: React.FC<PostListProps> = ({
     handleEdit,
     agent,
-    did
+    did,
+    pds
 }) => {
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [selectedItem, setSelectedItem] = useState<PostListItem | null>(null);
-    //const did = useAtpAgentStore((state) => state.did);
-    //  const agent = useAtpAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
     const { notifySuccess, notifyError } = useNotification();
+    const publicAgent = useAtpAgentStore((state) => state.publicAgent);
 
     const getPosts = async (cursor: string) => {
         if (!agent) {
@@ -47,7 +50,7 @@ export const PostList: React.FC<PostListProps> = ({
         try {
             const param = {
                 repo: did || agent.assertDid,
-                collection: POST_COLLECTION,
+                collection: SKYBLUR_POST_COLLECTION,
                 cursor: cursor,
                 limit: 10
             };
@@ -72,6 +75,7 @@ export const PostList: React.FC<PostListProps> = ({
                     blurURL: transformUrl(obj.uri),
                     modal: false,
                     isDetailDisplay: false,
+                    isDecrypt: false
                 });
             }
             // createdAtで降順ソート
@@ -133,24 +137,27 @@ export const PostList: React.FC<PostListProps> = ({
 
         throw new Error("Invalid URL format");
     };
-
-    const deleteRecord = async (aturi: string) => {
-        if (!agent) {
-            console.error("未ログインです")
-            return
-        }
-
-        const param = convertAtUrlToObject(aturi)
-        await agent.com.atproto.repo.deleteRecord(param)
-
-    }
-
     // 投稿を削除する関数
     const handleDeleteItem = async () => {
         try {
-            // 非同期操作を待つ
-            await deleteRecord(selectedItem?.blur.uri || '')
-            await deleteRecord(selectedItem?.blurATUri || '')
+            const writes = [];
+
+            writes.push({
+                $type: 'com.atproto.repo.applyWrites#delete',
+                collection: 'uk.skyblur.post',
+                rkey: selectedItem?.blurATUri.split('/').pop() || '',
+            })
+
+            writes.push({
+                $type: 'com.atproto.repo.applyWrites#delete',
+                collection: 'app.bsky.feed.post',
+                rkey: selectedItem?.blur.uri.split('/').pop() || '',
+            })
+
+            const ret = await agent.com.atproto.repo.applyWrites({
+                repo: did||'',
+                writes: writes
+            })
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
@@ -169,8 +176,10 @@ export const PostList: React.FC<PostListProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleDisplay = (item: PostListItem) => {
-        console.log("handleDisplay");
+    const handleDisplay = async (item: PostListItem) => {
+        if (!item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD) {
+            return
+        }
 
         const updatedList = deleteList.map((currentItem) =>
             currentItem === item
@@ -180,6 +189,120 @@ export const PostList: React.FC<PostListProps> = ({
 
         setDeleteList(updatedList);
     };
+
+
+    const setEncryptKey = (value: string, targetItem: typeof deleteList[number]) => {
+        setDeleteList(prevList =>
+            prevList.map(item =>
+                item === targetItem ? { ...item, encryptKey: value } : item
+            )
+        );
+    };
+
+    const handleDecrypt = async (item: typeof deleteList[number]) => {
+        if(!item.encryptKey){
+            setDeleteList((prevList) =>
+                prevList.map((listItem) =>
+                    listItem === item
+                        ? {
+                            ...listItem,
+                            encryptMessage: locale.DeleteList_DecryptRequired
+                        }
+                        : listItem
+                )
+            );
+            return
+        }
+        setIsDecrypting(true)
+
+        try {
+
+            const init: RequestInit = {
+                method: 'POST',
+                body: JSON.stringify({
+                    pds: pds,
+                    repo: did,
+                    cid: item.blur.encryptBody?.ref.toString(),
+                    password: item.encryptKey
+                })
+            }
+
+            const response = await fetch("https://api.skyblur.uk/xrpc/uk.skyblur.post.decryptByCid", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    pds: pds,
+                    repo: did,
+                    cid: item.blur.encryptBody?.ref.toString(),
+                    password: item.encryptKey,
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setDeleteList((prevList) =>
+                    prevList.map((listItem) =>
+                        listItem.blurATUri === item.blurATUri 
+                            ? {
+                                ...listItem,
+                                blur: {
+                                    ...listItem.blur,
+                                    text: data.text,
+                                    additional: data.additional,
+                                },
+                                isDecrypt: true,
+                                isDetailDisplay: true,
+                                encryptMessage: ""
+                            }
+                            : listItem
+                    )
+                );
+                
+            } else {
+                if(response.status==403){
+                    setDeleteList((prevList) =>
+                        prevList.map((listItem) =>
+                            listItem === item
+                                ? {
+                                    ...listItem,
+                                    encryptMessage: locale.DeleteList_DecryptErrorMessage
+                                }
+                                : listItem
+                        )
+                    );
+                }else{
+                    const data = await response.json() as { message: string }
+                    setDeleteList((prevList) =>
+                        prevList.map((listItem) =>
+                            listItem === item
+                                ? {
+                                    ...listItem,
+                                    encryptMessage: data.message
+                                }
+                                : listItem
+                        )
+                    );
+                }
+            }
+        } catch (e) {
+            setDeleteList((prevList) =>
+                prevList.map((listItem) =>
+                    listItem === item
+                        ? {
+                            ...listItem,
+                            encryptMessage: 'Error:'+e
+                        }
+                        : listItem
+                )
+            );
+        }
+
+
+        setIsDecrypting(false)
+
+    }
 
 
     return (
@@ -200,7 +323,12 @@ export const PostList: React.FC<PostListProps> = ({
                     {deleteList.map((item, index) => (
                         <div
                             key={index}
-                            className="py-3 px-2 mb-2 mx-2 bg-white rounded-md border border-gray-400 w-full "
+                            className={`relative py-3 px-2 mb-2 mx-2 rounded-md border border-gray-400 w-full ${item.blur?.visibility === VISIBILITY_PASSWORD
+                                ? item.isDecrypt
+                                    ? "bg-gray-100"
+                                    : "bg-gray-200"
+                                : "bg-white"
+                                }`}
                         >
                             <div onClick={() => handleDisplay(item)}>
                                 {item.isDetailDisplay ? (
@@ -237,6 +365,31 @@ export const PostList: React.FC<PostListProps> = ({
 
                             </div>
 
+                            {(item.blur?.visibility === VISIBILITY_PASSWORD && !item.isDecrypt) &&
+                                <>
+                                    <div className="block text-sm text-gray-400 mt-1">{locale.DeleteList_EncryptDescription}</div>
+                                    <div className="flex flex-row items-center justify-center m-2"> {/* Flexbox with centered alignment */}
+                                        <Input value={item.encryptKey}  className='h-6'
+                                            onValueChange={(value) => setEncryptKey(value, item)} />
+                                        <Button
+                                            color="primary"
+                                            size="medium"
+                                            className="text-white mx-2 h-9 font-normal"
+                                            onClick={() => handleDecrypt(item)}
+                                            disabled={isDecrypting}
+                                        >
+                                            {locale.DeleteList_DecryptButton}
+                                        </Button>
+                                    </div>
+                                </>
+                            }
+
+                            {(item.encryptMessage) &&
+                                <div className="flex justify-center">
+                                    <div className="block text-sm text-red-400 my-1">{item.encryptMessage}</div>
+                                </div>
+                            }
+
                             {item.isDetailDisplay && handleEdit &&
                                 <div className="mt-1">
                                     <Reaction atUriPost={item.blur.uri} atUriBlur={item.blurATUri} />
@@ -245,7 +398,17 @@ export const PostList: React.FC<PostListProps> = ({
 
                             <div className="flex justify-between items-button gap-2 items-end ">
                                 <div className="flex items-center gap-2">
-                                    <div className="text-sm text-gray-400">{formatDateToLocale(item.blur.createdAt)}</div>
+                                    <div className="text-sm text-gray-400 flex items-center">
+                                        {item.blur?.visibility === VISIBILITY_PASSWORD && (
+                                            item.isDecrypt ? (
+                                                <CiUnlock className="mr-1" size={16} color="gray" />
+                                            ) : (
+                                                <CiLock className="mr-1" size={16} color="gray" />
+                                            )
+                                        )}
+                                        {formatDateToLocale(item.blur.createdAt)}
+                                    </div>
+
                                     {item.isDetailDisplay && !handleEdit &&
                                         <Reaction atUriPost={item.blur.uri} atUriBlur={item.blurATUri} />
                                     }
@@ -258,11 +421,14 @@ export const PostList: React.FC<PostListProps> = ({
                                                     size={22} color="gray"
                                                 />
                                             </IconButton>
-                                            <IconButton size="small" variant="text" onClick={() => handleEdit(item)} >
-                                                <FiEdit
-                                                    size={22} color="gray"
-                                                />
-                                            </IconButton>
+
+                                            {(!item.blur?.visibility || item.blur?.visibility === VISIBILITY_PUBLIC || (item.blur?.visibility === VISIBILITY_PASSWORD && item.isDecrypt)) &&
+                                                <IconButton size="small" variant="text" onClick={() => handleEdit(item)} >
+                                                    <FiEdit
+                                                        size={22} color="gray"
+                                                    />
+                                                </IconButton>
+                                            }
                                             <IconButton size="small" variant="text" onClick={() => handleCopyToClipboard(item)} >
                                                 <LuClipboardCheck
                                                     size={22} color="gray"
@@ -271,7 +437,7 @@ export const PostList: React.FC<PostListProps> = ({
                                         </>
                                     }
 
-                                    {!handleEdit &&
+                                    {(!handleEdit && ((item.blur?.visibility !== VISIBILITY_PASSWORD) || (item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD))) &&
 
                                         <IconButton size="small" variant="text" onClick={() => handleDisplay(item)} >
                                             {item.isDetailDisplay ? (
