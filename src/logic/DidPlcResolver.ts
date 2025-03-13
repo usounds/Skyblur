@@ -1,0 +1,23 @@
+import { Resolver, ParsedDID, DIDResolutionOptions, DIDDocument, } from 'did-resolver'
+
+export function getResolver() {
+    async function resolve(
+        did: string,
+        parsed: ParsedDID,
+        didResolver: Resolver,
+        options: DIDResolutionOptions
+    ): Promise<DIDDocument> {
+        const encodedDid = encodeURIComponent(did);
+        const didUrl = `https://plc.directory/${encodedDid}`;
+
+        console.log('getResolver - fetch')
+        const response = await fetch(didUrl);
+        const didDoc = await response.json() as DIDDocument
+
+        console.log(didDoc)
+
+        return didDoc
+    }
+
+    return { DidPlcResolver: resolve }
+}

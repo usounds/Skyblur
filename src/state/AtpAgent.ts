@@ -21,7 +21,7 @@ type Action = {
 export const useAtpAgentStore = create<State & Action>((set) => ({
   agent: null,
   publicAgent: new AtpAgent({
-    service: "https://api.bsky.app"
+    service: "https://public.api.bsky.app"
   }),
   did: "",
   userProf: null,

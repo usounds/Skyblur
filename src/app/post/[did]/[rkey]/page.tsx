@@ -3,18 +3,18 @@ export const runtime = 'edge';
 import { Avatar } from "@/components/Avatar";
 import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
-import Reaction from "@/components/Reaction";
 import PostTextWithBold from "@/components/PostTextWithBold";
+import Reaction from "@/components/Reaction";
 import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { POST_COLLECTION, PostData, customTheme } from '@/types/types';
+import { PostData, SKYBLUR_POST_COLLECTION, customTheme } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Button, Divider, ThemeProvider, extendTheme, theme } from 'reablocks';
+import { Button, Divider, Input, ThemeProvider, extendTheme, theme } from 'reablocks';
 import { useEffect, useState } from "react";
 
 const PostPage = () => {
@@ -32,8 +32,14 @@ const PostPage = () => {
   const apiAgent = useAtpAgentStore((state) => state.publicAgent);
   const searchParams = useSearchParams();
   const agent = useAtpAgentStore((state) => state.agent);
+  const [encryptKey, setEncryptKey] = useState("");
+  const [encryptCid, setEncryptCid] = useState('')
+  const [isDecrypt, setIsDecrypt] = useState<boolean>(false)
+  const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
+  const [pdsUrl, setPdsUrl] = useState("");
+
   const q = searchParams.get('q');
-  const aturi = 'at://' + did + "/" + POST_COLLECTION + "/" + rkey
+  const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
 
   useEffect(() => {
     if (did && rkey) {
@@ -53,6 +59,8 @@ const PostPage = () => {
           const pdsAgent = new AtpAgent({
             service: pdsUrl || ''
           })
+
+          setPdsUrl(pdsUrl || '')
 
           try {
             // getProfileとgetRecordを並行して呼び出す
@@ -79,6 +87,9 @@ const PostPage = () => {
             const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
             setBskyUrl(convertedUri)
             setPostAtUri(postData.uri)
+
+            if (postData.encryptBody) setEncryptCid(postData.encryptBody.ref.toString())
+
             setIsLoading(false); // ローディング状態を終了
 
           } catch (err) {
@@ -108,13 +119,47 @@ const PostPage = () => {
     }
   }
 
+
+  async function handleDecrypt() {
+    setIsDecrypting(true)
+
+    try {
+      const response = await fetch("https://api.skyblur.uk/xrpc/uk.skyblur.post.decryptByCid", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          pds: pdsUrl,
+          repo: did,
+          cid: encryptCid,
+          password: encryptKey,
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json() as { text: string, additional: string }
+        setPostText(data.text);
+        setAddText(data.additional);
+
+        setIsDecrypt(true)
+      }
+    } catch (e) {
+      setErrorMessage("Failed to decrypt");
+      console.error(e)
+    }
+
+    setIsDecrypting(false)
+
+  }
+
   async function getPostResponse(repo: string, rkey: string, pdsAgent: AtpAgent) {
 
 
     try {
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,
-        collection: POST_COLLECTION,
+        collection: SKYBLUR_POST_COLLECTION,
         rkey: rkey,
       })
 
@@ -123,7 +168,7 @@ const PostPage = () => {
 
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,
-        collection: POST_COLLECTION,
+        collection: SKYBLUR_POST_COLLECTION,
         rkey: rkey,
       })
 
@@ -164,6 +209,24 @@ const PostPage = () => {
                           <Divider variant="secondary" />
                           <PostTextWithBold postText={addText} isValidateBrackets={false} isMask={null} />
                         </div>
+                      }
+
+                      {(encryptCid && !isDecrypt) &&
+                        <>
+                          <div className="block text-sm text-gray-400 mt-1">この投稿はパスワードが設定されています。伏せた文字と補足を参照するにはパスワードを入力して「解除」してください</div>
+                          <div className="flex flex-row items-center justify-center m-2"> {/* Flexbox with centered alignment */}
+                            <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} />
+                            <Button
+                              color="primary"
+                              size="medium"
+                              className="text-white mx-2 font-normal"
+                              onClick={handleDecrypt}
+                              disabled={isDecrypting}
+                            >
+                              参照
+                            </Button>
+                          </div>
+                        </>
                       }
 
                       <div className="flex justify-between items-center mt-2">

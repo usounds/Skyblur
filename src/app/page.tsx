@@ -9,7 +9,7 @@ import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { PostListItem, customTheme } from "@/types/types";
 import Image from 'next/image';
-import { Button, ThemeProvider, extendTheme, theme, Notifications, NotificationsContext } from 'reablocks';
+import { Button, Notifications, NotificationsContext, ThemeProvider, extendTheme, theme } from 'reablocks';
 import { useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
 
@@ -37,6 +37,24 @@ export default function Home() {
 
   };
 
+  /*
+  const handleTest = async () => {
+    const encBody = {
+      uri:'at://did:plc:erad3hly37b7m2unoijfaxgw/uk.skyblur.post/3lkay2jjqac2d',
+      password:'パスワード'
+    }
+    const init: RequestInit = {
+      method: 'POST',
+      body: JSON.stringify(encBody)
+    }
+    const host = new URL(origin).host;
+    const response = await agent?.withProxy('skyblur_api', `did:web:api.skyblur.uk`).fetchHandler(
+      '/xrpc/uk.skyblur.post.getPost',
+      init
+    )
+  }
+    */
+
   return (
 
     <div className="">
@@ -49,7 +67,6 @@ export default function Home() {
           <Notifications>
             <NotificationsContext.Consumer>
               {() => <>
-
                 <div className="mx-auto max-w-screen-md ">
 
                   {did === "" &&
@@ -98,7 +115,7 @@ export default function Home() {
                                 </div>
 
                                 {agent &&
-                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid}/>
+                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={window.localStorage.getItem('oauth.pdsUrl') || 'https://bsky.social'} />
                                 }
 
                               </div>
