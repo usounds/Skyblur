@@ -59,6 +59,7 @@ const messages = {
     CreatePost_EncryptInProgress:"(1/3)暗号化中...",
     CreatePost_BlobUploadInProgress:"(2/3)blob登録中...",
     CreatePost_PostInProgress:"投稿中..",
+    CreatePost_PasswordErrorSpace: "パスワードにスペースは使用できません",
     DeleteList_ChooseDeleteItem: "投稿一覧",
     DeleteList_NoListItem: "投稿がありません",
     DeleteList_ConfirmDelete: "この投稿を削除しますか？",

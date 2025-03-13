@@ -54,9 +54,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
     const { notifySuccess, notifyError } = useNotification();
 
-
-    const [encStr, setEngStr] = useState("");
-
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
         const lang3 = franc(text);
@@ -235,6 +232,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             console.error("未ログインです")
             return
         }
+        if (isEncrypt) {
+            if (/[ \t\r\n\u3000]/.test(encryptKey)) {
+                notifyError(locale.CreatePost_PasswordErrorSpace)
+                return
+            }
+        }
         if (!postText) return
         setIsLoading(true)
         setAppUrl('')
@@ -295,19 +298,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 await rt.detectFacets(agent);
 
                 const langs = [detectLanguage(postText)]
-
-                /*
-                const postObj: Partial<AppBskyFeedPost.Record> &
-                    Omit<AppBskyFeedPost.Record, 'createdAt'> = {
-                    $type: 'app.bsky.feed.post',
-                    text: rt.text,
-                    facets: rt.facets,
-                    langs: langs,
-                    via: 'Skyblur',
-                    "uk.skyblur.post.uri": blurUri,
-                    "uk.skyblur.post.encrypt": isEncrypt
-                };
-                */
 
                 let appBskyFeedPost: Partial<AppBskyFeedPost.Record> = {
                     text: rt.text,
@@ -801,10 +791,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 <div className=''>
                                     <div className="block text-sm text-gray-400 my-1">{locale.CreatePost_PasswordInputDescription}</div>
                                     <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} max={20} placeholder="p@ssw0rd" />
-                                    {encStr}
+                                    {/[ \t\r\n\u3000]/.test(encryptKey) && <p className="text-red-500">{locale.CreatePost_PasswordErrorSpace}</p>}
                                 </div>
-
-
                             }
 
                         </div>
@@ -818,7 +806,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                         size="large"
                                         className={`text-white text-base font-normal ${prevBlur ? 'w-[300px]' : 'w-[230px]'}`}
                                         onClick={handleCrearePost}
-                                        disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0)}
+                                        disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0) || /[ \t\r\n\u3000]/.test(encryptKey)}
                                     >
                                         {isLoading &&
                                             <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">

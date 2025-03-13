@@ -59,6 +59,7 @@ const messages = {
     CreatePost_EncryptInProgress:"(1/3)Encrypting...",
     CreatePost_BlobUploadInProgress:"(2/3)Upload Blob...",
     CreatePost_PostInProgress:"Posting...",
+    CreatePost_PasswordErrorSpace: "Spaces are not allowed in the password.",
     DeleteList_ChooseDeleteItem: "Post List",
     DeleteList_NoListItem: "No posts available.",
     DeleteList_ConfirmDelete: "Are you sure you want to delete this post?",
