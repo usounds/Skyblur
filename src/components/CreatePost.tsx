@@ -516,7 +516,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     init
                 )
 
-                const data = await response.json() 
+                const data = await response.json()
                 if (response.ok) {
                     const blob = new Blob([data.body], { type: "text/plain" });
 
@@ -664,7 +664,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setIsTempRestore(false)
     };
 
-
     return (
         <>
             <div className="m-3">
@@ -672,9 +671,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 {isTempRestore &&
                     <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete} />
                 }
-
-
-
 
                 {(!appUrl) &&
                     <>
@@ -804,7 +800,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             {isEncrypt &&
                                 <div className=''>
                                     <div className="block text-sm text-gray-400 my-1">{locale.CreatePost_PasswordInputDescription}</div>
-                                    <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} max={20}  placeholder="test"/>
+                                    <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} max={20} placeholder="p@ssw0rd" />
                                     {encStr}
                                 </div>
 
@@ -820,10 +816,15 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     <Button
                                         color="primary"
                                         size="large"
-                                        className="text-white text-base font-normal"
+                                        className={`text-white text-base font-normal ${prevBlur ? 'w-[300px]' : 'w-[200px]'}`}
                                         onClick={handleCrearePost}
                                         disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0)}
                                     >
+                                        {isLoading &&
+                                            <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
+                                                <span className="sr-only">Loading...</span>
+                                            </span>
+                                        }
                                         {buttonName}
                                     </Button>
                                 )}
