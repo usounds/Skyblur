@@ -223,7 +223,7 @@ const PostPage = () => {
                               onClick={handleDecrypt}
                               disabled={isDecrypting}
                             >
-                              参照
+                              {locale.DeleteList_DecryptButton}
                             </Button>
                           </div>
                         </>
