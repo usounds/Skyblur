@@ -8,6 +8,7 @@ type State = {
   did: string;
   isLoginProcess: boolean;
   blueskyLoginMessage: string;
+  serviceUrl : string;
 };
 
 type Action = {
@@ -16,6 +17,7 @@ type Action = {
   setDid: (did: string) => void;
   setIsLoginProcess: (isLoginProcess: boolean) => void;
   setBlueskyLoginMessage: (blueskyLoginMessage: string) => void;
+  setServiceUrl: (setServiceUrl: string) => void;
 };
 
 export const useAtpAgentStore = create<State & Action>((set) => ({
@@ -27,10 +29,11 @@ export const useAtpAgentStore = create<State & Action>((set) => ({
   userProf: null,
   isLoginProcess: true,
   blueskyLoginMessage: '',
+  serviceUrl: "",
   setAgent: (agent) => set(() => ({ agent: agent })),
   setUserProf: (userProf) => set(() => ({ userProf: userProf })),
   setDid: (did) => set(() => ({ did: did })),
   setIsLoginProcess: (isLoginProcess) => set(() => ({ isLoginProcess: isLoginProcess })),
   setBlueskyLoginMessage: (blueskyLoginMessage) => set(() => ({ blueskyLoginMessage: blueskyLoginMessage })),
-
+  setServiceUrl: (serviceUrl) => set(() => ({ serviceUrl: serviceUrl })),
 }));

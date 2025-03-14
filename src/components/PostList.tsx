@@ -18,7 +18,7 @@ import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
     agent: AtpAgent | Agent;
-    did: string | null;
+    did: string;
     pds: string | null;
 };
 
@@ -36,7 +36,6 @@ export const PostList: React.FC<PostListProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
     const { notifySuccess, notifyError } = useNotification();
-    const publicAgent = useAtpAgentStore((state) => state.publicAgent);
 
     const getPosts = async (cursor: string) => {
         if (!agent) {
@@ -49,7 +48,7 @@ export const PostList: React.FC<PostListProps> = ({
         const deleteList: PostListItem[] = []; // 初期化
         try {
             const param = {
-                repo: did || agent.assertDid,
+                repo: did,
                 collection: SKYBLUR_POST_COLLECTION,
                 cursor: cursor,
                 limit: 10
@@ -216,16 +215,6 @@ export const PostList: React.FC<PostListProps> = ({
         setIsDecrypting(true)
 
         try {
-
-            const init: RequestInit = {
-                method: 'POST',
-                body: JSON.stringify({
-                    pds: pds,
-                    repo: did,
-                    cid: item.blur.encryptBody?.ref.toString(),
-                    password: item.encryptKey
-                })
-            }
 
             const response = await fetch("https://api.skyblur.uk/xrpc/uk.skyblur.post.decryptByCid", {
                 method: "POST",
