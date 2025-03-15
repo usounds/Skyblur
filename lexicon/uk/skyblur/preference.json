@@ -1,0 +1,44 @@
+{
+    "id": "uk.skyblur.preference",
+    "defs": {
+        "myPage": {
+            "type": "object",
+            "required": [
+                "isUseMyPage"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "maxGraphemes": 100000,
+                    "description": "Define the description displayed on MyPage."
+                },
+                "isUseMyPage": {
+                    "type": "boolean",
+                    "description": "If this item is true, MyPage will be displayed."
+                }
+            }
+        },
+        "main": {
+            "key": "literal:self",
+            "type": "record",
+            "record": {
+                "type": "object",
+                "required": [
+                    "myPage"
+                ],
+                "properties": {
+                    "myPage": {
+                        "refs": [
+                            "uk.skyblur.preference#myPage"
+                        ],
+                        "type": "union"
+                    }
+                }
+            },
+            "description": "A declaration of a Skyblur account."
+        }
+    },
+    "$type": "com.atproto.lexicon.schema",
+    "lexicon": 1
+}

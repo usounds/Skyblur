@@ -1,6 +1,6 @@
 import { Context } from 'hono'
 import { getDecrypt } from '../logic/CryptHandler'
-import { UkSkyblurPostDecryptByCid } from '../lexicon/UkSkyblurPost'
+import { UkSkyblurPostDecryptByCid } from '../lexicon/UkSkyblur'
 
 export const handle = async (c: Context) => {
     let { pds, repo, cid, password } = await c.req.json() as UkSkyblurPostDecryptByCid.Input

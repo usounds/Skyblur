@@ -2,7 +2,7 @@ import { DeleteModal } from "@/components/DeleteModal";
 import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
-import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblurPost';
+import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";

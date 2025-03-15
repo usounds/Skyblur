@@ -1,5 +1,5 @@
 
-import { UkSkyblurPost } from '@/lexicon/UkSkyblurPost';
+import { UkSkyblurPost } from '@/lexicon/UkSkyblur';
 import { AppBskyActorDefs, AppBskyEmbedExternal, AppBskyEmbedImages, AppBskyEmbedRecordWithMedia, AppBskyEmbedVideo, ComAtprotoLabelDefs, } from '@atproto/api';
 import { PartialReablocksTheme } from 'reablocks';
 
@@ -34,13 +34,6 @@ export type Service = {
 export type EncryptBody = {
     text: string;
     additional: string;
-}
-
-export type Preference = {
-    myPage: {
-        isUseMyPage: boolean
-        description: string
-    }
 }
 
 export const SKYBLUR_POST_COLLECTION = 'uk.skyblur.post';

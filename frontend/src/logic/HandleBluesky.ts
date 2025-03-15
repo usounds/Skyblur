@@ -1,9 +1,10 @@
 
 import { getResolver } from "@/logic/DidPlcResolver";
-import { DIDDocument, Preference, Service, SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
+import { DIDDocument, Service, SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
 import { Agent, AtpAgent } from '@atproto/api';
 import { DIDResolver, Resolver, ResolverRegistry } from 'did-resolver';
 import { getResolver as getWebResolver } from 'web-did-resolver';
+import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
 
 const myResolver = getResolver()
 const web = getWebResolver()
@@ -58,13 +59,14 @@ export const transformUrl = (inputUrl: string): string => {
     return ''
 };
 
-export const getPreference = async (agent: Agent | AtpAgent, did: string): Promise<Preference> => {
+export const getPreference = async (agent: Agent | AtpAgent, did: string): Promise<UkSkyblurPreference.Record> => {
     const preference = await agent.com.atproto.repo.getRecord({
         repo: did,
         collection: SKYBLUR_PREFERENCE_COLLECTION,
         rkey: 'self'
     });
 
-    const value = preference.data.value as Preference;
+    const value = preference.data.value as UkSkyblurPreference.Record;
+    console.log(value)
     return value
 };

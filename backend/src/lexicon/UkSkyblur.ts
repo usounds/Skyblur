@@ -129,8 +129,28 @@ export declare namespace UkSkyblurPostGetPost {
   }
 }
 
+export declare namespace UkSkyblurPreference {
+  /** A declaration of a Skyblur account. */
+  interface Record {
+    $type: "uk.skyblur.preference";
+    myPage: Brand.Union<UkSkyblurPreference.MyPage>;
+  }
+  interface MyPage {
+    [Brand.Type]?: "uk.skyblur.preference#myPage";
+    /** If this item is true, MyPage will be displayed. */
+    isUseMyPage: boolean;
+    /**
+     * Define the description displayed on MyPage. \
+     * Maximum string length: 10000 \
+     * Maximum grapheme length: 100000
+     */
+    description?: string;
+  }
+}
+
 export declare interface Records {
   "uk.skyblur.post": UkSkyblurPost.Record;
+  "uk.skyblur.preference": UkSkyblurPreference.Record;
 }
 
 export declare interface Queries {}

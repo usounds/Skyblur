@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
-import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblurPost';
+import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
