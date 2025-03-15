@@ -1,7 +1,7 @@
 import { Context } from 'hono'
 import { verifyJWT, fetchServiceEndpoint } from '../logic/JWTTokenHandler'
 import { getDecrypt } from '../logic/CryptHandler'
-import { UkSkyblurPost } from '../lexicon/UkSkyblurPost'
+import { UkSkyblurPost, UkSkyblurPostGetPost } from '../lexicon/UkSkyblurPost'
 
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
@@ -24,9 +24,7 @@ export const handle = async (c: Context) => {
 
     }
 
-    const { uri, password } = await c.req.json();
-
-    console.log(uri)
+    const { uri, password } = await c.req.json() as UkSkyblurPostGetPost.Input
 
     // 必須パラメータのチェック
     if (!uri) {
@@ -75,12 +73,15 @@ export const handle = async (c: Context) => {
     }
 
     if (recordObj.visibility !== 'password') {
-        console.log('public')
         console.log(recordObj)
         return c.json({ text: recordObj.text, additional: recordObj.additional });
 
     }
-    console.log('password')
+
+    if(!password){
+        return c.json({ message: "A password is required because the visibility of this post is set to 'password'." }, 500);
+
+    }
 
     const refLink = recordObj.encryptBody?.ref.toString();
     if (!refLink) {
