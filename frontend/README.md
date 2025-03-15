@@ -1,3 +1,6 @@
+## Skyblur AppView
+Skyblur AppView works with Next.js 14.
+
 ## Getting Started
 
 First, run the development server:

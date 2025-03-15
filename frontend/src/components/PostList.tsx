@@ -2,11 +2,11 @@ import { DeleteModal } from "@/components/DeleteModal";
 import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
+import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblurPost';
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { PostData, PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
+import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import { Agent, AtpAgent } from '@atproto/api';
 import { Button, Divider, IconButton, Input, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
@@ -66,7 +66,7 @@ export const PostList: React.FC<PostListProps> = ({
 
             // records を処理して deleteList を更新
             for (const obj of bookMark.data.records) {
-                const value = obj.value as PostData;
+                const value = obj.value as UkSkyblurPost.Record;
                 deleteList.push({
                     blurATUri: obj.uri,
                     blur: value,
@@ -121,21 +121,6 @@ export const PostList: React.FC<PostListProps> = ({
         setSelectedItem(null);
     };
 
-    const convertAtUrlToObject = (atUrl: string) => {
-        const regex = /^at:\/\/(?<repo>did:[a-z]+:[\w\d]+)\/(?<collection>[\w.]+)\/(?<rkey>[\w\d]+)/;
-        const match = atUrl.match(regex);
-
-        if (match && match.groups) {
-            const { repo, collection, rkey } = match.groups;
-            return {
-                repo,
-                collection,
-                rkey
-            };
-        }
-
-        throw new Error("Invalid URL format");
-    };
     // 投稿を削除する関数
     const handleDeleteItem = async () => {
         try {
@@ -215,22 +200,28 @@ export const PostList: React.FC<PostListProps> = ({
         setIsDecrypting(true)
 
         try {
+            const host = new URL(origin).host;
+            let apiHost = 'api.skyblur.uk'
+            if (host?.endsWith('usounds.work')) {
+                apiHost = 'skyblurapi.usounds.work'
+            }
 
-            const response = await fetch("https://api.skyblur.uk/xrpc/uk.skyblur.post.decryptByCid", {
+            const decryptByCidBody: UkSkyblurPostDecryptByCid.Input = {
+                pds: pds||'',
+                repo: did,
+                cid: item.blur.encryptBody?.ref.toString()||'',
+                password: item.encryptKey,
+            }
+            const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    pds: pds,
-                    repo: did,
-                    cid: item.blur.encryptBody?.ref.toString(),
-                    password: item.encryptKey,
-                })
+                body: JSON.stringify(decryptByCidBody)
             });
 
             if (response.ok) {
-                const data = await response.json();
+                const data:UkSkyblurPostDecryptByCid.Output = await response.json()
                 setDeleteList((prevList) =>
                     prevList.map((listItem) =>
                         listItem.blurATUri === item.blurATUri

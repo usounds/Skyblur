@@ -5,11 +5,12 @@ import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
+import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblurPost';
 import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
-import { PostData, SKYBLUR_POST_COLLECTION, customTheme } from '@/types/types';
+import { SKYBLUR_POST_COLLECTION, customTheme } from '@/types/types';
 import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -74,14 +75,14 @@ const PostPage = () => {
             setUserProf(userProfileResponse.data);
 
             // postDataのデータをセット
-            const postData: PostData = postResponse.data.value as PostData;
+            const postData: UkSkyblurPost.Record = postResponse.data.value as UkSkyblurPost.Record;
 
             const tempPostText = postData.text
 
             //if(validateBrackets(postData.text)) tempPostText = tempPostText.replace(/[\[\]]/g, '')
 
             setPostText(tempPostText);
-            setAddText(postData.additional);
+            setAddText(postData.additional || '');
             setPostDate(formatDateToLocale(postData.createdAt));
 
             const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
@@ -124,23 +125,31 @@ const PostPage = () => {
     setIsDecrypting(true)
 
     try {
-      const response = await fetch("https://api.skyblur.uk/xrpc/uk.skyblur.post.decryptByCid", {
+      const host = new URL(origin).host;
+      let apiHost = 'api.skyblur.uk'
+      if (host?.endsWith('usounds.work')) {
+        apiHost = 'skyblurapi.usounds.work'
+      }
+
+      const body: UkSkyblurPostDecryptByCid.Input = {
+        pds: pdsUrl,
+        repo: Array.isArray(did) ? did[0] : did || '',
+        cid: encryptCid,
+        password: encryptKey,
+
+      }
+      const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          pds: pdsUrl,
-          repo: did,
-          cid: encryptCid,
-          password: encryptKey,
-        })
+        body: JSON.stringify(body)
       });
 
       if (response.ok) {
-        const data = await response.json() as { text: string, additional: string }
+        const data = await response.json() as UkSkyblurPostDecryptByCid.Output
         setPostText(data.text);
-        setAddText(data.additional);
+        setAddText(data.additional||'');
 
         setIsDecrypt(true)
       }
@@ -154,8 +163,6 @@ const PostPage = () => {
   }
 
   async function getPostResponse(repo: string, rkey: string, pdsAgent: AtpAgent) {
-
-
     try {
       return pdsAgent.com.atproto.repo.getRecord({
         repo: repo,

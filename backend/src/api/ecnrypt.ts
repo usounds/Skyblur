@@ -8,7 +8,7 @@ export const handle = async (c: Context) => {
         return c.json({ message: 'Authorization Header required. This api shoud be call via atproto-proxy.' }, 500);
     }
 
-    const origin = 'skyblur.uk'
+    const origin = c.env.APPVIEW_HOST
     const audience = `did:web:${origin}`
 
     const { body, password } = await c.req.json();
@@ -20,14 +20,12 @@ export const handle = async (c: Context) => {
     }
 
     try {
-        /*
         const veriry = await verifyJWT(authorization, audience)
 
         if (!veriry.verified) {
             return c.json({ message: 'Cannot verify JWT Token.' }, 500);
 
         }
-            */
         const encoder = new TextEncoder();
 
         //Salt生成

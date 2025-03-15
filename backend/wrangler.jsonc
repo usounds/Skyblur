@@ -6,10 +6,20 @@
   "compatibility_flags": [
      "nodejs_compat"
   ],
-  "routes": [
-    {
-      "pattern": "api.skyblur.uk",
-      "custom_domain": true
+  "vars": {
+    "APPVIEW_HOST": "skyblur.usounds.work"
+  },
+  "env": {
+    "production": {
+      "vars": {
+        "APPVIEW_HOST": "skyblur.uk"
+      },
+      "routes": [
+        {
+          "pattern": "api.skyblur.uk",
+          "custom_domain": true
+        }
+      ]
     }
-  ]
+  }
 }

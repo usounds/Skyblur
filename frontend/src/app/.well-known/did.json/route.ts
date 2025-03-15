@@ -4,6 +4,14 @@ import { NextResponse } from 'next/server';
 export async function GET(req: Request) {
   const host = req.headers.get('host');
 
+  let appViewHost = 'skyblur.uk'
+  let apiEndpoint = 'api.skyblur.uk'
+
+  if (process.env.NODE_ENV !== 'production') {
+    appViewHost = 'skyblur.usounds.work'
+    apiEndpoint = 'skyblurapi.usounds.work'
+  }
+
   const didDocument = {
     "@context": [
       "https://www.w3.org/ns/did/v1"
@@ -12,14 +20,14 @@ export async function GET(req: Request) {
     "service": [
       {
         "id": "#skyblur_appview",
-        "type": "SkyblurAppView",
-        "serviceEndpoint": `https://${host}`
+        "type": "AtprotoAppView",
+        "serviceEndpoint": `https://${appViewHost}`
       },
 
       {
         "id": "#skyblur_api",
         "type": "SkyblurAPI",
-        "serviceEndpoint": `https://api.skyblur.uk`
+        "serviceEndpoint": `https://${apiEndpoint}`
       }
     ]
   };
