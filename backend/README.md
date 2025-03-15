@@ -1,8 +1,9 @@
 ## Skyblur API service
 We provide an API for Skyblur's password protection.<br />
 The public API is intended to be called via the ATProto Proxy.
-|id|serviceEndpoint|
-|#skyblur_api|did:web:skyblur.uk|
+| id | serviceEndpoint |
+| --------------- | ---------------------- |
+| #skyblur_api | did:web:skyblur.uk |
 If you are using the official ATProto SDK, you can call it as shown below.
 ```
 const init: RequestInit = {
