@@ -1,7 +1,6 @@
 import { Context } from 'hono'
 import { verifyJWT } from '../logic/JWTTokenHandler'
 import { deriveKey } from '../logic/CryptHandler'
-import { env } from 'hono/adapter'
 
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''

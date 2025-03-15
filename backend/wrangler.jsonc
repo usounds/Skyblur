@@ -7,7 +7,7 @@
      "nodejs_compat"
   ],
   "vars": {
-    "APPVIEW_HOST": "blursky.usounds.work"
+    "APPVIEW_HOST": "skyblur.usounds.work"
   },
   "env": {
     "production": {

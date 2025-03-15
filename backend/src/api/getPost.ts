@@ -1,23 +1,7 @@
 import { Context } from 'hono'
 import { verifyJWT, fetchServiceEndpoint } from '../logic/JWTTokenHandler'
 import { getDecrypt } from '../logic/CryptHandler'
-
-export type PostData = {
-    text: string;
-    additional: string;
-    $type: string;
-    createdAt: string;
-    uri: string;
-    encryptBody?: {
-        $type: string;
-        ref: {
-            $link: string;
-        };
-        mimeType: string;
-        size: number;
-    };
-    visibility?: string;
-}
+import { UkSkyblurPost } from '../lexicon/UkSkyblurPost'
 
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
@@ -84,16 +68,16 @@ export const handle = async (c: Context) => {
         const result = await fetch(recortUrl)
         if (!result.ok) throw new Error('Failed to get record')
         const jsonResult = await result.json() as { value: unknown };
-        recordObj = jsonResult.value as PostData;
+        recordObj = jsonResult.value as UkSkyblurPost.Record;
     } catch (e) {
         return c.json({ message: `Cannot getRecord[${recortUrl}]` }, 500);
 
     }
 
-    if(recordObj.visibility!=='password'){
+    if (recordObj.visibility !== 'password') {
         console.log('public')
         console.log(recordObj)
-        return c.json({ text:recordObj.text,additional:recordObj.additional });
+        return c.json({ text: recordObj.text, additional: recordObj.additional });
 
     }
     console.log('password')
