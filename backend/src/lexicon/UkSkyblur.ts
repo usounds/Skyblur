@@ -54,36 +54,6 @@ export declare namespace At {
     size: number;
   }
 }
-export declare namespace UkSkyblurPost {
-  /** Record containing a Skyblur post. */
-  interface Record {
-    $type: "uk.skyblur.post";
-    /** Created date assigned by client */
-    createdAt: string;
-    /**
-     * The post main contents. Blurred text must be enclosed in brackets []. \
-     * Maximum string length: 3000 \
-     * Maximum grapheme length: 300
-     */
-    text: string;
-    uri: At.Uri;
-    /**
-     * For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody. \
-     * Maximum string length: 100 \
-     * Maximum grapheme length: 10
-     */
-    visibility: "password" | "public" | (string & {});
-    /**
-     * The post additional contents. \
-     * Maximum string length: 100000 \
-     * Maximum grapheme length: 10000
-     */
-    additional?: string;
-    /** Encrypted post body. It shoud be decrypted by the client with AES-256. */
-    encryptBody?: At.Blob;
-  }
-}
-
 /** Decrypting the post by blob cid. */
 export declare namespace UkSkyblurPostDecryptByCid {
   interface Params {}
@@ -126,6 +96,36 @@ export declare namespace UkSkyblurPostGetPost {
     text: string;
     additional?: string;
     message?: string;
+  }
+}
+
+export declare namespace UkSkyblurPost {
+  /** Record containing a Skyblur post. */
+  interface Record {
+    $type: "uk.skyblur.post";
+    /** Created date assigned by client */
+    createdAt: string;
+    /**
+     * The post main contents. Blurred text must be enclosed in brackets []. \
+     * Maximum string length: 3000 \
+     * Maximum grapheme length: 300
+     */
+    text: string;
+    uri: At.Uri;
+    /**
+     * For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody. \
+     * Maximum string length: 100 \
+     * Maximum grapheme length: 10
+     */
+    visibility: "public" | "password";
+    /**
+     * The post additional contents. \
+     * Maximum string length: 100000 \
+     * Maximum grapheme length: 10000
+     */
+    additional?: string;
+    /** Encrypted post body. It shoud be decrypted by the client with AES-256. */
+    encryptBody?: At.Blob;
   }
 }
 
