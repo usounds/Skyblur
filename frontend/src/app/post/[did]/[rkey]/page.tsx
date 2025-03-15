@@ -124,7 +124,14 @@ const PostPage = () => {
     setIsDecrypting(true)
 
     try {
-      const response = await fetch("https://api.skyblur.uk/xrpc/uk.skyblur.post.decryptByCid", {
+      const host = new URL(origin).host;
+      let apiHost = 'api.skyblur.uk'
+      if (host?.endsWith('usounds.work')) {
+          apiHost = 'skyblurapi.usounds.work'
+      }
+
+      console.log(`apiViewUrl:${apiHost}`)
+      const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
