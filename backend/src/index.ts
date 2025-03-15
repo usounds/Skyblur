@@ -44,4 +44,12 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
   return getPostHandler(c)
 })
 
+app.get('/', (c) => {
+  const returnDocument = {
+    "message" : "This is Skyblur API Service. AppView is available at https://skyblur.uk/"
+  };
+  return c.json(returnDocument)
+})
+
+
 export default app
