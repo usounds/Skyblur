@@ -9,7 +9,8 @@
                 "required": [
                     "text",
                     "createdAt",
-                    "uri"
+                    "uri",
+                    "visibility"
                 ],
                 "properties": {
                     "uri": {
