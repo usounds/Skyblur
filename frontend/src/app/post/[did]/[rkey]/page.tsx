@@ -131,9 +131,13 @@ const PostPage = () => {
         apiHost = 'skyblurapi.usounds.work'
       }
 
+      const repo = Array.isArray(did) ? did[0] : did || ''
+      if (!repo.startsWith('did:')) return
+      const validRepo = repo as `did:${string}`
+
       const body: UkSkyblurPostDecryptByCid.Input = {
         pds: pdsUrl,
-        repo: Array.isArray(did) ? did[0] : did || '',
+        repo: validRepo,
         cid: encryptCid,
         password: encryptKey,
 
