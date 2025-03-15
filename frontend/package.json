@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 4500",
-    "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*.json ../lexicon/uk/skyblur/post/*.json -o ./src/lexicon/UkSkyblurPost.ts",
+    "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"

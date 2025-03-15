@@ -2,7 +2,7 @@
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { ReplyList } from "@/components/ReplyList";
 import { RestoreTempPost } from "@/components/RestoreTempPost";
-import { UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblurPost";
+import { UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblur";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";

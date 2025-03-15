@@ -79,7 +79,7 @@ const PostPage = () => {
         try {
             const value = await getPreference(pdsAgent, repo,)
             if (value.myPage.isUseMyPage) {
-                setMyPageDescription(value.myPage.description)
+                setMyPageDescription(value.myPage.description||'')
                 setIsMyPage(value.myPage.isUseMyPage)
                 setAgent(pdsAgent)
                 return
