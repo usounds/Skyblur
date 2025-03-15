@@ -10,7 +10,7 @@
           "required": ["uri"],
           "properties": {
             "uri": {
-              "type": "uri",
+              "type": "string",
               "description": "Skyblur post at-uri. It shoud be uk.skyblur.post collection."
             },
             "password": {
@@ -26,7 +26,8 @@
             "required": ["text"],
             "properties": {
               "text": { "type": "string" },
-              "additional": { "type": "string" }
+              "additional": { "type": "string" },
+              "message": { "type": "string" }
             }
           }
         }
