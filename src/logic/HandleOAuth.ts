@@ -1,5 +1,7 @@
+"use client"
 import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
 import { Agent } from '@atproto/api';
+import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
 
 export async function handleOAuth(
     getClientMetadata: () => any,
@@ -7,7 +9,9 @@ export async function handleOAuth(
     setUserProf: (profile: any) => void,
     setIsLoginProcess: (isLoginProcess: boolean) => void,
     setDid: (did: string) => void,
-    setBlueskyLoginMessage: (message: string) => void
+    setBlueskyLoginMessage: (message: string) => void,
+    setServiceUrl: (serviceUrl: string) => void,
+    
 ): Promise<boolean> {
     let result;
 
@@ -48,10 +52,12 @@ export async function handleOAuth(
             return false
 
           }
-
           const agent = new Agent(session)
           setAgent(agent)
 
+          const endPoint = await fetchServiceEndpoint(session.sub)
+          console.log(endPoint)
+          setServiceUrl(endPoint||'')
           console.log(`${agent.assertDid} was successfully authenticated (state: ${state})`)
           const userProfile = await agent.getProfile({ actor: agent.assertDid })
           setUserProf(userProfile.data)
@@ -61,6 +67,9 @@ export async function handleOAuth(
 
           //セッションのレストア
         } else {
+          const endPoint = await fetchServiceEndpoint(session.sub)
+          console.log(endPoint)
+          setServiceUrl(endPoint||'')
           console.log(`${session.sub} was restored (last active session)`)
           const agent = new Agent(session)
           setAgent(agent)

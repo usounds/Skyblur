@@ -309,8 +309,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     createdAt: new Date().toISOString()
                 };
 
-                console.log(rt.facets)
-
                 if (replyPost) {
                     const reply = {
                         root: {
