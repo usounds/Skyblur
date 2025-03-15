@@ -1,8 +1,8 @@
 {
   "name": "skyblurapi",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "dev": "wrangler dev --ip 192.168.1.130",
+    "deploy": "wrangler deploy --env production --minify"
   },
   "dependencies": {
     "did-jwt": "^8.0.8",

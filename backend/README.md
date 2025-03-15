@@ -20,6 +20,9 @@ const response = await agent.withProxy('skyblur_api', `did:web:skyblur.uk`).fetc
 )
 ```
 
+## Technology
+Hono on Cloudflare Worker
+
 ## Getting Started
 
 First, run the development server:
