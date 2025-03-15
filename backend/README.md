@@ -4,6 +4,7 @@ The public API is intended to be called via the ATProto Proxy.
 | id | serviceEndpoint |
 | --------------- | ---------------------- |
 | #skyblur_api | did:web:skyblur.uk |
+
 If you are using the official ATProto SDK, you can call it as shown below.
 ```
 const init: RequestInit = {
