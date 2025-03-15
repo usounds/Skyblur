@@ -25,10 +25,10 @@ const response = await agent.withProxy('skyblur_api', `did:web:skyblur.uk`).fetc
 First, run the development server:
 ```
 npm install
-npx wrangler dev
+npm run dev
 ```
 
 Deploy to Cloudflare Worker:
 ```
-npx wrangler deploy
+npm run deploy
 ```
