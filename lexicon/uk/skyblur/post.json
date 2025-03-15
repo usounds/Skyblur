@@ -40,8 +40,9 @@
                     },
                     "visibility": {
                         "type": "string",
+                        "knownValues": ["public", "password"],
                         "maxLength": 100,
-                        "description": "'public' or 'password'. For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody.",
+                        "description": "For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody.",
                         "maxGraphemes": 10
                     }
                 }

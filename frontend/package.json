@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 4500",
-    "lexGen": "lex gen-ts-obj ../lexicon/*/*.json > ./src/lexicon.ts",
+    "lexGen": "lex gen-ts-obj ../lexicon/*/*/*.json > ./src/lexicon.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
