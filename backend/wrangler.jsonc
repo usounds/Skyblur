@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skyblurapi",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-10",
+  "compatibility_flags": [
+     "nodejs_compat"
+  ],
+  "routes": [
+    {
+      "pattern": "api.skyblur.uk",
+      "custom_domain": true
+    }
+  ]
+}
