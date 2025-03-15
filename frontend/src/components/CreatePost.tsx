@@ -2,6 +2,7 @@
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { ReplyList } from "@/components/ReplyList";
 import { RestoreTempPost } from "@/components/RestoreTempPost";
+import { UkSkyblurPost, UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblurPost";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useAtpAgentStore } from "@/state/AtpAgent";
@@ -325,110 +326,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 }
 
-                //postObj.facets = new Array(0);
-
-
-                /*
-                // TextEncoder を使用して UTF-8 バイト配列に変換
-                const encoder = new TextEncoder();
-                const postTextBytes = encoder.encode(postTextBlurLocal);
-                const fixedTextBytes = encoder.encode(tempUrl);
-
-                // バイト列を検索するためのインデックス取得
-                let startIndex = -1;
-                for (let i = 0; i <= postTextBytes.length - fixedTextBytes.length; i++) {
-                    // バイト列が一致するかを比較
-                    if (postTextBytes.slice(i, i + fixedTextBytes.length).every((byte, index) => byte === fixedTextBytes[index])) {
-                        startIndex = i;
-                        break;
-                    }
-                }
-
-                if (startIndex !== -1) {
-                    // 見つかった場合、その位置を byteStart として設定
-                    const byteStart = startIndex;
-
-                    // byteEnd は byteStart に locale.CreatePost_Fixed の長さを加算
-                    const byteEnd = byteStart + encodeURI(tempUrl).replace(/%../g, "*").length;
-
-                    // postObj.facets に追加するオブジェクトを作成
-                    postObj.facets.push(
-                        {
-                            index: {
-                                byteStart: byteStart,
-                                byteEnd: byteEnd
-                            },
-                            features: [
-                                {
-                                    "$type": "app.bsky.richtext.facet#link",
-                                    "uri": tempUrl
-                                }
-                            ]
-                        }
-                    );
-                } else {
-                    console.log("指定された文字列が見つかりませんでした");
-                }
-
-                //メンション
-                const mentions = await detectPatternWithDetails(postTextBlurLocal)
-                console.log(mentions)
-
-
-                for (const obj of mentions) {
-                    const fromText = postTextBlurLocal.slice(0, obj.startIndex);
-                    const toText = postTextBlurLocal.slice(0, obj.endIndex);
-
-                    //マルチバイト対応
-                    const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
-                    const toIndex = encodeURI(toText).replace(/%../g, "*").length;
-
-                    postObj.facets.push(
-                        {
-                            index: {
-                                "byteStart": fromIndex,
-                                "byteEnd": toIndex
-                            },
-                            features: [
-                                {
-                                    "$type": "app.bsky.richtext.facet#mention",
-                                    "did": obj.did
-                                }
-                            ]
-                        }
-                    );
-                }
-
-                const hashTags = twitterText.extractHashtagsWithIndices(postTextBlurLocal);
-
-
-                for (const obj of hashTags) {
-                    //ハッシュタグまでの文字列とハッシュタグが終わる文字列を取得
-                    const fromText = postTextBlurLocal.slice(0, obj.indices[0]);
-                    const toText = postTextBlurLocal.slice(0, obj.indices[1]);
-
-                    //マルチバイト対応
-                    const fromIndex = encodeURI(fromText).replace(/%../g, "*").length;
-                    const toIndex = encodeURI(toText).replace(/%../g, "*").length;
-
-                    postObj.facets.push(
-                        {
-                            index: {
-                                "byteStart": fromIndex,
-                                "byteEnd": toIndex
-                            },
-                            features: [
-                                {
-                                    "$type": "app.bsky.richtext.facet#tag",
-                                    "tag": obj.hashtag
-                                }
-                            ]
-                        }
-                    );
-                }
-
-                */
-
                 // OGP設定
                 let ogpDescription = locale.CreatePost_OGPDescription;
                 if (isEncrypt) ogpDescription = ogpDescription + locale.CreatePost_OGPDescriptionPassword;
@@ -488,23 +385,32 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     additional: addText
                 }
 
-                const init: RequestInit = {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        body: JSON.stringify(encBody),
-                        password: encryptKey
-                    })
-                }
+                setButtonName(locale.CreatePost_EncryptInProgress)
 
                 const host = new URL(origin).host;
+                let appViewUrl = 'skyblur.uk'
+                if (host?.endsWith('usounds.work')) {
+                    appViewUrl = 'skyblur.usounds.work'
+                }
 
-                setButtonName(locale.CreatePost_EncryptInProgress)
-                const response = await agent.withProxy('skyblur_api', `did:web:skyblur.uk`).fetchHandler(
+                console.log(`did:web:${appViewUrl}`)
+
+
+                const body: UkSkyblurPostEncrypt.Input = {
+                    body: JSON.stringify(encBody),
+                    password: encryptKey
+
+                }
+
+                const response = await agent.withProxy('skyblur_api', `did:web:${appViewUrl}`).fetchHandler(
                     '/xrpc/uk.skyblur.post.encrypt',
-                    init
+                    {
+                        method: 'POST',
+                        body: JSON.stringify(body)
+                    }
                 )
 
-                const data = await response.json()
+                const data: UkSkyblurPostEncrypt.Output = await response.json()
                 if (response.ok) {
                     const blob = new Blob([data.body], { type: "text/plain" });
 
@@ -534,7 +440,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 } else {
                     console.error("❌ Encryption Error:", data.message);
                     handleInitButton()
-                    notifyError(data.message)
+                    notifyError(data.message || '')
                     setIsLoading(false)
                     return
                 }
@@ -593,7 +499,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         if (prevBlur) {
             handleInitButton()
             setPostText(prevBlur.blur.text, false)
-            setAddText(prevBlur.blur.additional)
+            setAddText(prevBlur.blur.additional || '')
             if (prevBlur.encryptKey) {
                 setEncryptKey(prevBlur.encryptKey)
                 setIsEncrypt(true)

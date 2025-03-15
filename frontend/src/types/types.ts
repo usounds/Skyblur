@@ -1,6 +1,7 @@
 
+import { UkSkyblurPost } from '@/lexicon/UkSkyblurPost';
+import { AppBskyActorDefs, AppBskyEmbedExternal, AppBskyEmbedImages, AppBskyEmbedRecordWithMedia, AppBskyEmbedVideo, ComAtprotoLabelDefs, } from '@atproto/api';
 import { PartialReablocksTheme } from 'reablocks';
-import { AppBskyEmbedImages, AppBskyActorDefs, AppBskyEmbedVideo, AppBskyEmbedExternal, AppBskyEmbedRecordWithMedia, ComAtprotoLabelDefs, } from '@atproto/api';
 
 export type DIDDocument = {
     '@context': string[];
@@ -35,24 +36,6 @@ export type EncryptBody = {
     additional: string;
 }
 
-
-export type PostData = {
-    text: string;
-    additional: string;
-    $type: string;
-    createdAt: string;
-    uri: string;
-    encryptBody?: {
-        $type: string;
-        ref: {
-            $link: string;
-        };
-        mimeType: string;
-        size: number;
-    };
-    visibility?: string;
-}
-
 export type Preference = {
     myPage: {
         isUseMyPage: boolean
@@ -67,7 +50,7 @@ export const VISIBILITY_PUBLIC = 'public' as string;
 export const VISIBILITY_PASSWORD = 'password' as string;
 
 export type PostListItem = {
-    blur: PostData;
+    blur: UkSkyblurPost.Record;
     blurATUri: string;
     postURL?: string;
     blurURL?: string;

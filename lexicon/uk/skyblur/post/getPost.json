@@ -1,0 +1,36 @@
+{
+    "lexicon": 1,
+    "id": "uk.skyblur.post.getPost",
+    "defs": {
+      "main": {
+        "type": "query",
+        "description": "Get Skyblur post. If the specified post is password-protected, you can retrieve the unlocked content by providing the password.",
+        "parameters": {
+          "type": "params",
+          "required": ["uri"],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "description": "Skyblur post at-uri. It shoud be uk.skyblur.post collection."
+            },
+            "password": {
+              "type": "string",
+              "description": "If the specified uri is password-protected, please provide the password. If no password is specified, the non-protected content will be returned."
+            }
+          }
+        },
+        "output": {
+          "encoding": "application/json",
+          "schema": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+              "text": { "type": "string" },
+              "additional": { "type": "string" },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }

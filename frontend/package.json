@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 4500",
-    "lexGen": "lex gen-ts-obj ../lexicon/*/*.json > ./src/lexicon.ts",
+    "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*.json ../lexicon/uk/skyblur/post/*.json -o ./src/lexicon/UkSkyblurPost.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
@@ -29,7 +29,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
-    "@atproto/lex-cli": "^0.6.2",
+    "@atcute/lex-cli": "^1.0.4",
     "@types/node": "^20.17.24",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
