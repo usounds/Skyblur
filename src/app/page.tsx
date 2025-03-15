@@ -24,6 +24,7 @@ export default function Home() {
   const mode = useModeStore((state) => state.mode);
   const setMode = useModeStore((state) => state.setMode);
   const isLoginProcess = useAtpAgentStore((state) => state.isLoginProcess);
+  const serviceUrl = useAtpAgentStore((state) => state.serviceUrl);
 
   const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
@@ -114,8 +115,8 @@ export default function Home() {
 
                                 </div>
 
-                                {agent &&
-                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={window.localStorage.getItem('oauth.pdsUrl') || 'https://bsky.social'} />
+                                {(agent && serviceUrl) &&
+                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={serviceUrl} />
                                 }
 
                               </div>

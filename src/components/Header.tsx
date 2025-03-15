@@ -21,6 +21,7 @@ const Header = () => {
   const setIsLoginProcess = useAtpAgentStore((state) => state.setIsLoginProcess);
   const setDid = useAtpAgentStore((state) => state.setDid);
   const setBlueskyLoginMessage = useAtpAgentStore((state) => state.setBlueskyLoginMessage);
+  const setServiceUrl = useAtpAgentStore((state) => state.setServiceUrl);
   const setMode = useModeStore((state) => state.setMode);
   const localeString = useLocaleStore((state) => state.locale);
   const setLocale = useLocaleStore((state) => state.setLocale);
@@ -53,7 +54,8 @@ const Header = () => {
           setUserProf,
           setIsLoginProcess,
           setDid,
-          setBlueskyLoginMessage
+          setBlueskyLoginMessage,
+          setServiceUrl
         );
 
         if (ret) {
