@@ -42,7 +42,7 @@ export default function Home() {
 
         const value = await getPreference(agent, did)
         if (value.myPage.isUseMyPage) setIsUseMyPage(true)
-        setMyPageDescription(value.myPage.description)
+        setMyPageDescription(value.myPage.description||'')
 
       } catch (e) {
         console.error(e)

@@ -40,7 +40,7 @@
                     },
                     "visibility": {
                         "type": "string",
-                        "knownValues": [
+                        "enum": [
                             "public",
                             "password"
                         ],
