@@ -496,10 +496,17 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     })
                 }
 
-                const host = new URL(origin).host;
-
                 setButtonName(locale.CreatePost_EncryptInProgress)
-                const response = await agent.withProxy('skyblur_api', `did:web:skyblur.uk`).fetchHandler(
+
+                const host = new URL(origin).host;
+                let appViewUrl = 'skyblur.uk'
+                if (host?.endsWith('usounds.work')) {
+                    appViewUrl = 'blursky.usounds.work'
+                }
+
+                console.log(`did:web:${appViewUrl}`)
+
+                const response = await agent.withProxy('skyblur_api', `did:web:${appViewUrl}`).fetchHandler(
                     '/xrpc/uk.skyblur.post.encrypt',
                     init
                 )
