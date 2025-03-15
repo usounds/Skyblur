@@ -206,9 +206,13 @@ export const PostList: React.FC<PostListProps> = ({
                 apiHost = 'skyblurapi.usounds.work'
             }
 
+            const repo = Array.isArray(did) ? did[0] : did || ''
+            if (!repo.startsWith('did:')) return
+            const validRepo = repo as `did:${string}`
+
             const decryptByCidBody: UkSkyblurPostDecryptByCid.Input = {
                 pds: pds||'',
-                repo: did,
+                repo: validRepo,
                 cid: item.blur.encryptBody?.ref.toString()||'',
                 password: item.encryptKey,
             }

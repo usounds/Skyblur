@@ -1,33 +1,46 @@
 {
-    "lexicon": 1,
-    "id": "uk.skyblur.post.encrypt",
-    "defs": {
-      "main": {
-        "type": "procedure",
-        "description": "Encrypting the post.",
-        "input": {
-          "encoding": "application/json",
-          "schema": {
-            "type": "object",
-            "required": ["body", "password"],
-            "properties": {
-              "body": { "type": "string" },
-              "password": { "type": "string" }
+  "lexicon": 1,
+  "id": "uk.skyblur.post.encrypt",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Encrypting the post.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": [
+            "body",
+            "password"
+          ],
+          "properties": {
+            "body": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
             }
           }
-        },
-        "output": {
-          "encoding": "application/json",
-          "description": "Returns the encrypted result.",
-          "schema": {
-            "type": "object",
-            "required": ["body"],
-            "properties": {
-              "body": { "type": "string" },
-              "message": { "type": "string" }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "description": "Returns the encrypted result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "body"
+          ],
+          "properties": {
+            "body": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
             }
           }
         }
       }
     }
   }
+}

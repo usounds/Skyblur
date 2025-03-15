@@ -88,10 +88,10 @@ export declare namespace UkSkyblurPost {
 export declare namespace UkSkyblurPostDecryptByCid {
   interface Params {}
   interface Input {
-    cid: string;
+    cid: At.CID;
     password: string;
     pds: string;
-    repo: string;
+    repo: At.DID;
   }
   interface Output {
     text: string;
@@ -115,13 +115,13 @@ export declare namespace UkSkyblurPostEncrypt {
 
 /** Get Skyblur post. If the specified post is password-protected, you can retrieve the unlocked content by providing the password. */
 export declare namespace UkSkyblurPostGetPost {
-  interface Params {
+  interface Params {}
+  interface Input {
     /** Skyblur post at-uri. It shoud be uk.skyblur.post collection. */
-    uri: string;
+    uri: At.Uri;
     /** If the specified uri is password-protected, please provide the password. If no password is specified, the non-protected content will be returned. */
     password?: string;
   }
-  type Input = undefined;
   interface Output {
     text: string;
     additional?: string;
@@ -133,12 +133,7 @@ export declare interface Records {
   "uk.skyblur.post": UkSkyblurPost.Record;
 }
 
-export declare interface Queries {
-  "uk.skyblur.post.getPost": {
-    params: UkSkyblurPostGetPost.Params;
-    output: UkSkyblurPostGetPost.Output;
-  };
-}
+export declare interface Queries {}
 
 export declare interface Procedures {
   "uk.skyblur.post.decryptByCid": {
@@ -148,5 +143,9 @@ export declare interface Procedures {
   "uk.skyblur.post.encrypt": {
     input: UkSkyblurPostEncrypt.Input;
     output: UkSkyblurPostEncrypt.Output;
+  };
+  "uk.skyblur.post.getPost": {
+    input: UkSkyblurPostGetPost.Input;
+    output: UkSkyblurPostGetPost.Output;
   };
 }

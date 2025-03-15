@@ -1,8 +1,9 @@
 import { Context } from 'hono'
 import { getDecrypt } from '../logic/CryptHandler'
+import { UkSkyblurPostDecryptByCid } from '../lexicon/UkSkyblurPost'
 
 export const handle = async (c: Context) => {
-    let { pds, repo, cid, password } = await c.req.json();
+    let { pds, repo, cid, password } = await c.req.json() as UkSkyblurPostDecryptByCid.Input
 
     if (!pds) {
         return c.json({ message: 'pds is required.' }, 500);
@@ -17,6 +18,6 @@ export const handle = async (c: Context) => {
         return c.json({ message: 'password is required.' }, 500);
     }
 
-    return await getDecrypt(c, pds, repo, cid,password )
+    return await getDecrypt(c, pds, repo, cid, password)
 
 }
