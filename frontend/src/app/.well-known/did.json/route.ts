@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     "service": [
       {
         "id": "#skyblur_appview",
-        "type": "SkyblurAppView",
+        "type": "AtprotoAppView",
         "serviceEndpoint": `https://${host}`
       },
 
