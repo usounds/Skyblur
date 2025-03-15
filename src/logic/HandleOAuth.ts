@@ -52,9 +52,6 @@ export async function handleOAuth(
             return false
 
           }
-
-          console.log(session.server)
-
           const agent = new Agent(session)
           setAgent(agent)
 
