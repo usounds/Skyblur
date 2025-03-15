@@ -17,7 +17,8 @@
           ],
           "properties": {
             "pds": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             },
             "repo": {
               "type": "string",
