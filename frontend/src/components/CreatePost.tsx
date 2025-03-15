@@ -501,7 +501,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 const host = new URL(origin).host;
                 let appViewUrl = 'skyblur.uk'
                 if (host?.endsWith('usounds.work')) {
-                    appViewUrl = 'blursky.usounds.work'
+                    appViewUrl = 'skyblur.usounds.work'
                 }
 
                 console.log(`did:web:${appViewUrl}`)
