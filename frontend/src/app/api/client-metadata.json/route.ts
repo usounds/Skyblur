@@ -9,8 +9,6 @@ export async function GET(request: Request) {
       envLocal = 'preview'
     } else if (origin.includes('skyblur.uk')) {
       envLocal = 'production'
-    } else if (origin.includes('apprun.sakura')) {
-      envLocal = 'apprun'
     }
   } else {
     envLocal = 'local'
