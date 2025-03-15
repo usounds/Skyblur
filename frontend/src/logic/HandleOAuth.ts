@@ -1,7 +1,7 @@
 "use client"
-import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
-import { Agent } from '@atproto/api';
 import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
+import { Agent } from '@atproto/api';
+import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
 
 export async function handleOAuth(
     getClientMetadata: () => any,

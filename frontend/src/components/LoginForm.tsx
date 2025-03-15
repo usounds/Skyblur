@@ -4,8 +4,8 @@ import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-import { useState, useEffect } from "react";
 import { Button } from 'reablocks';
+import { useEffect, useState } from "react";
 import LanguageSelect from "./LanguageSelect";
 
 export const LoginForm: React.FC = ({

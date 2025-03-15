@@ -1,17 +1,17 @@
 "use client"
 export const runtime = 'edge';
 import Header from "@/components/Header";
+import URLCopyButton from "@/components/URLCopyButton";
 import { getPreference } from "@/logic/HandleBluesky";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { customTheme } from "@/types/types";
-import { Button, Notifications, NotificationsContext, ThemeProvider, Toggle, extendTheme, theme, Input, Textarea } from 'reablocks';
-import { useEffect, useState } from "react";
-import BeatLoader from "react-spinners/BeatLoader";
-import URLCopyButton from "@/components/URLCopyButton";
 import { BlobRef } from '@atproto/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Button, Input, Notifications, NotificationsContext, Textarea, ThemeProvider, Toggle, extendTheme, theme } from 'reablocks';
+import { useEffect, useState } from "react";
+import BeatLoader from "react-spinners/BeatLoader";
 
 export default function Home() {
   const agent = useAtpAgentStore((state) => state.agent);

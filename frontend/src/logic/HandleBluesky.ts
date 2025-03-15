@@ -1,10 +1,9 @@
 
-import { DIDResponse, Service, VerificationMethod } from '@/types/types';
+import { getResolver } from "@/logic/DidPlcResolver";
+import { DIDDocument, Preference, Service, SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
 import { Agent, AtpAgent } from '@atproto/api';
-import { Preference, SKYBLUR_PREFERENCE_COLLECTION, DIDDocument } from '@/types/types';
-import { getResolver } from "@/logic/DidPlcResolver"
-import { Resolver, ResolverRegistry, DIDResolver } from 'did-resolver'
-import { getResolver as getWebResolver } from 'web-did-resolver'
+import { DIDResolver, Resolver, ResolverRegistry } from 'did-resolver';
+import { getResolver as getWebResolver } from 'web-did-resolver';
 
 const myResolver = getResolver()
 const web = getWebResolver()
