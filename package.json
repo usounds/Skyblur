@@ -7,7 +7,7 @@
     "lexGen": "lex gen-ts-obj ./lexicon/*/*.json ./src/skyblurApi",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
     "@atproto/api": "^0.13.35",
