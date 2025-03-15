@@ -24,10 +24,9 @@ export const handle = async (c: Context) => {
     if (!authorization) {
         return c.json({ message: 'Authorization Header required. This api shoud be call via atproto-proxy.' }, 500);
     }
-    const origin = 'skyblur.uk'
-    const audience = `did:web:${origin}`
 
-    console.log(audience)
+    const origin = c.env.APPVIEW_HOST
+    const audience = `did:web:${origin}`
 
     try {
         const veriry = await verifyJWT(authorization, audience)
