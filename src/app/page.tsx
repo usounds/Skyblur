@@ -115,7 +115,7 @@ export default function Home() {
 
                                 </div>
 
-                                {agent &&
+                                {(agent && serviceUrl) &&
                                   <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={serviceUrl} />
                                 }
 

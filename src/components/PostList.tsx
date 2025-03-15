@@ -154,7 +154,7 @@ export const PostList: React.FC<PostListProps> = ({
             })
 
             const ret = await agent.com.atproto.repo.applyWrites({
-                repo: did||'',
+                repo: did || '',
                 writes: writes
             })
         } catch (e) {
@@ -199,7 +199,7 @@ export const PostList: React.FC<PostListProps> = ({
     };
 
     const handleDecrypt = async (item: typeof deleteList[number]) => {
-        if(!item.encryptKey){
+        if (!item.encryptKey) {
             setDeleteList((prevList) =>
                 prevList.map((listItem) =>
                     listItem === item
@@ -233,7 +233,7 @@ export const PostList: React.FC<PostListProps> = ({
                 const data = await response.json();
                 setDeleteList((prevList) =>
                     prevList.map((listItem) =>
-                        listItem.blurATUri === item.blurATUri 
+                        listItem.blurATUri === item.blurATUri
                             ? {
                                 ...listItem,
                                 blur: {
@@ -248,9 +248,9 @@ export const PostList: React.FC<PostListProps> = ({
                             : listItem
                     )
                 );
-                
+
             } else {
-                if(response.status==403){
+                if (response.status == 403) {
                     setDeleteList((prevList) =>
                         prevList.map((listItem) =>
                             listItem === item
@@ -261,7 +261,7 @@ export const PostList: React.FC<PostListProps> = ({
                                 : listItem
                         )
                     );
-                }else{
+                } else {
                     const data = await response.json() as { message: string }
                     setDeleteList((prevList) =>
                         prevList.map((listItem) =>
@@ -281,7 +281,7 @@ export const PostList: React.FC<PostListProps> = ({
                     listItem === item
                         ? {
                             ...listItem,
-                            encryptMessage: 'Error:'+e
+                            encryptMessage: 'Error:' + e
                         }
                         : listItem
                 )
@@ -358,8 +358,11 @@ export const PostList: React.FC<PostListProps> = ({
                                 <>
                                     <div className="block text-sm text-gray-400 mt-1">{locale.DeleteList_EncryptDescription}</div>
                                     <div className="flex flex-row items-center justify-center m-2"> {/* Flexbox with centered alignment */}
-                                        <Input value={item.encryptKey}  className='h-6'
-                                            onValueChange={(value) => setEncryptKey(value, item)} />
+                                        <Input
+                                            value={item.encryptKey ?? ""}
+                                            className="h-6"
+                                            onValueChange={(value) => setEncryptKey(value, item)}
+                                        />
                                         <Button
                                             color="primary"
                                             size="medium"
