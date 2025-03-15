@@ -117,7 +117,7 @@ export declare namespace UkSkyblurPost {
      * Maximum string length: 100 \
      * Maximum grapheme length: 10
      */
-    visibility: "password" | "public" | (string & {});
+    visibility: "public" | "password";
     /**
      * The post additional contents. \
      * Maximum string length: 100000 \
