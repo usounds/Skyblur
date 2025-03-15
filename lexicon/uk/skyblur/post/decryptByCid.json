@@ -1,36 +1,60 @@
 {
-    "lexicon": 1,
-    "id": "uk.skyblur.post.decryptByCid",
-    "defs": {
-      "main": {
-        "type": "procedure",
-        "description": "Decrypting the post by blob cid.",
-        "input": {
-          "encoding": "application/json",
-          "schema": {
-            "type": "object",
-            "required": ["pds", "repo","cid","password"],
-            "properties": {
-              "pds": { "type": "string" },
-              "repo": { "type": "string" },
-              "cid": { "type": "string" },
-              "password": { "type": "string" }
+  "lexicon": 1,
+  "id": "uk.skyblur.post.decryptByCid",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Decrypting the post by blob cid.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": [
+            "pds",
+            "repo",
+            "cid",
+            "password"
+          ],
+          "properties": {
+            "pds": {
+              "type": "string",
+              "format": "uri"
+            },
+            "repo": {
+              "type": "string",
+              "format": "did"
+            },
+            "cid": {
+              "type": "string",
+              "format": "cid"
+            },
+            "password": {
+              "type": "string"
             }
           }
-        },
-        "output": {
-          "encoding": "application/json",
-          "description": "Returns the encrypted result.",
-          "schema": {
-            "type": "object",
-            "required": ["text"],
-            "properties": {
-              "text": { "type": "string" },
-              "additional": { "type": "string" },
-              "message": { "type": "string" }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "description": "Returns the encrypted result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "text"
+          ],
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "additional": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
             }
           }
         }
       }
     }
   }
+}

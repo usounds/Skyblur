@@ -1,9 +1,9 @@
-import React from 'react';
-import { LuClipboardCheck } from "react-icons/lu";
-import { Button } from 'reablocks';
 import { useLocaleStore } from "@/state/Locale";
-import { FaRegWindowRestore } from "react-icons/fa6";
 import Link from 'next/link';
+import { Button } from 'reablocks';
+import React from 'react';
+import { FaRegWindowRestore } from "react-icons/fa6";
+import { LuClipboardCheck } from "react-icons/lu";
 
 interface URLCopyButtonProps {
     url: string;

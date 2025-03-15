@@ -1,6 +1,5 @@
-import { useRef, useEffect } from "react";
-import { ErrorCallout } from 'reablocks';
-import { Button } from 'reablocks';
+import { Button, ErrorCallout } from 'reablocks';
+import { useEffect, useRef } from "react";
 
 type AutoResizeTextAreaProps = {
     text: string;

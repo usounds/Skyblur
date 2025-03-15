@@ -1,15 +1,14 @@
 "use client"
 import LanguageToggle from "@/components/LanguageToggle";
+import { handleOAuth } from "@/logic/HandleOAuth";
 import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
+import { useModeStore } from "@/state/Mode";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import Link from 'next/link';
-import React from 'react';
-import { useEffect } from "react";
-import { handleOAuth } from "@/logic/HandleOAuth"
-import { useModeStore } from "@/state/Mode";
 import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
 import { GoGear } from "react-icons/go";
 
 const Header = () => {

@@ -1,6 +1,7 @@
 import { Context } from 'hono'
 import { verifyJWT } from '../logic/JWTTokenHandler'
 import { deriveKey } from '../logic/CryptHandler'
+import { UkSkyblurPostEncrypt } from '../lexicon/UkSkyblurPost'
 
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
@@ -11,7 +12,7 @@ export const handle = async (c: Context) => {
     const origin = c.env.APPVIEW_HOST
     const audience = `did:web:${origin}`
 
-    const { body, password } = await c.req.json();
+    const { body, password } = await c.req.json() as UkSkyblurPostEncrypt.Input
     if (!body) {
         return c.json({ message: 'body is required.' }, 500);
     }
