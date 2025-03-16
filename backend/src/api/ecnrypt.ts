@@ -1,7 +1,7 @@
 import { Context } from 'hono'
-import { UkSkyblurPostEncrypt } from '../lexicon/UkSkyblur'
-import { deriveKey } from '../logic/CryptHandler'
-import { verifyJWT } from '../logic/JWTTokenHandler'
+import { UkSkyblurPostEncrypt } from '@/lexicon/UkSkyblur'
+import { deriveKey } from '@/logic/CryptHandler'
+import { verifyJWT } from '@/logic/JWTTokenHandler'
 
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
