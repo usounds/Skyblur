@@ -1,4 +1,4 @@
-import { Resolver, ParsedDID, DIDResolutionOptions, DIDDocument, } from 'did-resolver'
+import { DIDDocument, DIDResolutionOptions, ParsedDID, Resolver, } from 'did-resolver';
 
 export function getResolver() {
     async function resolve(

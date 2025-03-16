@@ -1,8 +1,9 @@
 
-import { Resolver, ResolverRegistry, DIDResolver, DIDDocument } from 'did-resolver'
-import { getResolver } from '../logic/DidPlcResolver'
-import { getResolver as getWebResolver } from 'web-did-resolver'
 import * as didJWT from 'did-jwt';
+import { DIDDocument, DIDResolver, Resolver, ResolverRegistry } from 'did-resolver';
+import { getResolver as getWebResolver } from 'web-did-resolver';
+import { getResolver } from '../logic/DidPlcResolver';
+
 const myResolver = getResolver()
 const web = getWebResolver()
 const resolver: ResolverRegistry = {
