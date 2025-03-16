@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import {handle as ecnryptHandle} from "./api/ecnrypt"
-import {handle as decryptByCidHandle} from "./api/decryptByCid"
-import {handle as getPostHandler} from "./api/getPost"
+import {handle as ecnryptHandle} from "@/api/ecnrypt"
+import {handle as decryptByCidHandle} from "@/api/decryptByCid"
+import {handle as getPostHandler} from "@/api/getPost"
 import { cors } from 'hono/cors'
 
 const app = new Hono()
