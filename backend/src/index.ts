@@ -6,9 +6,6 @@ import { cors } from 'hono/cors'
 
 const app = new Hono()
 
-
-
-
 app.options('*', (c) => {
   c.header('Access-Control-Allow-Origin', '*');
   c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
