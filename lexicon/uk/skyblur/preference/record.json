@@ -32,7 +32,7 @@
                         "refs": [
                             "uk.skyblur.preference#myPage"
                         ],
-                        "type": "ref"
+                        "type": "union"
                     }
                 }
             },
