@@ -132,8 +132,10 @@ const PostPage = () => {
       }
 
       const repo = Array.isArray(did) ? did[0] : did || ''
-      if (!repo.startsWith('did:')) return
-      const validRepo = repo as `did:${string}`
+
+      const decodedRepo = decodeURIComponent(repo);
+      if (!decodedRepo.startsWith('did:')) return
+      const validRepo = decodedRepo as `did:${string}`
 
       const body: UkSkyblurPostDecryptByCid.Input = {
         pds: pdsUrl,
