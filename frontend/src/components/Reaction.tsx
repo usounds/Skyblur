@@ -34,11 +34,18 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
         const intentResultJson = await intentResult.json();
         const intent = intentResultJson.total || 0
 
-        const response = await fetch(
-          `https://constellation.microcosm.blue/links/all?target=${encodeURIComponent(atUriPost)}`
-        );
-        if (!response.ok) {
+        let response
+
+        try {
+          response = await fetch(
+            `https://constellation.microcosm.blue/links/all?target=${encodeURIComponent(atUriPost)}`
+          );
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+        } catch (e) {
           throw new Error("Network response was not ok");
+
         }
         const data = await response.json();
         const count = data.links?.["app.bsky.feed.repost"]?.[".subject.uri"]?.records || 0;
@@ -47,11 +54,12 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
         setQuoteCount(data.links?.["app.bsky.feed.post"]?.[".embed.record.uri"]?.records || 0)
         setIntent(intent)
 
-        setIsLoading(false);
 
       } catch (error) {
         console.error("Error fetching data:", error);
       }
+
+      setIsLoading(false);
     };
 
     fetchData();
