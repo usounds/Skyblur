@@ -12,7 +12,7 @@
   "dependencies": {
     "@atproto/api": "^0.13.35",
     "@atproto/common-web": "^0.3.2",
-    "@atproto/oauth-client-browser": "^0.3.11",
+    "@atproto/oauth-client-browser": "^0.3.12",
     "did-resolver": "^4.1.0",
     "dompurify": "^3.2.4",
     "franc": "^6.2.0",
@@ -30,8 +30,8 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^1.0.4",
-    "@types/node": "^20.17.24",
-    "@types/react": "^18.3.18",
+    "@types/node": "^20.17.28",
+    "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.22.0",
