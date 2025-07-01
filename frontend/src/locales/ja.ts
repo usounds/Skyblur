@@ -21,6 +21,7 @@ const messages = {
     Login_RedirectFailed: "認可ページへの遷移に失敗しました",
     Login_Login: "ログイン",
     Login_TapToLinkProfile: "ここをタップして、あなたのアカウントが表示されるか確認してください。",
+    Login_NotDomain: "alice.bsky.socialのように「.bsky.social」を付与してください",
     CreatePost_Fixed: "[全文を読む]",
     CreatePost_Post: "本文",
     CreatePost_PostPlaceHolder: "本文を入力してください",

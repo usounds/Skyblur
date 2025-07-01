@@ -37,6 +37,13 @@ export const LoginForm: React.FC = ({
       return
     }
 
+    if (!handle.includes('.')){
+      setBlueskyLoginMessage(locale.Login_NotDomain)
+      setIsLoading(false)
+      return
+    }
+
+
     let obj
     let pds
     let host
