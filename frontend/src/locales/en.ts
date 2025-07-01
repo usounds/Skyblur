@@ -21,6 +21,7 @@ const messages = {
     Login_RedirectFailed: "Failed to redirect to the authorization page.",
     Login_Login: "Login",
     Login_TapToLinkProfile: "Tap here to check if your account is displayed.",
+    Login_NotDomain: 'Please include ".bsky.social", like "alice.bsky.social".',
     CreatePost_Fixed: "[Read full text]",
     CreatePost_Post: "Post content",
     CreatePost_PostPlaceHolder: "Please enter the content.",
