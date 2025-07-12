@@ -125,17 +125,27 @@ export const PostList: React.FC<PostListProps> = ({
     const handleDeleteItem = async () => {
         try {
             const writes = [];
+            writes.push({
+                $type: 'com.atproto.repo.applyWrites#delete',
+                collection: 'app.bsky.feed.post',
+                rkey: selectedItem?.blur.uri.split('/').pop() || '',
+            })
+            const ret = await agent.com.atproto.repo.applyWrites({
+                repo: did || '',
+                writes: writes
+            })
+        } catch (e) {
+            //　握りつぶす
+            console.error("エラーが発生しました:", e);
+        }
+
+        try {
+            const writes = [];
 
             writes.push({
                 $type: 'com.atproto.repo.applyWrites#delete',
                 collection: 'uk.skyblur.post',
                 rkey: selectedItem?.blurATUri.split('/').pop() || '',
-            })
-
-            writes.push({
-                $type: 'com.atproto.repo.applyWrites#delete',
-                collection: 'app.bsky.feed.post',
-                rkey: selectedItem?.blur.uri.split('/').pop() || '',
             })
 
             const ret = await agent.com.atproto.repo.applyWrites({
@@ -148,7 +158,7 @@ export const PostList: React.FC<PostListProps> = ({
             notifyError('Error:' + e)
             return
         }
-        // 実際の削除処理をここに追加
+
         notifySuccess(locale.DeleteList_Complete)
         console.log("削除されました:", selectedItem);
 
@@ -211,9 +221,9 @@ export const PostList: React.FC<PostListProps> = ({
             const validRepo = repo as `did:${string}`
 
             const decryptByCidBody: UkSkyblurPostDecryptByCid.Input = {
-                pds: pds||'',
+                pds: pds || '',
                 repo: validRepo,
-                cid: item.blur.encryptBody?.ref.toString()||'',
+                cid: item.blur.encryptBody?.ref.toString() || '',
                 password: item.encryptKey,
             }
             const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
@@ -225,7 +235,7 @@ export const PostList: React.FC<PostListProps> = ({
             });
 
             if (response.ok) {
-                const data:UkSkyblurPostDecryptByCid.Output = await response.json()
+                const data: UkSkyblurPostDecryptByCid.Output = await response.json()
                 setDeleteList((prevList) =>
                     prevList.map((listItem) =>
                         listItem.blurATUri === item.blurATUri
