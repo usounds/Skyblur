@@ -89,7 +89,7 @@ export default function Home() {
                     </>
                   }
                   {blueskyLoginMessage &&
-                    <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
+                    <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2 text-red-500">
                       <p className="mt-2">{blueskyLoginMessage}</p>
                     </div>
                   }
