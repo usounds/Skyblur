@@ -43,6 +43,11 @@ export const LoginForm: React.FC = ({
       return
     }
 
+    if (handle.startsWith('@')){
+      setBlueskyLoginMessage(locale.Login_WithAt)
+      setIsLoading(false)
+      return
+    }
 
     let obj
     let pds
@@ -167,11 +172,8 @@ export const LoginForm: React.FC = ({
 
       {(!isLoading && blueskyLoginMessage) &&
 
-        <div>
-          <a href={"https://bsky.app/profile/" + handle} target="_blank" className="mt-4">{blueskyLoginMessage}
-            {locale.Login_TapToLinkProfile}
-          </a>
-        </div>
+          <div className="mt-4 text-red-500">{blueskyLoginMessage}
+          </div>
       }
 
       <div className="mt-2">
