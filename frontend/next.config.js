@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   output: 'standalone',
   reactStrictMode: true,  
   images: {

@@ -1,6 +1,7 @@
 {
   "name": "skyblur",
   "version": "0.2.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev -p 4500",
@@ -43,6 +44,7 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9.33.0",
     "eslint-config-next": "^15.4.6",
+    "eslint-plugin-next": "^0.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "tw-colors": "^3.3.2",
