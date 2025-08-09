@@ -79,14 +79,14 @@ const PostPage = () => {
               getPreferenceProcess(repo, pdsAgent),
             ]);
 
-            if (!userProfileResponse.ok ) {
+            if (!userProfileResponse.ok) {
               setErrorMessage('Get Profile Failed.');
-              setIsLoading(false); 
+              setIsLoading(false);
               return
             }
             if (!postResponse.ok) {
               setErrorMessage('Get Post Failed.');
-              setIsLoading(false); 
+              setIsLoading(false);
               return
 
             }
@@ -267,8 +267,8 @@ const PostPage = () => {
                             </Button>
                           </div>
                           {decryptError &&
-                            <div className="whitespace-pre-wrap break-words text-red-800">
-                              {decryptError}
+                            <div className="flex justify-center">
+                              <div className="block text-sm text-red-400 my-1">{decryptError}</div>
                             </div>
                           }
                         </>
