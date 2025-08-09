@@ -64,7 +64,11 @@ const PostPage = () => {
                             getPostResponse(repoLocal, pdsAgent),
                         ]);
 
-                        if (!userProfileResponse.ok) return
+                        if (!userProfileResponse.ok) {
+                            setErrorMessage('Get Profile Failed.s');
+                            setIsLoading(false); // ローディング状態を終了
+                            return
+                        }
 
                         // userProfileのデータをセット
                         setUserProf(userProfileResponse.data);
