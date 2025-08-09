@@ -27,6 +27,7 @@
       ]
     },
     "production": {
+      "custom_domain": "skyblur.uk",
       "observability": {
         "enabled": true,
         "head_sampling_rate": 0.05
