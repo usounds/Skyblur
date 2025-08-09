@@ -94,7 +94,7 @@ const DynamicHeader = () => {
       setDid('');
       setIsLoginProcess(false);
 
-      window.localStorage.removeItem('oauth.pdsUrl');
+      window.localStorage.removeItem('oauth.did');
       window.localStorage.removeItem('oauth.handle');
 
       router.push('/');
