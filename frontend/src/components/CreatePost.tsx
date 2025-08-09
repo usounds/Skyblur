@@ -8,7 +8,7 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
+import { PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, MENTION_REGEX } from "@/types/types";
 import type { } from '@atcute/atproto';
 import type { } from '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
@@ -20,6 +20,8 @@ import { franc } from 'franc';
 import { Button, IconButton, Input, Toggle, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
 import type { } from '../../src/lexicon/UkSkyblur';
+import { resolveFromIdentity } from '@atcute/oauth-browser-client';
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
 type CreatePostProps = {
@@ -288,6 +290,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 const facets: AppBskyRichtextFacet.Main[] = [];
 
+                // ハッシュタグ
                 let m: RegExpExecArray | null;
                 function utf16IndexToUtf8Index(str: string, utf16Index: number): number {
                     return new TextEncoder().encode(str.slice(0, utf16Index)).length;
@@ -324,8 +327,54 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     });
                 }
 
-                //const rt = new RichText({ text: postTextBlurLocal });
-                //await rt.detectFacets(agent);
+                // ドメインの簡易検証関数
+                function isLikelyValidDomain(domain: string) {
+                    return /^[\w.-]+\.[a-z]{2,}$/i.test(domain);
+                }
+
+                async function extractMentionsWithFacets(text: string) {
+                    console.log('text')
+                    console.log(text)
+
+                    for (const match of text.matchAll(MENTION_REGEX)) {
+                        const handle = match[3];
+
+                        // ドメインチェック（.test は特例として許可）
+                        if (!isLikelyValidDomain(handle) && !handle.endsWith(".test")) {
+                            continue;
+                        }
+
+                        const startIndexUtf16 = match.index ?? 0;
+                        const endIndexUtf16 = startIndexUtf16 + match[0].length;
+
+                        console.log('handke:'+handle)
+
+                        const result = await resolveFromIdentity(handle)
+
+
+                        facets.push({
+                            $type: "app.bsky.richtext.facet",
+                            index: {
+                                byteStart: utf16IndexToUtf8Index(text, startIndexUtf16),
+                                byteEnd: utf16IndexToUtf8Index(text, endIndexUtf16),
+                            },
+                            features: [
+                                {
+                                    $type: "app.bsky.richtext.facet#mention",
+                                    did: result.identity.id,
+                                },
+                            ],
+                        });
+                    }
+
+                    return facets;
+                }
+                
+                const mentionFacets = await extractMentionsWithFacets(postTextBlurLocal);
+                console.log(mentionFacets)
+                facets.push(...mentionFacets);
+
+                console.log(facets)
 
                 const langs = [detectLanguage(postText)]
 
