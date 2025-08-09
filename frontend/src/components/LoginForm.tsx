@@ -38,47 +38,66 @@ export const LoginForm: React.FC = ({
       return
     }
 
-    let obj
-    let pds
-    let host
-
     try {
       setBlueskyLoginMessage(locale.Login_DidResolve)
 
       const serverMetadata = getClientMetadata();
 
-      if(serverMetadata === undefined) {
+      if (serverMetadata === undefined) {
         return
       }
 
       configureOAuth({
         metadata: {
-          client_id: serverMetadata.client_id||'',
-          redirect_uri: serverMetadata.redirect_uris[0]||'',
+          client_id: serverMetadata.client_id || '',
+          redirect_uri: serverMetadata.redirect_uris[0] || '',
         },
       });
 
       console.log(serverMetadata)
 
-      const { identity, metadata } = await resolveFromIdentity(handle);
+      let identity, metadata;
+      try {
+        const resolved = await resolveFromIdentity(handle);
+        identity = resolved.identity;
+        metadata = resolved.metadata;
 
-      let host
+      } catch (e) {
+        console.error('resolveFromIdentity error:', e);
+        setBlueskyLoginMessage(locale.Login_InvalidHandle)
+        setIsLoading(false);
+        return;
+      }
 
+      if (!identity) {
+        setBlueskyLoginMessage(locale.Login_InvalidHandle)
+        setIsLoading(false)
+        return
+      }
+
+      let host;
       if (identity.pds.host.endsWith('.bsky.network')) {
         host = 'bsky.social'
       } else {
         host = identity.pds.host
-
       }
 
       setBlueskyLoginMessage(locale.Login_Redirect.replace("{1}", host))
       window.localStorage.setItem('oauth.handle', handle)
 
-      const authUrl = await createAuthorizationUrl({
-        metadata: metadata,
-        identity: identity,
-        scope: 'atproto transition:generic',
-      });
+      let authUrl;
+      try {
+        authUrl = await createAuthorizationUrl({
+          metadata: metadata,
+          identity: identity,
+          scope: 'atproto transition:generic',
+        });
+      } catch (e) {
+        console.error('createAuthorizationUrl error:', e);
+        setBlueskyLoginMessage('Failed to create authorization URL');
+        setIsLoading(false);
+        return;
+      }
 
       // recommended to wait for the browser to persist local storage before proceeding
       await sleep(200);
@@ -97,14 +116,12 @@ export const LoginForm: React.FC = ({
         window.addEventListener('pageshow', listener, { once: true });
       });
     } catch (e) {
-      console.error(e)
-      setBlueskyLoginMessage(locale.Login_InvalidHandle)
+      console.error('Unexpected error:', e)
+      setBlueskyLoginMessage('Unexpected Error:' + e)
+    } finally {
       setIsLoading(false)
-      return
-
     }
 
-    setIsLoading(false)
   }
 
   useEffect(() => {
