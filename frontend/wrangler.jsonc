@@ -8,10 +8,9 @@
     "binding": "ASSETS"
   },
   "r2_buckets": [
-    // Create a R2 binding with the binding name "NEXT_INC_CACHE_R2_BUCKET"
      {
        "binding": "NEXT_INC_CACHE_R2_BUCKET",
-       "bucket_name": "skyblur-bucket-preview",
+       "bucket_name": "skyblur-cache",
      },
   ],
   "env": {
@@ -23,19 +22,19 @@
       "r2_buckets": [
         {
           "binding": "NEXT_INC_CACHE_R2_BUCKET",
-          "bucket_name": "skyblur-bucket-preview"
+          "bucket_name": "skyblur-cache"
         }
       ]
     },
     "production": {
       "observability": {
-        "enabled": false,
+        "enabled": true,
         "head_sampling_rate": 0.05
       },
       "r2_buckets": [
         {
-          "binding": "MY_BUCKET",
-          "bucket_name": "skyblur-bucket"
+          "binding": "NEXT_INC_CACHE_R2_BUCKET",
+          "bucket_name": "skyblur-cache"
         }
       ]
     }
