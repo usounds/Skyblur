@@ -65,7 +65,6 @@ const DynamicHeader = () => {
   
           if (ret) {
             setMode('menu')
-            console.log(`成功: ${did}`)
   
           }
           setIsLoginProcess(false)
