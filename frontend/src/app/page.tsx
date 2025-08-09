@@ -3,13 +3,13 @@ import { CreatePostForm } from "@/components/CreatePost";
 import Loading from "@/components/Loading";
 import { LoginForm } from "@/components/LoginForm";
 import { PostList } from "@/components/PostList";
-import { useEffect, useState } from "react";
-import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { PostListItem, customTheme } from "@/types/types";
 import Image from 'next/image';
 import { Button, Notifications, NotificationsContext, ThemeProvider, extendTheme, theme } from 'reablocks';
+import { useEffect, useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
 
 export default function Home() {

@@ -1,15 +1,10 @@
 "use client"
-//import { useAtpAgentStore } from "@/state/AtpAgent";
-import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
-//import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-import { resolveFromIdentity } from '@atcute/oauth-browser-client';
-import { createAuthorizationUrl } from '@atcute/oauth-browser-client';
+import { configureOAuth, createAuthorizationUrl, resolveFromIdentity } from '@atcute/oauth-browser-client';
 import { Button } from 'reablocks';
 import { useEffect, useState } from "react";
 import LanguageSelect from "./LanguageSelect";
-import { configureOAuth } from '@atcute/oauth-browser-client';
 
 export const LoginForm: React.FC = ({
 }) => {
@@ -108,28 +103,6 @@ export const LoginForm: React.FC = ({
       return
 
     }
-
-    //      if (!obj.success) {
-    //        setBlueskyLoginMessage(locale.Login_InvalidHandle)
-    //        setIsLoading(false)
-    //        return
-
-    //      }
-    //setBlueskyLoginMessage(locale.Login_PDSResolve)
-    //pds = await fetchServiceEndpoint(obj.data.did) || ""
-
-    //const match = pds.match(/https?:\/\/([^/]+)/);
-    //if (!match) {
-    //  throw new Error("Invalid URL");
-    //}
-
-    //host = match[1];
-
-    // "bsky.network" を "bsky.social" に置き換え
-    //if (host.endsWith("bsky.network")) {
-    //  host = "bsky.social";
-    //}
-
 
     setIsLoading(false)
   }

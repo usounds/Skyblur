@@ -1,17 +1,16 @@
 "use client";
 
-import { useXrpcAgentStore } from '@/state/XrpcAgent';
+import LanguageToggle from '@/components/LanguageToggle';
+import { handleOAuth } from "@/logic/HandleOAuth";
 import { useLocaleStore } from '@/state/Locale';
 import { useModeStore } from '@/state/Mode';
-import Loading from "@/components/Loading";
-import Link from 'next/link';
-import { GoGear } from 'react-icons/go';
-import LanguageToggle from '@/components/LanguageToggle';
-import { useRouter } from 'next/navigation';
-import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
-import { useEffect, useState } from "react";
-import { handleOAuth } from "@/logic/HandleOAuth";
+import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { getClientMetadata } from '@/types/ClientMetadataContext';
+import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { GoGear } from 'react-icons/go';
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);

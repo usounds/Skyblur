@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { Client,simpleFetchHandler } from '@atcute/client';
-import { OAuthUserAgent } from '@atcute/oauth-browser-client';
 import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { OAuthUserAgent } from '@atcute/oauth-browser-client';
+import { create } from 'zustand';
 
 type State = {
     agent: Client | null;
