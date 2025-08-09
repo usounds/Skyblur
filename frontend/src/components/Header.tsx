@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import DynamicHeader from './DynamicHeader'; // クライアントコンポーネント化した動的部分
+import DynamicHeader from './DynamicHeader';
 
 const Header = () => {
   return (
