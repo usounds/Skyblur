@@ -7,17 +7,26 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "r2_buckets": {
+    "MY_BUCKET": "skybur-backet"
+  },
   "env": {
     "preview": {
       "observability": {
         "enabled": true,
         "head_sampling_rate": 1
+      },
+      "r2_buckets": {
+        "MY_BUCKET": "skybur-backet-preview"
       }
     },
     "production": {
       "observability": {
         "enabled": false,
         "head_sampling_rate": 0.05
+      },
+      "r2_buckets": {
+        "MY_BUCKET":"skybur-backet"
       }
     }
   }
