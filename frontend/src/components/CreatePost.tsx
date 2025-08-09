@@ -8,10 +8,10 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem, PostView, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
+import { PostListItem, PostView, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, TAG_REGEX, TRAILING_PUNCTUATION_REGEX } from "@/types/types";
 import type { } from '@atcute/atproto';
 import type { } from '@atcute/bluesky';
-import { AppBskyFeedPost } from '@atcute/bluesky';
+import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier, isDid, ResourceUri } from '@atcute/lexicons/syntax';
 import * as TID from '@atcute/tid';
@@ -328,6 +328,45 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 //投稿
                 const postTextBlurLocal: string = postTextBlur;
+
+                const facets: AppBskyRichtextFacet.Main[] = [];
+
+                let m: RegExpExecArray | null;
+                function utf16IndexToUtf8Index(str: string, utf16Index: number): number {
+                    return new TextEncoder().encode(str.slice(0, utf16Index)).length;
+                }
+
+                while ((m = TAG_REGEX.exec(postTextBlurLocal))) {
+                    const prefix = m[1];
+                    let candidateTag = m[2];
+
+                    if (!candidateTag) continue;
+
+                    candidateTag = candidateTag.trim().replace(TRAILING_PUNCTUATION_REGEX, '');
+
+                    if (candidateTag.length === 0 || candidateTag.length > 64) continue;
+
+                    const startPos = m.index + prefix.length;
+                    const fullTag = '#' + candidateTag;
+
+                    const byteStart = utf16IndexToUtf8Index(postTextBlurLocal, startPos);
+                    const byteLength = new TextEncoder().encode(fullTag).length;
+                    const byteEnd = byteStart + byteLength;
+
+                    facets.push({
+                        index: {
+                            byteStart,
+                            byteEnd,
+                        },
+                        features: [
+                            {
+                                $type: 'app.bsky.richtext.facet#tag' as const,
+                                tag: candidateTag,
+                            },
+                        ],
+                    });
+                }
+
                 //const rt = new RichText({ text: postTextBlurLocal });
                 //await rt.detectFacets(agent);
 
@@ -346,7 +385,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     via: 'Skyblur',
                     "uk.skyblur.post.uri": blurUri,
                     "uk.skyblur.post.visibility": visibility,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    facets: facets
                 };
 
                 if (replyPost) {
@@ -646,13 +686,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <label className="">{locale.CreatePost_Post}</label>
 
                         <div className="flex my-1">
-                            <p className="flex items-center">
+                            <div className="flex items-center">
                                 <Toggle
                                     checked={simpleMode}
                                     onChange={handleCheckboxChange} // Boolean を渡します
                                 />
                                 <span className="ml-2">{locale.CreatePost_SimpleMode}</span>
-                            </p>
+                            </div>
                         </div>
                         {simpleMode ?
                             <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PostSimpleModeDescription}</div>
@@ -710,13 +750,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             <div className='mb-6 '>
                                 <div className='mt-4 mb-2'>{locale.ReplyList_Reply}</div>
                                 <div className="block text-sm text-gray-400 mt-1">{locale.ReplyList_ReplyLabelDescription}</div>
-                                <p className="flex items-center mt-2">
+                                <div className="flex items-center mt-2">
                                     <Toggle
                                         checked={isReply}
                                         onChange={handleSetIsReply} // Boolean を渡します
                                     />
                                     <span className="ml-2">{locale.ReplyList_UseReply}</span>
-                                </p>
+                                </div>
 
                                 {isReply &&
                                     <>
@@ -756,14 +796,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         <div className='mb-6 '>
                             <div className='mt-4 mb-2'>{locale.CreatePost_PasswordTitle}</div>
                             <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PasswordDescription}</div>
-                            <p className="flex items-center mt-2">
+                            <div className="flex items-center mt-2">
                                 <Toggle
                                     checked={isEncrypt}
                                     onChange={setIsEncrypt} // Boolean を渡します
                                     disabled={prevBlur ? true : false}
                                 />
                                 <span className="ml-2">{locale.CreatePost_PasswordRadio}</span>
-                            </p>
+                            </div>
 
                             {isEncrypt &&
                                 <div className=''>

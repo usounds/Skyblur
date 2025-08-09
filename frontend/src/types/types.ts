@@ -158,3 +158,8 @@ export const customTheme: PartialReablocksTheme = {
         }
     },
 };
+
+export const TAG_REGEX =
+  // eslint-disable-next-line no-misleading-character-class
+  /(^|\s)[#＃]((?!\ufe0f)[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*[^\d\s\p{P}\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]+[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*)?/gu
+export const TRAILING_PUNCTUATION_REGEX = /\p{P}+$/gu
