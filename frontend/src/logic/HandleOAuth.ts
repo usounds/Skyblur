@@ -1,12 +1,14 @@
 "use client"
 import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
 import { Client } from '@atcute/client';
+import { ClientMetadata } from '@atcute/oauth-browser-client';
 import { OAuthUserAgent, configureOAuth, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
+import { AppBskyActorDefs } from '@atcute/bluesky';
 
 export async function handleOAuth(
-  getClientMetadata: () => any,
+  getClientMetadata: () => ClientMetadata | null | undefined,
   setAgent: (agent: Client) => void,
-  setUserProf: (profile: any) => void,
+  setUserProf: (profile: AppBskyActorDefs.ProfileViewDetailed | null) => void,
   setIsLoginProcess: (isLoginProcess: boolean) => void,
   setOauthUserAgent: (oauthUserAgent: OAuthUserAgent) => void,
   setDid: (did: string) => void,
@@ -14,18 +16,19 @@ export async function handleOAuth(
   setServiceUrl: (serviceUrl: string) => void,
 ): Promise<boolean> {
   const serverMetadata = getClientMetadata();
+  if (!serverMetadata) return false
 
   const did = window.localStorage.getItem('oauth.did')
 
   configureOAuth({
     metadata: {
-      client_id: serverMetadata.client_id,
+      client_id: serverMetadata.client_id || '',
       redirect_uri: serverMetadata.redirect_uris[0],
     },
   });
 
   const params = new URLSearchParams(location.hash.slice(1))
-  
+
   //コールバック
   if (params.size === 3 || params.size === 4) {
 
@@ -56,11 +59,18 @@ export async function handleOAuth(
 
       window.localStorage.setItem('oauth.did', agent.sub)
 
+      if (!userProfile.ok) {
+        setBlueskyLoginMessage("Negative Navigate")
+        return false
+
+      }
+
       setUserProf(userProfile.data)
       setIsLoginProcess(false)
       setDid(agent.sub)
       return true
     } catch (e) {
+      console.error(e)
       setBlueskyLoginMessage("Negative Navigate")
       return false
 
@@ -86,13 +96,18 @@ export async function handleOAuth(
           actor: agent.sub,
         },
       })
+      if (!userProfile.ok) {
+        setBlueskyLoginMessage("Negative Navigate")
+        return false
+
+      }
 
       setUserProf(userProfile.data)
       setIsLoginProcess(false)
       setDid(agent.sub)
       return true
     } catch (e) {
-      console.log(`OAuth未認証です`)
+      console.log(`OAuth未認証です:${e}`)
       setIsLoginProcess(false)
       return false
     }

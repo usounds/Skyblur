@@ -19,12 +19,6 @@ export type VerificationMethod = {
     publicKeyMultibase: string;
 }
 
-export type DIDResponse = {
-    didDocument: DIDDocument;
-    didResolutionMetadata: any;
-    didDocumentMetadata: any;
-}
-
 export type Service = {
     id: string;
     type: string;

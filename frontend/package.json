@@ -37,9 +37,11 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^1.1.1",
+    "@eslint/eslintrc": "^3.3.1",
     "@types/node": "^20.19.8",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.33.0",
     "eslint-config-next": "^15.4.6",

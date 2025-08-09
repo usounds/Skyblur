@@ -13,7 +13,7 @@ import type { } from '@atcute/atproto';
 import type { } from '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
 import { Client } from '@atcute/client';
-import { ActorIdentifier, isDid, ResourceUri } from '@atcute/lexicons/syntax';
+import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import * as TID from '@atcute/tid';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
@@ -120,48 +120,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     }
 
-    type MatchInfo = {
-        detectedString: string;
-        startIndex: number;
-        endIndex: number;
-        did: string;
-    }
-
-    async function detectPatternWithDetails(str: string): Promise<MatchInfo[]> {
-        if (!agent) return []
-        const matches: MatchInfo[] = [];
-        const regex = /@[a-z]+(?:\.[a-z]+)+(?=\s|$|[\u3000-\uFFFD])/g;
-        let match: RegExpExecArray | null;
-
-        while ((match = regex.exec(str)) !== null) {
-            try {
-                const actorId = match[0].slice(1) as ActorIdentifier
-
-                if (!isDid(match[0].slice(1))) return []
-                const result = await agent.get("app.bsky.actor.getProfile", {
-                    params: {
-                        actor: actorId
-                    }
-                });
-
-                if (!result.ok) return []
-                matches.push({
-                    detectedString: match[0],
-                    startIndex: match.index,
-                    endIndex: match.index + match[0].length,
-                    did: result.data.did as ActorIdentifier
-                });
-            } catch (e) {
-                console.error(e)
-
-            }
-        }
-
-
-        return matches;
-    }
-
-
     const setPostText = (text: string, simpleMode: boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
@@ -267,8 +225,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             }
 
-            let localPrevPostAturi = `at://${did}/app.bsky.feed.post/${rkey}`
-
+            const localPrevPostAturi = `at://${did}/app.bsky.feed.post/${rkey}`
             const url = '/post/' + did + "/" + rkey
             const tempUrl = origin + url
             const blurUri = `at://${did}/${SKYBLUR_POST_COLLECTION}/${rkey}`
@@ -378,7 +335,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     "uk.skyblur.post.visibility"?: string;
                 };
 
-                let appBskyFeedPost: MyPost = {
+                const appBskyFeedPost: MyPost = {
                     $type: "app.bsky.feed.post",
                     text: postTextBlurLocal,
                     langs: langs,
@@ -423,8 +380,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     },
                 };
 
-                const applyKey = 'com.atproto.repo.applyWrites#create' as const;
-
                 //URLをリンク化
                 Object.keys(urlArray).forEach(function (key) {
                     if (typeof appBskyFeedPost.facets !== "undefined") {
@@ -467,7 +422,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             if (isEncrypt) {
 
-                let encBody = {
+                const encBody = {
                     text: postText,
                     additional: addText
                 }
@@ -480,14 +435,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     appViewUrl = 'skyblur.usounds.work'
                 }
 
-                console.log(`did:web:${appViewUrl}`)
-
-
                 const body: UkSkyblurPostEncrypt.Input = {
                     body: JSON.stringify(encBody),
                     password: encryptKey
-
-
                 }
 
                 if (!oauthUserAgent) return

@@ -138,6 +138,7 @@ const PostPage = () => {
       const preference = await getPreference(pdsAgent, repo)
       if (preference?.myPage.isUseMyPage) setIsMyPage(true)
     } catch (e) {
+      console.log(e)
 
     }
   }
@@ -197,6 +198,7 @@ const PostPage = () => {
         },
       });
     } catch (e) {
+      console.log(e)
       return await pdsAgent.get('com.atproto.repo.getRecord', {
         params: {
           repo: repo as ActorIdentifier,

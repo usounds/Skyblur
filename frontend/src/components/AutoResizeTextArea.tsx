@@ -1,12 +1,13 @@
 import { Button, ErrorCallout } from 'reablocks';
 import { useEffect, useRef } from "react";
+import en from "@/locales/en";
 
 type AutoResizeTextAreaProps = {
     text: string;
     setPostText: (value: string) => void;
     disabled: boolean;
     placeHolder: string;
-    locale: any;
+    locale: typeof en;
     max: number;
     isEnableBrackets: boolean;
     error?: string

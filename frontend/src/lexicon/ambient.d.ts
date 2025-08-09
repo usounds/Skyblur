@@ -1,5 +1,4 @@
-// src/lexicon/ambient.d.ts
-
+/* eslint-disable */
 import type * as UkSkyblur from "./UkSkyblur";
 
 declare module "@atcute/lexicons/ambient" {
