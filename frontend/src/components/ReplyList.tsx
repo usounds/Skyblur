@@ -1,5 +1,6 @@
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
+//import { useAtpAgentStore } from "@/state/AtpAgent";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { PostView } from "@/types/types";
 import { Button, Input, Step, Stepper } from 'reablocks';
@@ -15,7 +16,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
 }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentCursor, setCursor] = useState("");
-    const agent = useAtpAgentStore((state) => state.agent);
+    const agent = useXrpcAgentStore((state) => state.agent);
     const LIMIT = 10
     const [postList, setPostList] = useState<PostView[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -32,11 +33,16 @@ export const ReplyList: React.FC<ReplyListProps> = ({
         if (!agent) return
         setIsLoading(true)
         setPostList([])
-        const result = await agent.app.bsky.feed.searchPosts({
-            q: "from:me " + searchTerm,
-            limit: LIMIT,
-            cursor: ''
-        })
+
+        const result = await agent.get("app.bsky.feed.searchPosts", {
+            params: {
+                q: "from:me " + searchTerm,
+                limit: LIMIT,
+                cursor: ''
+            }
+        });
+
+        if (!result.ok) return
 
         setCursor(result.data.cursor || "")
 
@@ -53,11 +59,16 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     const getNext = async () => {
         if (!agent) return
         setIsLoading(true)
-        const result = await agent.app.bsky.feed.searchPosts({
-            q: "from:me " + searchTerm,
-            limit: LIMIT,
-            cursor: currentCursor
-        })
+
+        const result = await agent.get("app.bsky.feed.searchPosts", {
+            params: {
+                q: "from:me " + searchTerm,
+                limit: LIMIT,
+                cursor: currentCursor
+            }
+        });
+        
+        if (!result.ok) return
 
         setCursor(result.data.cursor || "")
 

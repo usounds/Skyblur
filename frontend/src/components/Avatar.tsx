@@ -1,5 +1,5 @@
 
-import { AppBskyActorDefs } from '@atproto/api';
+import { AppBskyActorDefs } from '@atcute/bluesky';
 import Image from 'next/image';
 import Link from 'next/link';
 

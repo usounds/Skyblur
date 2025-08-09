@@ -1,17 +1,18 @@
 "use client"
-export const runtime = 'edge';
 import { Avatar } from "@/components/Avatar";
-import Header from "@/components/Header";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { SKYBLUR_POST_COLLECTION, customTheme } from '@/types/types';
-import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
+import Loading from "@/components/Loading";
+import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -28,21 +29,24 @@ const PostPage = () => {
   const [postAtUri, setPostAtUri] = useState("");
   const [postDate, setPostDate] = useState<string>('')
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [decryptError, setDecryptError] = useState<string>('')
   const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const locale = useLocaleStore((state) => state.localeData);
-  const apiAgent = useAtpAgentStore((state) => state.publicAgent);
+  const apiAgent = useXrpcAgentStore((state) => state.publicAgent);
   const searchParams = useSearchParams();
-  const agent = useAtpAgentStore((state) => state.agent);
+  const agent = useXrpcAgentStore((state) => state.agent);
   const [encryptKey, setEncryptKey] = useState("");
   const [encryptCid, setEncryptCid] = useState('')
   const [isDecrypt, setIsDecrypt] = useState<boolean>(false)
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
   const [pdsUrl, setPdsUrl] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
 
   const q = searchParams.get('q');
   const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
 
   useEffect(() => {
+    setIsMounted(true);
     if (did && rkey) {
 
 
@@ -57,8 +61,10 @@ const PostPage = () => {
 
           const pdsUrl = await fetchServiceEndpoint(repo)
 
-          const pdsAgent = new AtpAgent({
-            service: pdsUrl || ''
+          const pdsAgent = new Client({
+            handler: simpleFetchHandler({
+              service: pdsUrl ?? '',
+            }),
           })
 
           setPdsUrl(pdsUrl || '')
@@ -66,16 +72,30 @@ const PostPage = () => {
           try {
             // getProfileとgetRecordを並行して呼び出す
             const [userProfileResponse, postResponse] = await Promise.all([
-              apiAgent.getProfile({ actor: repo }),
+              apiAgent.get('app.bsky.actor.getProfile', {
+                params: { actor: repo as ActorIdentifier },
+              }),
               getPostResponse(repo, rkeyParam, pdsAgent),
-              getPreferenceProcess(repo, pdsAgent)
+              getPreferenceProcess(repo, pdsAgent),
             ]);
+
+            if (!userProfileResponse.ok) {
+              setErrorMessage('Get Profile Failed.');
+              setIsLoading(false);
+              return
+            }
+            if (!postResponse.ok) {
+              setErrorMessage('Get Post Failed.');
+              setIsLoading(false);
+              return
+
+            }
 
             // userProfileのデータをセット
             setUserProf(userProfileResponse.data);
 
             // postDataのデータをセット
-            const postData: UkSkyblurPost.Record = postResponse.data.value as UkSkyblurPost.Record;
+            const postData: UkSkyblurPost.Record = postResponse.data.value as unknown as UkSkyblurPost.Record;
 
             const tempPostText = postData.text
 
@@ -89,7 +109,9 @@ const PostPage = () => {
             setBskyUrl(convertedUri)
             setPostAtUri(postData.uri)
 
-            if (postData.encryptBody) setEncryptCid(postData.encryptBody.ref.toString())
+            console.log()
+
+            if (postData.encryptBody) setEncryptCid(postData.encryptBody.ref.$link)
 
             setIsLoading(false); // ローディング状態を終了
 
@@ -111,81 +133,87 @@ const PostPage = () => {
   }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
-  async function getPreferenceProcess(repo: string, pdsAgent: AtpAgent) {
+  async function getPreferenceProcess(repo: string, pdsAgent: Client) {
     try {
       const preference = await getPreference(pdsAgent, repo)
-      if (preference.myPage.isUseMyPage) setIsMyPage(true)
+      if (preference?.myPage.isUseMyPage) setIsMyPage(true)
     } catch (e) {
+      console.log(e)
 
     }
   }
 
-
   async function handleDecrypt() {
+    setDecryptError("");
     setIsDecrypting(true)
 
-    try {
-      const host = new URL(origin).host;
-      let apiHost = 'api.skyblur.uk'
-      if (host?.endsWith('usounds.work')) {
-        apiHost = 'skyblurapi.usounds.work'
-      }
-
-      const repo = Array.isArray(did) ? did[0] : did || ''
-
-      const decodedRepo = decodeURIComponent(repo);
-      if (!decodedRepo.startsWith('did:')) return
-      const validRepo = decodedRepo as `did:${string}`
-
-      const body: UkSkyblurPostDecryptByCid.Input = {
-        pds: pdsUrl,
-        repo: validRepo,
-        cid: encryptCid,
-        password: encryptKey,
-
-      }
-      const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (response.ok) {
-        const data = await response.json() as UkSkyblurPostDecryptByCid.Output
-        setPostText(data.text);
-        setAddText(data.additional||'');
-
-        setIsDecrypt(true)
-      }
-    } catch (e) {
-      setErrorMessage("Failed to decrypt");
-      console.error(e)
+    const host = new URL(origin).host;
+    let apiHost = 'api.skyblur.uk'
+    if (host?.endsWith('usounds.work')) {
+      apiHost = 'skyblurapi.usounds.work'
     }
 
+    const repo = Array.isArray(did) ? did[0] : did || ''
+
+    const decodedRepo = decodeURIComponent(repo);
+    if (!decodedRepo.startsWith('did:')) return
+    const validRepo = decodedRepo as `did:${string}`
+
+    const body: UkSkyblurPostDecryptByCid.Input = {
+      pds: pdsUrl,
+      repo: validRepo,
+      cid: encryptCid,
+      password: encryptKey,
+
+    }
+    const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (response.ok || response.status === 200) {
+      const data = await response.json() as UkSkyblurPostDecryptByCid.Output
+      setPostText(data.text);
+      setAddText(data.additional || '');
+
+      setIsDecrypt(true)
+      return
+    }
+
+    setDecryptError(locale.Post_DecryptError);
     setIsDecrypting(false)
 
   }
 
-  async function getPostResponse(repo: string, rkey: string, pdsAgent: AtpAgent) {
+  async function getPostResponse(repo: string, rkey: string, pdsAgent: Client) {
     try {
-      return pdsAgent.com.atproto.repo.getRecord({
-        repo: repo,
-        collection: SKYBLUR_POST_COLLECTION,
-        rkey: rkey,
-      })
-
-
+      return await pdsAgent.get('com.atproto.repo.getRecord', {
+        params: {
+          repo: repo as ActorIdentifier,
+          collection: SKYBLUR_POST_COLLECTION,
+          rkey: rkey,
+        },
+      });
     } catch (e) {
-
-      return pdsAgent.com.atproto.repo.getRecord({
-        repo: repo,
-        collection: SKYBLUR_POST_COLLECTION,
-        rkey: rkey,
-      })
-
+      console.log(e)
+      return await pdsAgent.get('com.atproto.repo.getRecord', {
+        params: {
+          repo: repo as ActorIdentifier,
+          collection: SKYBLUR_POST_COLLECTION,
+          rkey: rkey,
+        },
+      });
     }
+  }
+
+
+  if (!isMounted) {
+    return (
+      <Loading />
+    );
   }
 
   return (
@@ -193,7 +221,6 @@ const PostPage = () => {
       <Head>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <Header />
       <link rel="alternate" href={aturi} />
 
       <ThemeProvider theme={extendTheme(theme, customTheme)}>
@@ -239,6 +266,11 @@ const PostPage = () => {
                               {locale.DeleteList_DecryptButton}
                             </Button>
                           </div>
+                          {decryptError &&
+                            <div className="flex justify-center">
+                              <div className="block text-sm text-red-400 my-1">{decryptError}</div>
+                            </div>
+                          }
                         </>
                       }
 

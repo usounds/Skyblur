@@ -1,6 +1,6 @@
 
 import { UkSkyblurPost } from '@/lexicon/UkSkyblur';
-import { AppBskyActorDefs, AppBskyEmbedExternal, AppBskyEmbedImages, AppBskyEmbedRecordWithMedia, AppBskyEmbedVideo, ComAtprotoLabelDefs, } from '@atproto/api';
+import { AppBskyActorDefs, AppBskyEmbedExternal, AppBskyEmbedImages, AppBskyEmbedRecordWithMedia, AppBskyEmbedVideo } from '@atcute/bluesky';
 import { PartialReablocksTheme } from 'reablocks';
 
 export type DIDDocument = {
@@ -17,12 +17,6 @@ export type VerificationMethod = {
     type: string;
     controller: string;
     publicKeyMultibase: string;
-}
-
-export type DIDResponse = {
-    didDocument: DIDDocument;
-    didResolutionMetadata: any;
-    didDocumentMetadata: any;
 }
 
 export type Service = {
@@ -86,7 +80,6 @@ export interface PostView {
     likeCount?: number
     quoteCount?: number
     indexedAt: string
-    labels?: ComAtprotoLabelDefs.Label[]
     [k: string]: unknown
 }
 
@@ -159,3 +152,8 @@ export const customTheme: PartialReablocksTheme = {
         }
     },
 };
+export const MENTION_REGEX = /(^|\s|\()(@)([a-zA-Z0-9.-]+)(\b)/g
+export const TAG_REGEX =
+  // eslint-disable-next-line no-misleading-character-class
+  /(^|\s)[#＃]((?!\ufe0f)[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*[^\d\s\p{P}\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]+[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*)?/gu
+export const TRAILING_PUNCTUATION_REGEX = /\p{P}+$/gu
