@@ -2,6 +2,7 @@
   "name": "skyblur",
   "version": "0.2.0",
   "type": "module",
+  "sideEffects": false,
   "private": true,
   "scripts": {
     "dev": "next dev -p 4500",
