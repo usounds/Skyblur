@@ -1,16 +1,24 @@
 {
   "name": "skyblur-worker",
   "compatibility_date": "2025-08-07",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
-    "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1
-  },
-  "main" : ".open-next/worker.js",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".open-next/worker.js",
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "env": {
+    "preview": {
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1
+      }
+    },
+    "production": {
+      "observability": {
+        "enabled": false,
+        "head_sampling_rate": 0.05
+      }
+    }
   }
 }
