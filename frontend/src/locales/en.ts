@@ -102,7 +102,7 @@ const messages = {
     Menu_GoSite: "Go to Page",
     Profile_NotPublish: "The profile page is private.",
     Post_ViewReactions: "View Reactions",
-    Post_DecryptError: "Failed to decrypt. Please check your password."
+    Post_DecryptError: "Failed to unlock. Please check your password."
 }
 
 
