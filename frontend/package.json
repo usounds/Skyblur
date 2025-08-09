@@ -22,7 +22,6 @@
     "@atcute/oauth-browser-client": "^1.0.26",
     "@atcute/tid": "^1.0.2",
     "@opennextjs/cloudflare": "^1.6.5",
-    "did-resolver": "^4.1.0",
     "dompurify": "^3.2.6",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
@@ -34,7 +33,6 @@
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
     "react-spinners": "^0.15.0",
-    "web-did-resolver": "^2.0.30",
     "zustand": "^5.0.7"
   },
   "devDependencies": {
@@ -45,7 +43,6 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9.33.0",
     "eslint-config-next": "^15.4.6",
-    "eslint-plugin-next": "^0.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "tw-colors": "^3.3.2",
