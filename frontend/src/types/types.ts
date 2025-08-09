@@ -1,6 +1,6 @@
 
 import { UkSkyblurPost } from '@/lexicon/UkSkyblur';
-import { AppBskyActorDefs, AppBskyEmbedExternal, AppBskyEmbedImages, AppBskyEmbedRecordWithMedia, AppBskyEmbedVideo, ComAtprotoLabelDefs, } from '@atproto/api';
+import { AppBskyActorDefs, AppBskyEmbedExternal, AppBskyEmbedImages, AppBskyEmbedRecordWithMedia, AppBskyEmbedVideo } from '@atcute/bluesky';
 import { PartialReablocksTheme } from 'reablocks';
 
 export type DIDDocument = {
@@ -86,7 +86,6 @@ export interface PostView {
     likeCount?: number
     quoteCount?: number
     indexedAt: string
-    labels?: ComAtprotoLabelDefs.Label[]
     [k: string]: unknown
 }
 

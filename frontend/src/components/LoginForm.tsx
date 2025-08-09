@@ -52,10 +52,14 @@ export const LoginForm: React.FC = ({
 
       const serverMetadata = getClientMetadata();
 
+      if(serverMetadata === undefined) {
+        return
+      }
+
       configureOAuth({
         metadata: {
-          client_id: serverMetadata.client_id,
-          redirect_uri: serverMetadata.redirect_uris[0],
+          client_id: serverMetadata.client_id||'',
+          redirect_uri: serverMetadata.redirect_uris[0]||'',
         },
       });
 
