@@ -63,6 +63,8 @@ export const LoginForm: React.FC = ({
         },
       });
 
+      console.log(serverMetadata)
+
       const { identity, metadata } = await resolveFromIdentity(handle);
 
       let host

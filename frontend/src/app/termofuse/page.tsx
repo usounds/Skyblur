@@ -1,6 +1,4 @@
 "use client"
-export const runtime = 'edge';
-import Header from "@/components/Header";
 import Loading from "@/components/Loading";
 import { useEffect, useState } from "react";
 

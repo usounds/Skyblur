@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import { clientMetadataByEnv } from '@/types/ClientMetadataContext'
 
 export async function GET(request: Request) {

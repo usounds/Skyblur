@@ -24,10 +24,8 @@ export async function handleOAuth(
     },
   });
 
-  const params = new URLSearchParams(location.hash.slice(1));
-
-  console.log(params)
-
+  const params = new URLSearchParams(location.hash.slice(1))
+  
   //コールバック
   if (params.size === 3 || params.size === 4) {
 

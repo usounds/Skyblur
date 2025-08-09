@@ -1,5 +1,4 @@
 "use client";
-export const runtime = 'edge';
 import { CreatePostForm } from "@/components/CreatePost";
 import Loading from "@/components/Loading";
 import { LoginForm } from "@/components/LoginForm";

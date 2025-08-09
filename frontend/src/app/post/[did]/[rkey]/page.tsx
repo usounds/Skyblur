@@ -1,5 +1,4 @@
 "use client"
-export const runtime = 'edge';
 import { Avatar } from "@/components/Avatar";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";

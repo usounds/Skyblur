@@ -1,5 +1,4 @@
 "use client"
-export const runtime = 'edge';
 import URLCopyButton from "@/components/URLCopyButton";
 import { getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";

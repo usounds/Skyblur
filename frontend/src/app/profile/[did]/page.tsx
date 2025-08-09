@@ -1,7 +1,5 @@
 "use client"
-export const runtime = 'edge';
 import { Avatar } from "@/components/Avatar";
-import Header from "@/components/Header";
 import { PostList } from "@/components/PostList";
 import PostLoading from "@/components/PostLoading";
 import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
