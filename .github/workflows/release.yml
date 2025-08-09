@@ -19,10 +19,13 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd frontend
+          npm ci
 
       - name: Build and Deploy to Cloudflare
         run: |
+          cd frontend
           if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
             npm run deploy:preview
           else
