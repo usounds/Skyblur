@@ -1,30 +1,30 @@
 "use client";
 export const runtime = 'edge';
 import { CreatePostForm } from "@/components/CreatePost";
-import Header from "@/components/Header";
+import Loading from "@/components/Loading";
 import { LoginForm } from "@/components/LoginForm";
 import { PostList } from "@/components/PostList";
-import { useAtpAgentStore } from "@/state/AtpAgent";
+import { useEffect, useState } from "react";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { PostListItem, customTheme } from "@/types/types";
 import Image from 'next/image';
 import { Button, Notifications, NotificationsContext, ThemeProvider, extendTheme, theme } from 'reablocks';
-import { useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
-
 
 export default function Home() {
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
-  const did = useAtpAgentStore((state) => state.did);
-  const agent = useAtpAgentStore((state) => state.agent);
+  const [isMounted, setIsMounted] = useState(false);
+  const did = useXrpcAgentStore((state) => state.did);
+  const agent = useXrpcAgentStore((state) => state.agent);
   const locale = useLocaleStore((state) => state.localeData);
-  const userProf = useAtpAgentStore((state) => state.userProf);
-  const blueskyLoginMessage = useAtpAgentStore((state) => state.blueskyLoginMessage);
+  const userProf = useXrpcAgentStore((state) => state.userProf);
+  const blueskyLoginMessage = useXrpcAgentStore((state) => state.blueskyLoginMessage);
   const mode = useModeStore((state) => state.mode);
   const setMode = useModeStore((state) => state.setMode);
-  const isLoginProcess = useAtpAgentStore((state) => state.isLoginProcess);
-  const serviceUrl = useAtpAgentStore((state) => state.serviceUrl);
+  const isLoginProcess = useXrpcAgentStore((state) => state.isLoginProcess);
+  const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
 
   const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
@@ -55,6 +55,15 @@ export default function Home() {
     )
   }
     */
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <Loading />
+    );
+  }
 
   return (
 
@@ -62,7 +71,6 @@ export default function Home() {
 
       <ThemeProvider theme={extendTheme(theme, customTheme)}>
 
-        <Header />
         <main className="text-gray-700 ">
 
           <Notifications>
@@ -116,7 +124,7 @@ export default function Home() {
                                 </div>
 
                                 {(agent && serviceUrl) &&
-                                  <PostList handleEdit={handleEdit} agent={agent} did={agent.assertDid} pds={serviceUrl} />
+                                  <PostList handleEdit={handleEdit} agent={agent} did={did} pds={serviceUrl} />
                                 }
 
                               </div>
