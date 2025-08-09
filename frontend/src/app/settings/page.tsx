@@ -1,29 +1,30 @@
 "use client"
-export const runtime = 'edge';
-import Header from "@/components/Header";
 import URLCopyButton from "@/components/URLCopyButton";
+import Image from "next/image";
 import { getPreference } from "@/logic/HandleBluesky";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { customTheme } from "@/types/types";
-import { BlobRef } from '@atproto/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Notifications, NotificationsContext, Textarea, ThemeProvider, Toggle, extendTheme, theme } from 'reablocks';
 import { useEffect, useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { ResourceUri } from '@atcute/lexicons/syntax';
+import { ActorIdentifier } from '@atcute/lexicons/syntax';
 
 export default function Home() {
-  const agent = useAtpAgentStore((state) => state.agent);
-  const userProf = useAtpAgentStore((state) => state.userProf);
-  const did = useAtpAgentStore((state) => state.did);
+  const agent = useXrpcAgentStore((state) => state.agent);
+  const userProf = useXrpcAgentStore((state) => state.userProf);
+  const did = useXrpcAgentStore((state) => state.did);
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isUseMyPage, setIsUseMyPage] = useState<boolean>(false)
+  const [preferenceMode, setPreferenceMode] = useState<"create" | "update">('create')
   const [myPageDescription, setMyPageDescription] = useState<string>('')
   const [isCustomFeed, setIsCustomFeed] = useState<boolean>(false)
   const [isSave, setIsSave] = useState<boolean>(false)
   const locale = useLocaleStore((state) => state.localeData);
-  const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', agent?.assertDid || '') || '')
+  const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', did || '') || '')
   const [feedDescription, setFeedDescription] = useState<string>('')
   const [feedUpdateMessage, setFeedUpdateMessage] = useState<string>('')
   const [feedUpdateCompleted, setFeedUpdateCompleted] = useState<boolean>(false)
@@ -41,25 +42,33 @@ export default function Home() {
       try {
 
         const value = await getPreference(agent, did)
+        if (!value) {
+          setPreferenceMode('create')
+          return
+        }
+        setPreferenceMode('update')
         if (value.myPage.isUseMyPage) setIsUseMyPage(true)
-        setMyPageDescription(value.myPage.description||'')
+        setMyPageDescription(value.myPage.description || '')
 
       } catch (e) {
         console.error(e)
       }
 
-      try {
+      const feedATUri = 'at://' + did + '/app.bsky.feed.generator/skyblurCustomFeed'
+      const result = await agent.get('app.bsky.feed.getFeedGenerator', {
+        params: {
+          feed: feedATUri as ResourceUri,
+        },
+      });
 
-        const feedATUri = 'at://' + did + '/app.bsky.feed.generator/skyblurCustomFeed'
-        const result = await agent.app.bsky.feed.getFeedGenerator({ feed: feedATUri })
+      if (!result.ok) {
+        setFeedName(locale.Pref_CustomFeedDefaltName?.replace('{1}', userProf?.displayName || '').slice(0, 24) || '')
+        setFeedDescription('')
+      } else {
         setFeedName(result.data.view.displayName)
         setFeedDescription(result.data.view.description || '')
         setFeedAvatarImg(result.data.view.avatar || '')
         setIsCustomFeed(true)
-
-      } catch (e) {
-        setFeedName(locale.Pref_CustomFeedDefaltName?.replace('{1}', userProf?.displayName || '').slice(0, 24) || '')
-        setFeedDescription('')
 
       }
 
@@ -92,19 +101,26 @@ export default function Home() {
     setIsSave(true)
 
     try {
-      await agent.com.atproto.repo.putRecord({
-        repo: did,
-        collection: 'uk.skyblur.preference',
-        rkey: 'self',
-        record: {
-          myPage: {
-            isUseMyPage: param,
-            description: myPageDescription
-          }
+      const writes = [
+        {
+          $type: `com.atproto.repo.applyWrites#${preferenceMode}` as const,
+          collection: 'uk.skyblur.preference' as `${string}.${string}.${string}`,
+          rkey: 'self',
+          value: {
+            myPage: {
+              isUseMyPage: param,
+              description: myPageDescription,
+            },
+          },
+        },
+      ];
 
-        }
+      await agent.post('com.atproto.repo.applyWrites', {
+        input: {
+          repo: did as ActorIdentifier,
+          writes: writes,
+        },
       });
-
       setIsUseMyPage(param)
 
 
@@ -118,9 +134,8 @@ export default function Home() {
 
   const submitFeedRecord = async () => {
     if (!agent || !did) return
+    let avatarRef: Blob | null = null;
 
-
-    let avatarRef: BlobRef | undefined
     let encoding: string = ''
 
     if (feedAvatar?.name.endsWith('png')) {
@@ -136,49 +151,72 @@ export default function Home() {
     try {
 
       if (feedAvatar) {
-        const fileUint = new Uint8Array(await feedAvatar.arrayBuffer())
+        const fileUint = new Uint8Array(await feedAvatar.arrayBuffer());
 
-        const blobRes = await agent.uploadBlob(fileUint, {
+        const blobRes = await agent.post('com.atproto.repo.uploadBlob', {
+          input: fileUint,
           encoding,
-        })
-        avatarRef = blobRes.data.blob
+          headers: { 'Content-Type': 'application/octet-stream' },
+        });
 
+        if (!blobRes.ok) {
+          setFeedUpdateMessage('error');
+          return
+        }
+
+        avatarRef = blobRes.data.blob as unknown as Blob;
 
       } else if (feedAvatarImg) {
-        let parts = feedAvatarImg.split('/')
-        parts = parts[7].split('@')
+        // feedAvatarImgからCIDと拡張子を取得
+        let parts = feedAvatarImg.split('/');
+        parts = parts[7].split('@');
 
-        const ret = await agent.com.atproto.sync.getBlob({
-          did: agent.assertDid,
-          cid: parts[0]
-        })
+        const didValue = did as `did:${string}:${string}`;
 
-        if (parts[1].endsWith('png')) {
-          encoding = 'image/png'
-        } else if (parts[1].endsWith('jpg') || parts[1].endsWith('jpeg')) {
-          encoding = 'image/jpeg'
+        // BlobをGET
+        const ret = await agent.get('com.atproto.sync.getBlob', {
+          params: {
+            did: didValue,
+            cid: parts[0],
+          },
+          as: 'blob',
+        });
+
+        if (!ret.ok) {
+          throw new Error('Failed to get blob');
         }
 
-        const fileUint = new Uint8Array(await ret.data.buffer)
+        const fileUint = new Uint8Array(await ret.data.arrayBuffer());
 
-        const blobRes = await agent.uploadBlob(fileUint, {
+        const blobRes = await agent.post('com.atproto.repo.uploadBlob', {
+          input: fileUint,
           encoding,
-        })
-        avatarRef = blobRes.data.blob
+          headers: { 'Content-Type': 'application/octet-stream' },
+        });
 
+        if (!blobRes.ok) {
+          setFeedUpdateMessage('error');
+          return
+        }
+
+        avatarRef = blobRes.data.blob as unknown as Blob;
       }
 
-      await agent.com.atproto.repo.putRecord({
-        repo: did,
-        collection: 'app.bsky.feed.generator',
-        rkey: 'skyblurCustomFeed',
-        record: {
-          did: 'did:web:feed.skyblur.uk',
-          displayName: feedName,
-          description: feedDescription,
-          createdAt: new Date().toISOString(),
-          avatar: avatarRef,
-        }
+      const record = {
+        did: 'did:web:feed.skyblur.uk',
+        displayName: feedName,
+        description: feedDescription,
+        createdAt: new Date().toISOString(),
+        ...(avatarRef ? { avatar: avatarRef } : {}),
+      };
+
+      await agent.post('com.atproto.repo.putRecord', {
+        input: {
+          repo: did as ActorIdentifier,
+          collection: 'app.bsky.feed.generator' as `${string}.${string}.${string}`,
+          rkey: 'skyblurCustomFeed',
+          record,
+        },
       });
     } catch (e) {
       setFeedUpdateMessage('Error:' + e)
@@ -195,11 +233,25 @@ export default function Home() {
       if (param) {
         await submitFeedRecord();
       } else {
-        await agent.com.atproto.repo.deleteRecord({
-          repo: did,
-          collection: 'app.bsky.feed.generator',
-          rkey: 'skyblurCustomFeed'
+        const writes: {
+          $type: 'com.atproto.repo.applyWrites#delete';
+          collection: 'app.bsky.feed.generator';  // 削除対象のコレクション名に変更
+          rkey: string;
+        }[] = [];
+
+        writes.push({
+          $type: 'com.atproto.repo.applyWrites#delete',
+          collection: 'app.bsky.feed.generator',  // 元の collection に合わせる
+          rkey: 'skyblurCustomFeed',  // 削除したい rkey を指定
         });
+
+        await agent.post('com.atproto.repo.applyWrites', {
+          input: {
+            repo: did as ActorIdentifier,
+            writes,
+          },
+        });
+
 
       }
 
@@ -228,7 +280,6 @@ export default function Home() {
 
   return (
     < >
-      <Header />
       <ThemeProvider theme={extendTheme(theme, customTheme)}>
         <main className="text-gray-700 ">
           <Notifications>
@@ -286,7 +337,7 @@ export default function Home() {
                               <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedAvatar}</div>
                               {feedAvatarImg &&
                                 <p>
-                                  <img src={feedAvatarImg} width='100px' />
+                                  <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
                                 </p>
                               }
                               <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />

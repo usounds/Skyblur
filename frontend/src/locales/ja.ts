@@ -102,6 +102,7 @@ const messages = {
     Menu_GoSite:"ページへ移動",
     Profile_NotPublish: "マイページは非公開です。",
     Post_ViewReactions:"リアクションを表示",
+    Post_DecryptError:"解除に失敗しました。パスワードを確認してください",
 }
 
 export default messages;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Header from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "Skyblur",
@@ -17,7 +18,7 @@ export default function RootLayout({
       <body
         className={`antialiased bg-white `}
       >
-
+        <Header />
         {children}
         <footer className="flex gap-6 flex-wrap items-center justify-center text-gray-600 bg-white py-4 mt-10">
           <div className="text-center mb-4">

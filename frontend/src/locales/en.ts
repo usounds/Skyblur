@@ -58,9 +58,9 @@ const messages = {
     CreatePost_PasswordDescription: "A password is required to view the unblurred text and additional. You cannot change this category after posting.",
     CreatePost_PasswordRadio: "Use a password",
     CreatePost_PasswordInputDescription: "If you forget the password, you will no longer be able to view raw test or edit it.",
-    CreatePost_EncryptInProgress:"(1/3)Encrypting...",
-    CreatePost_BlobUploadInProgress:"(2/3)Upload Blob...",
-    CreatePost_PostInProgress:"Posting...",
+    CreatePost_EncryptInProgress: "(1/3)Encrypting...",
+    CreatePost_BlobUploadInProgress: "(2/3)Upload Blob...",
+    CreatePost_PostInProgress: "Posting...",
     CreatePost_PasswordErrorSpace: "Spaces are not allowed in the password.",
     DeleteList_ChooseDeleteItem: "Post List",
     DeleteList_NoListItem: "No posts available.",
@@ -102,7 +102,7 @@ const messages = {
     Menu_GoSite: "Go to Page",
     Profile_NotPublish: "The profile page is private.",
     Post_ViewReactions: "View Reactions",
-
+    Post_DecryptError: "Failed to unlock. Please check your password."
 }
 
 

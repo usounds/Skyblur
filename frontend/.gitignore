@@ -46,3 +46,6 @@ next-env.d.ts
 **/public/workbox-*.js
 **/public/workbox-*.js.map
 create_app.json
+
+.open-next
+.wrangler/
