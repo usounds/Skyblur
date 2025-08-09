@@ -134,7 +134,7 @@ export default function Home() {
 
   const submitFeedRecord = async () => {
     if (!agent || !did) return
-    let avatarRef: Blob|null = null;
+    let avatarRef: Blob | null = null;
 
     let encoding: string = ''
 
@@ -169,7 +169,7 @@ export default function Home() {
       } else if (feedAvatarImg) {
         // feedAvatarImgからCIDと拡張子を取得
         let parts = feedAvatarImg.split('/');
-        parts = parts[7].split('@'); 
+        parts = parts[7].split('@');
 
         const didValue = did as `did:${string}:${string}`;
 
@@ -186,8 +186,20 @@ export default function Home() {
           throw new Error('Failed to get blob');
         }
 
-        avatarRef = ret.data;
+        const fileUint = new Uint8Array(await ret.data.arrayBuffer());
 
+        const blobRes = await agent.post('com.atproto.repo.uploadBlob', {
+          input: fileUint,
+          encoding,
+          headers: { 'Content-Type': 'application/octet-stream' },
+        });
+
+        if (!blobRes.ok) {
+          setFeedUpdateMessage('error');
+          return
+        }
+
+        avatarRef = blobRes.data.blob as unknown as Blob;
       }
 
       const record = {
@@ -325,7 +337,7 @@ export default function Home() {
                               <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedAvatar}</div>
                               {feedAvatarImg &&
                                 <p>
-                                  <Image src={feedAvatarImg} width={100} alt="Feed Avatar Image" />
+                                  <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
                                 </p>
                               }
                               <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />
