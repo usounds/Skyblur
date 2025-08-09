@@ -389,12 +389,15 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     facets: facets
                 };
 
+                console.log('replyPost')
+                console.log(replyPost)
+
                 if (replyPost) {
                     appBskyFeedPost.reply = {
                         $type: "app.bsky.feed.post#replyRef",
                         root: {
                             cid: replyPost.record.reply?.root.cid || replyPost.cid,
-                            uri: replyPost.record.reply?.root.uri as unknown as ResourceUri,
+                            uri: replyPost.record.reply?.root.uri as ResourceUri || replyPost.uri as ResourceUri,
                             $type: "com.atproto.repo.strongRef"
                         },
                         parent: {
@@ -404,6 +407,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         }
                     }
                 }
+
+                console.log(appBskyFeedPost)
 
                 // OGP設定
                 let ogpDescription = locale.CreatePost_OGPDescription;
