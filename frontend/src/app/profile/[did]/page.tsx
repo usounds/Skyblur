@@ -55,12 +55,13 @@ const PostPage = () => {
 
                     try {
                         // getProfileとgetRecordを並行して呼び出す
-                        const [userProfileResponse, postResponse] = await Promise.all([
+                        const [userProfileResponse] = await Promise.all([
                             apiAgent.get('app.bsky.actor.getProfile', {
                                 params: { actor: repoLocal as ActorIdentifier },
                             }),
-                            getPostResponse(repoLocal, pdsAgent),
+                            
                         ]);
+                        getPostResponse(repoLocal, pdsAgent)
 
                         if (!userProfileResponse.ok) {
                             setErrorMessage('Get Profile Failed.s');

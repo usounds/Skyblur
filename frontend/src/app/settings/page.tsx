@@ -1,5 +1,6 @@
 "use client"
 import URLCopyButton from "@/components/URLCopyButton";
+import Image from "next/image";
 import { getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { customTheme } from "@/types/types";
@@ -21,7 +22,6 @@ export default function Home() {
   const [preferenceMode, setPreferenceMode] = useState<"create" | "update">('create')
   const [myPageDescription, setMyPageDescription] = useState<string>('')
   const [isCustomFeed, setIsCustomFeed] = useState<boolean>(false)
-  const [customFeedMode, setCustomFeedMode] = useState<"create" | "update">('create')
   const [isSave, setIsSave] = useState<boolean>(false)
   const locale = useLocaleStore((state) => state.localeData);
   const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', did || '') || '')
@@ -64,9 +64,7 @@ export default function Home() {
       if (!result.ok) {
         setFeedName(locale.Pref_CustomFeedDefaltName?.replace('{1}', userProf?.displayName || '').slice(0, 24) || '')
         setFeedDescription('')
-        setCustomFeedMode('create')
       } else {
-        setCustomFeedMode('update')
         setFeedName(result.data.view.displayName)
         setFeedDescription(result.data.view.description || '')
         setFeedAvatarImg(result.data.view.avatar || '')
@@ -117,7 +115,7 @@ export default function Home() {
         },
       ];
 
-      const ret = await agent.post('com.atproto.repo.applyWrites', {
+      await agent.post('com.atproto.repo.applyWrites', {
         input: {
           repo: did as ActorIdentifier,
           writes: writes,
@@ -136,7 +134,7 @@ export default function Home() {
 
   const submitFeedRecord = async () => {
     if (!agent || !did) return
-    let avatarRef: any = undefined;
+    let avatarRef: Blob|null = null;
 
     let encoding: string = ''
 
@@ -166,12 +164,12 @@ export default function Home() {
           return
         }
 
-        avatarRef = blobRes.data.blob;
+        avatarRef = blobRes.data.blob as unknown as Blob;
 
       } else if (feedAvatarImg) {
         // feedAvatarImgからCIDと拡張子を取得
         let parts = feedAvatarImg.split('/');
-        parts = parts[7].split('@');  // parts[0]: CID, parts[1]: ファイル名（拡張子付き）
+        parts = parts[7].split('@'); 
 
         const didValue = did as `did:${string}:${string}`;
 
@@ -181,10 +179,8 @@ export default function Home() {
             did: didValue,
             cid: parts[0],
           },
-          as: 'blob', // もしくは 'blob' (環境による)
+          as: 'blob',
         });
-
-        console.log(ret)
 
         if (!ret.ok) {
           throw new Error('Failed to get blob');
@@ -329,7 +325,7 @@ export default function Home() {
                               <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedAvatar}</div>
                               {feedAvatarImg &&
                                 <p>
-                                  <img src={feedAvatarImg} width='100px' />
+                                  <Image src={feedAvatarImg} width={100} alt="Feed Avatar Image" />
                                 </p>
                               }
                               <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />

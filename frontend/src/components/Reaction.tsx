@@ -44,6 +44,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
             throw new Error("Network response was not ok");
           }
         } catch (e) {
+          console.error(e)
           throw new Error("Network response was not ok");
 
         }
