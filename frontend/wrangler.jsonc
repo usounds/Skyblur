@@ -1,9 +1,13 @@
 {
-  "name": "my-worker",
+  "name": "skyblur-worker",
   "compatibility_date": "2025-08-07",
   "compatibility_flags": [
     "nodejs_compat"
   ],
+    "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
   "main" : ".open-next/worker.js",
   "assets": {
     "directory": ".open-next/assets",

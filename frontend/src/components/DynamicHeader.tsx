@@ -85,12 +85,13 @@ const DynamicHeader = () => {
 
   const logout = async () => {
     try {
+      setAgent(null);
+      
       const session = await getSession(did as `did:${string}:${string}`, { allowStale: true });
       const agent = new OAuthUserAgent(session);
 
       await agent.signOut();
 
-      setAgent(null);
       setDid('');
       setIsLoginProcess(false);
 

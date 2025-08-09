@@ -48,3 +48,4 @@ next-env.d.ts
 create_app.json
 
 .open-next
+.wrangler/
