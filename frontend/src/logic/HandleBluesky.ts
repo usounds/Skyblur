@@ -1,4 +1,3 @@
-
 import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
 import { SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
 import { Client } from '@atcute/client';
@@ -10,7 +9,7 @@ export const fetchServiceEndpoint = async (did: string) => {
 
         const resolved = await resolveFromIdentity(did);
 
-        return resolved.identity.pds
+        return resolved.identity.pds.toString()
         
     } catch (error) {
         console.error('Error fetching service endpoint:', error);
