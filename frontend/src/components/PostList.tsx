@@ -4,20 +4,21 @@ import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { transformUrl } from "@/logic/HandleBluesky";
+import { isHandle, isDid, ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
-import { Agent, AtpAgent } from '@atproto/api';
 import { Button, Divider, IconButton, Input, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
 import { CiLock, CiUnlock } from "react-icons/ci";
 import { FiEdit } from "react-icons/fi";
 import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
+import { Client } from '@atcute/client';
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
-    agent: AtpAgent | Agent;
+    agent: Client;
     did: string;
     pds: string | null;
 };
@@ -48,25 +49,30 @@ export const PostList: React.FC<PostListProps> = ({
         const deleteList: PostListItem[] = []; // 初期化
         try {
             const param = {
-                repo: did,
-                collection: SKYBLUR_POST_COLLECTION,
+                repo: did as ActorIdentifier,
+                collection: SKYBLUR_POST_COLLECTION as `${string}.${string}.${string}`,
                 cursor: cursor,
                 limit: 10
             };
 
-            const bookMark = await agent.com.atproto.repo.listRecords(param);
+            const result = await agent.get(`com.atproto.repo.listRecords`, {
+                params: param
+            });
+
+
+            if (!result.ok) return
 
             // 新しいカーソルを設定
-            if (bookMark.data.records.length === 10) {
-                setCursor(bookMark.data.cursor || '');
+            if (result.data.records.length === 10) {
+                setCursor(result.data.cursor || '');
             } else {
                 setCursor('');
 
             }
 
             // records を処理して deleteList を更新
-            for (const obj of bookMark.data.records) {
-                const value = obj.value as UkSkyblurPost.Record;
+            for (const obj of result.data.records) {
+                const value = obj.value as unknown as UkSkyblurPost.Record;
                 deleteList.push({
                     blurATUri: obj.uri,
                     blur: value,
@@ -124,34 +130,48 @@ export const PostList: React.FC<PostListProps> = ({
     // 投稿を削除する関数
     const handleDeleteItem = async () => {
         try {
-            const writes = [];
+            const writes: {
+                $type: 'com.atproto.repo.applyWrites#delete';
+                collection: 'app.bsky.feed.post'; // ここは具体的な型と一致させる
+                rkey: string;
+            }[] = [];
+
             writes.push({
                 $type: 'com.atproto.repo.applyWrites#delete',
                 collection: 'app.bsky.feed.post',
                 rkey: selectedItem?.blur.uri.split('/').pop() || '',
-            })
-            const ret = await agent.com.atproto.repo.applyWrites({
-                repo: did || '',
-                writes: writes
-            })
+            });
+
+            await agent.post('com.atproto.repo.applyWrites', {
+                input: {
+                    repo: did as ActorIdentifier,
+                    writes,
+                },
+            });
         } catch (e) {
             //　握りつぶす
             console.error("エラーが発生しました:", e);
         }
 
         try {
-            const writes = [];
+            const writes: {
+                $type: 'com.atproto.repo.applyWrites#delete';
+                collection: 'uk.skyblur.post'; // ここは具体的な型と一致させる
+                rkey: string;
+            }[] = [];
 
             writes.push({
                 $type: 'com.atproto.repo.applyWrites#delete',
-                collection: 'uk.skyblur.post',
+                collection: SKYBLUR_POST_COLLECTION,
                 rkey: selectedItem?.blurATUri.split('/').pop() || '',
-            })
+            });
 
-            const ret = await agent.com.atproto.repo.applyWrites({
-                repo: did || '',
-                writes: writes
-            })
+            await agent.post('com.atproto.repo.applyWrites', {
+                input: {
+                    repo: did as ActorIdentifier,
+                    writes,
+                },
+            });
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
@@ -223,7 +243,7 @@ export const PostList: React.FC<PostListProps> = ({
             const decryptByCidBody: UkSkyblurPostDecryptByCid.Input = {
                 pds: pds || '',
                 repo: validRepo,
-                cid: item.blur.encryptBody?.ref.toString() || '',
+                cid: item.blur.encryptBody?.ref.$link || '',
                 password: item.encryptKey,
             }
             const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {

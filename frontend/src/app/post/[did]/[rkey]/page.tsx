@@ -8,10 +8,13 @@ import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { SKYBLUR_POST_COLLECTION, customTheme } from '@/types/types';
-import { AppBskyActorDefs, AtpAgent } from '@atproto/api';
+import Loading from "@/components/Loading";
+import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -30,19 +33,21 @@ const PostPage = () => {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const locale = useLocaleStore((state) => state.localeData);
-  const apiAgent = useAtpAgentStore((state) => state.publicAgent);
+  const apiAgent = useXrpcAgentStore((state) => state.publicAgent);
   const searchParams = useSearchParams();
-  const agent = useAtpAgentStore((state) => state.agent);
+  const agent = useXrpcAgentStore((state) => state.agent);
   const [encryptKey, setEncryptKey] = useState("");
   const [encryptCid, setEncryptCid] = useState('')
   const [isDecrypt, setIsDecrypt] = useState<boolean>(false)
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
   const [pdsUrl, setPdsUrl] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
 
   const q = searchParams.get('q');
   const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
 
   useEffect(() => {
+    setIsMounted(true);
     if (did && rkey) {
 
 
@@ -57,8 +62,10 @@ const PostPage = () => {
 
           const pdsUrl = await fetchServiceEndpoint(repo)
 
-          const pdsAgent = new AtpAgent({
-            service: pdsUrl || ''
+          const pdsAgent = new Client({
+            handler: simpleFetchHandler({
+              service: pdsUrl ?? '',
+            }),
           })
 
           setPdsUrl(pdsUrl || '')
@@ -66,16 +73,21 @@ const PostPage = () => {
           try {
             // getProfileとgetRecordを並行して呼び出す
             const [userProfileResponse, postResponse] = await Promise.all([
-              apiAgent.getProfile({ actor: repo }),
+              apiAgent.get('app.bsky.actor.getProfile', {
+                params: { actor: repo as ActorIdentifier },
+              }),
               getPostResponse(repo, rkeyParam, pdsAgent),
-              getPreferenceProcess(repo, pdsAgent)
+              getPreferenceProcess(repo, pdsAgent),
             ]);
+
+            if (!userProfileResponse.ok) return
+            if (!postResponse.ok) return
 
             // userProfileのデータをセット
             setUserProf(userProfileResponse.data);
 
             // postDataのデータをセット
-            const postData: UkSkyblurPost.Record = postResponse.data.value as UkSkyblurPost.Record;
+            const postData: UkSkyblurPost.Record = postResponse.data.value as unknown as UkSkyblurPost.Record;
 
             const tempPostText = postData.text
 
@@ -111,15 +123,14 @@ const PostPage = () => {
   }, [did, rkey]); // did または rkey が変更された場合に再実行
 
 
-  async function getPreferenceProcess(repo: string, pdsAgent: AtpAgent) {
+  async function getPreferenceProcess(repo: string, pdsAgent: Client) {
     try {
       const preference = await getPreference(pdsAgent, repo)
-      if (preference.myPage.isUseMyPage) setIsMyPage(true)
+      if (preference?.myPage.isUseMyPage) setIsMyPage(true)
     } catch (e) {
 
     }
   }
-
 
   async function handleDecrypt() {
     setIsDecrypting(true)
@@ -155,7 +166,7 @@ const PostPage = () => {
       if (response.ok) {
         const data = await response.json() as UkSkyblurPostDecryptByCid.Output
         setPostText(data.text);
-        setAddText(data.additional||'');
+        setAddText(data.additional || '');
 
         setIsDecrypt(true)
       }
@@ -168,32 +179,38 @@ const PostPage = () => {
 
   }
 
-  async function getPostResponse(repo: string, rkey: string, pdsAgent: AtpAgent) {
+  async function getPostResponse(repo: string, rkey: string, pdsAgent: Client) {
     try {
-      return pdsAgent.com.atproto.repo.getRecord({
-        repo: repo,
-        collection: SKYBLUR_POST_COLLECTION,
-        rkey: rkey,
-      })
-
-
+      return await pdsAgent.get('com.atproto.repo.getRecord', {
+        params: {
+          repo: repo as ActorIdentifier,
+          collection: SKYBLUR_POST_COLLECTION,
+          rkey: rkey,
+        },
+      });
     } catch (e) {
-
-      return pdsAgent.com.atproto.repo.getRecord({
-        repo: repo,
-        collection: SKYBLUR_POST_COLLECTION,
-        rkey: rkey,
-      })
-
+      return await pdsAgent.get('com.atproto.repo.getRecord', {
+        params: {
+          repo: repo as ActorIdentifier,
+          collection: SKYBLUR_POST_COLLECTION,
+          rkey: rkey,
+        },
+      });
     }
   }
+
+
+    if (!isMounted) {
+      return (
+        <Loading />
+      );
+    }
 
   return (
     <>
       <Head>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <Header />
       <link rel="alternate" href={aturi} />
 
       <ThemeProvider theme={extendTheme(theme, customTheme)}>

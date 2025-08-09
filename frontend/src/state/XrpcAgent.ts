@@ -1,18 +1,22 @@
 import { create } from 'zustand';
-import { Agent, AtpAgent, AppBskyActorDefs } from '@atproto/api';
+import { Client,simpleFetchHandler } from '@atcute/client';
+import { OAuthUserAgent } from '@atcute/oauth-browser-client';
+import { AppBskyActorDefs } from '@atcute/bluesky';
 
 type State = {
-  agent: Agent | null;
-  publicAgent: AtpAgent;
-  userProf: AppBskyActorDefs.ProfileViewDetailed | null;
-  did: string;
-  isLoginProcess: boolean;
-  blueskyLoginMessage: string;
-  serviceUrl : string;
+    agent: Client | null;
+    oauthUserAgent: OAuthUserAgent | null;
+    publicAgent: Client;
+    userProf: AppBskyActorDefs.ProfileViewDetailed | null;
+    did: string;
+    isLoginProcess: boolean;
+    blueskyLoginMessage: string;
+    serviceUrl: string;
 };
 
 type Action = {
-  setAgent: (agent: Agent | null) => void;
+  setAgent: (agent: Client | null) => void;
+  setOauthUserAgent: (oauthUserAgent:  OAuthUserAgent | null) => void;
   setUserProf: (userProf: AppBskyActorDefs.ProfileViewDetailed | null) => void;
   setDid: (did: string) => void;
   setIsLoginProcess: (isLoginProcess: boolean) => void;
@@ -20,10 +24,13 @@ type Action = {
   setServiceUrl: (setServiceUrl: string) => void;
 };
 
-export const useAtpAgentStore = create<State & Action>((set) => ({
+export const useXrpcAgentStore = create<State & Action>((set) => ({
   agent: null,
-  publicAgent: new AtpAgent({
-    service: "https://public.api.bsky.app"
+  oauthUserAgent: null,
+  publicAgent: new Client({
+    handler: simpleFetchHandler({
+      service: 'https://public.api.bsky.app',
+    }),
   }),
   did: "",
   userProf: null,
@@ -31,6 +38,7 @@ export const useAtpAgentStore = create<State & Action>((set) => ({
   blueskyLoginMessage: '',
   serviceUrl: "",
   setAgent: (agent) => set(() => ({ agent: agent })),
+  setOauthUserAgent: (oauthUserAgent) => set(() => ({ oauthUserAgent: oauthUserAgent })),
   setUserProf: (userProf) => set(() => ({ userProf: userProf })),
   setDid: (did) => set(() => ({ did: did })),
   setIsLoginProcess: (isLoginProcess) => set(() => ({ isLoginProcess: isLoginProcess })),

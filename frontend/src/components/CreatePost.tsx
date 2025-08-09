@@ -5,16 +5,21 @@ import { RestoreTempPost } from "@/components/RestoreTempPost";
 import { UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblur";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { PostListItem, PostView, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
-import { AppBskyFeedPost, RichText } from '@atproto/api';
-import { TID } from '@atproto/common-web';
+import type { } from '@atcute/atproto';
+import type { } from '@atcute/bluesky';
+import { AppBskyFeedPost } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { ActorIdentifier, isDid, ResourceUri } from '@atcute/lexicons/syntax';
+import * as TID from '@atcute/tid';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
 import { Button, IconButton, Input, Toggle, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
+import type { } from '../../src/lexicon/UkSkyblur';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
 type CreatePostProps = {
@@ -35,9 +40,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [appUrl, setAppUrl] = useState("");
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
-    const agent = useAtpAgentStore((state) => state.agent);
+    const agent = useXrpcAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
-    const did = useAtpAgentStore((state) => state.did);
+    const did = useXrpcAgentStore((state) => state.did);
+    const oauthUserAgent = useXrpcAgentStore((state) => state.oauthUserAgent);
     const setTempText = useTempPostStore((state) => state.setText);
     const setTempAdditional = useTempPostStore((state) => state.setAdditional);
     const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
@@ -129,15 +135,21 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
         while ((match = regex.exec(str)) !== null) {
             try {
-                const result = await agent.app.bsky.actor.getProfile({
-                    actor: match[0].slice(1)
+                const actorId = match[0].slice(1) as ActorIdentifier
+
+                if (!isDid(match[0].slice(1))) return []
+                const result = await agent.get("app.bsky.actor.getProfile", {
+                    params: {
+                        actor: actorId
+                    }
                 });
 
+                if (!result.ok) return []
                 matches.push({
                     detectedString: match[0],
                     startIndex: match.index,
                     endIndex: match.index + match[0].length,
-                    did: result.data.did
+                    did: result.data.did as ActorIdentifier
                 });
             } catch (e) {
                 console.error(e)
@@ -244,7 +256,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setAppUrl('')
 
         try {
-            let rkey = TID.nextStr()
+            let rkey = TID.now();
 
             if (prevBlur && prevBlur.blurATUri) {
                 const regex = /\/([^/]+)$/;
@@ -261,8 +273,29 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             const tempUrl = origin + url
             const blurUri = `at://${did}/${SKYBLUR_POST_COLLECTION}/${rkey}`
 
-            //createRecord用
-            const writes = [];
+            type WriteCreate = {
+                $type: 'com.atproto.repo.applyWrites#create';
+                collection: `${string}.${string}.${string}`;
+                rkey?: string;
+                value: Record<string, unknown>;
+            };
+
+            type WriteUpdate = {
+                $type: 'com.atproto.repo.applyWrites#update';
+                collection: `${string}.${string}.${string}`;
+                rkey: string;
+                value: Record<string, unknown>;
+            };
+
+            type WriteDelete = {
+                $type: 'com.atproto.repo.applyWrites#delete';
+                collection: `${string}.${string}.${string}`;
+                rkey: string;
+            };
+
+            type Write = WriteCreate | WriteUpdate | WriteDelete;
+
+            const writes: Write[] = [];
 
             //参照範囲
             let visibility = VISIBILITY_PUBLIC
@@ -295,14 +328,20 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 //投稿
                 const postTextBlurLocal: string = postTextBlur;
-                const rt = new RichText({ text: postTextBlurLocal });
-                await rt.detectFacets(agent);
+                //const rt = new RichText({ text: postTextBlurLocal });
+                //await rt.detectFacets(agent);
 
                 const langs = [detectLanguage(postText)]
 
-                let appBskyFeedPost: Partial<AppBskyFeedPost.Record> = {
-                    text: rt.text,
-                    facets: rt.facets,
+                type MyPost = AppBskyFeedPost.Main & {
+                    via?: string;
+                    "uk.skyblur.post.uri"?: string;
+                    "uk.skyblur.post.visibility"?: string;
+                };
+
+                let appBskyFeedPost: MyPost = {
+                    $type: "app.bsky.feed.post",
+                    text: postTextBlurLocal,
                     langs: langs,
                     via: 'Skyblur',
                     "uk.skyblur.post.uri": blurUri,
@@ -311,19 +350,19 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 };
 
                 if (replyPost) {
-                    const reply = {
+                    appBskyFeedPost.reply = {
+                        $type: "app.bsky.feed.post#replyRef",
                         root: {
                             cid: replyPost.record.reply?.root.cid || replyPost.cid,
-
-                            uri: replyPost.record.reply?.root.uri || replyPost.uri,
+                            uri: replyPost.record.reply?.root.uri as unknown as ResourceUri,
+                            $type: "com.atproto.repo.strongRef"
                         },
                         parent: {
                             cid: replyPost.cid || '',
-                            uri: replyPost.uri || ''
+                            uri: replyPost.uri as unknown as ResourceUri,
+                            $type: "com.atproto.repo.strongRef"
                         }
                     }
-                    appBskyFeedPost.reply = reply
-
                 }
 
                 // OGP設定
@@ -333,11 +372,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 appBskyFeedPost.embed = {
                     $type: 'app.bsky.embed.external',
                     external: {
-                        uri: tempUrl,
+                        uri: tempUrl as unknown as ResourceUri,
                         title: locale.CreatePost_OGPTitle,
                         description: ogpDescription,
                     },
                 };
+
+                const applyKey = 'com.atproto.repo.applyWrites#create' as const;
 
                 //URLをリンク化
                 Object.keys(urlArray).forEach(function (key) {
@@ -351,7 +392,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 features: [
                                     {
                                         "$type": "app.bsky.richtext.facet#link",
-                                        "uri": key
+                                        "uri": key as `${string}:${string}`
                                     }
                                 ]
                             }
@@ -360,22 +401,23 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 });
 
                 writes.push({
-                    $type: 'com.atproto.repo.applyWrites#create',
-                    collection: 'app.bsky.feed.post',
+                    $type: 'com.atproto.repo.applyWrites#create',  // こちらはAPIの操作種別
+                    collection: 'app.bsky.feed.post' as `${string}.${string}.${string}`,
                     rkey: rkey,
-                    value: appBskyFeedPost,
-                })
+                    value: appBskyFeedPost as unknown as Record<string, unknown>,
+                });
 
             }
 
             let postObject
-            let applyKey
+            let applyKey:
+                | 'com.atproto.repo.applyWrites#create'
+                | 'com.atproto.repo.applyWrites#update';
 
             if (prevBlur) {
-                applyKey = 'com.atproto.repo.applyWrites#update'
+                applyKey = 'com.atproto.repo.applyWrites#update';
             } else {
-                applyKey = 'com.atproto.repo.applyWrites#create'
-
+                applyKey = 'com.atproto.repo.applyWrites#create';
             }
 
             if (isEncrypt) {
@@ -400,17 +442,27 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     body: JSON.stringify(encBody),
                     password: encryptKey
 
+
                 }
 
-                const response = await agent.withProxy('skyblur_api', `did:web:${appViewUrl}`).fetchHandler(
-                    '/xrpc/uk.skyblur.post.encrypt',
-                    {
-                        method: 'POST',
-                        body: JSON.stringify(body)
-                    }
-                )
+                if (!oauthUserAgent) return
 
-                const data: UkSkyblurPostEncrypt.Output = await response.json()
+                const apiProxyAgent = new Client({
+                    handler: oauthUserAgent,
+                    proxy: {
+                        did: `did:web:${appViewUrl}`,
+                        serviceId: '#skyblur_api'
+                    }
+                })
+
+                const response = await apiProxyAgent.post('uk.skyblur.post.encrypt', {
+                    input: body as unknown as Record<string, unknown>,
+                    as: 'json',
+                });
+
+
+
+                const data: UkSkyblurPostEncrypt.Output = response.data as UkSkyblurPostEncrypt.Output;
                 if (response.ok) {
                     const blob = new Blob([data.body], { type: "text/plain" });
 
@@ -419,7 +471,21 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     const uint8Array = new Uint8Array(arrayBuffer);
 
                     setButtonName(locale.CreatePost_BlobUploadInProgress)
-                    const ret = await agent?.com.atproto.repo.uploadBlob(uint8Array);
+
+                    const ret = await agent.post('com.atproto.repo.uploadBlob', {
+                        input: uint8Array,
+                        encoding: 'binary',
+                        headers: { 'Content-Type': 'application/octet-stream' }
+                    })
+
+                    if (!ret.ok) {
+                        console.error("❌ Encryption Error:", data.message);
+                        handleInitButton()
+                        notifyError(data.message || '')
+                        setIsLoading(false)
+                        return
+
+                    }
 
                     postObject = {
                         uri: localPrevPostAturi,
@@ -436,6 +502,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         rkey: rkey,
                         value: postObject,
                     })
+
 
                 } else {
                     console.error("❌ Encryption Error:", data.message);
@@ -455,22 +522,25 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 writes.push({
                     $type: applyKey,
-                    collection: SKYBLUR_POST_COLLECTION,
+                    collection: SKYBLUR_POST_COLLECTION as `${string}.${string}.${string}`,
                     rkey: rkey,
-                    value: postObject,
-                })
+                    value: postObject as unknown as Record<string, unknown>,
+                });
 
             }
 
             if (isEncrypt) setButtonName('(3/3)' + locale.CreatePost_PostInProgress)
             else setButtonName(locale.CreatePost_PostInProgress)
 
-            const ret = await agent.com.atproto.repo.applyWrites({
-                repo: did,
-                writes: writes
-            })
+            const ret = await agent.post('com.atproto.repo.applyWrites', {
+                input: {
+                    repo: did as ActorIdentifier,
+                    writes: writes
+                },
+            });
 
-            if (ret.success) {
+
+            if (ret.ok) {
                 const convertedUri = "completed";
                 notifySuccess(locale.CreatePost_Complete)
                 setAppUrl(convertedUri)
@@ -544,9 +614,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
         if (tempReply && agent && tempReply.includes(did)) {
-            const result = await agent.app.bsky.feed.getPosts({
-                uris: [tempReply]
-            })
+            const result = await agent.get("app.bsky.feed.getPosts", {
+                params: {
+                    uris: [tempReply as unknown as ResourceUri]
+                }
+            });
+
+            if (!result.ok) return
 
             setIsReply(true)
             setReplyPost(result.data.posts[0] as PostView)

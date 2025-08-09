@@ -1,12 +1,24 @@
 "use client"
 export const runtime = 'edge';
 import Header from "@/components/Header";
+import Loading from "@/components/Loading";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <Loading />
+    );
+  }
 
   return (
     <main >
-      <Header />
       <section className="bg-white">
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h1 className="text-2xl font-semibold text-gray-800 capitalize lg:text-3xl">プライバシーポリシー & 利用規約</h1>

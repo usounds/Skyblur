@@ -1,10 +1,11 @@
 
 import { getResolver } from "@/logic/DidPlcResolver";
 import { DIDDocument, Service, SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
-import { Agent, AtpAgent } from '@atproto/api';
+import { Client, simpleFetchHandler } from '@atcute/client';
 import { DIDResolver, Resolver, ResolverRegistry } from 'did-resolver';
 import { getResolver as getWebResolver } from 'web-did-resolver';
 import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
+import { isHandle, isDid, ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 
 const myResolver = getResolver()
 const web = getWebResolver()
@@ -59,14 +60,18 @@ export const transformUrl = (inputUrl: string): string => {
     return ''
 };
 
-export const getPreference = async (agent: Agent | AtpAgent, did: string): Promise<UkSkyblurPreference.Record> => {
-    const preference = await agent.com.atproto.repo.getRecord({
-        repo: did,
-        collection: SKYBLUR_PREFERENCE_COLLECTION,
-        rkey: 'self'
+export const getPreference = async (agent: Client, did: string): Promise<UkSkyblurPreference.Record|null> => {
+    const preference = await agent.get('com.atproto.repo.getRecord', {
+        params: {
+            repo: did as ActorIdentifier,
+            collection: SKYBLUR_PREFERENCE_COLLECTION,
+            rkey: 'self',
+        }
     });
 
-    const value = preference.data.value as UkSkyblurPreference.Record;
+    if(!preference.ok) return null
+
+    const value = preference.data.value as unknown as UkSkyblurPreference.Record;
     console.log(value)
     return value
 };
