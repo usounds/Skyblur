@@ -1,9 +1,9 @@
 
-import { OAuthClientMetadataInput } from '@atproto/oauth-types';
+import { ClientMetadata } from '@atcute/oauth-browser-client';
 
-export type ClientMetadataByEnv = Record<string, OAuthClientMetadataInput>;
+export type ClientMetadataByEnv = Record<string, ClientMetadata>;
 
-export const getClientMetadata: () => OAuthClientMetadataInput | undefined = () => {
+export const getClientMetadata: () => ClientMetadata | undefined = () => {
     let env;
     const origin = window.location.hostname;
     if (origin.includes('skyblur.uk')) {
