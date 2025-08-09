@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { GoGear } from 'react-icons/go';
+import BeatLoader from "react-spinners/BeatLoader";
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);
@@ -26,66 +27,67 @@ const DynamicHeader = () => {
   const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
+  const [isLogoutProcess, setIsLogoutProcess] = useState(false);
   const localeString = useLocaleStore((state) => state.locale);
   const setLocale = useLocaleStore((state) => state.setLocale);
   let ignore = false
 
-    useEffect(() => {
-      if (ignore) {
-        console.log("useEffect duplicate call")
-        return
-      }
+  useEffect(() => {
+    if (ignore) {
+      console.log("useEffect duplicate call")
+      return
+    }
 
-      setIsMounted(true);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      ignore = true
-  
-      setLocale(localeString)
-  
-      if (did) {
-        console.log("has active session")
-        return
-      }
-  
-      (
-        async function () {
-          setIsLoginProcess(true)
-  
-          const ret = await handleOAuth(
-            getClientMetadata,
-            setAgent,
-            setUserProf,
-            setIsLoginProcess,
-            setOauthUserAgent,
-            setDid,
-            setBlueskyLoginMessage,
-            setServiceUrl
-          );
-  
-          if (ret) {
-            setMode('menu')
-  
-          }
-          setIsLoginProcess(false)
-  
-        })();
-  
-  
-      // クリーンアップ
-      return () => {
-      }; 
-    }, [])
+    setIsMounted(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ignore = true
 
-      if (!isMounted) {
-        return (
-          <></>
+    setLocale(localeString)
+
+    if (did) {
+      console.log("has active session")
+      return
+    }
+
+    (
+      async function () {
+        setIsLoginProcess(true)
+
+        const ret = await handleOAuth(
+          getClientMetadata,
+          setAgent,
+          setUserProf,
+          setIsLoginProcess,
+          setOauthUserAgent,
+          setDid,
+          setBlueskyLoginMessage,
+          setServiceUrl
         );
-      }
+
+        if (ret) {
+          setMode('menu')
+
+        }
+        setIsLoginProcess(false)
+
+      })();
+
+
+    // クリーンアップ
+    return () => {
+    };
+  }, [])
+
+  if (!isMounted) {
+    return (
+      <></>
+    );
+  }
 
   const logout = async () => {
     try {
-      setAgent(null);
-      
+      setIsLogoutProcess(true)
+
       const session = await getSession(did as `did:${string}:${string}`, { allowStale: true });
       const agent = new OAuthUserAgent(session);
 
@@ -93,6 +95,7 @@ const DynamicHeader = () => {
 
       setDid('');
       setIsLoginProcess(false);
+      setAgent(null);
 
       window.localStorage.removeItem('oauth.did');
       window.localStorage.removeItem('oauth.handle');
@@ -117,7 +120,10 @@ const DynamicHeader = () => {
             className="flex-none text-sm font-semibold text-white mr-2 cursor-pointer"
             onClick={logout}
           >
-            {locale.Menu_Logout}
+            {isLogoutProcess
+              ? <BeatLoader color='#b7b7b7'/>
+              : locale.Menu_Logout
+            }
           </div>
         </>
       )}
