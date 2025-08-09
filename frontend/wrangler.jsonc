@@ -7,27 +7,37 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "r2_buckets": {
-    "MY_BUCKET": "skyblur-bucket"
-  },
+  "r2_buckets": [
+    // Create a R2 binding with the binding name "NEXT_INC_CACHE_R2_BUCKET"
+     {
+       "binding": "NEXT_INC_CACHE_R2_BUCKET",
+       "bucket_name": "skyblur-bucket-preview",
+     },
+  ],
   "env": {
     "preview": {
       "observability": {
         "enabled": true,
         "head_sampling_rate": 1
       },
-      "r2_buckets": {
-        "MY_BUCKET": "skybur-bucket-preview"
-      }
+      "r2_buckets": [
+        {
+          "binding": "NEXT_INC_CACHE_R2_BUCKET",
+          "bucket_name": "skyblur-bucket-preview"
+        }
+      ]
     },
     "production": {
       "observability": {
         "enabled": false,
         "head_sampling_rate": 0.05
       },
-      "r2_buckets": {
-        "MY_BUCKET":"skybur-bucket"
-      }
+      "r2_buckets": [
+        {
+          "binding": "MY_BUCKET",
+          "bucket_name": "skyblur-bucket"
+        }
+      ]
     }
   }
 }
