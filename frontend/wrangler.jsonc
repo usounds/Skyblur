@@ -8,7 +8,7 @@
     "binding": "ASSETS"
   },
   "r2_buckets": {
-    "MY_BUCKET": "skybur-backet"
+    "MY_BUCKET": "skyblur-bucket"
   },
   "env": {
     "preview": {
@@ -17,7 +17,7 @@
         "head_sampling_rate": 1
       },
       "r2_buckets": {
-        "MY_BUCKET": "skybur-backet-preview"
+        "MY_BUCKET": "skybur-bucket-preview"
       }
     },
     "production": {
@@ -26,7 +26,7 @@
         "head_sampling_rate": 0.05
       },
       "r2_buckets": {
-        "MY_BUCKET":"skybur-backet"
+        "MY_BUCKET":"skybur-bucket"
       }
     }
   }
