@@ -30,6 +30,7 @@ const PostPage = () => {
   const [postAtUri, setPostAtUri] = useState("");
   const [postDate, setPostDate] = useState<string>('')
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [decryptError, setDecryptError] = useState<string>('')
   const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
   const locale = useLocaleStore((state) => state.localeData);
   const apiAgent = useXrpcAgentStore((state) => state.publicAgent);
@@ -79,8 +80,17 @@ const PostPage = () => {
               getPreferenceProcess(repo, pdsAgent),
             ]);
 
-            if (!userProfileResponse.ok) return
-            if (!postResponse.ok) return
+            if (!userProfileResponse.ok ) {
+              setErrorMessage('Get Profile Failed.');
+              setIsLoading(false); 
+              return
+            }
+            if (!postResponse.ok) {
+              setErrorMessage('Get Post Failed.');
+              setIsLoading(false); 
+              return
+
+            }
 
             // userProfileのデータをセット
             setUserProf(userProfileResponse.data);
@@ -100,7 +110,9 @@ const PostPage = () => {
             setBskyUrl(convertedUri)
             setPostAtUri(postData.uri)
 
-            if (postData.encryptBody) setEncryptCid(postData.encryptBody.ref.toString())
+            console.log()
+
+            if (postData.encryptBody) setEncryptCid(postData.encryptBody.ref.$link)
 
             setIsLoading(false); // ローディング状態を終了
 
@@ -132,48 +144,46 @@ const PostPage = () => {
   }
 
   async function handleDecrypt() {
+    setDecryptError("");
     setIsDecrypting(true)
 
-    try {
-      const host = new URL(origin).host;
-      let apiHost = 'api.skyblur.uk'
-      if (host?.endsWith('usounds.work')) {
-        apiHost = 'skyblurapi.usounds.work'
-      }
-
-      const repo = Array.isArray(did) ? did[0] : did || ''
-
-      const decodedRepo = decodeURIComponent(repo);
-      if (!decodedRepo.startsWith('did:')) return
-      const validRepo = decodedRepo as `did:${string}`
-
-      const body: UkSkyblurPostDecryptByCid.Input = {
-        pds: pdsUrl,
-        repo: validRepo,
-        cid: encryptCid,
-        password: encryptKey,
-
-      }
-      const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (response.ok) {
-        const data = await response.json() as UkSkyblurPostDecryptByCid.Output
-        setPostText(data.text);
-        setAddText(data.additional || '');
-
-        setIsDecrypt(true)
-      }
-    } catch (e) {
-      setErrorMessage("Failed to decrypt");
-      console.error(e)
+    const host = new URL(origin).host;
+    let apiHost = 'api.skyblur.uk'
+    if (host?.endsWith('usounds.work')) {
+      apiHost = 'skyblurapi.usounds.work'
     }
 
+    const repo = Array.isArray(did) ? did[0] : did || ''
+
+    const decodedRepo = decodeURIComponent(repo);
+    if (!decodedRepo.startsWith('did:')) return
+    const validRepo = decodedRepo as `did:${string}`
+
+    const body: UkSkyblurPostDecryptByCid.Input = {
+      pds: pdsUrl,
+      repo: validRepo,
+      cid: encryptCid,
+      password: encryptKey,
+
+    }
+    const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (response.ok || response.status === 200) {
+      const data = await response.json() as UkSkyblurPostDecryptByCid.Output
+      setPostText(data.text);
+      setAddText(data.additional || '');
+
+      setIsDecrypt(true)
+      return
+    }
+
+    setDecryptError(locale.Post_DecryptError);
     setIsDecrypting(false)
 
   }
@@ -199,11 +209,11 @@ const PostPage = () => {
   }
 
 
-    if (!isMounted) {
-      return (
-        <Loading />
-      );
-    }
+  if (!isMounted) {
+    return (
+      <Loading />
+    );
+  }
 
   return (
     <>
@@ -255,6 +265,11 @@ const PostPage = () => {
                               {locale.DeleteList_DecryptButton}
                             </Button>
                           </div>
+                          {decryptError &&
+                            <div className="whitespace-pre-wrap break-words text-red-800">
+                              {decryptError}
+                            </div>
+                          }
                         </>
                       }
 
