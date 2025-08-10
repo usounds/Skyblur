@@ -6,10 +6,10 @@ export type ClientMetadataByEnv = Record<string, ClientMetadata>;
 export const getClientMetadata: () => ClientMetadata | undefined = () => {
     let env;
     const origin = window.location.hostname;
-    if (origin.includes('skyblur.uk')) {
-        env = 'production';
-    } else if (origin.includes('preview')) {
+    if (origin.includes('preview')) {
         env = 'preview';
+    } else if (origin.includes('skyblur.uk')) {
+        env = 'production';
     } else {
         env = 'local';
     }
@@ -33,13 +33,13 @@ export const clientMetadataByEnv: ClientMetadataByEnv = {
         dpop_bound_access_tokens: true,
     },
     preview: {
-        client_id: "https://skyblur-preview.usounds.workers.dev/api/client-metadata.json",
+        client_id: "https://preview.skyblur.uk/api/client-metadata.json",
         client_name: "Skyblur Preview",
-        client_uri: "https://skyblur-preview.usounds.workers.dev",
-        logo_uri: "https://skyblur-preview.usounds.workers.dev/favicon.ico",
-        tos_uri: "https://skyblur-preview.usounds.workers.dev/termofuse",
-        policy_uri: "https://skyblur-preview.usounds.workers.dev/termofuse",
-        redirect_uris: ["https://skyblur-preview.usounds.workers.dev/"],
+        client_uri: "https://preview.skyblur.uk",
+        logo_uri: "https://preview.skyblur.uk/favicon.ico",
+        tos_uri: "https://preview.skyblur.uk/termofuse",
+        policy_uri: "https://preview.skyblur.uk/termofuse",
+        redirect_uris: ["https://preview.skyblur.uk/"],
         scope: "atproto transition:generic",
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],

@@ -32,7 +32,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
           throw new Error("Network response was not ok");
         }
         const intentResultJson = await intentResult.json();
-        const intent = intentResultJson.total || 0
+        const intent = (intentResultJson as { total?: number }).total || 0;
 
         let response
 
@@ -48,7 +48,15 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
           throw new Error("Network response was not ok");
 
         }
-        const data = await response.json();
+        const data = (await response.json()) as {
+          links?: {
+            [key: string]: {
+              [key: string]: {
+                records?: number;
+              };
+            };
+          };
+        };
         const count = data.links?.["app.bsky.feed.repost"]?.[".subject.uri"]?.records || 0;
         setRepostCount(count);
         setLikeCount(data.links?.["app.bsky.feed.like"]?.[".subject.uri"]?.records || 0)
