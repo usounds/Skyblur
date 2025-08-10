@@ -1,20 +1,20 @@
 "use client"
 import { Avatar } from "@/components/Avatar";
+import Loading from "@/components/Loading";
 import { PostList } from "@/components/PostList";
 import PostLoading from "@/components/PostLoading";
 import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
-import { customTheme } from '@/types/types';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { customTheme } from '@/types/types';
+import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Button, ThemeProvider, extendTheme, theme } from 'reablocks';
 import { useEffect, useState } from "react";
-import Loading from "@/components/Loading";
-import { AppBskyActorDefs } from '@atcute/bluesky';
-import { Client, simpleFetchHandler } from '@atcute/client';
-import { ActorIdentifier } from '@atcute/lexicons/syntax';
 
 export const ProfilePage = () => {
     const { did } = useParams();

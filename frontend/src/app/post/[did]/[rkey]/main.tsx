@@ -1,5 +1,6 @@
 "use client"
 import { Avatar } from "@/components/Avatar";
+import Loading from "@/components/Loading";
 import PostLoading from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
@@ -9,11 +10,9 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { SKYBLUR_POST_COLLECTION, customTheme } from '@/types/types';
-import Loading from "@/components/Loading";
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
-import Head from 'next/head';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Button, Divider, Input, ThemeProvider, extendTheme, theme } from 'reablocks';
