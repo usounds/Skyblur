@@ -4,16 +4,28 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-03-10",
   "compatibility_flags": [
-     "nodejs_compat"
+    "nodejs_compat"
   ],
   "vars": {
     "APPVIEW_HOST": "skyblur.usounds.work"
   },
+  "kv_namespaces": [
+    {
+      "binding": "SKYBLUR_KV_CACHE",
+      "id": "a29848660cb649cf8ebaffced3041ea0"
+    }
+  ],
   "env": {
     "production": {
       "vars": {
         "APPVIEW_HOST": "skyblur.uk"
       },
+      "kv_namespaces": [
+        {
+          "binding": "SKYBLUR_KV_CACHE",
+          "id": "a29848660cb649cf8ebaffced3041ea0"
+        }
+      ],
       "routes": [
         {
           "pattern": "api.skyblur.uk",
