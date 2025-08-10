@@ -1,13 +1,16 @@
-import { Context } from 'hono';
-import { DIDDocument, DIDResolver, Resolver, ResolverRegistry } from 'did-resolver';
-import { getResolver as getWebResolver } from 'web-did-resolver';
 import { getResolver } from '@/logic/DidPlcResolver';
+import { DIDResolver, Resolver, ResolverRegistry } from 'did-resolver';
+import { Context } from 'hono';
+import { getResolver as getWebResolver } from 'web-did-resolver';
 
 export async function handle(c: Context) {
   const did = c.req.query('actor');
   const forceRefresh = c.req.query('forceRefresh');
   if (!did) {
     return c.json({ error: 'Missing did parameter' }, 400);
+  }
+  if (!forceRefresh) {
+    return c.json({ error: 'Missing forceRefresh parameter' }, 400);
   }
 
   // KVバインディング (例: binding名は SKYBLUR_KV_CACHE と仮定)
