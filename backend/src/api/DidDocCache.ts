@@ -39,7 +39,9 @@ export async function handle(c: Context) {
     const didDocument = await resolverInstance.resolve(did);
 
     // KVにキャッシュ保存（JSONで保存）
-    await kv.put(cacheKey, JSON.stringify(didDocument));
+    c.executionCtx.waitUntil(
+      kv.put(cacheKey, JSON.stringify(didDocument))
+    );
 
     return c.json(didDocument);
 
