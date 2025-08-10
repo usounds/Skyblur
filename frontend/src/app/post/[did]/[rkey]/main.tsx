@@ -1,0 +1,328 @@
+"use client"
+import { Avatar } from "@/components/Avatar";
+import PostLoading from "@/components/PostLoading";
+import PostTextWithBold from "@/components/PostTextWithBold";
+import Reaction from "@/components/Reaction";
+import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
+import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
+import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { useLocaleStore } from "@/state/Locale";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { SKYBLUR_POST_COLLECTION, customTheme } from '@/types/types';
+import Loading from "@/components/Loading";
+import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { ActorIdentifier } from '@atcute/lexicons/syntax';
+import Head from 'next/head';
+import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
+import { Button, Divider, Input, ThemeProvider, extendTheme, theme } from 'reablocks';
+import { useEffect, useState } from "react";
+
+export const PostPage = () => {
+  const { did, rkey } = useParams();
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isMyPage, setIsMyPage] = useState<boolean>(false)
+  const [postText, setPostText] = useState<string>('')
+  const [addText, setAddText] = useState("");
+  const [bskyUrl, setBskyUrl] = useState("");
+  const [postAtUri, setPostAtUri] = useState("");
+  const [postDate, setPostDate] = useState<string>('')
+  const [errorMessage, setErrorMessage] = useState<string>('')
+  const [decryptError, setDecryptError] = useState<string>('')
+  const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
+  const locale = useLocaleStore((state) => state.localeData);
+  const apiAgent = useXrpcAgentStore((state) => state.publicAgent);
+  const searchParams = useSearchParams();
+  const agent = useXrpcAgentStore((state) => state.agent);
+  const [encryptKey, setEncryptKey] = useState("");
+  const [encryptCid, setEncryptCid] = useState('')
+  const [isDecrypt, setIsDecrypt] = useState<boolean>(false)
+  const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
+  const [pdsUrl, setPdsUrl] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  const q = searchParams.get('q');
+  const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
+
+  useEffect(() => {
+    setIsMounted(true);
+    if (did && rkey) {
+
+
+      const fetchRecord = async () => {
+
+        try {
+          let repo = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
+          repo = repo.replace(/%3A/g, ':');
+          const rkeyParam = Array.isArray(rkey) ? rkey[0] : rkey; // 配列なら最初の要素を使う
+          setIsLoading(true);
+          setErrorMessage('')
+
+          const pdsUrl = await fetchServiceEndpoint(repo)
+
+          const pdsAgent = new Client({
+            handler: simpleFetchHandler({
+              service: pdsUrl ?? '',
+            }),
+          })
+
+          setPdsUrl(pdsUrl || '')
+
+          try {
+            // getProfileとgetRecordを並行して呼び出す
+            const [userProfileResponse, postResponse] = await Promise.all([
+              apiAgent.get('app.bsky.actor.getProfile', {
+                params: { actor: repo as ActorIdentifier },
+              }),
+              getPostResponse(repo, rkeyParam, pdsAgent),
+              getPreferenceProcess(repo, pdsAgent),
+            ]);
+
+            if (!userProfileResponse.ok) {
+              setErrorMessage('Get Profile Failed.');
+              setIsLoading(false);
+              return
+            }
+            if (!postResponse.ok) {
+              setErrorMessage('Get Post Failed.');
+              setIsLoading(false);
+              return
+
+            }
+
+            // userProfileのデータをセット
+            setUserProf(userProfileResponse.data);
+
+            // postDataのデータをセット
+            const postData: UkSkyblurPost.Record = postResponse.data.value as unknown as UkSkyblurPost.Record;
+
+            const tempPostText = postData.text
+
+            //if(validateBrackets(postData.text)) tempPostText = tempPostText.replace(/[\[\]]/g, '')
+
+            setPostText(tempPostText);
+            setAddText(postData.additional || '');
+            setPostDate(formatDateToLocale(postData.createdAt));
+
+            const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
+            setBskyUrl(convertedUri)
+            setPostAtUri(postData.uri)
+
+            console.log()
+
+            if (postData.encryptBody) setEncryptCid(postData.encryptBody.ref.$link)
+
+            setIsLoading(false); // ローディング状態を終了
+
+          } catch (err) {
+            // エラーハンドリング
+            setErrorMessage(err + '');
+            setIsLoading(false); // ローディング状態を終了
+          }
+        } catch (err) {
+          setErrorMessage(err + '');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchRecord();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [did, rkey]); // did または rkey が変更された場合に再実行
+
+
+  async function getPreferenceProcess(repo: string, pdsAgent: Client) {
+    try {
+      const preference = await getPreference(pdsAgent, repo)
+      if (preference?.myPage.isUseMyPage) setIsMyPage(true)
+    } catch (e) {
+      console.log(e)
+
+    }
+  }
+
+  async function handleDecrypt() {
+    setDecryptError("");
+    setIsDecrypting(true)
+
+    const host = new URL(origin).host;
+    let apiHost = 'api.skyblur.uk'
+    if (host?.endsWith('usounds.work')) {
+      apiHost = 'skyblurapi.usounds.work'
+    }
+
+    const repo = Array.isArray(did) ? did[0] : did || ''
+
+    const decodedRepo = decodeURIComponent(repo);
+    if (!decodedRepo.startsWith('did:')) return
+    const validRepo = decodedRepo as `did:${string}`
+
+    const body: UkSkyblurPostDecryptByCid.Input = {
+      pds: pdsUrl,
+      repo: validRepo,
+      cid: encryptCid,
+      password: encryptKey,
+
+    }
+    const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (response.ok || response.status === 200) {
+      const data = await response.json() as UkSkyblurPostDecryptByCid.Output
+      setPostText(data.text);
+      setAddText(data.additional || '');
+
+      setIsDecrypt(true)
+      return
+    }
+
+    setDecryptError(locale.Post_DecryptError);
+    setIsDecrypting(false)
+
+  }
+
+  async function getPostResponse(repo: string, rkey: string, pdsAgent: Client) {
+    try {
+      return await pdsAgent.get('com.atproto.repo.getRecord', {
+        params: {
+          repo: repo as ActorIdentifier,
+          collection: SKYBLUR_POST_COLLECTION,
+          rkey: rkey,
+        },
+      });
+    } catch (e) {
+      console.log(e)
+      return await pdsAgent.get('com.atproto.repo.getRecord', {
+        params: {
+          repo: repo as ActorIdentifier,
+          collection: SKYBLUR_POST_COLLECTION,
+          rkey: rkey,
+        },
+      });
+    }
+  }
+
+
+  if (!isMounted) {
+    return (
+      <Loading />
+    );
+  }
+
+  return (
+    <>
+      <link rel="alternate" href={aturi} />
+
+      <ThemeProvider theme={extendTheme(theme, customTheme)}>
+        <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2 text-gray-800">
+          <div className="mx-auto rounded-lg">
+            {userProf &&
+              <div className="mb-2 mx-2">
+                <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
+              </div>
+            }
+
+            {isLoading ?
+              <div className="">
+                <PostLoading />
+              </div>
+              :
+              <>
+                {!errorMessage &&
+                  <>
+                    <div className="border rounded-lg p-2 mx-2 border-gray-300 max-w-screen-sm">
+                      <div className="overflow-hidden break-words">
+                        <PostTextWithBold postText={postText} isValidateBrackets={true} isMask={null} />
+                      </div>
+                      {addText &&
+                        <div className="">
+                          <Divider variant="secondary" />
+                          <PostTextWithBold postText={addText} isValidateBrackets={false} isMask={null} />
+                        </div>
+                      }
+
+                      {(encryptCid && !isDecrypt) &&
+                        <>
+                          <div className="block text-sm text-gray-400 mt-1">この投稿はパスワードが設定されています。伏せた文字と補足を参照するにはパスワードを入力して「解除」してください</div>
+                          <div className="flex flex-row items-center justify-center m-2"> {/* Flexbox with centered alignment */}
+                            <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} />
+                            <Button
+                              color="primary"
+                              size="medium"
+                              className="text-white mx-2 font-normal"
+                              onClick={handleDecrypt}
+                              disabled={isDecrypting}
+                            >
+                              {locale.DeleteList_DecryptButton}
+                            </Button>
+                          </div>
+                          {decryptError &&
+                            <div className="flex justify-center">
+                              <div className="block text-sm text-red-400 my-1">{decryptError}</div>
+                            </div>
+                          }
+                        </>
+                      }
+
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-gray-400 mr-2">{postDate}</div>
+                          <Reaction atUriPost={postAtUri} atUriBlur={aturi} />
+                        </div>
+                        <div className="flex">
+                          <a className="text-sm text-gray-500" href={bskyUrl} target="_blank">
+                            <svg width="22" height="22" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" />
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {(q == 'preview' && agent) &&
+                      <>
+                        <div className="flex justify-center mt-10">
+                          <Link href="/">
+                            <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
+                          </Link>
+                        </div>
+                      </>
+                    }
+
+                    {(q === null || q === '') && isMyPage && (
+                      <>
+                        <div className="flex justify-center mt-10">
+                          <Link href={`/profile/${did}`}>
+                            <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Post_GoMyPage}</Button>
+                          </Link>
+                        </div>
+                      </>
+                    )
+                    }
+
+                  </>
+                }
+              </>
+            }
+
+            {errorMessage &&
+              <div className="whitespace-pre-wrap break-words text-red-800">
+                {errorMessage}
+              </div>
+            }
+          </div>
+        </div >
+      </ThemeProvider>
+    </>
+  );
+};
+
+export default PostPage;
