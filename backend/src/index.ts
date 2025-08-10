@@ -28,7 +28,7 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
   return getPostHandler(c)
 })
 
-app.get('/xrpc/uk.skyblur.admin.getDiDDocument', (c) => {
+app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
   return getDidDoc(c)
 })
 
