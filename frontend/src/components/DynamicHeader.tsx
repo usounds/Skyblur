@@ -120,7 +120,7 @@ const DynamicHeader = () => {
             className="flex-none text-sm font-semibold text-white mr-2 cursor-pointer"
             onClick={logout}
           >
-            {!isLogoutProcess
+            {isLogoutProcess
               ? <BeatLoader color='#b7b7b7' size={10}/>
               : locale.Menu_Logout
             }
