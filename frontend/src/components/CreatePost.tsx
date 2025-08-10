@@ -2,6 +2,7 @@
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { ReplyList } from "@/components/ReplyList";
 import { RestoreTempPost } from "@/components/RestoreTempPost";
+import { ChangeModeModal } from "@/components/ChangeModeModal";
 import { UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblur";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
@@ -62,6 +63,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const setEncryptKey = useTempPostStore((state) => state.setEncryptKey);
     const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
     const { notifySuccess, notifyError } = useNotification();
+    const [showChangeModeConfirm, setShowChangeModeConfirm] = useState(false);
+    const [pendingChecked, setPendingChecked] = useState<boolean>(false);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -75,6 +78,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
         return lang2;
     }
+
+
 
     function handleSetIsReply(param: boolean) {
         setIsReply(param)
@@ -170,6 +175,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             setWarning(locale.CreatePost_BracketsUnbalanced)
             return
         }
+
+
+if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
+    setWarning(locale.CreatePost_NotBracketInSimpleMode);
+    return;
+}
 
         setWarning('')
 
@@ -346,11 +357,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                         const startIndexUtf16 = match.index ?? 0;
                         const endIndexUtf16 = startIndexUtf16 + match[0].length;
-
-                        console.log('handke:'+handle)
-
                         const result = await resolveFromIdentity(handle)
-
 
                         facets.push({
                             $type: "app.bsky.richtext.facet",
@@ -369,7 +376,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                     return facets;
                 }
-                
+
                 const mentionFacets = await extractMentionsWithFacets(postTextBlurLocal);
                 console.log(mentionFacets)
                 facets.push(...mentionFacets);
@@ -634,10 +641,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     };
 
 
-    const handleCheckboxChange = (isChecked: boolean) => {
-        setSimpleMode(isChecked);
-        if (!prevBlur) setTempSimpleMode(isChecked);
-        setPostText('', isChecked); // テキストを空にします
+    const handleModeChange = (isChecked: boolean) => {
+        setPendingChecked(isChecked);
+        setShowChangeModeConfirm(true); // モーダル表示
     };
 
     const handleAddText = (addText: string) => {
@@ -684,6 +690,17 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete} />
                 }
 
+                {showChangeModeConfirm && (
+                    <ChangeModeModal
+                        onConfirm={() => {
+                            setSimpleMode(pendingChecked);
+                            if (!prevBlur) setTempSimpleMode(pendingChecked);
+                            setPostText('', !simpleMode);
+                        }}
+                        onClose={() => setShowChangeModeConfirm(false)}
+                    />
+                )}
+
                 {(!appUrl) &&
                     <>
 
@@ -693,7 +710,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             <div className="flex items-center">
                                 <Toggle
                                     checked={simpleMode}
-                                    onChange={handleCheckboxChange} // Boolean を渡します
+                                    onChange={(checked: boolean | undefined): void => handleModeChange(!!checked)}
                                 />
                                 <span className="ml-2">{locale.CreatePost_SimpleMode}</span>
                             </div>
