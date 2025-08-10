@@ -13,8 +13,15 @@
       "bucket_name": "skyblur-cache"
     }
   ],
+  // トップレベルからkv_namespacesは外してもOK
   "env": {
     "preview": {
+      "routes": [
+        {
+          "pattern": "preview.skyblur.uk",
+          "custom_domain": true
+        }
+      ],
       "observability": {
         "enabled": true,
         "head_sampling_rate": 1
@@ -24,10 +31,21 @@
           "binding": "NEXT_INC_CACHE_R2_BUCKET",
           "bucket_name": "skyblur-cache"
         }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "SKYBLUR_KV_CACHE",
+          "id": "a29848660cb649cf8ebaffced3041ea0"
+        }
       ]
     },
     "production": {
-      "custom_domain": "skyblur.uk",
+      "routes": [
+        {
+          "pattern": "skyblur.uk",
+          "custom_domain": true
+        }
+      ],
       "observability": {
         "enabled": true,
         "head_sampling_rate": 0.05
@@ -36,6 +54,12 @@
         {
           "binding": "NEXT_INC_CACHE_R2_BUCKET",
           "bucket_name": "skyblur-cache"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "SKYBLUR_KV_CACHE",
+          "id": "a29848660cb649cf8ebaffced3041ea0"
         }
       ]
     }

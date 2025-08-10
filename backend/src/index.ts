@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
-import {handle as ecnryptHandle} from "@/api/ecnrypt"
-import {handle as decryptByCidHandle} from "@/api/decryptByCid"
-import {handle as getPostHandler} from "@/api/getPost"
+import { handle as ecnryptHandle } from "@/api/ecnrypt"
+import { handle as decryptByCidHandle } from "@/api/decryptByCid"
+import { handle as getPostHandler } from "@/api/getPost"
+import { handle as getDidDoc } from "@/api/DidDocCache"
 import { cors } from 'hono/cors'
 
 const app = new Hono()
@@ -27,9 +28,13 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
   return getPostHandler(c)
 })
 
+app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
+  return getDidDoc(c)
+})
+
 app.get('/', (c) => {
   const returnDocument = {
-    "message" : "This is Skyblur API Service. AppView is available at https://skyblur.uk/"
+    "message": "This is Skyblur API Service. AppView is available at https://skyblur.uk/"
   };
   return c.json(returnDocument)
 })

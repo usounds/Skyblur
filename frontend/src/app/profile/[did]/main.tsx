@@ -3,7 +3,7 @@ import { Avatar } from "@/components/Avatar";
 import Loading from "@/components/Loading";
 import { PostList } from "@/components/PostList";
 import PostLoading from "@/components/PostLoading";
-import { fetchServiceEndpoint, getPreference } from "@/logic/HandleBluesky";
+import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { customTheme } from '@/types/types';
@@ -40,9 +40,9 @@ export const ProfilePage = () => {
                 try {
                     let repoLocal = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
                     repoLocal = repoLocal.replace(/%3A/g, ':');
-                    const pdsUrl = await fetchServiceEndpoint(repoLocal)
+                    let pdsUrl = await fetchServiceEndpointWithCache(repoLocal, false)
 
-                    const pdsAgent = new Client({
+                    let pdsAgent = new Client({
                         handler: simpleFetchHandler({
                             service: pdsUrl ?? '',
                         }),
@@ -53,30 +53,35 @@ export const ProfilePage = () => {
                     setIsLoading(true);
                     setErrorMessage('')
 
+                    const userProfileResponse = await apiAgent.get('app.bsky.actor.getProfile', {
+                        params: { actor: repoLocal as ActorIdentifier },
+                    })
+
+                    if (!userProfileResponse.ok) {
+                        setErrorMessage('Get Profile Failed.s');
+                        setIsLoading(false); // ローディング状態を終了
+                        return
+                    }
+
                     try {
-                        // getProfileとgetRecordを並行して呼び出す
-                        const [userProfileResponse] = await Promise.all([
-                            apiAgent.get('app.bsky.actor.getProfile', {
-                                params: { actor: repoLocal as ActorIdentifier },
+                        getPostResponse(repoLocal, pdsAgent)
+                    } catch (e) {
+                        console.error(e)
+                        pdsUrl = await fetchServiceEndpointWithCache(repo, true)
+
+                        pdsAgent = new Client({
+                            handler: simpleFetchHandler({
+                                service: pdsUrl ?? '',
                             }),
-                            
-                        ]);
+                        })
+
                         getPostResponse(repoLocal, pdsAgent)
 
-                        if (!userProfileResponse.ok) {
-                            setErrorMessage('Get Profile Failed.s');
-                            setIsLoading(false); // ローディング状態を終了
-                            return
-                        }
-
-                        // userProfileのデータをセット
-                        setUserProf(userProfileResponse.data);
-                        setIsLoading(false); // ローディング状態を終了
-                    } catch (err) {
-                        // エラーハンドリング
-                        setErrorMessage(err + '');
-                        setIsLoading(false); // ローディング状態を終了
                     }
+
+                    // userProfileのデータをセット
+                    setUserProf(userProfileResponse.data);
+                    setIsLoading(false); // ローディング状態を終了
                 } catch (err) {
                     setErrorMessage(err + '');
                 } finally {
@@ -104,6 +109,7 @@ export const ProfilePage = () => {
 
         } catch (e) {
             console.error('エラーだよ' + e)
+            throw e
 
         }
 

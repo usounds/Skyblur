@@ -1,9 +1,8 @@
 "use client"
-import { fetchServiceEndpoint } from "@/logic/HandleBluesky";
-import { Client } from '@atcute/client';
-import { ClientMetadata } from '@atcute/oauth-browser-client';
-import { OAuthUserAgent, configureOAuth, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
+import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
 import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { ClientMetadata, OAuthUserAgent, configureOAuth, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
 
 export async function handleOAuth(
   getClientMetadata: () => ClientMetadata | null | undefined,
@@ -47,11 +46,16 @@ export async function handleOAuth(
       const rpc = new Client({ handler: agent });
       setAgent(rpc)
 
-      const endPoint = await fetchServiceEndpoint(agent.sub)
-      console.log(endPoint)
+      // ログイン時はKVキャッシュをクリアする
+      const endPoint = await fetchServiceEndpointWithCache(agent.sub, true)
       setServiceUrl(endPoint || '')
-      console.log(`${agent.sub} was successfully authenticated.`)
-      const userProfile = await rpc.get(`app.bsky.actor.getProfile`, {
+      console.log(`${agent.sub} was successfully authenticated from ${endPoint}.`)
+      const publicAgent = new Client({
+        handler: simpleFetchHandler({
+          service: 'https://public.api.bsky.app',
+        }),
+      })
+      const userProfile = await publicAgent.get(`app.bsky.actor.getProfile`, {
         params: {
           actor: agent.sub,
         },
@@ -87,11 +91,16 @@ export async function handleOAuth(
       setOauthUserAgent(agent)
       const rpc = new Client({ handler: agent });
       setAgent(rpc)
-      const endPoint = await fetchServiceEndpoint(agent.sub)
-      console.log(endPoint)
+      //レストア時はKVキャッシュを更新しない
+      const endPoint = await fetchServiceEndpointWithCache(agent.sub, false)
       setServiceUrl(endPoint || '')
-      console.log(`${agent.sub} was restored (last active session)`)
-      const userProfile = await rpc.get(`app.bsky.actor.getProfile`, {
+      console.log(`${agent.sub} was restored (last active session) from ${endPoint}.`)
+      const publicAgent = new Client({
+        handler: simpleFetchHandler({
+          service: 'https://public.api.bsky.app',
+        }),
+      })
+      const userProfile = await publicAgent.get(`app.bsky.actor.getProfile`, {
         params: {
           actor: agent.sub,
         },
