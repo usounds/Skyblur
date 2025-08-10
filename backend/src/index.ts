@@ -37,7 +37,7 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
 app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
   const origin = c.req.header('origin') || '';
   if (!allowedOrigins.includes(origin)) {
-    return c.json({ error: 'This method shoud be call from Skyblur AppViews' }, 403);
+    return c.json({ error: 'This method shoud be call from Skyblur AppView' }, 403);
   }
 
   return getDidDoc(c)
