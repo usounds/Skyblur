@@ -25,7 +25,7 @@ export const fetchServiceEndpointWithCache = async (did: string, forceRefresh: b
             apiHost = 'skyblurapi.usounds.work'
         }
 
-        const ret = await fetch(`https://${apiHost}/xrpc/uk.skyblur.admin.getDiDDocument?actor=${did}&forceRefresh=${forceRefresh}`)
+        const ret = await fetch(`https://${apiHost}/xrpc/uk.skyblur.admin.getDidDocument?actor=${did}&forceRefresh=${forceRefresh}`)
         const didDoc = await ret.json() as DIDDocument;
         const endpoint =
             didDoc.service?.find((svc: Service) => svc.id === '#atproto_pds')
