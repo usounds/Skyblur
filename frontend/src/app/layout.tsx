@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "Skyblur",
-  description: "伏字を使った投稿ができます",
+  description: "伏字を使った投稿ができます / You can post with blur.",
 };
 
 export default function RootLayout({
