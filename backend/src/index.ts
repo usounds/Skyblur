@@ -14,6 +14,12 @@ app.options('*', (c) => {
   return c.text(''); // OPTIONSリクエストに対する空のレスポンス
 });
 
+const allowedOrigins = [
+  'https://skyblur.usounds.work',
+  'https://skyblur.uk',
+  'https://preview.skyblur.uk'
+];
+
 app.use(cors()) // すべてのリクエストでCORSを許可
 
 app.post('/xrpc/uk.skyblur.post.encrypt', (c) => {
@@ -29,6 +35,11 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
 })
 
 app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
+  const origin = c.req.header('origin') || '';
+  if (!allowedOrigins.includes(origin)) {
+    return c.json({ error: 'This method shoud be call from Skyblur AppViews' }, 403);
+  }
+
   return getDidDoc(c)
 })
 
