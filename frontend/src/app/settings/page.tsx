@@ -42,7 +42,6 @@ export default function Home() {
       try {
 
         const value = await getPreference(agent, did)
-        console.log(value)
         if (value === null) {
           setPreferenceMode('create')
           setIsLoading(false)
