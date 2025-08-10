@@ -133,7 +133,7 @@ const DynamicHeader = () => {
       <LanguageToggle />
       {agent && (
         <Link href="/settings" className="text-xl font-semibold text-white ml-2">
-          <GoGear size={22} color="white" />
+          <GoGear size={20} color="white" />
         </Link>
       )}
     </div>
