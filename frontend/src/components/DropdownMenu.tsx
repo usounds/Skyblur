@@ -1,5 +1,5 @@
 import { useLocaleStore } from "@/state/Locale";
-import { PostListItem, SKYBLUR_POST_COLLECTION } from "@/types/types";
+import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import { Button, Group, Menu, Modal } from '@mantine/core';
@@ -149,7 +149,9 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
 
             <Menu.Dropdown>
                 <Menu.Label>Menu</Menu.Label>
-                <Menu.Item leftSection={<GrEdit size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
+                {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) || post.blur.visibility === VISIBILITY_PUBLIC) &&
+                    <Menu.Item leftSection={<GrEdit size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
+                }
                 <Menu.Item
                     leftSection={<LuClipboardCheck size={18} />}
                     onClick={() => handleCopyToClipboard(post)}
