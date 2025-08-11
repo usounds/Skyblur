@@ -109,6 +109,7 @@ const messages = {
     Pref_FileType: "File accepts jpg or png images",
     Pref_SaveCompleted: "Save Completed!",
     Post_GoMyPage: "Go to My Page",
+    Pref_SaveIsInProgress: "Save is in progress",
     Menu_URLCopy: "URL Copy",
     Menu_GoSite: "Go to Page",
     Profile_NotPublish: "The profile page is private.",
