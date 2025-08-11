@@ -130,7 +130,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
 
     return (
 
-        <Menu shadow="md" width={200} trigger="hover" openDelay={100} closeDelay={400}>
+        <Menu shadow="md" width={200} >
             <Modal opened={opened} onClose={close} title={locale.DeleteList_ConfirmDelete} centered>
                 {post.blur.text}
                 <Group mt="md" style={{ justifyContent: 'flex-end' }}>
