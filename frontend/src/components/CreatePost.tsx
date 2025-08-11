@@ -484,7 +484,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 notifications.show({
                     id: 'post-process',
-                    title: 'Process',
+                    title: locale.Menu_Post,
                     message: locale.CreatePost_EncryptInProgress,
                     loading: true,
                     autoClose: false
@@ -526,7 +526,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                     notifications.update({
                         id: 'post-process',
-                        title: 'Process',
+                        title: locale.Menu_Post,
                         message: locale.CreatePost_BlobUploadInProgress,
                         loading: true,
                         autoClose: false
@@ -608,7 +608,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             notifications.clean()
             notifications.show({
                 id: 'post-process',
-                title: 'Process',
+                title: locale.Menu_Post,
                 message: buttonName,
                 loading: true,
                 autoClose: false
