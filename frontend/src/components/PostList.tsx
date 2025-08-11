@@ -139,7 +139,6 @@ export const PostList: React.FC<PostListProps> = ({
             loading: true,
             autoClose: false,
             message: locale.Post_DecryptInProgress,
-            color: 'red',
             icon: <HiX />
         });
 
@@ -217,7 +216,7 @@ export const PostList: React.FC<PostListProps> = ({
             });
         }
 
-
+        notifications.clean()
         setIsDecrypting(false)
 
     }
