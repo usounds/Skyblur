@@ -61,7 +61,7 @@ export function AvatorDropdownMenu() {
     }
 
     return (
-        <Menu shadow="md" width={200} trigger="click-hover" openDelay={100} closeDelay={400}>
+        <Menu shadow="md" width={200} >
             <Menu.Target>
                 {(userProf && agent) ? (
                     userProf.avatar ? (
