@@ -296,9 +296,9 @@ export default function Home() {
 
   return (
     < >
-      <main className="text-gray-700 ">
+      <main className="">
         <>
-          <div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
+          <div className="flex items-center justify-center h-full mt-4 mx-4">
             {locale.Pref_Title}
           </div>
           {isLoading &&
@@ -309,7 +309,7 @@ export default function Home() {
               <>
                 <>
                   <span>{locale.Pref_MyPage}</span>
-                  <div className="block text-sm text-gray-400 mt-1">{locale.Pref_MyPagePublishDescription}</div>
+                  <div className="block text-sm mt-1">{locale.Pref_MyPagePublishDescription}</div>
                   <div className="flex items-center mt-2 space-x-2">
                     <Switch
                       checked={isUseMyPage}
@@ -320,7 +320,7 @@ export default function Home() {
                   </div>
                   {isUseMyPage && (
                     <>
-                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_MyPageDesc}</div>
+                      <div className="block text-m mt-1">{locale.Pref_MyPageDesc}</div>
                       <Textarea value={myPageDescription} onChange={(e) => setMyPageDescription(e.target.value)} maxLength={1000} />
                       <div className="flex flex-col items-center mt-1 ">
                         <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
@@ -330,11 +330,11 @@ export default function Home() {
                 </>
                 <>
                   <div className="mt-6">{locale.Pref_CustomFeed}</div>
-                  <div className="block text-sm text-gray-400 mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
+                  <div className="block text-sm mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
                   <div className="flex items-center mt-2 space-x-2">
                     <Switch
                       checked={isCustomFeed}
-                      onChange={(event) => setIsUseMyPage(event.currentTarget.checked)}
+                      onChange={(event) => setIsCustomFeed(event.currentTarget.checked)}
 
                       label={locale.Pref_CustomFeedPublish}
                     />
@@ -342,17 +342,17 @@ export default function Home() {
                   {isCustomFeed && (
                     <>
 
-                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedName}</div>
+                      <div className="block text-m mt-1">{locale.Pref_CustomFeedName}</div>
                       <TextInput value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
-                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedDescription}</div>
+                      <div className="block text-m mt-1">{locale.Pref_CustomFeedDescription}</div>
                       <Textarea value={feedDescription} onChange={(e) => setFeedDescription(e.target.value)} maxLength={200} />
-                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedAvatar}</div>
+                      <div className="block text-m mt-1">{locale.Pref_CustomFeedAvatar}</div>
                       {feedAvatarImg &&
                         <p>
                           <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
                         </p>
                       }
-                      <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />
+                      <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm sm:text-base" onChange={changeFeedAvatar} />
                       <div className="block text-sm text-gray-600 mt-1">
                         <div className="flex flex-col items-center ">
                           <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
