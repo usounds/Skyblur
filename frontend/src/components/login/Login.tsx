@@ -138,6 +138,7 @@ export function AuthenticationTitle() {
             });
         } catch (e) {
             console.error('createAuthorizationUrl error:', e);
+            notifications.clean()
             notifications.show({
                 title: 'Error',
                 message: 'Failed to create authorization URL',
