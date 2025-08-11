@@ -1,27 +1,28 @@
 "use client"
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { ReplyList } from "@/components/ReplyList";
-import { RestoreTempPost } from "@/components/RestoreTempPost";
-import { ChangeModeModal } from "@/components/ChangeModeModal";
 import { UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblur";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, MENTION_REGEX } from "@/types/types";
+import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import type { } from '@atcute/atproto';
 import type { } from '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
 import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
+import { resolveFromIdentity } from '@atcute/oauth-browser-client';
 import * as TID from '@atcute/tid';
+import { Button, Card, Group, Modal, Switch, Text, TextInput } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { Button, IconButton, Input, Toggle, useNotification } from 'reablocks';
 import { useEffect, useState } from "react";
+import { HiCheck, HiX } from "react-icons/hi";
 import type { } from '../../src/lexicon/UkSkyblur';
-import { resolveFromIdentity } from '@atcute/oauth-browser-client';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
@@ -53,7 +54,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const tempText = useTempPostStore((state) => state.text);
     const tempAdditional = useTempPostStore((state) => state.additional);
     const tempSimpleMode = useTempPostStore((state) => state.simpleMode);
-    const [isTempRestore, setIsTempRestore] = useState<boolean>(false)
     const [isReply, setIsReply] = useState<boolean>(false)
     const [replyPost, setReplyPost] = useState<PostView | undefined>()
     const tempReply = useTempPostStore((state) => state.reply);
@@ -62,9 +62,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const encryptKey = useTempPostStore((state) => state.encryptKey) || '';
     const setEncryptKey = useTempPostStore((state) => state.setEncryptKey);
     const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
-    const { notifySuccess, notifyError } = useNotification();
-    const [showChangeModeConfirm, setShowChangeModeConfirm] = useState(false);
-    const [pendingChecked, setPendingChecked] = useState<boolean>(false);
+    const [changeModeOpened, { open: openChangeMode, close: closeChangeMode }] = useDisclosure(false);
+    const [restorePostData, { open: openRestorePostData, close: closeRestorePostData }] = useDisclosure(false);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -177,10 +176,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         }
 
 
-if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
-    setWarning(locale.CreatePost_NotBracketInSimpleMode);
-    return;
-}
+        if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
+            setWarning(locale.CreatePost_NotBracketInSimpleMode);
+            return;
+        }
 
         setWarning('')
 
@@ -218,7 +217,12 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
         }
         if (isEncrypt) {
             if (/[ \t\r\n\u3000]/.test(encryptKey)) {
-                notifyError(locale.CreatePost_PasswordErrorSpace)
+                notifications.show({
+                    title: 'Error',
+                    message: locale.CreatePost_PasswordErrorSpace,
+                    color: 'red',
+                    icon: <HiX />
+                });
                 return
             }
         }
@@ -402,9 +406,6 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                     facets: facets
                 };
 
-                console.log('replyPost')
-                console.log(replyPost)
-
                 if (replyPost) {
                     appBskyFeedPost.reply = {
                         $type: "app.bsky.feed.post#replyRef",
@@ -420,8 +421,6 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                         }
                     }
                 }
-
-                console.log(appBskyFeedPost)
 
                 // OGP設定
                 let ogpDescription = locale.CreatePost_OGPDescription;
@@ -483,7 +482,13 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                     additional: addText
                 }
 
-                setButtonName(locale.CreatePost_EncryptInProgress)
+                notifications.show({
+                    id: 'post-process',
+                    title: 'Process',
+                    message: locale.CreatePost_EncryptInProgress,
+                    loading: true,
+                    autoClose: false
+                });
 
                 const host = new URL(origin).host;
                 let appViewUrl = 'skyblur.uk'
@@ -511,8 +516,6 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                     as: 'json',
                 });
 
-
-
                 const data: UkSkyblurPostEncrypt.Output = response.data as UkSkyblurPostEncrypt.Output;
                 if (response.ok) {
                     const blob = new Blob([data.body], { type: "text/plain" });
@@ -521,7 +524,13 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                     const arrayBuffer = await blob.arrayBuffer();
                     const uint8Array = new Uint8Array(arrayBuffer);
 
-                    setButtonName(locale.CreatePost_BlobUploadInProgress)
+                    notifications.update({
+                        id: 'post-process',
+                        title: 'Process',
+                        message: locale.CreatePost_BlobUploadInProgress,
+                        loading: true,
+                        autoClose: false
+                    });
 
                     const ret = await agent.post('com.atproto.repo.uploadBlob', {
                         input: uint8Array,
@@ -532,7 +541,12 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                     if (!ret.ok) {
                         console.error("❌ Encryption Error:", data.message);
                         handleInitButton()
-                        notifyError(data.message || '')
+                        notifications.show({
+                            title: 'Error',
+                            message: data.message,
+                            color: 'red',
+                            icon: <HiX />
+                        });
                         setIsLoading(false)
                         return
 
@@ -558,7 +572,13 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                 } else {
                     console.error("❌ Encryption Error:", data.message);
                     handleInitButton()
-                    notifyError(data.message || '')
+                    notifications.clean()
+                    notifications.show({
+                        title: 'Error',
+                        message: data.message,
+                        color: 'red',
+                        icon: <HiX />
+                    });
                     setIsLoading(false)
                     return
                 }
@@ -580,8 +600,19 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
 
             }
 
-            if (isEncrypt) setButtonName('(3/3)' + locale.CreatePost_PostInProgress)
-            else setButtonName(locale.CreatePost_PostInProgress)
+            let buttonName = ''
+
+            if (isEncrypt) buttonName = '(3/3)' + locale.CreatePost_PostInProgress
+            else buttonName = locale.CreatePost_PostInProgress
+
+            notifications.clean()
+            notifications.show({
+                id: 'post-process',
+                title: 'Process',
+                message: buttonName,
+                loading: true,
+                autoClose: false
+            });
 
             const ret = await agent.post('com.atproto.repo.applyWrites', {
                 input: {
@@ -593,7 +624,13 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
 
             if (ret.ok) {
                 const convertedUri = "completed";
-                notifySuccess(locale.CreatePost_Complete)
+                notifications.clean()
+                notifications.show({
+                    title: 'Success',
+                    message: locale.CreatePost_Complete,
+                    color: 'teal',
+                    icon: <HiCheck />
+                });
                 setAppUrl(convertedUri)
                 setPostTest('')
                 setAddText('')
@@ -604,12 +641,25 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
             } else {
                 console.error(ret)
                 handleInitButton()
-                notifyError("Error:" + ret)
+                notifications.clean()
+                notifications.show({
+                    title: 'Error',
+                    message: "Error:" + ret,
+                    color: 'red',
+                    icon: <HiX />
+                });
 
             }
         } catch (e) {
             handleInitButton()
-            notifyError("Error:" + e)
+            //notifyError("Error:" + e)
+            notifications.clean()
+            notifications.show({
+                title: 'Error',
+                message: "Error:" + e,
+                color: 'red',
+                icon: <HiX />
+            });
 
         }
         handleInitButton()
@@ -627,8 +677,9 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
             }
 
         } else if (tempText || tempAdditional || tempReply) {
-            setIsTempRestore(true)
-
+            setTimeout(() => {
+                openRestorePostData();
+            }, 200);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, prevBlur]); // Make sure to use the correct second dependency
@@ -638,12 +689,6 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
             setButtonName(locale.CreatePost_UpdateButton)
         else
             setButtonName(locale.CreatePost_CreateButton)
-    };
-
-
-    const handleModeChange = (isChecked: boolean) => {
-        setPendingChecked(isChecked);
-        setShowChangeModeConfirm(true); // モーダル表示
     };
 
     const handleAddText = (addText: string) => {
@@ -660,6 +705,7 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
     };
 
     const handleTempApply = async () => {
+        console.log('tempText:' + tempText)
         setPostText(tempText, tempSimpleMode);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
@@ -678,28 +724,88 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
         if (encryptKey) setIsEncrypt(true)
     };
 
-    const handleModalClose = () => {
-        setIsTempRestore(false)
-    };
-
     return (
         <>
             <div className="m-3">
 
-                {isTempRestore &&
-                    <RestoreTempPost content={tempText} onApply={handleTempApply} onClose={handleModalClose} onDelete={handleTempDelete} />
-                }
+                <Modal
+                    opened={restorePostData}
+                    onClose={() => {
+                        closeRestorePostData();
+                    }}
+                    title={locale.CreatePost_RestoreTitle}
+                    centered
+                >
+                    <Text>{tempText}</Text>
+                    <Group mt="md" style={{ justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="default"
+                            color="gray"
+                            onClick={() => {
+                                closeRestorePostData();
+                            }}
+                        >
+                            {locale.DeleteList_CancelButton}
+                        </Button>
+                        <Button
+                            variant="filled"
+                            color="red"
+                            onClick={async () => {
+                                handleTempDelete()
+                                closeRestorePostData();
+                            }}
+                            loaderProps={{ type: 'dots' }}
+                        >
+                            {locale.DeleteList_DeleteButton}
+                        </Button>
+                        <Button
+                            variant="filled"
+                            onClick={async () => {
+                                handleTempApply()
+                                closeRestorePostData();
+                            }}
+                            loaderProps={{ type: 'dots' }}
+                        >
+                            {locale.CreatePost_RestoreButton}
+                        </Button>
+                    </Group>
+                </Modal>
 
-                {showChangeModeConfirm && (
-                    <ChangeModeModal
-                        onConfirm={() => {
-                            setSimpleMode(pendingChecked);
-                            if (!prevBlur) setTempSimpleMode(pendingChecked);
-                            setPostText('', !simpleMode);
-                        }}
-                        onClose={() => setShowChangeModeConfirm(false)}
-                    />
-                )}
+                <Modal
+                    opened={changeModeOpened}
+                    onClose={() => {
+                        closeChangeMode();
+                    }}
+                    title={locale.CreatePost_ChangeSimpleMode}
+                    centered
+                >
+                    <Text>{locale.CreatePost_ChangeSimpleModeDescription}</Text>
+                    <Group mt="md" style={{ justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="default"
+                            color="gray"
+                            onClick={() => {
+                                setSimpleMode(simpleMode);
+                                closeChangeMode();
+                            }}
+                        >
+                            {locale.DeleteList_CancelButton}
+                        </Button>
+                        <Button
+                            variant="filled"
+                            color="red"
+                            onClick={async () => {
+                                setSimpleMode(!simpleMode);
+                                if (!prevBlur) setTempSimpleMode(!simpleMode);
+                                setPostText('', !simpleMode);
+                                closeChangeMode();
+                            }}
+                            loaderProps={{ type: 'dots' }}
+                        >
+                            {locale.CreatePost_OK}
+                        </Button>
+                    </Group>
+                </Modal>
 
                 {(!appUrl) &&
                     <>
@@ -708,11 +814,13 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
 
                         <div className="flex my-1">
                             <div className="flex items-center">
-                                <Toggle
+                                <Switch
                                     checked={simpleMode}
-                                    onChange={(checked: boolean | undefined): void => handleModeChange(!!checked)}
+                                    onChange={() => {
+                                        openChangeMode();
+                                    }}
+                                    label={locale.CreatePost_SimpleMode}
                                 />
-                                <span className="ml-2">{locale.CreatePost_SimpleMode}</span>
                             </div>
                         </div>
                         {simpleMode ?
@@ -772,19 +880,17 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                                 <div className='mt-4 mb-2'>{locale.ReplyList_Reply}</div>
                                 <div className="block text-sm text-gray-400 mt-1">{locale.ReplyList_ReplyLabelDescription}</div>
                                 <div className="flex items-center mt-2">
-                                    <Toggle
+                                    <Switch
                                         checked={isReply}
-                                        onChange={handleSetIsReply} // Boolean を渡します
+                                        onChange={(event) => handleSetIsReply(event.currentTarget.checked)}
+                                        label={locale.ReplyList_UseReply}
                                     />
-                                    <span className="ml-2">{locale.ReplyList_UseReply}</span>
                                 </div>
 
                                 {isReply &&
                                     <>
                                         {replyPost &&
-                                            <div
-                                                className="p-2 m-2 bg-white rounded-md border border-gray-300 w-full "
-                                            >
+                                            <Card withBorder p="sm" my="sm" radius="md" w="100%">
                                                 <div>
 
                                                     <div
@@ -795,16 +901,14 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                                                 </div>
 
                                                 <div className="flex justify-between items-center gap-2 mt-2">
-                                                    <div className="text-sm text-gray-400">{formatDateToLocale(replyPost.record.createdAt)}</div>
+                                                    <div className="text-sm">{formatDateToLocale(replyPost.record.createdAt)}</div>
                                                     <div className="flex sm:gap-6 gap-4">
-                                                        <IconButton size="small" variant="text"  >
-                                                            <a href={transformUrl(replyPost.uri)} target="_blank">
-                                                                <svg width="20" height="20" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg"><path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" /></svg>
-                                                            </a>
-                                                        </IconButton>
+                                                        <a href={transformUrl(replyPost.uri)} target="_blank">
+                                                            <svg width="20" height="20" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg"><path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" /></svg>
+                                                        </a>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </Card>
                                         }
                                         {!replyPost &&
                                             <ReplyList handleSetPost={handleSetReplyPost} />
@@ -818,18 +922,28 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                             <div className='mt-4 mb-2'>{locale.CreatePost_PasswordTitle}</div>
                             <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PasswordDescription}</div>
                             <div className="flex items-center mt-2">
-                                <Toggle
+                                <Switch
                                     checked={isEncrypt}
-                                    onChange={setIsEncrypt} // Boolean を渡します
+                                    onChange={(event) => setIsEncrypt(event.currentTarget.checked)}
                                     disabled={prevBlur ? true : false}
+                                    label={locale.CreatePost_PasswordRadio}
                                 />
-                                <span className="ml-2">{locale.CreatePost_PasswordRadio}</span>
                             </div>
 
                             {isEncrypt &&
                                 <div className=''>
                                     <div className="block text-sm text-gray-400 my-1">{locale.CreatePost_PasswordInputDescription}</div>
-                                    <Input value={encryptKey} size="medium" onValueChange={setEncryptKey} max={20} placeholder="p@ssw0rd" />
+                                    <TextInput
+                                        value={encryptKey}
+                                        maxLength={20}
+                                        placeholder="p@ssw0rd"
+                                        styles={{
+                                            input: {
+                                                fontSize: 16,  // 16pxに設定
+                                            },
+                                        }}
+                                        onChange={(event) => setEncryptKey(event.currentTarget.value)}
+                                    />
                                     {/[ \t\r\n\u3000]/.test(encryptKey) && <p className="text-red-500">{locale.CreatePost_PasswordErrorSpace}</p>}
                                 </div>
                             }
@@ -840,12 +954,12 @@ if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
                             {!warning && (
                                 (isReply && replyPost) || !isReply
                             ) && (
+
                                     <Button
-                                        color="primary"
-                                        size="large"
-                                        className={`text-white text-base font-normal ${prevBlur ? 'w-[300px]' : 'w-[230px]'}`}
                                         onClick={handleCrearePost}
+                                        loaderProps={{ type: 'dots' }}
                                         disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0) || /[ \t\r\n\u3000]/.test(encryptKey)}
+                                        loading={isLoading}
                                     >
                                         {isLoading &&
                                             <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
