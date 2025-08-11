@@ -270,17 +270,26 @@ export default function Home() {
     if (!agent || !did) return
     setFeedUpdateMessage("")
     setIsSave(true)
+
+    notifications.show({
+      title: locale.Menu_Settings,
+      loading: true,
+      autoClose: false,
+      message: locale.Pref_SaveIsInProgress,
+    });
     try {
       await handleCustomFeed(isCustomFeed)
       await handleIsUseMyPage(isUseMyPage)
+      notifications.clean()
       notifications.show({
         title: 'Success',
-        message: locale.CreatePost_Complete,
+        message: locale.Pref_SaveCompleted,
         color: 'teal',
         icon: <HiCheck />
       });
       router.push('/')
     } catch (e) {
+      notifications.clean()
       setFeedUpdateMessage('Error:' + e)
     }
     setIsSave(false)
