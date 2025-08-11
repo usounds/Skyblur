@@ -79,7 +79,7 @@ const PostTextWithBold = ({ postText, isValidateBrackets, isMask }: { postText: 
   // dangerouslySetInnerHTMLを使ってレンダリング
   return (
     <div
-      className="whitespace-pre-wrap break-all text-gray-800"
+      className="whitespace-pre-wrap break-all"
       dangerouslySetInnerHTML={{ __html: processedText }}
     />
   );

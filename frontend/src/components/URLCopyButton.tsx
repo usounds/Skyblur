@@ -1,6 +1,6 @@
 import { useLocaleStore } from "@/state/Locale";
 import Link from 'next/link';
-import { Button } from 'reablocks';
+import { Button } from '@mantine/core';
 import React from 'react';
 import { FaRegWindowRestore } from "react-icons/fa6";
 import { LuClipboardCheck } from "react-icons/lu";
@@ -20,28 +20,19 @@ const URLCopyButton: React.FC<URLCopyButtonProps> = ({ url }) => {
         <>
             <div className="flex gap-3 my-2">
                 <Link href={url} target="_blank">
-                <Button
-                    size="small"
-                    variant="outline"
-                    startAdornment={
-                        <FaRegWindowRestore
-                            size={26}
-                            color="gray"
-                        />
-                    }
-                >
-                    {locale.Menu_GoSite}
-                </Button>
+                    <Button
+                        variant="outline"
+                        color="gray"
+                        leftSection={<FaRegWindowRestore size={14} />}
+
+                    >
+                        {locale.Menu_GoSite}
+                    </Button>
                 </Link>
                 <Button
-                    size="small"
                     variant="outline"
-                    startAdornment={
-                        <LuClipboardCheck
-                            size={26}
-                            color="gray"
-                        />
-                    }
+                    color="gray"
+                    leftSection={<LuClipboardCheck size={14} />}
                     onClick={handleCopy}
                 >
                     {locale.Menu_URLCopy}

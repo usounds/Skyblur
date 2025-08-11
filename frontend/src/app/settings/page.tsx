@@ -1,17 +1,20 @@
 "use client"
+import Loading from "@/components/Loading";
 import URLCopyButton from "@/components/URLCopyButton";
-import Image from "next/image";
 import { getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
-import { customTheme } from "@/types/types";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
+import { Button, Switch, Textarea, TextInput } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import Image from "next/image";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Notifications, NotificationsContext, Textarea, ThemeProvider, Toggle, extendTheme, theme } from 'reablocks';
 import { useEffect, useState } from "react";
+import { HiCheck } from "react-icons/hi";
+import { MdArrowBack } from "react-icons/md";
 import BeatLoader from "react-spinners/BeatLoader";
-import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { ResourceUri } from '@atcute/lexicons/syntax';
-import { ActorIdentifier } from '@atcute/lexicons/syntax';
+import { Affix } from '@mantine/core';
 
 export default function Home() {
   const agent = useXrpcAgentStore((state) => state.agent);
@@ -27,16 +30,17 @@ export default function Home() {
   const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', did || '') || '')
   const [feedDescription, setFeedDescription] = useState<string>('')
   const [feedUpdateMessage, setFeedUpdateMessage] = useState<string>('')
-  const [feedUpdateCompleted, setFeedUpdateCompleted] = useState<boolean>(false)
   const [feedAvatarImg, setFeedAvatarImg] = useState('')
   const [feedAvatar, setFeedAvatar] = useState<File>()
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     if (!agent || !did) {
       router.push('/')
       return
     }
+    setIsMounted(true);
     setIsLoading(true)
     const fetchData = async () => {
       try {
@@ -72,7 +76,6 @@ export default function Home() {
         setIsCustomFeed(true)
 
       }
-
       setIsLoading(false)
 
     };
@@ -266,12 +269,17 @@ export default function Home() {
   const handleSave = async () => {
     if (!agent || !did) return
     setFeedUpdateMessage("")
-    setFeedUpdateCompleted(false)
     setIsSave(true)
     try {
       await handleCustomFeed(isCustomFeed)
       await handleIsUseMyPage(isUseMyPage)
-      setFeedUpdateCompleted(true)
+      notifications.show({
+        title: 'Success',
+        message: locale.CreatePost_Complete,
+        color: 'teal',
+        icon: <HiCheck />
+      });
+      router.push('/')
     } catch (e) {
       setFeedUpdateMessage('Error:' + e)
     }
@@ -279,112 +287,110 @@ export default function Home() {
 
   }
 
+
+  if (!isMounted) {
+    return (
+      <Loading />
+    );
+  }
+
   return (
     < >
-      <ThemeProvider theme={extendTheme(theme, customTheme)}>
-        <main className="text-gray-700 ">
-          <Notifications>
-            <NotificationsContext.Consumer>
-              {() => (
+      <main className="text-gray-700 ">
+        <>
+          <div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
+            {locale.Pref_Title}
+          </div>
+          {isLoading &&
+            <div className="flex flex-col items-center gap-4 mb-8 mt-2"><BeatLoader /></div>
+          }
+          <div className="mx-auto max-w-screen-md px-4">
+            {!isLoading &&
+              <>
                 <>
-                  <div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
-                    {locale.Pref_Title}
-                  </div>
-                  {isLoading &&
-                    <div className="flex flex-col items-center gap-4 mb-8 mt-2"><BeatLoader /></div>
-                  }
-                  <div className="mx-auto max-w-screen-md px-4">
-                    {!isLoading &&
-                      <>
-                        <>
-                          <span>{locale.Pref_MyPage}</span>
-                          <div className="block text-sm text-gray-400 mt-1">{locale.Pref_MyPagePublishDescription}</div>
-                          <div className="flex items-center mt-2 space-x-2">
-                            <Toggle
-                              checked={isUseMyPage}
-                              onChange={setIsUseMyPage} // Boolean を渡します
-                              disabled={isSave}
-                            />
-                            <span>{locale.Pref_MyPagePublish}</span>
-                          </div>
-                          {isUseMyPage && (
-                            <>
-                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_MyPageDesc}</div>
-                              <Textarea value={myPageDescription} onChange={(e) => setMyPageDescription(e.target.value)} maxLength={1000} />
-                              <div className="flex flex-col items-center mt-1 ">
-                                <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
-                              </div>
-                            </>
-                          )}
-                        </>
-                        <>
-                          <div className="mt-6">{locale.Pref_CustomFeed}</div>
-                          <div className="block text-sm text-gray-400 mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
-                          <div className="flex items-center mt-2 space-x-2">
-                            <Toggle
-                              checked={isCustomFeed}
-                              onChange={setIsCustomFeed} // Boolean を渡します
-                              disabled={isSave}
-                            />
-                            <span>{locale.Pref_CustomFeedPublish}</span>
-                          </div>
-                          {isCustomFeed && (
-                            <>
+                  <span>{locale.Pref_MyPage}</span>
+                  <div className="block text-sm text-gray-400 mt-1">{locale.Pref_MyPagePublishDescription}</div>
+                  <div className="flex items-center mt-2 space-x-2">
+                    <Switch
+                      checked={isUseMyPage}
+                      onChange={(event) => setIsUseMyPage(event.currentTarget.checked)}
 
-                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedName}</div>
-                              <Input value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
-                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedDescription}</div>
-                              <Textarea value={feedDescription} onChange={(e) => setFeedDescription(e.target.value)} maxLength={200} />
-                              <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedAvatar}</div>
-                              {feedAvatarImg &&
-                                <p>
-                                  <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
-                                </p>
-                              }
-                              <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />
-                              <div className="block text-sm text-gray-600 mt-1">
-                                <div className="flex flex-col items-center ">
-                                  <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
-                                </div>
-                              </div>
-                            </>
-                          )}
-
-                          <div className="flex flex-col items-center gap-2 mt-6">
-                            <Button
-                              color="primary"
-                              size="large"
-                              className="text-white text-base font-normal"
-                              onClick={handleSave}
-                              disabled={isSave}
-                            >
-                              {locale.Pref_CustomFeedButton}
-                            </Button>
-                            <div className="text-red-500 mb-1">{feedUpdateMessage}</div>
-                            {feedUpdateCompleted && !feedUpdateMessage && <div className="text-blue-500 mb-1">{locale.Pref_SaveCompleted}</div>}
-                          </div>
-                        </>
-                      </>
-                    }
+                      label={locale.Pref_MyPagePublish}
+                    />
                   </div>
-                  <div className="flex flex-col items-center gap-4 mt-6">
-                    <Link href="/">
-                      <Button
-                        color="secondary"
-                        size="large"
-                        className="text-white text-base font-normal"
-                      >
-                        {locale.Menu_Back}
-                      </Button>
-                    </Link>
+                  {isUseMyPage && (
+                    <>
+                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_MyPageDesc}</div>
+                      <Textarea value={myPageDescription} onChange={(e) => setMyPageDescription(e.target.value)} maxLength={1000} />
+                      <div className="flex flex-col items-center mt-1 ">
+                        <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
+                      </div>
+                    </>
+                  )}
+                </>
+                <>
+                  <div className="mt-6">{locale.Pref_CustomFeed}</div>
+                  <div className="block text-sm text-gray-400 mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
+                  <div className="flex items-center mt-2 space-x-2">
+                    <Switch
+                      checked={isCustomFeed}
+                      onChange={(event) => setIsUseMyPage(event.currentTarget.checked)}
+
+                      label={locale.Pref_CustomFeedPublish}
+                    />
+                  </div>
+                  {isCustomFeed && (
+                    <>
+
+                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedName}</div>
+                      <TextInput value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
+                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedDescription}</div>
+                      <Textarea value={feedDescription} onChange={(e) => setFeedDescription(e.target.value)} maxLength={200} />
+                      <div className="block text-m text-gray-600 mt-1">{locale.Pref_CustomFeedAvatar}</div>
+                      {feedAvatarImg &&
+                        <p>
+                          <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
+                        </p>
+                      }
+                      <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm text-gray-800 sm:text-base" onChange={changeFeedAvatar} />
+                      <div className="block text-sm text-gray-600 mt-1">
+                        <div className="flex flex-col items-center ">
+                          <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex flex-col items-center gap-2 mt-6">
+                    <Button
+                      onClick={handleSave}
+                      loading={isSave}
+                      loaderProps={{ type: 'dots' }}
+                    >
+                      {locale.Pref_CustomFeedButton}
+                    </Button>
+                    <div className="text-red-500 mb-1">{feedUpdateMessage}</div>
                   </div>
                 </>
-              )}
-            </NotificationsContext.Consumer>
-          </Notifications>
+              </>
+            }
+          </div>
+          <div className="flex flex-col items-center gap-4 mt-6">
+            <Affix position={{ bottom: 60, left: 25 }}>
+              <Link href="/">
+                <Button
+                  variant="default"
+                  color="gray"
+                  leftSection={<MdArrowBack />}
+                >
+                  {locale.Menu_Back}
+                </Button>
+              </Link>
+            </Affix>
+          </div>
+        </>
 
-        </main>
-      </ThemeProvider>
+      </main>
     </ >
   );
 }

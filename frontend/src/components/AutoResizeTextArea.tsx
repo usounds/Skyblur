@@ -1,6 +1,6 @@
-import { Button, ErrorCallout } from 'reablocks';
-import { useEffect, useRef } from "react";
 import en from "@/locales/en";
+import { Alert, Button, Text, Textarea } from '@mantine/core';
+import { useEffect, useRef } from "react";
 
 type AutoResizeTextAreaProps = {
     text: string;
@@ -67,22 +67,27 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
     }, [text]);
 
     return (
-        <div className="space-y-2">
-            <textarea
+        <div className="mt-2">
+            <Textarea
                 ref={textareaRef}
                 value={text}
                 onChange={handleTextChange}
                 disabled={disabled}
-                className="border bg-gray-50 text-gray-800 m-2 py-3 px-4 block w-full border-gray-300 rounded-lg text-sm focus:border-gray-500 focus:ring-gray-500"
                 placeholder={placeHolder}
-                style={{ overflow: "hidden", resize: "none", fontSize: "16px" }}
+                    styles={{
+                        input: {
+                            fontSize: 16, 
+                        },
+                    }}
                 maxLength={max}
+                autosize
+                minRows={2}
             />
-            {!disabled && <div className="block text-sm text-gray-600 mt-1">{text.length}/{max}</div>}
-            {error && <ErrorCallout text={error} variant="error" />}
+            {!disabled && <Text size="sm">{text.length}/{max}</Text>}
+            {error && <Alert variant="light" color="red">{error}</Alert>}
             {isEnableBrackets &&
                 <div className="flex justify-center gap-4 mb-8">
-                    <Button color="primary" size="large" className="text-white text-base font-normal" onClick={handleAddBrackets} disabled={text.length===0}>
+                    <Button size="large" onClick={handleAddBrackets} disabled={text.length === 0}>
                         {locale.CreatePost_AddBrackets}
                     </Button>
                 </div>
