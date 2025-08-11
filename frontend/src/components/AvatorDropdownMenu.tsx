@@ -77,10 +77,10 @@ export function AvatorDropdownMenu() {
             {(userProf && agent) &&
                 <Menu.Dropdown>
                     <Menu.Label>Menu</Menu.Label>
-                    <Menu.Item leftSection={<IconSettings size={14} />} onClick={handleSettings}>
+                    <Menu.Item leftSection={<IconSettings size={18} />} onClick={handleSettings}>
                         {locale.Menu_Settings}
                     </Menu.Item>
-                    <Menu.Item leftSection={<CiLogout size={14} />} onClick={logout}>
+                    <Menu.Item leftSection={<CiLogout size={18} />} onClick={logout}>
                         {locale.Menu_Logout}
                     </Menu.Item>
                 </Menu.Dropdown>
