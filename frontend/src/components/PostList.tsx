@@ -216,7 +216,6 @@ export const PostList: React.FC<PostListProps> = ({
             });
         }
 
-        notifications.clean()
         setIsDecrypting(false)
 
     }
