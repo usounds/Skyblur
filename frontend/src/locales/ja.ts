@@ -8,6 +8,7 @@ const messages = {
     Home_Landing003Title: "Skyblurは原文で表示",
     Home_Landing003Descrtption: "[秘密だよ]の箇所の原文が表示されます。投稿を削除したいときもSkyblurから。",
     Menu_CreatePost: "新規の投稿",
+    Menu_Post: "投稿",
     Menu_Logout: "ログアウト",
     Menu_LogoutProgress: "ログアウト中です",
     Menu_Back: "戻る",
@@ -113,6 +114,7 @@ const messages = {
     Profile_NotPublish: "マイページは非公開です。",
     Post_ViewReactions:"リアクションを表示",
     Post_DecryptError:"解除に失敗しました。パスワードを確認してください",
+    Post_DecryptInProgress:"解除中です",
 }
 
 export default messages;

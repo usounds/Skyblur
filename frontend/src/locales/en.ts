@@ -8,6 +8,7 @@ const messages = {
     Home_Landing003Title: "Skyblur shows the unblurred text",
     Home_Landing003Descrtption: "The unblurred text will be displayed. If you want to delete a post, you can it from Skyblur.",
     Menu_CreatePost: "Create a post",
+    Menu_Post: "Post",
     Menu_Logout: "Logout",
     Menu_LogoutProgress: "Logout is in progress",
     Menu_Back: "Back",
@@ -112,7 +113,8 @@ const messages = {
     Menu_GoSite: "Go to Page",
     Profile_NotPublish: "The profile page is private.",
     Post_ViewReactions: "View Reactions",
-    Post_DecryptError: "Failed to unlock. Please check your password."
+    Post_DecryptError: "Failed to unlock. Please check your password.",
+    Post_DecryptInProgress:"Decrypt is in progress",
 }
 
 

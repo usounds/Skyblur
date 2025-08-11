@@ -72,7 +72,7 @@ export function AuthenticationTitle() {
         let identity, metadata;
         notifications.show({
             id: 'login-process',
-            title: 'Login Process',
+            title: locale.Login_Login,
             message: locale.Login_DidResolve,
             loading: true,
             autoClose: false
@@ -123,7 +123,7 @@ export function AuthenticationTitle() {
 
         notifications.update({
             id: 'login-process',
-            title: 'Login Process',
+            title: locale.Login_Login,
             message: message,
             loading: true,
             autoClose: false

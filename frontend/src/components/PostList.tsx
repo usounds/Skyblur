@@ -134,6 +134,14 @@ export const PostList: React.FC<PostListProps> = ({
             return
         }
         setIsDecrypting(true)
+        notifications.show({
+            title: locale.DeleteList_DecryptButton,
+            loading: true,
+            autoClose: false,
+            message: locale.Post_DecryptInProgress,
+            color: 'red',
+            icon: <HiX />
+        });
 
         try {
             const host = new URL(origin).host;
@@ -181,6 +189,7 @@ export const PostList: React.FC<PostListProps> = ({
 
             } else {
                 if (response.status == 403) {
+                    notifications.clean()
                     notifications.show({
                         title: 'Error',
                         message: locale.DeleteList_DecryptErrorMessage,
@@ -189,6 +198,7 @@ export const PostList: React.FC<PostListProps> = ({
                     });
                 } else {
                     const data = await response.json() as { message: string }
+                    notifications.clean()
                     notifications.show({
                         title: 'Error',
                         message: data.message,
@@ -198,6 +208,7 @@ export const PostList: React.FC<PostListProps> = ({
                 }
             }
         } catch (e) {
+            notifications.clean()
             notifications.show({
                 title: 'Error',
                 message: 'Message:' + e,
