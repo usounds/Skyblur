@@ -135,7 +135,7 @@ export const ProfilePage = () => {
                     }
 
                     {myPageDescription &&
-                        <div className="whitespace-pre-wrap break-words text-gray-600 mx-3 my-4">
+                        <div className="whitespace-pre-wrap break-words mx-3 my-4">
                             {myPageDescription}
                         </div>
                     }
