@@ -7,8 +7,10 @@ import { useLocaleStore } from '@/state/Locale';
 import { useModeStore } from '@/state/Mode';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { getClientMetadata } from '@/types/ClientMetadataContext';
+import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
+import { HiX } from "react-icons/hi";
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);
@@ -47,20 +49,27 @@ const DynamicHeader = () => {
       async function () {
         setIsLoginProcess(true)
 
-        const ret = await handleOAuth(
+        const { success, message } = await handleOAuth(
           getClientMetadata,
           setAgent,
           setUserProf,
           setIsLoginProcess,
           setOauthUserAgent,
           setDid,
-          setBlueskyLoginMessage,
-          setServiceUrl
+          setServiceUrl,
+          locale
         );
 
-        if (ret) {
+        if (success) {
           setMode('menu')
 
+        } else if(!success && message) {
+          notifications.show({
+            title: 'Error',
+            message: message,
+            color: 'red',
+            icon: <HiX />
+          });
         }
         setIsLoginProcess(false)
 
