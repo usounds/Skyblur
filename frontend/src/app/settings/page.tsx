@@ -5,7 +5,7 @@ import { getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
-import { Affix, Button, LoadingOverlay, Switch, Textarea, TextInput } from '@mantine/core';
+import { Button, LoadingOverlay, Switch, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import Image from "next/image";
 import Link from 'next/link';
@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { HiCheck } from "react-icons/hi";
 import { MdArrowBack } from "react-icons/md";
+
 export default function Home() {
   const agent = useXrpcAgentStore((state) => state.agent);
   const userProf = useXrpcAgentStore((state) => state.userProf);
@@ -394,15 +395,15 @@ export default function Home() {
             </>
           </div>
           <div className="flex flex-col items-center gap-4 mt-6">
-              <Link href="/">
-                <Button
-                  variant="default"
-                  color="gray"
-                  leftSection={<MdArrowBack />}
-                >
-                  {locale.Menu_Back}
-                </Button>
-              </Link>
+            <Link href="/">
+              <Button
+                variant="default"
+                color="gray"
+                leftSection={<MdArrowBack />}
+              >
+                {locale.Menu_Back}
+              </Button>
+            </Link>
           </div>
         </>
 
