@@ -13,7 +13,7 @@ import '@mantine/notifications/styles.css';
 import { useEffect, useState } from "react";
 import { IoCreateOutline } from "react-icons/io5";
 import { MdArrowBack } from "react-icons/md";
-import BeatLoader from "react-spinners/BeatLoader";
+import { Loader } from '@mantine/core';
 
 export default function Home() {
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
@@ -67,7 +67,7 @@ export default function Home() {
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
                 {isLoginProcess ?
                   <div className="flex flex-col items-center justify-center h-full">
-                    <p className="mb-2"><BeatLoader /></p>
+                    <p className="mb-2"><Loader color="blue" /></p>
                     {locale.Home_inAuthProgress}
                   </div>
                   :
@@ -125,7 +125,6 @@ export default function Home() {
                             leftSection={<MdArrowBack />}
                             onClick={() => {
                               setMode("menu");
-                              window.scrollTo(0, 0); // ページを一番上までスクロール
                             }} >
                             {locale.Menu_Back}
                           </Button>

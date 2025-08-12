@@ -313,7 +313,7 @@ export default function Home() {
               <>
                 <LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: "sm", blur: 1 }} />
                 <span>{locale.Pref_MyPage}</span>
-                <div className="block text-sm mt-1">{locale.Pref_MyPagePublishDescription}</div>
+                <div className="block text-sm text-gray-400 mt-1">{locale.Pref_MyPagePublishDescription}</div>
                 <div className="flex items-center mt-2 space-x-2">
                   <Switch
                     checked={isUseMyPage}
@@ -324,7 +324,7 @@ export default function Home() {
                 </div>
                 {isUseMyPage && (
                   <>
-                    <div className="block text-m mt-1">{locale.Pref_MyPageDesc}</div>
+                    <div className="block text-m text-gray-400 mt-1">{locale.Pref_MyPageDesc}</div>
                     <Textarea
                       value={myPageDescription}
                       styles={{
@@ -342,7 +342,7 @@ export default function Home() {
               </>
               <>
                 <div className="mt-6">{locale.Pref_CustomFeed}</div>
-                <div className="block text-sm mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
+                <div className="block text-sm text-gray-400 mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
                 <div className="flex items-center mt-2 space-x-2">
                   <Switch
                     checked={isCustomFeed}
