@@ -5,7 +5,7 @@ import { getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
-import { Button, Switch, Textarea, TextInput } from '@mantine/core';
+import { Affix, Button, LoadingOverlay, Switch, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import Image from "next/image";
 import Link from 'next/link';
@@ -13,8 +13,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { HiCheck } from "react-icons/hi";
 import { MdArrowBack } from "react-icons/md";
-import BeatLoader from "react-spinners/BeatLoader";
-import { Affix } from '@mantine/core';
 
 export default function Home() {
   const agent = useXrpcAgentStore((state) => state.agent);
@@ -310,95 +308,91 @@ export default function Home() {
           <div className="flex items-center justify-center h-full mt-4 mx-4">
             {locale.Pref_Title}
           </div>
-          {isLoading &&
-            <div className="flex flex-col items-center gap-4 mb-8 mt-2"><BeatLoader /></div>
-          }
-          <div className="mx-auto max-w-screen-md px-4">
-            {!isLoading &&
+          <div className="mx-auto max-w-screen-md px-4 relative">
+            <>
               <>
-                <>
-                  <span>{locale.Pref_MyPage}</span>
-                  <div className="block text-sm mt-1">{locale.Pref_MyPagePublishDescription}</div>
-                  <div className="flex items-center mt-2 space-x-2">
-                    <Switch
-                      checked={isUseMyPage}
-                      onChange={(event) => setIsUseMyPage(event.currentTarget.checked)}
+                <LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: "sm", blur: 1}} />
+                <span>{locale.Pref_MyPage}</span>
+                <div className="block text-sm mt-1">{locale.Pref_MyPagePublishDescription}</div>
+                <div className="flex items-center mt-2 space-x-2">
+                  <Switch
+                    checked={isUseMyPage}
+                    onChange={(event) => setIsUseMyPage(event.currentTarget.checked)}
 
-                      label={locale.Pref_MyPagePublish}
-                    />
-                  </div>
-                  {isUseMyPage && (
-                    <>
-                      <div className="block text-m mt-1">{locale.Pref_MyPageDesc}</div>
-                      <Textarea
-                        value={myPageDescription}
-                        styles={{
-                          input: {
-                            fontSize: 16,
-                          },
-                        }}
-                        onChange={(e) => setMyPageDescription(e.target.value)}
-                        maxLength={1000} />
-                      <div className="flex flex-col items-center mt-1 ">
-                        <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
-                      </div>
-                    </>
-                  )}
-                </>
-                <>
-                  <div className="mt-6">{locale.Pref_CustomFeed}</div>
-                  <div className="block text-sm mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
-                  <div className="flex items-center mt-2 space-x-2">
-                    <Switch
-                      checked={isCustomFeed}
-                      onChange={(event) => setIsCustomFeed(event.currentTarget.checked)}
-
-                      label={locale.Pref_CustomFeedPublish}
-                    />
-                  </div>
-                  {isCustomFeed && (
-                    <>
-
-                      <div className="block text-m mt-1">{locale.Pref_CustomFeedName}</div>
-                      <TextInput value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
-                      <div className="block text-m mt-1">{locale.Pref_CustomFeedDescription}</div>
-                      <Textarea
-                        value={feedDescription}
-                        styles={{
-                          input: {
-                            fontSize: 16,
-                          },
-                        }}
-                        onChange={(e) => setFeedDescription(e.target.value)}
-                        maxLength={200} />
-                      <div className="block text-m mt-1">{locale.Pref_CustomFeedAvatar}</div>
-                      {feedAvatarImg &&
-                        <p>
-                          <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
-                        </p>
-                      }
-                      <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm sm:text-base" onChange={changeFeedAvatar} />
-                      <div className="block text-sm text-gray-600 mt-1">
-                        <div className="flex flex-col items-center ">
-                          <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex flex-col items-center gap-2 mt-6">
-                    <Button
-                      onClick={handleSave}
-                      loading={isSave}
-                      loaderProps={{ type: 'dots' }}
-                    >
-                      {locale.Pref_CustomFeedButton}
-                    </Button>
-                    <div className="text-red-500 mb-1">{feedUpdateMessage}</div>
-                  </div>
-                </>
+                    label={locale.Pref_MyPagePublish}
+                  />
+                </div>
+                {isUseMyPage && (
+                  <>
+                    <div className="block text-m mt-1">{locale.Pref_MyPageDesc}</div>
+                    <Textarea
+                      value={myPageDescription}
+                      styles={{
+                        input: {
+                          fontSize: 16,
+                        },
+                      }}
+                      onChange={(e) => setMyPageDescription(e.target.value)}
+                      maxLength={1000} />
+                    <div className="flex flex-col items-center mt-1 ">
+                      <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
+                    </div>
+                  </>
+                )}
               </>
-            }
+              <>
+                <div className="mt-6">{locale.Pref_CustomFeed}</div>
+                <div className="block text-sm mt-1">{locale.Pref_CustomFeedPublishDescription}</div>
+                <div className="flex items-center mt-2 space-x-2">
+                  <Switch
+                    checked={isCustomFeed}
+                    onChange={(event) => setIsCustomFeed(event.currentTarget.checked)}
+
+                    label={locale.Pref_CustomFeedPublish}
+                  />
+                </div>
+                {isCustomFeed && (
+                  <>
+
+                    <div className="block text-m mt-1">{locale.Pref_CustomFeedName}</div>
+                    <TextInput value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
+                    <div className="block text-m mt-1">{locale.Pref_CustomFeedDescription}</div>
+                    <Textarea
+                      value={feedDescription}
+                      styles={{
+                        input: {
+                          fontSize: 16,
+                        },
+                      }}
+                      onChange={(e) => setFeedDescription(e.target.value)}
+                      maxLength={200} />
+                    <div className="block text-m mt-1">{locale.Pref_CustomFeedAvatar}</div>
+                    {feedAvatarImg &&
+                      <p>
+                        <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
+                      </p>
+                    }
+                    <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm sm:text-base" onChange={changeFeedAvatar} />
+                    <div className="block text-sm text-gray-600 mt-1">
+                      <div className="flex flex-col items-center ">
+                        <URLCopyButton url={`https://bsky.app/profile/${did}/feed/skyblurCustomFeed`} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex flex-col items-center gap-2 mt-6">
+                  <Button
+                    onClick={handleSave}
+                    loading={isSave}
+                    loaderProps={{ type: 'dots' }}
+                  >
+                    {locale.Pref_CustomFeedButton}
+                  </Button>
+                  <div className="text-red-500 mb-1">{feedUpdateMessage}</div>
+                </div>
+              </>
+            </>
           </div>
           <div className="flex flex-col items-center gap-4 mt-6">
             <Affix position={{ bottom: 60, left: 25 }}>
