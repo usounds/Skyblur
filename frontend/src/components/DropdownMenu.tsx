@@ -149,7 +149,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
 
             <Menu.Dropdown>
                 <Menu.Label>Menu</Menu.Label>
-                {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) || post.blur.visibility === VISIBILITY_PUBLIC) &&
+                {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) || post.blur.visibility === VISIBILITY_PUBLIC || !post.blur.visibility) &&
                     <Menu.Item leftSection={<GrEdit size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
                 }
                 <Menu.Item
