@@ -330,7 +330,15 @@ export default function Home() {
                   {isUseMyPage && (
                     <>
                       <div className="block text-m mt-1">{locale.Pref_MyPageDesc}</div>
-                      <Textarea value={myPageDescription} onChange={(e) => setMyPageDescription(e.target.value)} maxLength={1000} />
+                      <Textarea
+                        value={myPageDescription}
+                        styles={{
+                          input: {
+                            fontSize: 16,
+                          },
+                        }}
+                        onChange={(e) => setMyPageDescription(e.target.value)}
+                        maxLength={1000} />
                       <div className="flex flex-col items-center mt-1 ">
                         <URLCopyButton url={`https://${window.location.hostname}/profile/${did}`} />
                       </div>
@@ -354,7 +362,15 @@ export default function Home() {
                       <div className="block text-m mt-1">{locale.Pref_CustomFeedName}</div>
                       <TextInput value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
                       <div className="block text-m mt-1">{locale.Pref_CustomFeedDescription}</div>
-                      <Textarea value={feedDescription} onChange={(e) => setFeedDescription(e.target.value)} maxLength={200} />
+                      <Textarea
+                        value={feedDescription}
+                        styles={{
+                          input: {
+                            fontSize: 16,
+                          },
+                        }}
+                        onChange={(e) => setFeedDescription(e.target.value)}
+                        maxLength={200} />
                       <div className="block text-m mt-1">{locale.Pref_CustomFeedAvatar}</div>
                       {feedAvatarImg &&
                         <p>
