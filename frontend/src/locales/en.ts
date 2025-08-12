@@ -116,7 +116,7 @@ const messages = {
     Profile_NotPublish: "The profile page is private.",
     Post_ViewReactions: "View Reactions",
     Post_DecryptError: "Failed to unlock. Please check your password.",
-    Post_DecryptInProgress:"Decrypt is in progress",
+    Post_DecryptInProgress:"Unlock is in progress",
 }
 
 
