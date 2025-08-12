@@ -85,7 +85,7 @@ const messages = {
     DeleteList_DecryptRequired: "パスワードは必須です",
     DeleteList_DecryptErrorMessage: "パスワードが違います",
     DeleteList_Edit: "編集",
-    DeleteList_CopySkylurURL: "Skyblurリンクコピー",
+    DeleteList_CopySkylurURL: "Skyblur URLコピー",
     DeleteList_ViewBskyPost: "Blueskyで参照",
     DeleteList_DeleteInProgress: "削除中です",
     ReplyList_Reply: "返信",
