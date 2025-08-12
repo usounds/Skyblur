@@ -28,6 +28,13 @@ const DynamicHeader = () => {
   let ignore = false
 
   useEffect(() => {
+    // localeDataが初期化されていなければセットし直す（厳密には localeData を依存にしない）
+    if (localeString) {
+      setLocale(localeString);
+    }
+  }, [localeString]);
+
+  useEffect(() => {
     if (ignore) {
       console.log("useEffect duplicate call")
       return
@@ -36,8 +43,6 @@ const DynamicHeader = () => {
     setIsMounted(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ignore = true
-
-    setLocale(localeString)
 
     if (did) {
       console.log("has active session")
@@ -62,7 +67,7 @@ const DynamicHeader = () => {
         if (success) {
           setMode('menu')
 
-        } else if(!success && message) {
+        } else if (!success && message) {
           notifications.show({
             title: 'Error',
             message: message,
