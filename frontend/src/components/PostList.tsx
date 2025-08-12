@@ -15,7 +15,6 @@ import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from "react";
 import { CiLock, CiUnlock } from "react-icons/ci";
 import { HiX } from "react-icons/hi";
-import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -309,23 +308,6 @@ export const PostList: React.FC<PostListProps> = ({
                                             setDeleteList={setDeleteList}
                                         />
                                     )}
-
-                                    {!handleEdit &&
-                                        (item.blur?.visibility !== VISIBILITY_PASSWORD ||
-                                            (item.isDecrypt &&
-                                                item.blur?.visibility === VISIBILITY_PASSWORD)) && (
-                                            <ActionIcon
-                                                variant="subtle"
-                                                onClick={() => handleDisplay(item)}
-                                            >
-                                                {item.isDetailDisplay ? (
-                                                    <IoMdEyeOff size={22} color="gray" />
-                                                ) : (
-                                                    <IoMdEye size={22} color="gray" />
-                                                )}
-                                            </ActionIcon>
-                                        )}
-
                                     {!handleEdit && (
                                         <ActionIcon
                                             variant="subtle"
