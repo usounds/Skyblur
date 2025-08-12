@@ -19,7 +19,6 @@ const DynamicHeader = () => {
   const did = useXrpcAgentStore(state => state.did);
   const setDid = useXrpcAgentStore(state => state.setDid);
   const setIsLoginProcess = useXrpcAgentStore(state => state.setIsLoginProcess);
-  const setBlueskyLoginMessage = useXrpcAgentStore(state => state.setBlueskyLoginMessage);
   const setServiceUrl = useXrpcAgentStore(state => state.setServiceUrl);
   const setMode = useModeStore(state => state.setMode);
   const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
