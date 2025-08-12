@@ -19,7 +19,7 @@ export const localeDataMap: Record<Locales, LocaleInfo> = {
 };
 
 type State = {
-  locale: Locales;
+  locale: Locales|null;
   localeData: LocaleData;
 };
 
@@ -28,6 +28,7 @@ type Action = {
 };
 
 const getUserLocale = (): Locales => {
+  console.log('getUserLocale')
   if (typeof window !== "undefined" && typeof navigator !== "undefined") {
     const userLanguages = navigator.language;
     if (userLanguages.startsWith('ja')) return 'ja';
@@ -42,7 +43,7 @@ export const useLocaleStore = create<State & Action>()(
     (set) => {
       const initialLocale = getUserLocale();
       return {
-        locale: initialLocale,
+        locale: null,
         localeData: localeDataMap[initialLocale].data,
 
         setLocale: (locale) => {
