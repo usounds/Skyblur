@@ -169,6 +169,7 @@ export const PostList: React.FC<PostListProps> = ({
 
             if (response.ok) {
                 const data: UkSkyblurPostDecryptByCid.Output = await response.json()
+                notifications.clean()
                 setDeleteList((prevList) =>
                     prevList.map((listItem) =>
                         listItem.blurATUri === item.blurATUri
