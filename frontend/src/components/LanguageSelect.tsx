@@ -2,16 +2,11 @@
 
 import { Locales, localeDataMap, useLocaleStore } from "@/state/Locale";
 import { Select } from "@mantine/core";
-import React, { useEffect } from "react";
+import React from "react";
 
 const LanguageSelect: React.FC = () => {
   const localeString = useLocaleStore((state) => state.locale);
   const setLocale = useLocaleStore((state) => state.setLocale);
-
-  useEffect(() => {
-    setLocale(localeString);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <Select

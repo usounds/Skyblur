@@ -28,7 +28,6 @@ type Action = {
 };
 
 const getUserLocale = (): Locales => {
-  console.log('getUserLocale')
   if (typeof window !== "undefined" && typeof navigator !== "undefined") {
     const userLanguages = navigator.language;
     if (userLanguages.startsWith('ja')) return 'ja';
