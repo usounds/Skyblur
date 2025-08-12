@@ -22,7 +22,6 @@
     "@atcute/oauth-browser-client": "^1.0.26",
     "@atcute/tid": "^1.0.2",
     "@mantine/core": "^8.2.4",
-    "@mantine/form": "^8.2.4",
     "@mantine/hooks": "^8.2.4",
     "@mantine/notifications": "^8.2.4",
     "@opennextjs/cloudflare": "^1.6.5",
