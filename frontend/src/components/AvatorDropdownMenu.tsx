@@ -81,7 +81,7 @@ export function AvatorDropdownMenu() {
                         {locale.Menu_Settings}
                     </Menu.Item>
                     <Menu.Divider />
-                    <Menu.Item leftSection={<CiLogout size={18} />} onClick={logout}>
+                    <Menu.Item leftSection={<CiLogout size={18} />} onClick={logout} color='red'>
                         {locale.Menu_Logout}
                     </Menu.Item>
                 </Menu.Dropdown>

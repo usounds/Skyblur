@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { HiCheck } from "react-icons/hi";
 import { MdArrowBack } from "react-icons/md";
-
 export default function Home() {
   const agent = useXrpcAgentStore((state) => state.agent);
   const userProf = useXrpcAgentStore((state) => state.userProf);
@@ -311,7 +310,7 @@ export default function Home() {
           <div className="mx-auto max-w-screen-md px-4 relative">
             <>
               <>
-                <LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: "sm", blur: 1}} />
+                <LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: "sm", blur: 1 }} />
                 <span>{locale.Pref_MyPage}</span>
                 <div className="block text-sm mt-1">{locale.Pref_MyPagePublishDescription}</div>
                 <div className="flex items-center mt-2 space-x-2">
@@ -395,7 +394,6 @@ export default function Home() {
             </>
           </div>
           <div className="flex flex-col items-center gap-4 mt-6">
-            <Affix position={{ bottom: 60, left: 25 }}>
               <Link href="/">
                 <Button
                   variant="default"
@@ -405,7 +403,6 @@ export default function Home() {
                   {locale.Menu_Back}
                 </Button>
               </Link>
-            </Affix>
           </div>
         </>
 

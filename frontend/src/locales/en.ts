@@ -26,6 +26,7 @@ const messages = {
     Login_TapToLinkProfile: "Tap here to check if your account is displayed.",
     Login_NotDomain: 'Please include ".bsky.social", like "alice.bsky.social".',
     Login_WithAt: "Please do not include the \"@\" in the handle.",
+    Login_BackOperation: "User navigated back from the authentication screen",
     CreatePost_Fixed: "[Read full text]",
     CreatePost_Post: "Post content",
     CreatePost_PostPlaceHolder: "Please enter the content.",
