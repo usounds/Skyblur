@@ -355,7 +355,16 @@ export default function Home() {
                   <>
 
                     <div className="block text-m mt-1">{locale.Pref_CustomFeedName}</div>
-                    <TextInput value={feedName} onChange={(e) => setFeedName(e.target.value)} maxLength={24} />
+                    <TextInput
+                      value={feedName}
+                      onChange={(e) => setFeedName(e.target.value)}
+                      maxLength={24}
+                      styles={{
+                        input: {
+                          fontSize: 16,
+                        },
+                      }}
+                    />
                     <div className="block text-m mt-1">{locale.Pref_CustomFeedDescription}</div>
                     <Textarea
                       value={feedDescription}
