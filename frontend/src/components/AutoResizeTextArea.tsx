@@ -74,11 +74,11 @@ const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
                 onChange={handleTextChange}
                 disabled={disabled}
                 placeholder={placeHolder}
-                    styles={{
-                        input: {
-                            fontSize: 16, 
-                        },
-                    }}
+                styles={{
+                    input: {
+                        fontSize: 16,
+                    },
+                }}
                 maxLength={max}
                 autosize
                 minRows={2}
