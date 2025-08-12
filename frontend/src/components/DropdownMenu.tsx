@@ -137,7 +137,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                     <Button variant="default" color="gray" onClick={close}>
                         {locale.DeleteList_CancelButton}
                     </Button>
-                    <Button variant="filled" color="red" onClick={handleDeleteItem} disabled={isDeleting} loaderProps={{ type: 'dots' }}>
+                    <Button variant="filled" color="red" onClick={handleDeleteItem} loading={isDeleting} loaderProps={{ type: 'dots' }}>
 
                         {locale.DeleteList_DeleteButton}
                     </Button>
