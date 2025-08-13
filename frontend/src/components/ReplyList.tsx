@@ -157,7 +157,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
 
             {(!isLoading && currentCursor) &&
                 <div className="flex justify-center mt-3">
-                    <Button variant="filled" color="gray" onClick={getNext}>
+                    <Button variant="outline" color="gray" onClick={getNext}>
                         {locale.DeleteList_ReadMore}
                     </Button>
                 </div>
