@@ -1,16 +1,19 @@
 "use client";
 import { CreatePostForm } from "@/components/CreatePost";
 import Loading from "@/components/Loading";
-import { LoginForm } from "@/components/LoginForm";
+import { AuthenticationTitle } from "@/components/login/Login";
 import { PostList } from "@/components/PostList";
 import { useLocaleStore } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem, customTheme } from "@/types/types";
-import Image from 'next/image';
-import { Button, Notifications, NotificationsContext, ThemeProvider, extendTheme, theme } from 'reablocks';
+import { PostListItem } from "@/types/types";
+import { Affix, Button } from '@mantine/core';
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 import { useEffect, useState } from "react";
-import BeatLoader from "react-spinners/BeatLoader";
+import { IoCreateOutline } from "react-icons/io5";
+import { MdArrowBack } from "react-icons/md";
+import { Loader } from '@mantine/core';
 
 export default function Home() {
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
@@ -49,157 +52,106 @@ export default function Home() {
 
   return (
 
-    <div className="">
-
-      <ThemeProvider theme={extendTheme(theme, customTheme)}>
-
-        <main className="text-gray-700 ">
-
-          <Notifications>
-            <NotificationsContext.Consumer>
-              {() => <>
-                <div className="mx-auto max-w-screen-md ">
-
-                  {did === "" &&
-                    <><div className="flex items-center justify-center h-full text-gray-800 mt-4 mx-4">
-                      {locale.Home_Welcome}
-                    </div>
-
-                      <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
-                        {isLoginProcess ?
-                          <div className="flex flex-col items-center justify-center h-full">
-                            <p className="mb-2"><BeatLoader /></p>
-                            {locale.Home_inAuthProgress}
-                          </div>
-                          :
-                          <LoginForm />
-                        }
-                      </div>
-
-                    </>
-                  }
-                  {blueskyLoginMessage &&
-                    <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2 text-red-500">
-                      <p className="mt-2">{blueskyLoginMessage}</p>
-                    </div>
-                  }
-
-                  {did &&
-
-                    <>
-
-                      <div className="w-full">
-                        <>
-                          {mode === 'menu' &&
-                            <>
-                              <div className="mx-auto max-w-screen-sm flex flex-col  ">
-                                <div className="flex justify-center my-4">
-                                  {locale.Menu_LoginMessage.replace("{1}", userProf?.displayName || 'No Name')}
-                                </div>
-
-                                <div className="flex justify-center gap-4 mb-8">
-
-                                  <Button color="primary" size="large" className="text-white text-base font-normal" onClick={() => handleNew()}>
-                                    {locale.Menu_CreatePost}
-                                  </Button>
-
-                                </div>
-
-                                {(agent && serviceUrl) &&
-                                  <PostList handleEdit={handleEdit} agent={agent} did={did} pds={serviceUrl} />
-                                }
-
-                              </div>
-                            </>
-                          }
-                          {mode === 'create' &&
-                            <>
-                              <CreatePostForm setMode={setMode} prevBlur={prevBlur} />
-
-                              <div className="flex justify-center mt-4"></div>
-
-                              <div className="flex justify-center mt-4">
-
-                                <Button color="secondary" size="large" className="text-white text-base font-normal" onClick={() => {
-                                  setMode("menu");
-                                  window.scrollTo(0, 0); // ページを一番上までスクロール
-                                }} >
-                                  {locale.Menu_Back}
-                                </Button>
-                              </div>
-                            </>
-                          }
-                        </>
-                      </div>
-
-                    </>
-
-                  }
-
-                </div>
-                {(mode == 'login' && !isLoginProcess) &&
-                  <section className="bg-white mt-4">
-                    <div className="container px-6 py-12 mx-auto">
-                      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        <div>
-                          <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing001Title}</h1>
-
-                          <p className="mt-2 text-gray-500 ">{locale.Home_Landing001Descrtption}</p>
-
-                          <div className="flex justify-center mt-4 border  rounded-lg">
-                            <Image
-                              src="https://backet.skyblur.uk/001.png"
-                              alt="Skyblur post image"
-                              width={338}
-                              height={150}
-                              unoptimized
-                            />
-                          </div>
-
-                        </div>
+    <div >
 
 
-                        <div>
-                          <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing002Title}</h1>
+      <main className=" ">
 
-                          <p className="mt-2 text-gray-500 ">{locale.Home_Landing002Descrtption}</p>
+        <div className="mx-auto max-w-screen-md ">
 
-                          <div className="flex justify-center mt-4 border rounded-lg">
-                            <Image
-                              src="https://backet.skyblur.uk/002.png"
-                              alt="Bluesky post image"
-                              width={382}
-                              height={150}
-                              unoptimized
-                            />
-                          </div>
-                        </div>
+          {did === "" &&
+            <><div className="flex items-center justify-center h-full mt-4 mx-4">
+              {locale.Home_Welcome}
+            </div>
 
-
-                        <div>
-                          <h1 className="mt-4 text-xl font-semibold text-gray-800 ">{locale.Home_Landing003Title}</h1>
-
-                          <p className="mt-2 text-gray-500 ">{locale.Home_Landing003Descrtption}</p>
-                          <div className="flex justify-center mt-4 border">
-                            <Image
-                              src="https://backet.skyblur.uk/003.png"
-                              alt="Skyblur Viewer"
-                              width={310}
-                              height={150}
-                              unoptimized
-                            />
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-                  </section>
+              <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
+                {isLoginProcess ?
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <p className="mb-2"><Loader color="blue" /></p>
+                    {locale.Home_inAuthProgress}
+                  </div>
+                  :
+                  <AuthenticationTitle />
                 }
-              </>}
-            </NotificationsContext.Consumer>
-          </Notifications>
-        </main>
-      </ThemeProvider>
+              </div>
+
+            </>
+          }
+          {blueskyLoginMessage &&
+            <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2 text-red-500">
+              <p className="mt-2">{blueskyLoginMessage}</p>
+            </div>
+          }
+
+          {did &&
+
+            <>
+
+              <div className="w-full">
+                <>
+                  {mode === 'menu' &&
+                    <>
+                      <div className="mx-auto max-w-screen-sm flex flex-col  ">
+                        <div className="flex justify-center my-4">
+                          {locale.Menu_LoginMessage.replace("{1}", userProf?.displayName || 'No Name')}
+                        </div>
+
+                        <div className="flex justify-center gap-4 mb-8">
+                          <Button leftSection={<IoCreateOutline size={14} />} variant="filled" onClick={() => handleNew()}>{locale.Menu_CreatePost}</Button>
+                        </div>
+
+                        {(agent && serviceUrl) &&
+
+                          <PostList handleEdit={handleEdit} agent={agent} did={did} pds={serviceUrl} />
+                        }
+
+                      </div>
+                    </>
+                  }
+                  {mode === 'create' &&
+                    <>
+                      <CreatePostForm setMode={setMode} prevBlur={prevBlur} />
+
+                      <div className="flex justify-center mt-4"></div>
+
+                      <div className="flex justify-center mt-4">
+                        <Affix
+                          position={{ bottom: 60, left: '50%' }}
+                          style={{ transform: 'translateX(-50%)' }}
+                        >
+                          <Button
+                            variant="default"
+                            color="gray"
+                            leftSection={<MdArrowBack />}
+                            onClick={() => {
+                              setMode("menu");
+                            }} >
+                            {locale.Menu_Back}
+                          </Button>
+                        </Affix>
+                      </div>
+                    </>
+                  }
+                </>
+              </div>
+
+            </>
+
+          }
+
+        </div>
+        {(mode == 'login' && !isLoginProcess) &&
+          <section className="mt-4">
+            <div className="container px-6 py-12 mx-auto">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+
+
+              </div>
+            </div>
+          </section>
+        }
+
+      </main>
 
     </div>
   );

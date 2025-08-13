@@ -19,7 +19,7 @@ export const localeDataMap: Record<Locales, LocaleInfo> = {
 };
 
 type State = {
-  locale: Locales;
+  locale: Locales|null;
   localeData: LocaleData;
 };
 
@@ -42,7 +42,7 @@ export const useLocaleStore = create<State & Action>()(
     (set) => {
       const initialLocale = getUserLocale();
       return {
-        locale: initialLocale,
+        locale: null,
         localeData: localeDataMap[initialLocale].data,
 
         setLocale: (locale) => {

@@ -6,14 +6,14 @@
     "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts"
   },
   "dependencies": {
-    "did-jwt": "^8.0.8",
+    "did-jwt": "^8.0.17",
     "did-resolver": "^4.1.0",
     "hono": "^4.7.4",
-    "web-did-resolver": "^2.0.29"
+    "web-did-resolver": "^2.0.30"
   },
   "devDependencies": {
-    "@atcute/lex-cli": "^1.0.4",
-    "@cloudflare/workers-types": "^4.20250313.0",
-    "wrangler": "^4.0.0"
+    "@atcute/lex-cli": "^1.1.2",
+    "@cloudflare/workers-types": "^4.20250812.0",
+    "wrangler": "^4.28.1"
   }
 }
