@@ -11,6 +11,8 @@ import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
+import en from "@/locales/en";
+import ja from "@/locales/ja";
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);
@@ -28,12 +30,10 @@ const DynamicHeader = () => {
   let ignore = false
 
   useEffect(() => {
-    // localeDataが初期化されていなければセットし直す（厳密には localeData を依存にしない）
     if (localeString) {
       setLocale(localeString);
     }
   }, [localeString]);
-
   useEffect(() => {
     if (ignore) {
       console.log("useEffect duplicate call")
@@ -78,7 +78,6 @@ const DynamicHeader = () => {
         setIsLoginProcess(false)
 
       })();
-
 
     // クリーンアップ
     return () => {

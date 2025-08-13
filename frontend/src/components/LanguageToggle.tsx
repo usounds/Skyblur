@@ -9,7 +9,16 @@ const LanguageToggle: React.FC = () => {
     const setLocale = useLocaleStore((state) => state.setLocale); // localeを更新する関数
 
     const toggleLocale = () => {
-        const newLocale: Locales = localeString === "ja" ? "en" : "ja";
+        const newLocale: Locales =
+            !localeString
+                ? (typeof window !== "undefined" &&
+                    typeof navigator !== "undefined" &&
+                    navigator.language.startsWith("ja")
+                    ? "en"
+                    : "ja")
+                : localeString === "ja"
+                    ? "en"
+                    : "ja";
         setLocale(newLocale);
     };
 
@@ -20,7 +29,7 @@ const LanguageToggle: React.FC = () => {
             size="lg"
             aria-label="Toggle color scheme"
         >
-            <IoLanguageSharp size={20}/>
+            <IoLanguageSharp size={20} />
         </ActionIcon>
     )
 };
