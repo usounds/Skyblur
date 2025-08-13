@@ -75,7 +75,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
   }, [atUriPost, atUriBlur]);
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-600" onClick={() => setIsHideReactions(!isHideReactions)}>
+    <div className="flex items-center gap-2 text-sm text-gray-500" onClick={() => setIsHideReactions(!isHideReactions)}>
 
       {isLoading ? (
         <BeatLoader size={12} />
