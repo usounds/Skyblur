@@ -1,5 +1,5 @@
 ## Skyblur AppView
-Skyblur AppView works with Next.js 14.
+Skyblur AppView works with Next.js 15.
 
 ## Getting Started
 
@@ -11,7 +11,7 @@ npm run dev
 
 For Production build:
 ```
-npm run build
+npm run deploy
 ```
 
 ## Language Support
