@@ -1,6 +1,6 @@
 export function Loading() {
   return (
-    <div className="flex items-center justify-center h-screen w-screen text-gray-700">
+    <div className="flex items-center justify-center h-screen w-screen ">
       Loading...
     </div>
   );

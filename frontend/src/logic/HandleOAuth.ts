@@ -2,6 +2,7 @@
 import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
+import en from "@/locales/en";
 import { ClientMetadata, OAuthUserAgent, configureOAuth, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
 
 export async function handleOAuth(
@@ -11,11 +12,11 @@ export async function handleOAuth(
   setIsLoginProcess: (isLoginProcess: boolean) => void,
   setOauthUserAgent: (oauthUserAgent: OAuthUserAgent) => void,
   setDid: (did: string) => void,
-  setBlueskyLoginMessage: (message: string) => void,
   setServiceUrl: (serviceUrl: string) => void,
-): Promise<boolean> {
+  locale: typeof en
+): Promise<{ success: boolean; message: string }> {
   const serverMetadata = getClientMetadata();
-  if (!serverMetadata) return false
+  if (!serverMetadata) return { success: false, message: 'System Error : Cannot get serverMetadata' }
 
   const did = window.localStorage.getItem('oauth.did')
 
@@ -60,23 +61,21 @@ export async function handleOAuth(
           actor: agent.sub,
         },
       })
-
-      window.localStorage.setItem('oauth.did', agent.sub)
-
       if (!userProfile.ok) {
-        setBlueskyLoginMessage("Negative Navigate")
-        return false
+        return { success: false, message: 'System Error : Cannot get userProfile:' + agent.sub }
 
       }
+
+      window.localStorage.setItem('oauth.did', agent.sub)
+      window.localStorage.setItem('oauth.handle', userProfile.data.handle)
 
       setUserProf(userProfile.data)
       setIsLoginProcess(false)
       setDid(agent.sub)
-      return true
+      return { success: true, message: '' }
     } catch (e) {
       console.error(e)
-      setBlueskyLoginMessage("Negative Navigate")
-      return false
+      return { success: false, message: locale.Login_BackOperation }
 
     }
   }
@@ -106,26 +105,26 @@ export async function handleOAuth(
         },
       })
       if (!userProfile.ok) {
-        setBlueskyLoginMessage("Negative Navigate")
-        return false
+
+        return { success: false, message: 'System Error : Cannot get userProfile:' + agent.sub }
 
       }
 
       setUserProf(userProfile.data)
       setIsLoginProcess(false)
       setDid(agent.sub)
-      return true
+      return { success: true, message: '' }
     } catch (e) {
       console.log(`OAuth未認証です:${e}`)
       setIsLoginProcess(false)
-      return false
+      return { success: false, message: '' }
     }
   }
 
   //それでもダメなら
   console.log(`OAuth未認証です`)
   setIsLoginProcess(false)
-  return false
+  return { success: false, message: '' }
 
 
 }

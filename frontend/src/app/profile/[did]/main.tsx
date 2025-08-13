@@ -6,27 +6,23 @@ import PostLoading from "@/components/PostLoading";
 import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { customTheme } from '@/types/types';
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import Head from 'next/head';
-import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
-import { Button, ThemeProvider, extendTheme, theme } from 'reablocks';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 
 export const ProfilePage = () => {
-    const { did } = useParams();
+    const params = useParams<{ did: string }>();
+    const did = params?.did ?? ''
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
     const [myPageDescription, setMyPageDescription] = useState<string>('')
     const locale = useLocaleStore((state) => state.localeData);
     const apiAgent = useXrpcAgentStore((state) => state.publicAgent);
-    const searchParams = useSearchParams();
     const [agent, setAgent] = useState<Client | null>(null)
-    const q = searchParams.get('q');
     const [repo, setRepo] = useState<string>('')
     const [isMyPage, setIsMyPage] = useState<boolean>(false)
     const [pdsUrl, setPdsUrl] = useState<string>('')
@@ -130,61 +126,50 @@ export const ProfilePage = () => {
                 <meta name="robots" content="noindex, nofollow" />
             </Head>
 
-            <ThemeProvider theme={extendTheme(theme, customTheme)}>
-                <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2 text-gray-800">
-                    <div className="mx-auto rounded-lg">
-                        {userProf &&
-                            <div className="mb-2 mx-2">
-                                <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
+            <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2">
+                <div className="mx-auto rounded-lg">
+                    {userProf &&
+                        <div className="mb-2 mx-2">
+                            <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
+                        </div>
+                    }
+
+                    {myPageDescription &&
+                        <div className="whitespace-pre-wrap break-words mx-3 my-4">
+                            {myPageDescription}
+                        </div>
+                    }
+
+                    {isLoading ?
+                        <div className="">
+                            <PostLoading />
+                        </div>
+                        :
+                        <>
+                            {!errorMessage &&
+                                <>
+
+                                    {agent &&
+                                        <div className="mx-auto max-w-screen-sm">
+                                            <PostList agent={agent} handleEdit={null} did={repo} pds={pdsUrl} />
+                                        </div>
+                                    }
+
+                                </>
+                            }
+                        </>
+                    }
+
+                    {errorMessage &&
+                        <div className="flex justify-center">
+                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 mt-4">
+                                {locale.Profile_NotPublish}
                             </div>
-                        }
+                        </div>
+                    }
+                </div>
+            </div >
 
-                        {myPageDescription &&
-                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-3 my-4">
-                                {myPageDescription}
-                            </div>
-                        }
-
-                        {isLoading ?
-                            <div className="">
-                                <PostLoading />
-                            </div>
-                            :
-                            <>
-                                {!errorMessage &&
-                                    <>
-
-                                        {agent &&
-                                            <div className="mx-auto max-w-screen-sm">
-                                                <PostList agent={agent} handleEdit={null} did={repo} pds={pdsUrl} />
-                                            </div>
-                                        }
-
-                                        {(q == 'preview' && agent) &&
-                                            <>
-                                                <div className="flex justify-center mt-10">
-                                                    <Link href="/">
-                                                        <Button color="secondary" size="large" className="text-white text-base font-normal" >{locale.Menu_Back}</Button>
-                                                    </Link>
-                                                </div>
-                                            </>
-                                        }
-
-                                    </>
-                                }
-                            </>
-                        }
-
-                        {errorMessage &&
-                            <div className="flex justify-center">
-                                <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 mt-4">
-                                    {locale.Profile_NotPublish}
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div >
-            </ThemeProvider>
         </>
     );
 };

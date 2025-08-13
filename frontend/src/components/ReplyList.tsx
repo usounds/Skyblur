@@ -1,11 +1,11 @@
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-//import { useAtpAgentStore } from "@/state/AtpAgent";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useLocaleStore } from "@/state/Locale";
 import { PostView } from "@/types/types";
-import { Button, Input, Step, Stepper } from 'reablocks';
+import { Button, Input, Timeline, Group } from '@mantine/core';
 import { useEffect, useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
+import { FaReply } from "react-icons/fa";
 
 type ReplyListProps = {
     handleSetPost: (input: PostView) => void;
@@ -17,7 +17,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     const [searchTerm, setSearchTerm] = useState("");
     const [currentCursor, setCursor] = useState("");
     const agent = useXrpcAgentStore((state) => state.agent);
-    const LIMIT = 10
+    const LIMIT = 20
     const [postList, setPostList] = useState<PostView[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const locale = useLocaleStore((state) => state.localeData);
@@ -67,7 +67,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                 cursor: currentCursor
             }
         });
-        
+
         if (!result.ok) return
 
         setCursor(result.data.cursor || "")
@@ -93,24 +93,28 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     return (
 
         <>
-            <div className="flex flex-row items-center justify-center m-2"> {/* Flexbox with centered alignment */}
-                <Input value={searchTerm} size="medium" onValueChange={handleValueChange} />
+            <Group gap="sm" align="center" justify="center" m="sm">
+                <Input
+                    value={searchTerm}
+                    onChange={(event) => handleValueChange(event.target.value)}
+                    styles={{
+                        input: {
+                            fontSize: 16,  // 16pxに設定
+                        },
+                    }} />
                 <Button
-                    color="primary"
-                    size="medium"
-                    className="text-white mx-2 font-normal"
                     onClick={getPosts}
                 >
                     {locale.ReplyList_Search}
                 </Button>
-            </div>
+            </Group>
 
 
             {postList.length === 0 &&
 
-                <div className="flex flex-col items-center justify-center h-full text-gray-700">
+                <div className="flex flex-col items-center justify-center h-full">
                     {isLoading && (
-                        <div className="flex justify-center items-center">
+                        <div className="flex justify-center items-center text-gray-500">
                             <BeatLoader />
                         </div>
                     )}
@@ -119,10 +123,9 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                 </div>
             }
 
-            <Stepper animated className="bg-white mt-2">
-
+            <Timeline bulletSize={18} lineWidth={2} >
                 {postList.map((item, index) => (
-                    <Step key={index}>
+                    <Timeline.Item key={index}>
                         <div className="flex flex-col gap-1">
                             <div className="w-full">
                                 <div className="flex items-center"> {/* Flex container for aligning date and button */}
@@ -132,26 +135,29 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                                 </div>
                             </div>
 
-                            <span className="text-gray-600">
-                                {item.record.reply && locale.ReplyList_ReplyDescrition}
+                            <span className="inline-flex items-center gap-1">
+                                {item.record.reply && <span className="text-gray-500 mr-2"><FaReply /></span>}
                                 {item.record.text}
                             </span>
-                            <Button
-                                size="small"
-                                onClick={() => setPost(item)}
-                                variant="outline"
-                                className="ml-4 text-gray-700 border-gray-400 font-normal"
-                            >
-                                {locale.ReplyList_ReplyToThis}
-                            </Button>
+                            <span className="flex justify-center">
+                                <Button
+                                    onClick={() => setPost(item)}
+                                    variant="outline"
+                                    color="gray"
+                                    leftSection={<FaReply />}
+                                    style={{ alignSelf: 'flex-start' }}
+                                >
+                                    {locale.ReplyList_ReplyToThis}
+                                </Button>
+                            </span>
                         </div>
-                    </Step>
+                    </Timeline.Item>
                 ))}
-            </Stepper >
+            </Timeline >
 
             {(!isLoading && currentCursor) &&
-                <div className="flex justify-center">
-                    <Button color="primary" size="medium" className="text-white mx-2 font-normal" onClick={getNext}>
+                <div className="flex justify-center mt-3">
+                    <Button variant="outline" color="gray" onClick={getNext}>
                         {locale.DeleteList_ReadMore}
                     </Button>
                 </div>
