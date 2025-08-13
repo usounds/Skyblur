@@ -233,7 +233,7 @@ export const PostList: React.FC<PostListProps> = ({
                     <></>
                 }
 
-                <Timeline bulletSize={20} lineWidth={2} mx="sm" >
+                <Timeline bulletSize={20} lineWidth={2} mx="sm" mt='sm'>
                     {deleteList.map((item, index) => (
                         <Timeline.Item
                             key={index}
@@ -285,7 +285,7 @@ export const PostList: React.FC<PostListProps> = ({
                             {/* 下部アイコン行 */}
                             <Group justify="space-between" align="flex-end">
                                 <Group gap="xs">
-                                    <Text size="sm" c="dimmed">
+                                    <Text size="sm" c="gray">
                                         {formatDateToLocale(item.blur.createdAt)}
                                     </Text>
                                     {item.isDetailDisplay && (
@@ -298,7 +298,7 @@ export const PostList: React.FC<PostListProps> = ({
                                     )}
                                 </Group>
 
-                                <Group gap="sm">
+                                <Group gap="sm" ml='sm'>
                                     {handleEdit && (
                                         <DropdownMenu
                                             post={item}
