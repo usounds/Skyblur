@@ -114,7 +114,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
 
                 <div className="flex flex-col items-center justify-center h-full">
                     {isLoading && (
-                        <div className="flex justify-center items-center">
+                        <div className="flex justify-center items-center text-gray-500">
                             <BeatLoader />
                         </div>
                     )}
