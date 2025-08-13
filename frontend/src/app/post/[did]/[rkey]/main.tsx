@@ -267,7 +267,7 @@ export const PostPage = () => {
                                         </div>
                                         {addText &&
                                             <div className="">
-                                                <Divider mx='sm'/>
+                                                <Divider mx='sm' my="sm"/>
                                                 <PostTextWithBold postText={addText} isValidateBrackets={false} isMask={null} />
                                             </div>
                                         }
