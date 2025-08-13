@@ -135,8 +135,8 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                                 </div>
                             </div>
 
-                            <span className="">
-                                {item.record.reply && locale.ReplyList_ReplyDescrition}
+                            <span className="inline-flex items-center gap-1">
+                                {item.record.reply && <span className="text-gray-500 mr-2"><FaReply /></span>}
                                 {item.record.text}
                             </span>
                             <span className="flex justify-center">
