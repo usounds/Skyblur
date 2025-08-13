@@ -11,8 +11,6 @@ import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
-import en from "@/locales/en";
-import ja from "@/locales/ja";
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);
