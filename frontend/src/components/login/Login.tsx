@@ -168,10 +168,9 @@ export function AuthenticationTitle() {
         })
     }
 
-      useEffect(() => {
-        if(!handle) setHandle(localStorage.getItem('oauth.handle')||'');
-      }, []);
-
+    useEffect(() => {
+        if (!handle) setHandle(localStorage.getItem('oauth.handle') || '');
+    }, [handle]);
 
     return (
         <Container size={320} >
