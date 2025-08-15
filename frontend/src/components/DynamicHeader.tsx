@@ -2,19 +2,21 @@
 import { AvatorDropdownMenu } from '@/components/AvatorDropdownMenu';
 import LanguageToggle from '@/components/LanguageToggle';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
-import { handleOAuth } from "@/logic/HandleOAuth";
 import { useLocaleStore } from '@/state/Locale';
 import { useModeStore } from '@/state/Mode';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
-import { getClientMetadata } from '@/types/ClientMetadataContext';
+//import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
+import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
+import { RiContactsBookLine } from 'react-icons/ri';
+import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);
-  const setOauthUserAgent = useXrpcAgentStore(state => state.setOauthUserAgent);
   const setAgent = useXrpcAgentStore(state => state.setAgent);
   const did = useXrpcAgentStore(state => state.did);
   const setDid = useXrpcAgentStore(state => state.setDid);
@@ -51,28 +53,54 @@ const DynamicHeader = () => {
       async function () {
         setIsLoginProcess(true)
 
-        const { success, message } = await handleOAuth(
-          getClientMetadata,
-          setAgent,
-          setUserProf,
-          setIsLoginProcess,
-          setOauthUserAgent,
-          setDid,
-          setServiceUrl,
-          locale
-        );
-
-        if (success) {
+        const result = await fetch('/api/oauth/getUserProfile')
+        if (result.ok) {
+          const profileData = await result.json() as unknown as AppBskyActorDefs.ProfileViewDetailed
           setMode('menu')
+          setUserProf(profileData)
 
-        } else if (!success && message) {
-          notifications.show({
-            title: 'Error',
-            message: message,
-            color: 'red',
-            icon: <HiX />
-          });
+          const host = new URL(origin).host;
+          const publicAgent = new Client({
+            handler: simpleFetchHandler({
+              service: `https://${host}`,
+            }),
+          })
+          const serviceUrl = await fetchServiceEndpointWithCache(profileData.did, false)
+          setAgent(publicAgent)
+          setDid(profileData.did)
+          setServiceUrl(serviceUrl || '')
+          setIsLoginProcess(false)
+
+          return
+        } else {
+          setIsLoginProcess(false)
+
         }
+
+        /*
+                const { success, message } = await handleOAuth(
+                  getClientMetadata,
+                  setAgent,
+                  setUserProf,
+                  setIsLoginProcess,
+                  setOauthUserAgent,
+                  setDid,
+                  setServiceUrl,
+                  locale
+                );
+        
+                if (success) {
+                  setMode('menu')
+        
+                } else if (!success && message) {
+                  notifications.show({
+                    title: 'Error',
+                    message: message,
+                    color: 'red',
+                    icon: <HiX />
+                  });
+                }
+                  */
         setIsLoginProcess(false)
 
       })();

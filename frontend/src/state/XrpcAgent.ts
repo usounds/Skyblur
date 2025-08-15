@@ -1,11 +1,9 @@
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
-import { OAuthUserAgent } from '@atcute/oauth-browser-client';
 import { create } from 'zustand';
 
 type State = {
     agent: Client | null;
-    oauthUserAgent: OAuthUserAgent | null;
     publicAgent: Client;
     userProf: AppBskyActorDefs.ProfileViewDetailed | null;
     did: string;
@@ -16,7 +14,6 @@ type State = {
 
 type Action = {
   setAgent: (agent: Client | null) => void;
-  setOauthUserAgent: (oauthUserAgent:  OAuthUserAgent | null) => void;
   setUserProf: (userProf: AppBskyActorDefs.ProfileViewDetailed | null) => void;
   setDid: (did: string) => void;
   setIsLoginProcess: (isLoginProcess: boolean) => void;
@@ -38,7 +35,6 @@ export const useXrpcAgentStore = create<State & Action>((set) => ({
   blueskyLoginMessage: '',
   serviceUrl: "",
   setAgent: (agent) => set(() => ({ agent: agent })),
-  setOauthUserAgent: (oauthUserAgent) => set(() => ({ oauthUserAgent: oauthUserAgent })),
   setUserProf: (userProf) => set(() => ({ userProf: userProf })),
   setDid: (did) => set(() => ({ did: did })),
   setIsLoginProcess: (isLoginProcess) => set(() => ({ isLoginProcess: isLoginProcess })),

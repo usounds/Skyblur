@@ -1,5 +1,4 @@
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
-import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
 import { Avatar, Menu } from '@mantine/core';
 import {
     IconSettings
@@ -15,7 +14,6 @@ export function AvatorDropdownMenu() {
     const locale = useLocaleStore(state => state.localeData);
     const userProf = useXrpcAgentStore(state => state.userProf);
     const setDid = useXrpcAgentStore(state => state.setDid);
-    const did = useXrpcAgentStore(state => state.did);
     const setIsLoginProcess = useXrpcAgentStore(state => state.setIsLoginProcess);
     const setAgent = useXrpcAgentStore(state => state.setAgent);
     const router = useRouter();
@@ -30,17 +28,13 @@ export function AvatorDropdownMenu() {
         });
         try {
 
-            const session = await getSession(did as `did:${string}:${string}`, { allowStale: true });
-            const agent = new OAuthUserAgent(session);
-
-            await agent.signOut();
+            await fetch('/api/oauth/logout')
 
             setDid('');
             setIsLoginProcess(false);
             setAgent(null);
 
         } catch {
-            deleteStoredSession(did as `did:${string}:${string}`);
 
             setAgent(null);
             setDid('');

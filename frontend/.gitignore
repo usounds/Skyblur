@@ -49,3 +49,4 @@ create_app.json
 
 .open-next
 .wrangler/
+.dev.vars

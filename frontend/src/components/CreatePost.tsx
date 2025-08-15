@@ -11,9 +11,7 @@ import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REG
 import type { } from '@atcute/atproto';
 import type { } from '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
-import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
-import { resolveFromIdentity } from '@atcute/oauth-browser-client';
 import * as TID from '@atcute/tid';
 import { Button, Card, Group, Modal, Switch, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -23,6 +21,7 @@ import { franc } from 'franc';
 import { useEffect, useState } from "react";
 import { HiCheck, HiX } from "react-icons/hi";
 import type { } from '../../src/lexicon/UkSkyblur';
+import { Client, simpleFetchHandler } from '@atcute/client';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
@@ -47,7 +46,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const agent = useXrpcAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const did = useXrpcAgentStore((state) => state.did);
-    const oauthUserAgent = useXrpcAgentStore((state) => state.oauthUserAgent);
+    const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
     const setTempText = useTempPostStore((state) => state.setText);
     const setTempAdditional = useTempPostStore((state) => state.setAdditional);
     const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
@@ -491,9 +490,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 });
 
                 const host = new URL(origin).host;
-                let appViewUrl = 'skyblur.uk'
+                let apiEndpoint = 'skyblurapi.uk'
                 if (host?.endsWith('usounds.work')) {
-                    appViewUrl = 'skyblur.usounds.work'
+                    apiEndpoint = 'skyblurapi.usounds.work'
                 }
 
                 const body: UkSkyblurPostEncrypt.Input = {
@@ -501,17 +500,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     password: encryptKey
                 }
 
-                if (!oauthUserAgent) return
-
-                const apiProxyAgent = new Client({
-                    handler: oauthUserAgent,
-                    proxy: {
-                        did: `did:web:${appViewUrl}`,
-                        serviceId: '#skyblur_api'
-                    }
+                const proxyAgent = new Client({
+                    handler: simpleFetchHandler({
+                        service: `https://${apiEndpoint}`,
+                    })
                 })
 
-                const response = await apiProxyAgent.post('uk.skyblur.post.encrypt', {
+                const response = await proxyAgent.post('uk.skyblur.post.encrypt', {
                     input: body as unknown as Record<string, unknown>,
                     as: 'json',
                 });

@@ -1,7 +1,6 @@
 "use client";
 import { useLocaleStore } from "@/state/Locale";
-import { getClientMetadata } from '@/types/ClientMetadataContext';
-import { configureOAuth, createAuthorizationUrl, resolveFromIdentity } from '@atcute/oauth-browser-client';
+
 import {
     Button,
     Container,
@@ -17,10 +16,6 @@ export function AuthenticationTitle() {
     const [handle, setHandle] = useState("");
     const locale = useLocaleStore((state) => state.localeData);
     const [isLoading, setIsLoading] = useState<boolean>(false)
-
-    function sleep(ms: number) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 
     const handleSignIn = async () => {
         setIsLoading(true)
@@ -57,18 +52,6 @@ export function AuthenticationTitle() {
 
         }
 
-        const serverMetadata = getClientMetadata();
-
-        if (serverMetadata === undefined) {
-            return
-        }
-
-        configureOAuth({
-            metadata: {
-                client_id: serverMetadata.client_id || '',
-                redirect_uri: serverMetadata.redirect_uris[0] || '',
-            },
-        });
         let identity, metadata;
         notifications.show({
             id: 'login-process',
@@ -78,9 +61,67 @@ export function AuthenticationTitle() {
             autoClose: false
         });
         try {
-            const resolved = await resolveFromIdentity(handle);
-            identity = resolved.identity;
-            metadata = resolved.metadata;
+
+            const params = new URLSearchParams({
+                handle: handle,
+            });
+
+            const redirectUrl = `/api/oauth/login?${params.toString()}`;
+            console.log("Redirect URL:", redirectUrl);
+
+            // fetch で一度 API を叩く
+            const res = await fetch(redirectUrl, {
+                method: "GET",
+            });
+
+            if (res.ok) {
+                // Location ヘッダーを取得してブラウザをリダイレクト
+                const data = await res.json() as unknown as { url: string }
+                const urlHost = new URL(data.url).host;
+
+                notifications.update({
+                    id: 'login-process',
+                    title: locale.Login_Login,
+                    message: locale.Login_Redirect.replace('{1}', urlHost),
+                    loading: true,
+                    autoClose: false
+                });
+                console.log(data)
+                window.localStorage.setItem('oauth.handle', handle);
+                
+                if (location) {
+                    window.location.assign(data.url);
+                } else {
+                    console.error("Redirect location not found");
+                }
+            } else if (res.status === 404) {
+                // Invalid Handle
+                notifications.update({
+                    id: 'login-process',
+                    title: 'Error',
+                    message: locale.Login_InvalidHandle,
+                    color: 'red',
+                    loading: false,
+                    autoClose: true,
+                    icon: <HiX />
+                });
+                setIsLoading(false);
+            } else {
+                // Invalid Handle
+                notifications.update({
+                    id: 'login-process',
+                    title: 'Error',
+                    message: 'System Error',
+                    color: 'red',
+                    loading: false,
+                    autoClose: true,
+                    icon: <HiX />
+                });
+                setIsLoading(false);
+            }
+
+            return
+
 
         } catch (e) {
             console.error('resolveFromIdentity error:', e);
@@ -97,75 +138,6 @@ export function AuthenticationTitle() {
             return;
         }
 
-        if (!identity) {
-            notifications.update({
-                id: 'login-process',
-                title: 'Error',
-                message: locale.Login_InvalidHandle,
-                color: 'red',
-                loading: false,
-                autoClose: true
-            });
-            setIsLoading(false);
-            return;
-
-        }
-
-        let host;
-        if (identity.pds.host.endsWith('.bsky.network')) {
-            host = 'bsky.social'
-        } else {
-            host = identity.pds.host
-        }
-
-        const message = locale.Login_Redirect.replace("{1}", host)
-        window.localStorage.setItem('oauth.handle', handle)
-
-        notifications.update({
-            id: 'login-process',
-            title: locale.Login_Login,
-            message: message,
-            loading: true,
-            autoClose: false
-        });
-
-        let authUrl;
-        try {
-            authUrl = await createAuthorizationUrl({
-                metadata: metadata,
-                identity: identity,
-                scope: 'atproto transition:generic',
-            });
-        } catch (e) {
-            console.error('createAuthorizationUrl error:', e);
-            notifications.clean()
-            notifications.show({
-                title: 'Error',
-                message: 'Failed to create authorization URL',
-                color: 'red',
-                icon: <HiX />
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        // recommended to wait for the browser to persist local storage before proceeding
-        await sleep(200);
-
-        // redirect the user to sign in and authorize the app
-        window.location.assign(authUrl);
-
-        // if this is on an async function, ideally the function should never ever resolve.
-        // the only way it should resolve at this point is if the user aborted the authorization
-        // by returning back to this page (thanks to back-forward page caching)
-        await new Promise((_resolve, reject) => {
-            const listener = () => {
-                reject(new Error(`user aborted the login request`));
-            };
-
-            window.addEventListener('pageshow', listener, { once: true });
-
-        })
     }
 
 

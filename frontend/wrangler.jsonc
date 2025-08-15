@@ -1,7 +1,9 @@
 {
   "name": "skyblur",
   "compatibility_date": "2025-08-07",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "main": ".open-next/worker.js",
   "assets": {
     "directory": ".open-next/assets",
@@ -11,6 +13,17 @@
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
       "bucket_name": "skyblur-cache"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SKYBLUR_OAUTH",
+      "id": "a4d122ac341e4dbe9c271d3b7aea4e66",
+      "preview_id": "a4d122ac341e4dbe9c271d3b7aea4e66"
+    },
+    {
+      "binding": "SKYBLUR_KV_CACHE",
+      "id": "a29848660cb649cf8ebaffced3041ea0"
     }
   ],
   // トップレベルからkv_namespacesは外してもOK
@@ -34,10 +47,17 @@
       ],
       "kv_namespaces": [
         {
+          "binding": "SKYBLUR_OAUTH",
+          "id": "90235166e7514fbb98aa14c143e76f21"
+        },
+        {
           "binding": "SKYBLUR_KV_CACHE",
           "id": "a29848660cb649cf8ebaffced3041ea0"
         }
-      ]
+      ],
+      "env": {
+        "APP_VIEW_URL": "preview.skyblur.uk"
+      }
     },
     "production": {
       "routes": [
@@ -58,10 +78,17 @@
       ],
       "kv_namespaces": [
         {
+          "binding": "SKYBLUR_OAUTH",
+          "id": "a4d122ac341e4dbe9c271d3b7aea4e66"
+        },
+        {
           "binding": "SKYBLUR_KV_CACHE",
           "id": "a29848660cb649cf8ebaffced3041ea0"
         }
-      ]
+      ],
+      "env": {
+        "APP_VIEW_URL": "skyblur.uk"
+      }
     }
   }
 }
