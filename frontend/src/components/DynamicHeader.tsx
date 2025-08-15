@@ -31,7 +31,7 @@ const DynamicHeader = () => {
     if (localeString) {
       setLocale(localeString);
     }
-  }, [localeString]);
+  }, [localeString, setLocale]);
   useEffect(() => {
     if (ignore) {
       console.log("useEffect duplicate call")
