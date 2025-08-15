@@ -6,7 +6,7 @@ import { Context } from 'hono'
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
     if (!authorization) {
-        return c.json({ message: 'Authorization Header required. This api shoud be call via atproto-proxy.' }, 500);
+        //return c.json({ message: 'Authorization Header required. This api shoud be call via atproto-proxy.' }, 500);
     }
 
     const origin = c.env.APPVIEW_HOST
@@ -21,12 +21,12 @@ export const handle = async (c: Context) => {
     }
 
     try {
-        const veriry = await verifyJWT(authorization, audience)
+        //const veriry = await verifyJWT(authorization, audience)
 
-        if (!veriry.verified) {
-            return c.json({ message: 'Cannot verify JWT Token.' }, 500);
+       // if (!veriry.verified) {
+            //return c.json({ message: 'Cannot verify JWT Token.' }, 500);
 
-        }
+        //}
         const encoder = new TextEncoder();
 
         //Salt生成
