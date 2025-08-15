@@ -46,7 +46,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const agent = useXrpcAgentStore((state) => state.agent);
     const locale = useLocaleStore((state) => state.localeData);
     const did = useXrpcAgentStore((state) => state.did);
-    const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
+    const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
     const setTempText = useTempPostStore((state) => state.setText);
     const setTempAdditional = useTempPostStore((state) => state.setAdditional);
     const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
@@ -360,7 +360,15 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                         const startIndexUtf16 = match.index ?? 0;
                         const endIndexUtf16 = startIndexUtf16 + match[0].length;
-                        const result = await resolveFromIdentity(handle)
+                        //const result = await resolveFromIdentity(handle)
+
+                        const profile = await publicAgent.get('app.bsky.actor.getProfile', {
+                            params: {
+                                actor: handle as ActorIdentifier,
+                            },
+                        });
+
+                        if(!profile.ok) return []
 
                         facets.push({
                             $type: "app.bsky.richtext.facet",
@@ -371,7 +379,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             features: [
                                 {
                                     $type: "app.bsky.richtext.facet#mention",
-                                    did: result.identity.id,
+                                    did: profile.data.did,
                                 },
                             ],
                         });

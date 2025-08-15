@@ -39,17 +39,24 @@ export async function fetchAuthorizationServer(
 
 interface FetchWithDpopOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: Record<string, any> | URLSearchParams | string;
+  body?:
+  | Record<string, unknown>
+  | string
+  | URLSearchParams
+  | FormData
+  | Blob;
   maxRetries?: number;
 }
 
 export async function fetchWithDpop<T = unknown>(
   url: string,
   options: FetchWithDpopOptions,
-  oauthKey: string
+  oauthKey: string,
+  contentType?: string,
 ): Promise<T> {
   const kvKeyVerified = await verifyCookie(oauthKey);
   if (!kvKeyVerified) throw new Error("Invalid or missing oauth_key");
+
 
   const myKv = getCloudflareContext().env.SKYBLUR_OAUTH;
   const token = await myKv.get('session:' + kvKeyVerified);
@@ -86,49 +93,37 @@ export async function fetchWithDpop<T = unknown>(
       'Authorization': `DPoP ${accessToken}`,
     };
 
-    if ((method === 'POST' || method === 'PUT') && options.body) {
-      headers['Content-Type'] =
-        options.body instanceof URLSearchParams ? 'application/x-www-form-urlencoded' : 'application/json';
-    }
 
-    function toBlobPart(data: Uint8Array | ArrayBuffer): BlobPart {
-      if (data instanceof Uint8Array) {
-        // Uint8Array から安全に ArrayBuffer をコピーして Blob に渡す
-        return data.slice().buffer;
-      } else {
-        return data;
-      }
-    }
+    let requestBody: string | FormData | Blob | undefined;
 
-    // 使い方例
-    let bodyInit: BodyInit | null;
-
-    if (options.body instanceof Uint8Array || options.body instanceof ArrayBuffer) {
-      bodyInit = new Blob([options.body instanceof Uint8Array ? options.body.slice().buffer : options.body], {
-        type: headers['Content-Type'],
-      });
-    } else if (options.body instanceof URLSearchParams) {
-      bodyInit = options.body.toString();
-    } else if (typeof options.body === 'object') {
-      bodyInit = JSON.stringify(options.body);
+    if (!options.body) {
+      requestBody = undefined;
     } else if (typeof options.body === 'string') {
-      bodyInit = options.body;
+      requestBody = options.body;
+    } else if (options.body instanceof FormData) {
+      requestBody = options.body;
+    } else if (options.body instanceof Blob) {
+      requestBody = options.body;
+    } else if (options.body instanceof URLSearchParams) {
+      requestBody = options.body.toString(); // application/x-www-form-urlencoded 用に文字列化
     } else {
-      bodyInit = null; // undefined を null に変換
+      // Record<string, any> は JSON 文字列化
+      requestBody = JSON.stringify(options.body);
     }
+
+    headers['Content-Type'] =
+      contentType || 'application/json';
+
+    console.log(requestBody)
 
     const res = await fetch(urlGlobal, {
       method,
       headers,
-      body: bodyInit, 
+      body: requestBody,
     });
 
     const elapsedMs = Date.now() - startTime;
     console.log(`${attempt}回目の処理時間: ${elapsedMs}ms`);
-
-    const contentType = res.headers.get("content-type") || "";
-
-
 
     // DPoP nonce 再取得
     if (res.status === 401 || res.status === 400) {
@@ -142,11 +137,12 @@ export async function fetchWithDpop<T = unknown>(
       }
     }
 
+    const returnContentType = res.headers.get('content-type') || ''
 
     // JSON なら parse、それ以外は ArrayBuffer で返す
-    let data: any;
+    let data: Record<string, unknown> | ArrayBuffer | T;
 
-    if (contentType.includes("application/json")) {
+    if (returnContentType.includes("application/json")) {
       // JSON は text として読んでパース
       const text = await res.text();
       try {
@@ -155,11 +151,11 @@ export async function fetchWithDpop<T = unknown>(
         data = { message: text };
       }
 
-      return data
+      return data as T; 
     } else {
       // JSON 以外はそのまま ArrayBuffer
       data = await res.arrayBuffer();
-      return data
+      return data as T
     }
   }
 

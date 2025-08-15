@@ -52,7 +52,6 @@ export function AuthenticationTitle() {
 
         }
 
-        let identity, metadata;
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,

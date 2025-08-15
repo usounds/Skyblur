@@ -6,14 +6,13 @@ import { useLocaleStore } from '@/state/Locale';
 import { useModeStore } from '@/state/Mode';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 //import { getClientMetadata } from '@/types/ClientMetadataContext';
+import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
+import { AppBskyActorDefs } from '@atcute/bluesky';
+import { Client, simpleFetchHandler } from '@atcute/client';
 import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
-import { AppBskyActorDefs } from '@atcute/bluesky';
-import { Client, simpleFetchHandler } from '@atcute/client';
-import { RiContactsBookLine } from 'react-icons/ri';
-import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);
@@ -73,34 +72,16 @@ const DynamicHeader = () => {
 
           return
         } else {
-          setIsLoginProcess(false)
+
+          notifications.show({
+            title: 'Error',
+            message: 'System Error: Can not get profile data',
+            color: 'red',
+            icon: <HiX />
+          });
 
         }
 
-        /*
-                const { success, message } = await handleOAuth(
-                  getClientMetadata,
-                  setAgent,
-                  setUserProf,
-                  setIsLoginProcess,
-                  setOauthUserAgent,
-                  setDid,
-                  setServiceUrl,
-                  locale
-                );
-        
-                if (success) {
-                  setMode('menu')
-        
-                } else if (!success && message) {
-                  notifications.show({
-                    title: 'Error',
-                    message: message,
-                    color: 'red',
-                    icon: <HiX />
-                  });
-                }
-                  */
         setIsLoginProcess(false)
 
       })();

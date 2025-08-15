@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { HiCheck } from "react-icons/hi";
 import { MdArrowBack } from "react-icons/md";
+import { AppBskyFeedDefs } from '@atcute/bluesky';
 
 export default function Home() {
   const agent = useXrpcAgentStore((state) => state.agent);
@@ -158,7 +159,6 @@ export default function Home() {
         const blobRes = await agent.post('com.atproto.repo.uploadBlob', {
           input: fileUint,
           encoding,
-          headers: { 'Content-Type': 'application/octet-stream' },
         });
 
         if (!blobRes.ok) {
@@ -167,59 +167,60 @@ export default function Home() {
         }
 
         avatarRef = blobRes.data.blob as unknown as Blob;
+
+
+        const record = {
+          did: 'did:web:feed.skyblur.uk',
+          displayName: feedName,
+          description: feedDescription,
+          createdAt: new Date().toISOString(),
+          ...(avatarRef ? { avatar: avatarRef } : {}),
+        };
+
+        await agent.post('com.atproto.repo.putRecord', {
+          input: {
+            repo: did as ActorIdentifier,
+            collection: 'app.bsky.feed.generator' as `${string}.${string}.${string}`,
+            rkey: 'skyblurCustomFeed',
+            record,
+          },
+        });
 
       } else if (feedAvatarImg) {
-        // feedAvatarImgからCIDと拡張子を取得
-        let parts = feedAvatarImg.split('/');
-        parts = parts[7].split('@');
-
-        const didValue = did as `did:${string}:${string}`;
-
-        // BlobをGET
-        const ret = await agent.get('com.atproto.sync.getBlob', {
+        const record = await agent.get('com.atproto.repo.getRecord', {
           params: {
-            did: didValue,
-            cid: parts[0],
+            repo: did as ActorIdentifier,
+            collection: 'app.bsky.feed.generator',
+            rkey: 'skyblurCustomFeed',
           },
-          as: 'blob',
         });
 
-        if (!ret.ok) {
-          throw new Error('Failed to get blob');
-        }
+        if (!record.ok) return
 
-        const fileUint = new Uint8Array(await ret.data.arrayBuffer());
+        const data = record.data.value as AppBskyFeedDefs.GeneratorView
 
-        const blobRes = await agent.post('com.atproto.repo.uploadBlob', {
-          input: fileUint,
-          encoding,
-          headers: { 'Content-Type': 'application/octet-stream' },
+        console.log(data)
+
+        const record2 = {
+          did: 'did:web:feed.skyblur.uk',
+          displayName: feedName,
+          description: feedDescription,
+          createdAt: new Date().toISOString(),
+          avatar: data.avatar,
+        };
+
+        await agent.post('com.atproto.repo.putRecord', {
+          input: {
+            repo: did as ActorIdentifier,
+            collection: 'app.bsky.feed.generator' as `${string}.${string}.${string}`,
+            rkey: 'skyblurCustomFeed',
+            record: record2,
+          },
         });
 
-        if (!blobRes.ok) {
-          setFeedUpdateMessage('error');
-          return
-        }
-
-        avatarRef = blobRes.data.blob as unknown as Blob;
+        //avatarRef = data.avatar
       }
 
-      const record = {
-        did: 'did:web:feed.skyblur.uk',
-        displayName: feedName,
-        description: feedDescription,
-        createdAt: new Date().toISOString(),
-        ...(avatarRef ? { avatar: avatarRef } : {}),
-      };
-
-      await agent.post('com.atproto.repo.putRecord', {
-        input: {
-          repo: did as ActorIdentifier,
-          collection: 'app.bsky.feed.generator' as `${string}.${string}.${string}`,
-          rkey: 'skyblurCustomFeed',
-          record,
-        },
-      });
     } catch (e) {
       setFeedUpdateMessage('Error:' + e)
       setIsSave(false)

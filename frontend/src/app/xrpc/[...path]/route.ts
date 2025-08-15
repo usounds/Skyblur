@@ -1,5 +1,5 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { fetchWithDpop, verifyCookie } from "@/logic/HandleXrpcProxy";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const allowedOrigins = [
   'https://skyblur.usounds.work',
@@ -70,8 +70,10 @@ async function handleXrpcRequest(
     const url = new URL(request.url);
     const queryString = url.search;
 
-    // POST ボディの準備
-    let body: string | FormData | undefined;
+    // POST ボディの準
+    const contentType = request.headers.get('content-type') || '';
+    console.log('contentType:'+contentType)
+    let body: string | Blob | FormData | URLSearchParams | undefined;
 
     if (request.method === 'POST') {
       const contentType = request.headers.get('content-type') || '';
@@ -81,8 +83,11 @@ async function handleXrpcRequest(
         body = json ? JSON.stringify(json) : undefined;
       } else if (contentType.includes('multipart/form-data')) {
         body = await request.formData();
+      } else if (contentType.includes('text/plain')) {
+        const text = await request.text();
+        body = new Blob([text], { type: 'text/plain' });
       } else {
-        body = await request.text();
+        body = await request.blob(); // その他は Blob
       }
     }
 
@@ -93,7 +98,8 @@ async function handleXrpcRequest(
         method: request.method as 'GET' | 'POST',
         body,
       },
-      oauthKey
+      oauthKey,
+      contentType
     );
 
     // uploadBlob など、JSON を透過して返す場合はそのまま

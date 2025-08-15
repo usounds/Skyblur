@@ -18,8 +18,15 @@ export async function GET(request: Request) {
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
 
+    const errorHeader = new Headers({
+        Location: `https://${getCloudflareContext().env.APP_VIEW_URL}`,
+    });
+
     if (!code || !state) {
-        return new Response('Missing code or state', { status: 400 });
+        return new Response(null, {
+            status: 302,
+            headers: errorHeader
+        });
     }
 
     // --- クッキーから code_verifier を取得 ---
@@ -36,10 +43,16 @@ export async function GET(request: Request) {
     const tokenEndpoint = cookies['oauth_token_endpoint'];
 
     if (!codeVerifier) {
-        return new Response('Missing code_verifier in cookie', { status: 400 });
+        return new Response(null, {
+            status: 302,
+            headers: errorHeader
+        });
     }
     if (!issuer) {
-        return new Response('Missing issuer in cookie', { status: 400 });
+        return new Response(null, {
+            status: 302,
+            headers: errorHeader
+        });
     }
     const client_id = `https://${getCloudflareContext().env.APP_VIEW_URL}/api/client-metadata.json`
 

@@ -1,5 +1,5 @@
+import { verifyCookie } from "@/logic/HandleXrpcProxy";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { fetchWithDpop, verifyCookie, TokenData } from "@/logic/HandleXrpcProxy";
 
 export async function GET(request: Request) {
     const env = getCloudflareContext().env;
