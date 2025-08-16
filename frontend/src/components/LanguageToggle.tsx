@@ -1,4 +1,4 @@
-
+"use client"
 import { Locales, useLocaleStore } from "@/state/Locale";
 import { ActionIcon } from '@mantine/core';
 import React from "react";

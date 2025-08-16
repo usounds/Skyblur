@@ -1,3 +1,4 @@
+"use client"
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useLocaleStore } from "@/state/Locale";
