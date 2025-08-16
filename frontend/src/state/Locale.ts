@@ -17,33 +17,34 @@ export const localeDataMap: Record<Locales, LocaleInfo> = {
 };
 
 type State = {
-  locale: Locales;
+  locale: Locales|null;
   localeData: LocaleData;
 };
 
 type Action = {
   setLocale: (locale: Locales) => void;
+  setLocaleData: (localeData: LocaleData) => void;
 };
 
 export const useLocaleStore = create<State & Action>()(
   persist(
     (set) => ({
-      // locale は初期化時に undefined（localStorage に任せる）
-      locale: 'ja', // ここはダミー値。rehydrate で localStorage の値に置き換わる
-      localeData: localeDataMap['ja'].data,
+      locale: null,
+      localeData: localeDataMap['ja'].data, // 初期値は ja
 
-      setLocale: (locale) => set({ locale, localeData: localeDataMap[locale].data }),
+      setLocale: (locale) => {
+        set({ locale, localeData: localeDataMap[locale].data });
+      },
+
+      setLocaleData: (localeData) => set({ localeData }),
     }),
     {
       name: 'zustand.preference.locale',
-      partialize: (state) => ({ locale: state.locale }),
-
-      // rehydrate 直後に localeData を更新
+      partialize: (state) => ({ locale: state.locale }), // locale のみ保存,
       onRehydrateStorage: () => (state) => {
         if (state) {
-          useLocaleStore.setState({
-            localeData: localeDataMap[state.locale].data,
-          });
+          const currentLocale = state.locale || 'ja';
+          state.localeData = localeDataMap[currentLocale].data;
         }
       },
     }

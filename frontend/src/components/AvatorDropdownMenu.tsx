@@ -55,9 +55,10 @@ export function AvatorDropdownMenu() {
     };
 
     const handleSettings = async () => {
-        console.log('handleSettings')
+        const params = new URLSearchParams(window.location.search);
+        const lang = params.get('lang') || 'ja';
         setTimeout(() => {
-            router.push('/settings');
+            router.push(`/settings?lang=${lang}`);
         }, 0);
     }
 
