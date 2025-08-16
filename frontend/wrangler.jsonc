@@ -26,7 +26,6 @@
       "id": "a29848660cb649cf8ebaffced3041ea0"
     }
   ],
-  // トップレベルからkv_namespacesは外してもOK
   "env": {
     "preview": {
       "routes": [
@@ -55,7 +54,7 @@
           "id": "a29848660cb649cf8ebaffced3041ea0"
         }
       ],
-      "env": {
+      "vars": {
         "APP_VIEW_URL": "preview.skyblur.uk"
       }
     },

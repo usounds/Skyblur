@@ -65,12 +65,19 @@ export function AuthenticationTitle() {
                 handle: handle,
             });
 
-            const redirectUrl = `/api/oauth/login?${params.toString()}`;
+            const host = new URL(origin).host;
+            let apiHost = 'api.skyblur.uk'
+            if (host?.endsWith('usounds.work')) {
+                apiHost = 'skyblurapi.usounds.work'
+            }
+
+            const redirectUrl = `https://${apiHost}/oauth/login?${params.toString()}`;
             console.log("Redirect URL:", redirectUrl);
 
             // fetch で一度 API を叩く
             const res = await fetch(redirectUrl, {
                 method: "GET",
+                credentials: 'include', 
             });
 
             if (res.ok) {
@@ -85,9 +92,9 @@ export function AuthenticationTitle() {
                     loading: true,
                     autoClose: false
                 });
-                console.log(data)
+                console.log(urlHost)
                 window.localStorage.setItem('oauth.handle', handle);
-                
+
                 if (location) {
                     window.location.assign(data.url);
                 } else {

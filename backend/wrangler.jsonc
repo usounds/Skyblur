@@ -7,24 +7,59 @@
     "nodejs_compat"
   ],
   "vars": {
-    "APPVIEW_HOST": "skyblur.usounds.work"
+    "APPVIEW_HOST": "skyblur.usounds.work",
+    "API_HOST": "skyblurapi.usounds.work"
   },
   "kv_namespaces": [
     {
       "binding": "SKYBLUR_KV_CACHE",
       "id": "a29848660cb649cf8ebaffced3041ea0"
-    }
+    },
+    {
+      "binding": "SKYBLUR_OAUTH",
+      "id": "a4d122ac341e4dbe9c271d3b7aea4e66",
+      "preview_id": "a4d122ac341e4dbe9c271d3b7aea4e66"
+    },
   ],
   "env": {
-    "production": {
+    "preview": {
       "vars": {
-        "APPVIEW_HOST": "skyblur.uk"
+        "APPVIEW_HOST": "preview.skyblur.uk",
+        "API_HOST": "preview-api.skyblur.uk"
       },
       "kv_namespaces": [
         {
           "binding": "SKYBLUR_KV_CACHE",
           "id": "a29848660cb649cf8ebaffced3041ea0"
+        },
+    {
+      "binding": "SKYBLUR_OAUTH",
+      "id": "a4d122ac341e4dbe9c271d3b7aea4e66",
+      "preview_id": "a4d122ac341e4dbe9c271d3b7aea4e66"
+    },
+      ],
+      "routes": [
+        {
+          "pattern": "preview-api.skyblur.uk",
+          "custom_domain": true
         }
+      ]
+    },
+    "production": {
+      "vars": {
+        "APPVIEW_HOST": "skyblur.uk",
+        "API_HOST": "api.skyblur.uk"
+      },
+      "kv_namespaces": [
+        {
+          "binding": "SKYBLUR_KV_CACHE",
+          "id": "a29848660cb649cf8ebaffced3041ea0"
+        },
+    {
+      "binding": "SKYBLUR_OAUTH",
+      "id": "a4d122ac341e4dbe9c271d3b7aea4e66",
+      "preview_id": "a4d122ac341e4dbe9c271d3b7aea4e66"
+    },
       ],
       "routes": [
         {

@@ -52,7 +52,17 @@ const DynamicHeader = () => {
       async function () {
         setIsLoginProcess(true)
 
-        const result = await fetch('/api/oauth/getUserProfile')
+        const host = new URL(origin).host;
+        let apiHost = 'api.skyblur.uk'
+        if (host?.endsWith('usounds.work')) {
+          apiHost = 'skyblurapi.usounds.work'
+        }
+
+        const result = await fetch(`https://${apiHost}/oauth/getUserProfile`, {
+          method: "GET",
+          credentials: 'include',
+        })
+
         if (result.ok) {
           const profileData = await result.json() as unknown as AppBskyActorDefs.ProfileViewDetailed
           setMode('menu')
@@ -61,9 +71,15 @@ const DynamicHeader = () => {
           const host = new URL(origin).host;
           const publicAgent = new Client({
             handler: simpleFetchHandler({
-              service: `https://${host}`,
+              service: `https://${apiHost}`,
+              fetch: (input, init = {}) => {
+                return fetch(input, {
+                  ...init,
+                  credentials: 'include', // ここで指定
+                });
+              },
             }),
-          })
+          });
           const serviceUrl = await fetchServiceEndpointWithCache(profileData.did, false)
           setAgent(publicAgent)
           setDid(profileData.did)

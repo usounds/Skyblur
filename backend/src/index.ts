@@ -2,13 +2,26 @@ import { handle as decryptByCidHandle } from "@/api/decryptByCid"
 import { handle as getDidDoc } from "@/api/DidDocCache"
 import { handle as ecnryptHandle } from "@/api/ecnrypt"
 import { handle as getPostHandler } from "@/api/getPost"
+import { handle as getJwks } from "@/api/jwks.json"
+import { handle as getClientMetadata } from "@/api/client-metadata.json"
+import { handle as login } from "@/api/login"
+import { handle as callback } from "@/api/callback"
+import { handle as xrpcProxy } from "@/api/xrpcProxy"
+import { handle as getCurrectUser } from "@/api/getCurrectUser"
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-const app = new Hono()
+const app = new Hono<{ Bindings: MyEnv }>()
+
+interface MyEnv {
+  APPVIEW_HOST: string;
+  API_HOST: string;
+  AUTH_SECRET: string;
+  JWT_SECRET: string;
+}
 
 app.options('*', (c) => {
-  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Origin', "*");
   c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return c.text(''); // OPTIONSリクエストに対する空のレスポンス
@@ -34,6 +47,26 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
   return getPostHandler(c)
 })
 
+app.get('/client-metadata.json', (c) => {
+  return getClientMetadata(c)
+})
+
+app.get('/jwks.json', (c) => {
+  return getJwks(c)
+})
+
+app.get('/oauth/login', (c) => {
+  c.header('Access-Control-Allow-Origin', `https://${c.env.APPVIEW_HOST}`);
+  c.header('Access-Control-Allow-Credentials', 'true');
+  return login(c)
+})
+
+app.get('/oauth/callback', (c) => {
+  c.header('Access-Control-Allow-Origin', `https://${c.env.APPVIEW_HOST}`);
+  c.header('Access-Control-Allow-Credentials', 'true');
+  return callback(c)
+})
+
 app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
   const origin = c.req.header('origin') || '';
   if (!allowedOrigins.includes(origin)) {
@@ -41,6 +74,21 @@ app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
   }
 
   return getDidDoc(c)
+})
+
+
+app.get('/oauth/getUserProfile', (c) => {
+  c.header('Access-Control-Allow-Origin', `https://${c.env.APPVIEW_HOST}`);
+  c.header('Access-Control-Allow-Credentials', 'true');
+
+  return getCurrectUser(c)
+})
+
+app.all('/xrpc/:path+', (c) => {
+  c.header('Access-Control-Allow-Origin', `https://${c.env.APPVIEW_HOST}`);
+  c.header('Access-Control-Allow-Credentials', 'true');
+  return xrpcProxy(c)
+
 })
 
 app.get('/', (c) => {

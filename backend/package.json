@@ -3,12 +3,15 @@
   "scripts": {
     "dev": "wrangler dev --ip 192.168.1.130",
     "deploy": "wrangler deploy --env production --minify",
+    "deploy:preview": "wrangler deploy --env preview --minify",
     "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts"
   },
   "dependencies": {
     "did-jwt": "^8.0.17",
     "did-resolver": "^4.1.0",
+    "dpop": "^2.1.1",
     "hono": "^4.7.4",
+    "jose": "^6.0.12",
     "web-did-resolver": "^2.0.30"
   },
   "devDependencies": {
