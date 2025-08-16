@@ -1,3 +1,4 @@
+"use client"
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
 import { Avatar, Menu } from '@mantine/core';

@@ -1,3 +1,4 @@
+"use client"
 import { transformUrl } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useViewerStore } from "@/state/Viewer";
