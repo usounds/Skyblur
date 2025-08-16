@@ -1,3 +1,4 @@
+"use client"
 import { useLocaleStore } from "@/state/Locale";
 import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import { Client } from '@atcute/client';

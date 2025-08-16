@@ -1,3 +1,4 @@
+"use client"
 import { useLocaleStore } from "@/state/Locale";
 import Link from 'next/link';
 import { Button } from '@mantine/core';
