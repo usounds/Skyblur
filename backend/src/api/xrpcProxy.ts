@@ -1,14 +1,15 @@
 import { fetchWithDpop } from '@/logic/HandleXrpcProxy';
 import { Context } from 'hono';
-import { getCookie, getSignedCookie } from 'hono/cookie';
+import { getCookie } from 'hono/cookie';
+import { getSignedCookie } from "../logic/CookieHandler";
 
 export const handle = async (c: Context): Promise<Response> => {
     // path 取得
-  const fullPath = c.req.path // 例: "/xrpc/app.bsky.aaab.bbb"
-    const endpoint = `/xrpc/${fullPath.replace(/\//g, '.')}`;
+    const fullPath = c.req.path // 例: "/xrpc/app.bsky.aaab.bbb"
+    const endpoint = fullPath;
 
     // クッキー取得
-    const oauthKey = getCookie(c, 'oauth_key') || ''
+    //const oauthKey = getCookie(c, 'oauth_key') || ''
     const cookieSecret = c.env.AUTH_SECRET
     const jwtSecret = c.env.JWT_SECRET
     const thisUrl = c.env.API_HOST
@@ -16,11 +17,9 @@ export const handle = async (c: Context): Promise<Response> => {
     // Cloudflare KV
     const myKv = c.env.SKYBLUR_OAUTH;
 
-    console.log(cookieSecret)
-    console.log(oauthKey)
 
     // Cookie 検証
-  const kvKeyVerified = await getSignedCookie(c, oauthKey, cookieSecret);
+    const kvKeyVerified = await getSignedCookie(c, 'oauth_key', cookieSecret);
     if (!kvKeyVerified) return c.text('Invalid oauth_key', 401);
 
     // セッショントークン取得
@@ -54,20 +53,20 @@ export const handle = async (c: Context): Promise<Response> => {
         const result = await fetchWithDpop(
             endpoint + queryString,
             { method: c.req.method as 'GET' | 'POST', body },
-            oauthKey,
+            kvKeyVerified,
             myKv,
-            contentType,
             jwtSecret,
             cookieSecret,
-            thisUrl
+            thisUrl,
+            c,
+            contentType,
         ) as Response
 
-        const data = result
 
-        // ステータスとヘッダーを保持して返す
-        return new Response(JSON.stringify(data), {
-            status: result.status,
-        });
+    // ステータスとヘッダーを保持して返す
+    return new Response(JSON.stringify(result), {
+        status: result.status,
+    });
     } catch (e) {
         let payload: Record<string, unknown>;
         if (e instanceof Error) {

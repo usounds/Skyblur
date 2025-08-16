@@ -81,6 +81,8 @@ const DynamicHeader = () => {
         let apiHost = 'api.skyblur.uk'
         if (host?.endsWith('usounds.work')) {
           apiHost = 'skyblurapi.usounds.work'
+        }else if (host?.startsWith('preview')) {
+          apiHost = 'preview-api.skyblur.uk'
         }
 
         const result = await fetch(`https://${apiHost}/oauth/getUserProfile`, {
@@ -93,7 +95,7 @@ const DynamicHeader = () => {
           setMode('menu')
           setUserProf(profileData)
 
-          const host = new URL(origin).host;
+          //const host = new URL(origin).host;
           const publicAgent = new Client({
             handler: simpleFetchHandler({
               service: `https://${apiHost}`,

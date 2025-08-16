@@ -22,6 +22,7 @@ type PostListProps = {
     did: string;
     pds: string | null;
 };
+let ignore = false
 
 export const PostList: React.FC<PostListProps> = ({
     handleEdit,
@@ -94,6 +95,12 @@ export const PostList: React.FC<PostListProps> = ({
     };
 
     useEffect(() => {
+        console.log('useEffect')
+        if (ignore) {
+            console.log("useEffect duplicate call")
+            return
+        }
+        ignore = true
         getPosts(cursor);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,6 +153,8 @@ export const PostList: React.FC<PostListProps> = ({
             let apiHost = 'api.skyblur.uk'
             if (host?.endsWith('usounds.work')) {
                 apiHost = 'skyblurapi.usounds.work'
+            } else if (host?.startsWith('preview')) {
+                apiHost = 'preview-api.skyblur.uk'
             }
 
             const repo = Array.isArray(did) ? did[0] : did || ''

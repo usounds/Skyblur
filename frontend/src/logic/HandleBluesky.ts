@@ -9,7 +9,9 @@ export const fetchServiceEndpointWithCache = async (did: string, forceRefresh: b
         const host = new URL(origin).host;
         let apiHost = 'api.skyblur.uk'
         if (host?.endsWith('usounds.work')) {
-            apiHost = 'skyblurapi.usounds.work'
+          apiHost = 'skyblurapi.usounds.work'
+        }else if (host?.startsWith('preview')) {
+          apiHost = 'preview-api.skyblur.uk'
         }
 
         const ret = await fetch(`https://${apiHost}/xrpc/uk.skyblur.admin.getDidDocument?actor=${did}&forceRefresh=${forceRefresh}`)

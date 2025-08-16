@@ -34,8 +34,8 @@
         },
     {
       "binding": "SKYBLUR_OAUTH",
-      "id": "a4d122ac341e4dbe9c271d3b7aea4e66",
-      "preview_id": "a4d122ac341e4dbe9c271d3b7aea4e66"
+      "id": "90235166e7514fbb98aa14c143e76f21",
+      "preview_id": "90235166e7514fbb98aa14c143e76f21"
     },
       ],
       "routes": [
@@ -43,7 +43,11 @@
           "pattern": "preview-api.skyblur.uk",
           "custom_domain": true
         }
-      ]
+      ],
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1
+      },
     },
     "production": {
       "vars": {

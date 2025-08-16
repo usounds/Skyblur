@@ -1,7 +1,8 @@
 import * as DPoP from 'dpop';
 import { Context } from 'hono';
-import { deleteCookie, getCookie, setSignedCookie } from 'hono/cookie';
+import { deleteCookie, getCookie } from 'hono/cookie';
 import * as jose from 'jose';
+import { setSignedCookie } from "../logic/CookieHandler";
 import { jwks } from "../logic/type";
 
 export const handle = async (c: Context) => {
@@ -125,10 +126,10 @@ export const handle = async (c: Context) => {
     deleteCookie(c, 'oauth_issuer', cookieOptions )
     deleteCookie(c, 'oauth_token_endpoint', cookieOptions )
 
-    console.log(cookieOptions)
 
     // 新しいクッキー
-    setSignedCookie(c, 'oauth_key', `${kvKey}`, cookieSecret, cookieOptions)
+    //setSignedCookie(c, 'oauth_key', `${kvKey}`, cookieSecret, cookieOptions)
+    setSignedCookie(c, 'oauth_key', `${kvKey}`, cookieSecret)
 
     return c.redirect( `https://${c.env.APPVIEW_HOST}`, 302)
 

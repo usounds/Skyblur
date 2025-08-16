@@ -2,7 +2,6 @@ import { jwks, AuthorizationServerMetadata } from '@/logic/type';
 import * as DPoP from 'dpop';
 import type { JWTPayload } from "jose";
 import * as jose from 'jose';
-import { getSignedCookie } from 'hono/cookie';
 import { Context } from 'hono';
 
 export interface TokenData {
@@ -56,18 +55,25 @@ export async function fetchWithDpop<T = unknown>(
   oauthSecret: string,
   cookieSecret: string,
   thisUrl: string,
-  c:Context,
+  c: Context,
   contentType?: string
 ): Promise<T> {
-  const kvKeyVerified = await getSignedCookie(c, oauthKey, cookieSecret);
-  if (!kvKeyVerified) throw new Error("Invalid or missing oauth_key");
+  let lastLogTime = Date.now()
+  function logPoint(message: string) {
+    const now = Date.now()
+    const delta = now - lastLogTime
+    console.log(`${message} [+${delta}ms] `)
+    lastLogTime = now
+  }
 
-  const token = await myKv.get('session:' + kvKeyVerified);
+  const token = await myKv.get('session:' + oauthKey);
   if (!token) throw new Error("Token not found in KV");
 
+  logPoint("=== 1:Get Access Token From KV===")
   const tokenData: TokenData = JSON.parse(token);
   const payload = jose.decodeJwt(tokenData.access_token) as JWTPayload;
-  const accessToken = await getAccessToken(oauthKey, myKv,oauthSecret, cookieSecret, thisUrl, c);
+  logPoint("=== 2:Decode Access Token From KV===")
+  const accessToken = await getAccessToken(oauthKey, myKv, oauthSecret, cookieSecret, thisUrl, c);
 
   let urlGlobal = url;
   if (url.startsWith('/xrpc/') && typeof payload.aud === 'string') {
@@ -75,22 +81,26 @@ export async function fetchWithDpop<T = unknown>(
   }
 
   const method = options.method || 'GET';
-  let dpopNonce: string | undefined = await myKv.get(`dpopNonce:${kvKeyVerified}`) || undefined;
+  let dpopNonce: string | undefined = await myKv.get(`dpopNonce:${oauthKey}`) || undefined;
   const maxRetries = options.maxRetries ?? 2;
 
-  const stored = await myKv.get(`dpopKey:${kvKeyVerified}`);
+  const stored = await myKv.get(`dpopKey:${oauthKey}`);
   if (!stored) throw new Error('DPoP key not found');
   const parsed = JSON.parse(stored);
+  logPoint("=== 3:Get DPoP Private Key From KV===")
 
   const restoredKeypair: DPoP.KeyPair = {
     privateKey: await jose.importJWK(parsed.privateKey, 'ES256', { extractable: true }) as CryptoKey,
     publicKey: await jose.importJWK(parsed.publicKey, 'ES256', { extractable: true }) as CryptoKey
   };
+  logPoint("=== 4:Import Private Key ===")
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const startTime = Date.now();
+    //const startTime = Date.now();
 
     const proof = await DPoP.generateProof(restoredKeypair, urlGlobal, method, dpopNonce, accessToken);
+    logPoint("=== 5:Generate DPoP ===")
+
     const headers: Record<string, string> = {
       'DPoP': proof,
       'Authorization': `DPoP ${accessToken}`,
@@ -117,7 +127,6 @@ export async function fetchWithDpop<T = unknown>(
     headers['Content-Type'] =
       contentType || 'application/json';
 
-    console.log(requestBody)
 
     const res = await fetch(urlGlobal, {
       method,
@@ -125,9 +134,7 @@ export async function fetchWithDpop<T = unknown>(
       body: requestBody,
     });
 
-    const elapsedMs = Date.now() - startTime;
-    console.log(`${attempt}回目の処理時間: ${elapsedMs}ms`);
-
+    logPoint("=== Call to Pds ===")
     // DPoP nonce 再取得
     if (res.status === 401 || res.status === 400) {
       const wwwAuth = res.headers.get('www-authenticate');
@@ -135,7 +142,8 @@ export async function fetchWithDpop<T = unknown>(
         const nonce = res.headers.get('dpop-nonce');
         if (!nonce) throw new Error('DPoP nonce required but missing');
         dpopNonce = nonce;
-        await myKv.put(`dpopNonce:${kvKeyVerified}`, dpopNonce, { expirationTtl: 300 });
+        logPoint("=== New Nonce Request ===")
+        await myKv.put(`dpopNonce:${oauthKey}`, dpopNonce, { expirationTtl: 300 });
         continue;
       }
     }
@@ -153,8 +161,9 @@ export async function fetchWithDpop<T = unknown>(
       } catch {
         data = { message: text };
       }
+      console.log('おわり')
+      return data as T;
 
-      return data as T; 
     } else {
       // JSON 以外はそのまま ArrayBuffer
       data = await res.arrayBuffer();
@@ -165,11 +174,8 @@ export async function fetchWithDpop<T = unknown>(
   throw new Error('Max retries exceeded');
 }
 
-export async function getAccessToken(oauthKey: string, myKv: KVNamespace, oauthSecret:string, cookieSecret:string, thisUrl : string,c:Context) {
-  const privateJwk = { ...jwks.keys[0], d:oauthSecret };
-
-  console.log(privateJwk)
-  const kvKeyVerified = await getSignedCookie(c, oauthKey, cookieSecret);
+export async function getAccessToken(oauthKey: string, myKv: KVNamespace, oauthSecret: string, cookieSecret: string, thisUrl: string, c: Context) {
+  const privateJwk = { ...jwks.keys[0], d: oauthSecret };
 
   const lockKey = `lock:${oauthKey}`;
   let waited = 0;
@@ -188,7 +194,7 @@ export async function getAccessToken(oauthKey: string, myKv: KVNamespace, oauthS
   }
 
   try {
-    const raw = await myKv.get('session:' + kvKeyVerified);
+    const raw = await myKv.get('session:' + oauthKey);
     if (!raw) throw new Error('No session found');
 
     const tokenData = JSON.parse(raw) as TokenData;
@@ -212,7 +218,7 @@ export async function getAccessToken(oauthKey: string, myKv: KVNamespace, oauthS
       .setExpirationTime(now + 300)
       .sign(privateJwk);
 
-    const stored = await myKv.get(`dpopKey:${kvKeyVerified}`);
+    const stored = await myKv.get(`dpopKey:${oauthKey}`);
     if (!stored) throw new Error('DPoP key not found');
     const parsed = JSON.parse(stored);
 
@@ -260,7 +266,7 @@ export async function getAccessToken(oauthKey: string, myKv: KVNamespace, oauthS
         }
 
         const newTokenData: TokenData = await res.json();
-        await myKv.put("session:" + kvKeyVerified, JSON.stringify(newTokenData));
+        await myKv.put("session:" + oauthKey, JSON.stringify(newTokenData));
         return newTokenData;
       }
 

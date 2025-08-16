@@ -66,10 +66,12 @@ export function AuthenticationTitle() {
             });
 
             const host = new URL(origin).host;
-            let apiHost = 'api.skyblur.uk'
-            if (host?.endsWith('usounds.work')) {
-                apiHost = 'skyblurapi.usounds.work'
-            }
+        let apiHost = 'api.skyblur.uk'
+        if (host?.endsWith('usounds.work')) {
+          apiHost = 'skyblurapi.usounds.work'
+        }else if (host?.startsWith('preview')) {
+          apiHost = 'preview-api.skyblur.uk'
+        }
 
             const redirectUrl = `https://${apiHost}/oauth/login?${params.toString()}`;
             console.log("Redirect URL:", redirectUrl);

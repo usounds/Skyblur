@@ -10,6 +10,7 @@ import { handle as xrpcProxy } from "@/api/xrpcProxy"
 import { handle as getCurrectUser } from "@/api/getCurrectUser"
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { setSignedCookie } from 'hono/cookie'
 
 const app = new Hono<{ Bindings: MyEnv }>()
 
@@ -21,9 +22,10 @@ interface MyEnv {
 }
 
 app.options('*', (c) => {
-  c.header('Access-Control-Allow-Origin', "*");
+  c.header('Access-Control-Allow-Origin',  `https://${c.env.APPVIEW_HOST}`);
   c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  c.header('Access-Control-Allow-Credentials', 'true'); // ← 忘れずに
   return c.text(''); // OPTIONSリクエストに対する空のレスポンス
 });
 
@@ -84,11 +86,13 @@ app.get('/oauth/getUserProfile', (c) => {
   return getCurrectUser(c)
 })
 
-app.all('/xrpc/:path+', (c) => {
+app.all('/xrpc/*', async (c) => {  // ← async を追加
+  console.log(c.env.APPVIEW_HOST)
   c.header('Access-Control-Allow-Origin', `https://${c.env.APPVIEW_HOST}`);
+  c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   c.header('Access-Control-Allow-Credentials', 'true');
-  return xrpcProxy(c)
 
+  return xrpcProxy(c)
 })
 
 app.get('/', (c) => {
@@ -97,6 +101,5 @@ app.get('/', (c) => {
   };
   return c.json(returnDocument)
 })
-
 
 export default app

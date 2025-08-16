@@ -497,11 +497,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     autoClose: false
                 });
 
-                const host = new URL(origin).host;
-                let apiEndpoint = 'skyblurapi.uk'
-                if (host?.endsWith('usounds.work')) {
-                    apiEndpoint = 'skyblurapi.usounds.work'
-                }
+        const host = new URL(origin).host;
+        let apiHost = 'api.skyblur.uk'
+        if (host?.endsWith('usounds.work')) {
+          apiHost = 'skyblurapi.usounds.work'
+        }else if (host?.startsWith('preview')) {
+          apiHost = 'preview-api.skyblur.uk'
+        }
 
                 const body: UkSkyblurPostEncrypt.Input = {
                     body: JSON.stringify(encBody),
@@ -510,7 +512,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 const proxyAgent = new Client({
                     handler: simpleFetchHandler({
-                        service: `https://${apiEndpoint}`,
+                        service: `https://${apiHost}`,
                     })
                 })
 
