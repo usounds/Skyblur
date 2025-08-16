@@ -2,6 +2,8 @@
 import { AvatorDropdownMenu } from '@/components/AvatorDropdownMenu';
 import LanguageToggle from '@/components/LanguageToggle';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
+import en from "@/locales/en";
+import ja from "@/locales/ja";
 import { handleOAuth } from "@/logic/HandleOAuth";
 import { useLocaleStore } from '@/state/Locale';
 import { useModeStore } from '@/state/Mode';
@@ -9,6 +11,7 @@ import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
 
@@ -24,14 +27,36 @@ const DynamicHeader = () => {
   const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
   const [isMounted, setIsMounted] = useState(false);
   const localeString = useLocaleStore((state) => state.locale);
-  const setLocale = useLocaleStore((state) => state.setLocale);
+  const setLocaleData = useLocaleStore((state) => state.setLocaleData);
+  const [rehydrated, setRehydrated] = useState(false);
+  const searchParams = useSearchParams();
+  const langParam = searchParams.get('lang');
+  const router = useRouter();
+
   let ignore = false
 
   useEffect(() => {
-    if (localeString) {
-      setLocale(localeString);
+    if (locale !== null) {
+      setRehydrated(true);
     }
-  }, [localeString, setLocale]);
+  }, [locale]);
+
+  useEffect(() => {
+    if (!rehydrated) return; // rehydration 待ち
+
+    console.log(langParam)
+
+    if (!langParam) {
+      const currentUrl = window.location.pathname;
+      router.replace(`${currentUrl}?lang=${localeString || 'ja'}`);
+      return;
+    }
+
+    if (langParam === 'en') setLocaleData(en);
+    else setLocaleData(ja);
+  }, [langParam, router, rehydrated, localeString]);
+
+
   useEffect(() => {
     if (ignore) {
       console.log("useEffect duplicate call")

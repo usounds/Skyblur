@@ -1,15 +1,18 @@
+'use client';
 import { Divider } from '@mantine/core';
 import Link from 'next/link';
-import DynamicHeader from './DynamicHeader';
+import dynamic from 'next/dynamic';
+
+// SSRを無効にしてクライアントでのみロード
+const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false });
 
 const Header = () => {
-
   return (
     <>
       <div
         className="flex flex-wrap w-full text-sm h-11 overflow-hidden items-center"
         style={{
-          minHeight: '50px', // h-11相当（44px）
+          minHeight: '50px',
           overflow: 'hidden',
         }}
       >
@@ -22,7 +25,6 @@ const Header = () => {
       </div>
       <Divider my={0} style={{ width: '100%' }} />
     </>
-
   );
 };
 
