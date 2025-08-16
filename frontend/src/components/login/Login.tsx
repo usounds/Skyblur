@@ -8,7 +8,7 @@ import {
     TextInput
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
 import LanguageSelect from "../LanguageSelect";
 
@@ -146,12 +146,15 @@ export function AuthenticationTitle() {
 
     }
 
+    useEffect(() => {
+        if (!handle) setHandle(localStorage.getItem('oauth.handle') || '');
+    }, [handle]);
 
     return (
         <Container size={320} >
             <Paper withBorder shadow="sm" p={22} mt={30} radius="md">
                 <TextInput
-                    label="Handle"
+                    label={locale.Login_HandleCaption}
                     placeholder="alice.bsky.social"
                     required
                     radius="md"

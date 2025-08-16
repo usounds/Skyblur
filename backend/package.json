@@ -10,13 +10,13 @@
     "did-jwt": "^8.0.17",
     "did-resolver": "^4.1.0",
     "dpop": "^2.1.1",
-    "hono": "^4.7.4",
+    "hono": "^4.9.2",
     "jose": "^6.0.12",
     "web-did-resolver": "^2.0.30"
   },
   "devDependencies": {
     "@atcute/lex-cli": "^1.1.2",
-    "@cloudflare/workers-types": "^4.20250812.0",
-    "wrangler": "^4.28.1"
+    "@cloudflare/workers-types": "^4.20250816.0",
+    "wrangler": "^4.30.0"
   }
 }

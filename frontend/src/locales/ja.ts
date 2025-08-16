@@ -27,6 +27,7 @@ const messages = {
     Login_NotDomain: "alice.bsky.socialのように「.bsky.social」を付与してください",
     Login_WithAt: "ハンドルに@は不要です",
     Login_BackOperation: "認証画面で戻るが使用されました",
+    Login_HandleCaption: "ハンドル",
     CreatePost_Fixed: "[全文を読む]",
     CreatePost_Post: "本文",
     CreatePost_PostPlaceHolder: "本文を入力してください",
