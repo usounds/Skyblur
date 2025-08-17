@@ -5,6 +5,7 @@ import { Notifications } from "@mantine/notifications";
 import '@mantine/notifications/styles.css';
 import type { Metadata } from "next";
 import "./globals.css";
+import Script from "next/script"
 
 export const metadata: Metadata = {
   title: "Skyblur",
@@ -70,6 +71,11 @@ export default function RootLayout({
 
           </footer>
         </MantineProvider>
+        <Script
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "300d80e7a0bd450f823bfd0231dc3ce9"}'
+          strategy="afterInteractive"
+        />
       </body>
 
 
