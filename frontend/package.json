@@ -11,7 +11,7 @@
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview --ip 192.168.1.130 --port 4500",
     "deploy:preview": "sst deploy --stage preview",
-    "deploy": "osst deploy --stage production",
+    "deploy": "sst deploy --stage production",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
