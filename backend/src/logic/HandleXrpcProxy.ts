@@ -59,7 +59,9 @@ export async function fetchWithDpop<T = unknown>(
   contentType?: string
 ): Promise<T> {
   let lastLogTime = Date.now()
+  const debug = false
   function logPoint(message: string) {
+    if(!debug) return
     const now = Date.now()
     const delta = now - lastLogTime
     console.log(`${message} [+${delta}ms] `)

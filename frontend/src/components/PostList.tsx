@@ -98,9 +98,9 @@ export const PostList: React.FC<PostListProps> = ({
         console.log('useEffect')
         if (ignore) {
             console.log("useEffect duplicate call")
-            return
+            //return
         }
-        ignore = true
+        //ignore = true
         getPosts(cursor);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps

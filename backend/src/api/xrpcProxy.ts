@@ -62,11 +62,18 @@ export const handle = async (c: Context): Promise<Response> => {
             contentType,
         ) as Response
 
+        // result がすでに JSON の場合
+        const data = typeof (result as any).json === 'function'
+            ? await (result as Response).json()
+            : result
 
-    // ステータスとヘッダーを保持して返す
-    return new Response(JSON.stringify(result), {
-        status: result.status,
-    });
+
+        const hasError = data && typeof data === 'object' && 'error' in data
+
+        return new Response(JSON.stringify(data), {
+            status: hasError ? 403 : (result as Response).status || 200,
+            headers: { 'Content-Type': 'application/json' }
+        })
     } catch (e) {
         let payload: Record<string, unknown>;
         if (e instanceof Error) {
