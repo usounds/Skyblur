@@ -16,12 +16,6 @@
   // トップレベルからkv_namespacesは外してもOK
   "env": {
     "preview": {
-      "routes": [
-        {
-          "pattern": "preview.skyblur.uk",
-          "custom_domain": true
-        }
-      ],
       "observability": {
         "enabled": true,
         "head_sampling_rate": 1
@@ -40,12 +34,6 @@
       ]
     },
     "production": {
-      "routes": [
-        {
-          "pattern": "skyblur.uk",
-          "custom_domain": true
-        }
-      ],
       "observability": {
         "enabled": true,
         "head_sampling_rate": 0.05
