@@ -31,7 +31,11 @@
           "pattern": "api.skyblur.uk",
           "custom_domain": true
         }
-      ]
+      ],
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 0.05
+      },
     }
   }
 }
