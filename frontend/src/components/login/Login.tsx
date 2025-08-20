@@ -1,7 +1,9 @@
 "use client";
+import { resolveHandleViaDoH, resolveHandleViaHttp } from '@/logic/HandleDidredolver';
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata } from '@/types/ClientMetadataContext';
-import { configureOAuth, createAuthorizationUrl, resolveFromIdentity } from '@atcute/oauth-browser-client';
+import type { Did } from '@atcute/lexicons';
+import { configureOAuth, createAuthorizationUrl, IdentityMetadata, AuthorizationServerMetadata, resolveFromIdentity } from '@atcute/oauth-browser-client';
 import {
     Button,
     Container,
@@ -12,6 +14,7 @@ import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
 import LanguageSelect from "../LanguageSelect";
+
 
 export function AuthenticationTitle() {
     const [handle, setHandle] = useState("");
@@ -69,7 +72,7 @@ export function AuthenticationTitle() {
                 redirect_uri: serverMetadata.redirect_uris[0] || '',
             },
         });
-        let identity, metadata;
+        let identity:IdentityMetadata, metadata:AuthorizationServerMetadata,  did: Did | null = null;
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,
@@ -77,17 +80,49 @@ export function AuthenticationTitle() {
             loading: true,
             autoClose: false
         });
+
         try {
-            const resolved = await resolveFromIdentity(handle);
-            identity = resolved.identity;
-            metadata = resolved.metadata;
+
+            try {
+                //　HTTP 解決
+                did = await resolveHandleViaHttp(handle);
+            } catch (e) {
+                console.warn('HTTP resolve failed, trying DoH:', e);
+                try {
+                    // DoH 解決
+                    did = await resolveHandleViaDoH(handle);
+                } catch (e2) {
+                    console.error('DoH resolve failed:', e2);
+                    // 両方ダメなら通知出して終了
+                    notifications.update({
+                        id: 'login-process',
+                        title: 'Error',
+                        message: locale.Login_InvalidHandle,
+                        color: 'red',
+                        loading: false,
+                        autoClose: true,
+                        icon: <HiX />
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            // DIDからDid DocumentとPDSのOAuth Metadataを取得
+            const resolved = await resolveFromIdentity(did);
+            identity = resolved.identity
+            metadata = resolved.metadata
+
+            // rawはhandleに上書き
+            identity.raw = handle
 
         } catch (e) {
-            console.error('resolveFromIdentity error:', e);
+            // 想定外の例外キャッチ
+            console.error('resolveFromIdentity unexpected error:', e);
             notifications.update({
                 id: 'login-process',
                 title: 'Error',
-                message: locale.Login_InvalidHandle,
+                message: 'Unexpected Error:'+e,
                 color: 'red',
                 loading: false,
                 autoClose: true,
@@ -97,19 +132,6 @@ export function AuthenticationTitle() {
             return;
         }
 
-        if (!identity) {
-            notifications.update({
-                id: 'login-process',
-                title: 'Error',
-                message: locale.Login_InvalidHandle,
-                color: 'red',
-                loading: false,
-                autoClose: true
-            });
-            setIsLoading(false);
-            return;
-
-        }
 
         let host;
         if (identity.pds.host.endsWith('.bsky.network')) {
