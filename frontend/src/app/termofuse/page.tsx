@@ -32,6 +32,14 @@ export default function Home() {
           </div>
 
           <div className="container px-6 pt-4 pb-10 mx-auto">
+            <h2 className="text-2xl font-semibold capitalize lg:text-3xl">外部提供ツールについて</h2>
+            <p className="mt-4 xl:mt-6">
+              当サイトは下記のサービスを利用しております。
+              <li><a href='https://developers.cloudflare.com/1.1.1.1/privacy/cloudflare-resolver-firefox/'>Cloudflare Resolver for Firefox</a></li>
+            </p>
+          </div>
+
+          <div className="container px-6 pt-4 pb-10 mx-auto">
             <h2 className="text-2xl font-semibold capitalize lg:text-3xl">利用規約</h2>
             <p className="mt-4 xl:mt-6">
               投稿はすべてBlueskyのPDSに保存されます。削除を希望される場合は、ご自身で本サイトの削除機能を使用してください。現在のBlueskyでは、他人のPDSの情報は他人から削除することはできません。どこからかクレームが来た場合は速やかにご自身にて削除をお願いします。また、BlueskyのPDSの情報は全て公開情報となりますので、Skyblurを何かを隠匿する目的では使用できません。
@@ -44,6 +52,13 @@ export default function Home() {
             </p>
             <p className="mt-4 xl:mt-6">
               個人運営のため、急にサービスを停止する場合があります。また、不具合等については可能な限り対応を検討しますが、お約束をするものではありません。
+            </p>
+          </div>
+
+          <div className="container px-6 pt-4 pb-10 mx-auto">
+            <h2 className="text-2xl font-semibold capitalize lg:text-3xl">改訂履歴</h2>
+            <p className="mt-4 xl:mt-6">
+              2025/08/21 Cloudflare Resolver for Firefoxの利用を追記しました
             </p>
           </div>
 
