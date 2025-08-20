@@ -33,11 +33,12 @@ export default function Home() {
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">外部サービスについて</h2>
-          <div className="mt-4 xl:mt-6">
-            <p className='mb-1'>当サイトは下記の外部サービスを利用しております。また、所属しているPDSへの通信が発生します。</p>
+          <div className="mt-4 xl:mt-6 ml-2">
+            <p className='mb-1'>当サイトは下記の外部サービスを利用しているため、各サービスへの通信が発生します。加えて利用者のPDSへの通信が発生します。</p>
             <li className='mb-1'><a href='https://developers.cloudflare.com/1.1.1.1/privacy/cloudflare-resolver-firefox/' target="_blank">Cloudflare Resolver for Firefox</a></li>
             <li className='mb-1'><a href='https://plc.directory/' target="_blank">DID PLC Directory</a></li>
             <li className='mb-1'><a href='https://public.api.bsky.app/' target="_blank">Bluesky API</a></li>
+            <li className='mb-1'><a href='https://constellation.microcosm.blue/' target="_blank">constellation</a></li>
           </div>
         </div>
 
