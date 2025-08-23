@@ -61,7 +61,7 @@ export default function Home() {
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">改訂履歴</h2>
           <p className="mt-4 xl:mt-6">
-            2025/08/21 Cloudflare Resolver for Firefoxの利用を追記しました
+            2025/08/21 外部サービスについて追記しました
           </p>
         </div>
 
