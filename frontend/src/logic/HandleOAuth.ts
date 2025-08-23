@@ -1,8 +1,8 @@
 "use client"
+import en from "@/locales/en";
 import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
 import { AppBskyActorDefs } from '@atcute/bluesky';
-import { Client, simpleFetchHandler } from '@atcute/client';
-import en from "@/locales/en";
+import { Client } from '@atcute/client';
 import { ClientMetadata, OAuthUserAgent, configureOAuth, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
 
 export async function handleOAuth(
