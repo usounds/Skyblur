@@ -54,7 +54,7 @@ const DynamicHeader = () => {
 
     if (langParam === 'en') setLocaleData(en);
     else setLocaleData(ja);
-  }, [langParam, router, rehydrated, localeString]);
+  }, [langParam, router, rehydrated, localeString, setLocaleData]);
 
 
   useEffect(() => {
