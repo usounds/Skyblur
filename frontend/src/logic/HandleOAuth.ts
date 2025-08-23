@@ -51,12 +51,8 @@ export async function handleOAuth(
       const endPoint = await fetchServiceEndpointWithCache(agent.sub, true)
       setServiceUrl(endPoint || '')
       console.log(`${agent.sub} was successfully authenticated from ${endPoint}.`)
-      const publicAgent = new Client({
-        handler: simpleFetchHandler({
-          service: 'https://public.api.bsky.app',
-        }),
-      })
-      const userProfile = await publicAgent.get(`app.bsky.actor.getProfile`, {
+
+      const userProfile = await rpc.get(`app.bsky.actor.getProfile`, {
         params: {
           actor: agent.sub,
         },
@@ -94,12 +90,7 @@ export async function handleOAuth(
       const endPoint = await fetchServiceEndpointWithCache(agent.sub, false)
       setServiceUrl(endPoint || '')
       console.log(`${agent.sub} was restored (last active session) from ${endPoint}.`)
-      const publicAgent = new Client({
-        handler: simpleFetchHandler({
-          service: 'https://public.api.bsky.app',
-        }),
-      })
-      const userProfile = await publicAgent.get(`app.bsky.actor.getProfile`, {
+      const userProfile = await rpc.get(`app.bsky.actor.getProfile`, {
         params: {
           actor: agent.sub,
         },
