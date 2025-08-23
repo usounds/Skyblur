@@ -83,10 +83,8 @@ export function AvatorDropdownMenu() {
             {(userProf && agent) ?
                 <Menu.Dropdown>
                     <Menu.Label>User</Menu.Label>
-                    <Menu.Item>
-                        <span style={{color: 'gray' }}>
-                            @{userProf.handle}
-                        </span>
+                    <Menu.Item leftSection="@" disabled={true}>
+                        {userProf.handle}
                     </Menu.Item>
                     <Menu.Label>Menu</Menu.Label>
                     <Menu.Item leftSection={<IconSettings size={18} />} onClick={handleSettings}>
@@ -97,7 +95,7 @@ export function AvatorDropdownMenu() {
                         {locale.Menu_Logout}
                     </Menu.Item>
                 </Menu.Dropdown>
-                : 
+                :
                 <Menu.Dropdown>
                     <Menu.Item leftSection={<CiLogin size={18} />} onClick={login} >
                         {locale.Login_Login}
