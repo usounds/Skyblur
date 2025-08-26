@@ -911,7 +911,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                             </Card>
                                         }
                                         {!replyPost &&
-                                            <ReplyList handleSetPost={handleSetReplyPost} />
+                                            <ReplyList handleSetPost={handleSetReplyPost} did={did}/>
                                         }
                                     </>
                                 }
