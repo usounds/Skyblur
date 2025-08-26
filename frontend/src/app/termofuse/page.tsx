@@ -48,6 +48,12 @@ export default function Home() {
             投稿はすべてBlueskyのPDSに保存されます。削除を希望される場合は、ご自身で本サイトの削除機能を使用してください。現在のBlueskyでは、他人のPDSの情報は他人から削除することはできません。どこからかクレームが来た場合は速やかにご自身にて削除をお願いします。また、BlueskyのPDSの情報は全て公開情報となりますので、Skyblurを何かを隠匿する目的では使用できません。
           </p>
           <p className="mt-4 xl:mt-6">
+            記載内容の著作権および投稿内容から発生しうるあらゆる責任は、一切の責任を利用者が負うものとし、運営者は全ての責任を負いません。
+          </p>
+          <p className="mt-4 xl:mt-6">
+            本サイトは「伏せ字」を使った投稿や長文を投稿する目的でのみ使用できます。利用者間のやり取りの目的での使用は禁止とし、抵触する場合はSkyblurの利用できる機能について運営者の判断で制限を実施します。
+          </p>
+          <p className="mt-4 xl:mt-6">
             それ以外はBluesky、または、PDSの利用規約に準じます。
           </p>
           <p className="mt-4 xl:mt-6">
@@ -60,6 +66,9 @@ export default function Home() {
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">改訂履歴</h2>
+          <p className="mt-4 xl:mt-6">
+            2025/08/28 利用規約に著作権と責任を明記し、チャットツールとしての利用を禁止するようにしました
+          </p>
           <p className="mt-4 xl:mt-6">
             2025/08/21 外部サービスについて追記しました
           </p>
