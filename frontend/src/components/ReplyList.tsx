@@ -10,10 +10,12 @@ import { FaReply } from "react-icons/fa";
 
 type ReplyListProps = {
     handleSetPost: (input: PostView) => void;
+    did: string;
 };
 
 export const ReplyList: React.FC<ReplyListProps> = ({
-    handleSetPost
+    handleSetPost,
+    did
 }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentCursor, setCursor] = useState("");
@@ -30,6 +32,13 @@ export const ReplyList: React.FC<ReplyListProps> = ({
         setCursor('')
     };
 
+    const filterByRootAuthor = (posts: PostView[], did: string): PostView[] => {
+        return posts.filter(post => {
+            const rootUri = post.record.reply?.root.uri
+            return !rootUri || rootUri?.startsWith(`at://${did}`)
+        })
+    }
+
     const getPosts = async () => {
         if (!agent) return
         setIsLoading(true)
@@ -45,9 +54,11 @@ export const ReplyList: React.FC<ReplyListProps> = ({
 
         if (!result.ok) return
 
+        const filteredPosts = filterByRootAuthor(result.data.posts as PostView[], did)
+
         setCursor(result.data.cursor || "")
 
-        setPostList(result.data.posts as PostView[])
+        setPostList(filteredPosts as PostView[])
         setIsLoading(false)
     }
 
@@ -70,10 +81,11 @@ export const ReplyList: React.FC<ReplyListProps> = ({
         });
 
         if (!result.ok) return
+        const filteredPosts = filterByRootAuthor(result.data.posts as PostView[], did)
 
         setCursor(result.data.cursor || "")
 
-        addPostsToPostList(result.data.posts as PostView[])
+        addPostsToPostList(filteredPosts as PostView[])
         setIsLoading(false)
 
     }
