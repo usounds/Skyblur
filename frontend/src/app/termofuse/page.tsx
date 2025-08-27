@@ -43,24 +43,40 @@ export default function Home() {
         </div>
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
+          <h2 className="text-2xl font-semibold capitalize lg:text-3xl">著作権の帰属</h2>
+          <p className="mt-4 xl:mt-6">
+            利用者が本サイトに投稿したすべてのコンテンツの著作権は、投稿者本人に帰属します。本サイトは利用者の投稿を表示するのみを行います。</p>
+        </div>
+
+        <div className="container px-6 pt-4 pb-10 mx-auto">
+          <h2 className="text-2xl font-semibold capitalize lg:text-3xl">責任の所在</h2>
+          <p className="mt-4 xl:mt-6">
+            利用者は、投稿に関する全ての法的責任を負い、何らかの問題が発生した場合は利用者は自らの費用と責任で問題を解決するものとします。</p>
+        </div>
+
+        <div className="container px-6 pt-4 pb-10 mx-auto">
+          <h2 className="text-2xl font-semibold capitalize lg:text-3xl">禁止事項</h2>
+          <p className="mt-4 xl:mt-6">
+            利用者が禁止行為を行なったことを本サイトが確認した場合、当サービスは利用者に対して、ログイン不可、新規投稿の停止、投稿の非表示化などの利用停止を行うことがあります。</p>
+        </div>
+
+        <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">利用規約</h2>
           <p className="mt-4 xl:mt-6">
             投稿はすべてBlueskyのPDSに保存されます。削除を希望される場合は、ご自身で本サイトの削除機能を使用してください。現在のBlueskyでは、他人のPDSの情報は他人から削除することはできません。どこからかクレームが来た場合は速やかにご自身にて削除をお願いします。また、BlueskyのPDSの情報は全て公開情報となりますので、Skyblurを何かを隠匿する目的では使用できません。
           </p>
+
           <p className="mt-4 xl:mt-6">
-            記載内容の著作権および投稿内容から発生しうるあらゆる責任は、一切の責任を利用者が負うものとし、運営者は全ての責任を負いません。
-          </p>
-          <p className="mt-4 xl:mt-6">
-            本サイトは「伏せ字」を使った投稿や長文を投稿する目的でのみ使用できます。利用者間のやり取りの目的での使用は禁止とし、抵触する場合はSkyblurの利用できる機能について運営者の判断で制限を実施します。
-          </p>
-          <p className="mt-4 xl:mt-6">
-            それ以外はBluesky、または、PDSの利用規約に準じます。
+            本サイトは「伏せ字」を使った投稿や長文を投稿する目的でのみ使用できます。利用者間のやり取りの目的での使用は禁止とします。
           </p>
           <p className="mt-4 xl:mt-6">
             運営者の判断で投稿を本サイトから非表示にする場合がありますが、データは全てPDSに保存されたままとなります。その場合はご自身でデータを救出してください。（その場合であっても一切のサポートは致しません）
           </p>
           <p className="mt-4 xl:mt-6">
             個人運営のため、急にサービスを停止する場合があります。また、不具合等については可能な限り対応を検討しますが、お約束をするものではありません。
+          </p>
+          <p className="mt-4 xl:mt-6">
+            それ以外はBluesky、または、PDSの利用規約に準じます。
           </p>
         </div>
 
