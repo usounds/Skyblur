@@ -38,6 +38,17 @@ export function AuthenticationTitle() {
             return
         }
 
+        if (/\s/.test(handle)) {
+            notifications.show({
+                title: 'Error',
+                message: locale.Login_CannotUseWhiteSpace,
+                color: 'red',
+                icon: <HiX />
+            });
+            setIsLoading(false);
+            return;
+        }
+
         if (!handle.includes('.')) {
             notifications.show({
                 title: 'Error',
@@ -72,7 +83,7 @@ export function AuthenticationTitle() {
                 redirect_uri: serverMetadata.redirect_uris[0] || '',
             },
         });
-        let identity:IdentityMetadata, metadata:AuthorizationServerMetadata,  did: Did | null = null;
+        let identity: IdentityMetadata, metadata: AuthorizationServerMetadata, did: Did | null = null;
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,
@@ -122,7 +133,7 @@ export function AuthenticationTitle() {
             notifications.update({
                 id: 'login-process',
                 title: 'Error',
-                message: 'Unexpected Error:'+e,
+                message: 'Unexpected Error:' + e,
                 color: 'red',
                 loading: false,
                 autoClose: true,
