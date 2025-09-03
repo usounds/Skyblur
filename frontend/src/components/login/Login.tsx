@@ -97,7 +97,7 @@ export function AuthenticationTitle() {
                     console.error('DoH resolve failed:', e2);
 
                     // app.bsky.actor.getProfileからDID解決
-                    let userProfileResponse = await publicAgent.get('app.bsky.actor.getProfile', {
+                    const userProfileResponse = await publicAgent.get('app.bsky.actor.getProfile', {
                         params: { actor: handle as ActorIdentifier },
                     })
 
