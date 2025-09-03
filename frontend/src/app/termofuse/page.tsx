@@ -33,12 +33,12 @@ export default function Home() {
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">外部サービスについて</h2>
-          <div className="mt-4 xl:mt-6 ml-2">
+          <div className="mt-4 xl:mt-6">
             <p className='mb-1'>当サイトは下記の外部サービスを利用しているため、各サービスへの通信が発生します。加えて利用者のPDSへの通信が発生します。</p>
-            <li className='mb-1'><a href='https://developers.cloudflare.com/1.1.1.1/privacy/cloudflare-resolver-firefox/' target="_blank">Cloudflare Resolver for Firefox</a></li>
-            <li className='mb-1'><a href='https://plc.directory/' target="_blank">DID PLC Directory</a></li>
-            <li className='mb-1'><a href='https://public.api.bsky.app/' target="_blank">Bluesky API</a></li>
-            <li className='mb-1'><a href='https://constellation.microcosm.blue/' target="_blank">constellation</a></li>
+            <li className='mb-1 ml-2'><a href='https://developers.cloudflare.com/1.1.1.1/privacy/cloudflare-resolver-firefox/' target="_blank">Cloudflare Resolver for Firefox</a></li>
+            <li className='mb-1 ml-2'><a href='https://plc.directory/' target="_blank">DID PLC Directory</a></li>
+            <li className='mb-1 ml-2'><a href='https://public.api.bsky.app/' target="_blank">Bluesky API</a></li>
+            <li className='mb-1 ml-2'><a href='https://constellation.microcosm.blue/' target="_blank">constellation</a></li>
           </div>
         </div>
 
@@ -56,21 +56,16 @@ export default function Home() {
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">禁止事項</h2>
-          <p className="mt-4 xl:mt-6">
-            利用者が禁止行為を行なったことを本サイトが確認した場合、当サービスは利用者に対して、ログイン不可、新規投稿の停止、投稿の非表示化などの利用停止を行うことがあります。</p>
+          <p className="mt-4 xl:mt-6 mb-2"> 利用者が禁止行為を行なったことを本サイトが確認した場合、当サービスは利用者に対して、ログイン不可、新規投稿の停止、投稿の非表示化などの利用停止を行うことがあります。</p>
+          <li className='mb-1 ml-2'>第三者の権利を侵害した場合</li>
+          <li className='mb-1 ml-2'>公序良俗に反する投稿を行なった場合</li>
+          <li className='mb-1 ml-2'>第三者に後悔する伏字や長文の投稿を主目的とせず、利用者間でのやり取りを目的とした投稿を行なった場合</li>
         </div>
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">利用規約</h2>
           <p className="mt-4 xl:mt-6">
-            投稿はすべてBlueskyのPDSに保存されます。削除を希望される場合は、ご自身で本サイトの削除機能を使用してください。現在のBlueskyでは、他人のPDSの情報は他人から削除することはできません。どこからかクレームが来た場合は速やかにご自身にて削除をお願いします。また、BlueskyのPDSの情報は全て公開情報となりますので、Skyblurを何かを隠匿する目的では使用できません。
-          </p>
-
-          <p className="mt-4 xl:mt-6">
-            本サイトは「伏せ字」を使った投稿や長文を投稿する目的でのみ使用できます。利用者間のやり取りの目的での使用は禁止とします。
-          </p>
-          <p className="mt-4 xl:mt-6">
-            運営者の判断で投稿を本サイトから非表示にする場合がありますが、データは全てPDSに保存されたままとなります。その場合はご自身でデータを救出してください。（その場合であっても一切のサポートは致しません）
+            投稿はすべてBlueskyのPDSに保存されます。削除を希望される場合は、ご自身で本サイトの削除機能を使用してください。BlueskyのPDSの情報は全て公開情報となりますので、Skyblurを何かを隠匿する目的では使用できません。
           </p>
           <p className="mt-4 xl:mt-6">
             個人運営のため、急にサービスを停止する場合があります。また、不具合等については可能な限り対応を検討しますが、お約束をするものではありません。
