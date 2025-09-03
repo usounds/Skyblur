@@ -3,25 +3,28 @@ import { isDid } from '@atcute/lexicons/syntax';
 import type { Did } from '@atcute/lexicons';
 
 export class ResolverError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResolverError';
-  }
+	constructor(message: string) {
+		super(message);
+		this.name = 'ResolverError';
+	}
 }
 
 export const resolveHandleViaHttp = async (handle: string): Promise<Did> => {
-	const url = new URL('/.well-known/atproto-did', `https://${handle}`);
+	const host = new URL(origin).host;
+	let apiHost = 'api.skyblur.uk'
+	if (host?.endsWith('usounds.work')) {
+		apiHost = 'skyblurapi.usounds.work'
+	}
+	const res = await fetch(`https://${apiHost}/xrpc/uk.skyblur.admin.resolveHandle?handle=${encodeURIComponent(handle)}`);
 
-	const response = await fetch(url, { redirect: 'error' });
-	if (!response.ok) {
+	if (!res.ok) {
 		throw new ResolverError(`domain is unreachable`);
 	}
 
-	const text = await response.text();
+	const data = (await res.json()) as { did: string };
 
-	const did = text.split('\n')[0]!.trim();
-	if (isDid(did)) {
-		return did;
+	if (data.did && typeof data.did === "string") {
+		return data.did as Did;
 	}
 
 	throw new ResolverError(`failed to resolve ${handle}`);
