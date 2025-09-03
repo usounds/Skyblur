@@ -14,12 +14,14 @@ import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from "react";
 import { HiX } from "react-icons/hi";
 import LanguageSelect from "../LanguageSelect";
-
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { ActorIdentifier } from '@atcute/lexicons/syntax';
 
 export function AuthenticationTitle() {
     const [handle, setHandle] = useState("");
     const locale = useLocaleStore((state) => state.localeData);
     const [isLoading, setIsLoading] = useState<boolean>(false)
+    const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
 
     function sleep(ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -72,7 +74,7 @@ export function AuthenticationTitle() {
                 redirect_uri: serverMetadata.redirect_uris[0] || '',
             },
         });
-        let identity:IdentityMetadata, metadata:AuthorizationServerMetadata,  did: Did | null = null;
+        let identity: IdentityMetadata, metadata: AuthorizationServerMetadata, did: Did | null = null;
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,
@@ -93,18 +95,29 @@ export function AuthenticationTitle() {
                     did = await resolveHandleViaDoH(handle);
                 } catch (e2) {
                     console.error('DoH resolve failed:', e2);
-                    // 両方ダメなら通知出して終了
-                    notifications.update({
-                        id: 'login-process',
-                        title: 'Error',
-                        message: locale.Login_InvalidHandle,
-                        color: 'red',
-                        loading: false,
-                        autoClose: true,
-                        icon: <HiX />
-                    });
-                    setIsLoading(false);
-                    return;
+
+                    // app.bsky.actor.getProfileからDID解決
+                    let userProfileResponse = await publicAgent.get('app.bsky.actor.getProfile', {
+                        params: { actor: handle as ActorIdentifier },
+                    })
+
+                    if (!userProfileResponse.ok) {
+                        // 両方ダメなら通知出して終了
+                        notifications.update({
+                            id: 'login-process',
+                            title: 'Error',
+                            message: locale.Login_InvalidHandle,
+                            color: 'red',
+                            loading: false,
+                            autoClose: true,
+                            icon: <HiX />
+                        });
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    did = userProfileResponse.data.did
+
                 }
             }
 
@@ -122,7 +135,7 @@ export function AuthenticationTitle() {
             notifications.update({
                 id: 'login-process',
                 title: 'Error',
-                message: 'Unexpected Error:'+e,
+                message: 'Unexpected Error:' + e,
                 color: 'red',
                 loading: false,
                 autoClose: true,
