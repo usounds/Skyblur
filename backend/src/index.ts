@@ -2,6 +2,7 @@ import { handle as decryptByCidHandle } from "@/api/decryptByCid"
 import { handle as getDidDoc } from "@/api/DidDocCache"
 import { handle as ecnryptHandle } from "@/api/ecnrypt"
 import { handle as getPostHandler } from "@/api/getPost"
+import { handle as resolveHandle } from "@/api/resolveHandle"
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
@@ -41,6 +42,10 @@ app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
   }
 
   return getDidDoc(c)
+})
+
+app.get('/xrpc/uk.skyblur.admin.resolveHandle', (c) => {
+  return resolveHandle(c)
 })
 
 app.get('/', (c) => {
