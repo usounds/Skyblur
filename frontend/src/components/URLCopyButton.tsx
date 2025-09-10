@@ -3,8 +3,8 @@ import { useLocaleStore } from "@/state/Locale";
 import Link from 'next/link';
 import { Button } from '@mantine/core';
 import React from 'react';
-import { FaRegWindowRestore } from "react-icons/fa6";
-import { LuClipboardCheck } from "react-icons/lu";
+import { SquareArrowOutUpRight } from 'lucide-react';
+import { Clipboard } from 'lucide-react';
 
 interface URLCopyButtonProps {
     url: string;
@@ -24,7 +24,7 @@ const URLCopyButton: React.FC<URLCopyButtonProps> = ({ url }) => {
                     <Button
                         variant="outline"
                         color="gray"
-                        leftSection={<FaRegWindowRestore size={14} />}
+                        leftSection={<SquareArrowOutUpRight size={14} />}
 
                     >
                         {locale.Menu_GoSite}
@@ -33,7 +33,7 @@ const URLCopyButton: React.FC<URLCopyButtonProps> = ({ url }) => {
                 <Button
                     variant="outline"
                     color="gray"
-                    leftSection={<LuClipboardCheck size={14} />}
+                    leftSection={<Clipboard size={14} />}
                     onClick={handleCopy}
                 >
                     {locale.Menu_URLCopy}
