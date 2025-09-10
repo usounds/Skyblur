@@ -180,7 +180,7 @@ export function AuthenticationTitle() {
             authUrl = await createAuthorizationUrl({
                 metadata: metadata,
                 identity: identity,
-                scope: 'atproto transition:generic',
+                scope: "atproto include:uk.skyblur.permissionSet rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview repo:app.bsky.feed.post?action=create&action=delete repo:app.bsky.feed.generator?action=create&action=update&action=delete rpc:app.bsky.feed.getFeedGenerator?aud=*"
             });
         } catch (e) {
             console.error('createAuthorizationUrl error:', e);
