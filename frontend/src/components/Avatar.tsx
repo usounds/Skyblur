@@ -2,7 +2,7 @@
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import Image from 'next/image';
 import Link from 'next/link';
-import { RxAvatar } from "react-icons/rx";
+import { Users } from 'lucide-react';
 
 type AvatarProp = {
     userProf: AppBskyActorDefs.ProfileViewDetailed
@@ -28,7 +28,7 @@ export const Avatar: React.FC<AvatarProp> = ({
                     unoptimized
                 />
             ) : (
-                <RxAvatar size={48} />
+                <Users size={48} />
             )}
 
             <div>

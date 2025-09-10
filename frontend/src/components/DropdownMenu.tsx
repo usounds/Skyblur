@@ -7,10 +7,11 @@ import { Button, Group, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { useState } from "react";
-import { BsThreeDots } from "react-icons/bs";
-import { GrEdit } from "react-icons/gr";
-import { HiCheck, HiX } from "react-icons/hi";
-import { LuClipboardCheck, LuTrash2 } from "react-icons/lu";
+import { Ellipsis } from 'lucide-react';
+import { SquarePen } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import { ClipboardCopy } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 type DropsownMenuProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -33,7 +34,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                     title: 'Success',
                     message: locale.DeleteList_URLCopy,
                     color: 'teal',
-                    icon: <HiCheck />
+                    icon: <Check />
                 });
                 await navigator.clipboard.writeText(item.blurURL);
             } else {
@@ -104,7 +105,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                 title: 'Error',
                 message: 'Error:' + e,
                 color: 'teal',
-                icon: <HiX />,
+                icon: <X />,
                 loading: false,
                 autoClose: true
             });
@@ -118,7 +119,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
             title: 'Success',
             message: locale.DeleteList_Complete,
             color: 'teal',
-            icon: <HiCheck />,
+            icon: <Check />,
             loading: false,
             autoClose: true
         });
@@ -145,16 +146,16 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                 </Group>
             </Modal>
             <Menu.Target>
-                <BsThreeDots size={24} />
+                <Ellipsis size={24} />
             </Menu.Target>
 
             <Menu.Dropdown>
                 <Menu.Label>Menu</Menu.Label>
                 {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) || post.blur.visibility === VISIBILITY_PUBLIC || !post.blur.visibility) &&
-                    <Menu.Item leftSection={<GrEdit size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
+                    <Menu.Item leftSection={<SquarePen size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
                 }
                 <Menu.Item
-                    leftSection={<LuClipboardCheck size={18} />}
+                    leftSection={<ClipboardCopy size={18} />}
                     onClick={() => handleCopyToClipboard(post)}
                 >
                     {locale.DeleteList_CopySkylurURL}
@@ -174,7 +175,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                     {locale.DeleteList_ViewBskyPost}
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Item color='red' onClick={open} leftSection={<LuTrash2 size={18} />}>{locale.DeleteList_DeleteButton}</Menu.Item>
+                <Menu.Item color='red' onClick={open} leftSection={<Trash2 size={18} />}>{locale.DeleteList_DeleteButton}</Menu.Item>
             </Menu.Dropdown>
 
         </Menu>

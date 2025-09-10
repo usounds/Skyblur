@@ -11,8 +11,8 @@ import { Affix, Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { useEffect, useState } from "react";
-import { IoCreateOutline } from "react-icons/io5";
-import { MdArrowBack } from "react-icons/md";
+import { Pencil } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Loader } from '@mantine/core';
 
 export default function Home() {
@@ -97,7 +97,7 @@ export default function Home() {
                         </div>
 
                         <div className="flex justify-center gap-4 mb-8">
-                          <Button leftSection={<IoCreateOutline size={14} />} variant="filled" onClick={() => handleNew()}>{locale.Menu_CreatePost}</Button>
+                          <Button leftSection={<Pencil size={14} />} variant="filled" onClick={() => handleNew()}>{locale.Menu_CreatePost}</Button>
                         </div>
 
                         {(agent && serviceUrl) &&
@@ -122,7 +122,7 @@ export default function Home() {
                           <Button
                             variant="default"
                             color="gray"
-                            leftSection={<MdArrowBack />}
+                            leftSection={<ArrowLeft />}
                             onClick={() => {
                               setMode("menu");
                             }} >

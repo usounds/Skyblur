@@ -13,7 +13,7 @@ import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
-import { HiX } from "react-icons/hi";
+import { X } from 'lucide-react';
 
 const DynamicHeader = () => {
   const locale = useLocaleStore(state => state.localeData);
@@ -95,7 +95,7 @@ const DynamicHeader = () => {
             title: 'Error',
             message: message,
             color: 'red',
-            icon: <HiX />
+            icon: <X />
           });
         }
         setIsLoginProcess(false)

@@ -18,7 +18,7 @@ import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from "react";
-import { HiX } from "react-icons/hi";
+import { X } from 'lucide-react';
 
 export const PostPage = () => {
     const params = useParams();
@@ -160,7 +160,7 @@ export const PostPage = () => {
                 title: 'Error',
                 message: locale.DeleteList_DecryptRequired,
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
             return
         }
@@ -206,7 +206,7 @@ export const PostPage = () => {
             title: 'Error',
             message: locale.DeleteList_DecryptErrorMessage,
             color: 'red',
-            icon: <HiX />
+            icon: <X />
         });
         setIsDecrypting(false)
 

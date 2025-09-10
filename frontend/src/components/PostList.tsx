@@ -13,8 +13,9 @@ import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from "react";
-import { CiLock, CiUnlock } from "react-icons/ci";
-import { HiX } from "react-icons/hi";
+import { Lock } from 'lucide-react';
+import { LockOpen } from 'lucide-react';
+import { X } from 'lucide-react';
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -128,7 +129,7 @@ export const PostList: React.FC<PostListProps> = ({
                 title: 'Error',
                 message: locale.DeleteList_DecryptRequired,
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
             return
         }
@@ -138,7 +139,7 @@ export const PostList: React.FC<PostListProps> = ({
             loading: true,
             autoClose: false,
             message: locale.Post_DecryptInProgress,
-            icon: <HiX />
+            icon: <X />
         });
 
         try {
@@ -193,7 +194,7 @@ export const PostList: React.FC<PostListProps> = ({
                         title: 'Error',
                         message: locale.DeleteList_DecryptErrorMessage,
                         color: 'red',
-                        icon: <HiX />
+                        icon: <X />
                     });
                 } else {
                     const data = await response.json() as { message: string }
@@ -202,7 +203,7 @@ export const PostList: React.FC<PostListProps> = ({
                         title: 'Error',
                         message: data.message,
                         color: 'red',
-                        icon: <HiX />
+                        icon: <X />
                     });
                 }
             }
@@ -212,7 +213,7 @@ export const PostList: React.FC<PostListProps> = ({
                 title: 'Error',
                 message: 'Message:' + e,
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
         }
 
@@ -240,9 +241,9 @@ export const PostList: React.FC<PostListProps> = ({
                             bullet={
                                 item.blur?.visibility === VISIBILITY_PASSWORD && (
                                     item.isDecrypt ? (
-                                        <CiUnlock size={20} />
+                                        <LockOpen size={20} />
                                     ) : (
-                                        <CiLock size={20} />
+                                        <Lock size={20} />
                                     )
                                 )
                             }

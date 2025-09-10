@@ -6,7 +6,7 @@ import { PostView } from "@/types/types";
 import { Button, Input, Timeline, Group } from '@mantine/core';
 import { useEffect, useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
-import { FaReply } from "react-icons/fa";
+import { Reply } from 'lucide-react';
 
 type ReplyListProps = {
     handleSetPost: (input: PostView) => void;
@@ -149,7 +149,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                             </div>
 
                             <span className="inline-flex items-center gap-1">
-                                {item.record.reply && <span className="text-gray-500 mr-2"><FaReply /></span>}
+                                {item.record.reply && <span className="text-gray-500 mr-2"><Reply /></span>}
                                 {item.record.text}
                             </span>
                             <span className="flex justify-center">
@@ -157,7 +157,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
                                     onClick={() => setPost(item)}
                                     variant="outline"
                                     color="gray"
-                                    leftSection={<FaReply />}
+                                    leftSection={<Reply />}
                                     style={{ alignSelf: 'flex-start' }}
                                 >
                                     {locale.ReplyList_ReplyToThis}

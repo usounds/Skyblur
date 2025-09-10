@@ -29,11 +29,11 @@
     "dompurify": "^3.2.6",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
+    "lucide-react": "^0.543.0",
     "next": "^15.5.2",
     "react": "^19.1.1",
     "react-content-loader": "^7.1.1",
     "react-dom": "^19.1.1",
-    "react-icons": "^5.5.0",
     "react-spinners": "^0.17.0",
     "zustand": "^5.0.7"
   },

@@ -21,7 +21,7 @@ import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
 import { useEffect, useState } from "react";
-import { HiCheck, HiX } from "react-icons/hi";
+import { X , Check} from 'lucide-react';
 import type { } from '../../src/lexicon/UkSkyblur';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -221,7 +221,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     title: 'Error',
                     message: locale.CreatePost_PasswordErrorSpace,
                     color: 'red',
-                    icon: <HiX />
+                    icon: <X />
                 });
                 return
             }
@@ -545,7 +545,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             title: 'Error',
                             message: data.message,
                             color: 'red',
-                            icon: <HiX />
+                            icon: <X />
                         });
                         setIsLoading(false)
                         return
@@ -577,7 +577,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         title: 'Error',
                         message: data.message,
                         color: 'red',
-                        icon: <HiX />
+                        icon: <X />
                     });
                     setIsLoading(false)
                     return
@@ -629,7 +629,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     title: 'Success',
                     message: locale.CreatePost_Complete,
                     color: 'teal',
-                    icon: <HiCheck />
+                    icon: <Check />
                 });
                 setAppUrl(convertedUri)
                 setPostTest('')
@@ -646,7 +646,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     title: 'Error',
                     message: "Error:" + ret,
                     color: 'red',
-                    icon: <HiX />
+                    icon: <X />
                 });
 
             }
@@ -658,7 +658,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 title: 'Error',
                 message: "Error:" + e,
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
 
         }
