@@ -59,11 +59,11 @@ export default function Home() {
           <p className="mt-4 xl:mt-6 mb-2"> 利用者が禁止行為を行なったことを本サイトが確認した場合、当サービスは利用者に対して、ログイン不可、新規投稿の停止、投稿の非表示化などの利用停止を行うことがあります。</p>
           <li className='mb-1 ml-2'>第三者の権利を侵害した場合</li>
           <li className='mb-1 ml-2'>公序良俗に反する投稿を行なった場合</li>
-          <li className='mb-1 ml-2'>第三者に後悔する伏字や長文の投稿を主目的とせず、利用者間でのやり取りを目的とした投稿を行なった場合</li>
+          <li className='mb-1 ml-2'>第三者に公開する伏字や長文の投稿を主目的とせず、利用者間でのやり取りを目的とした投稿を行なった場合</li>
         </div>
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
-          <h2 className="text-2xl font-semibold capitalize lg:text-3xl">利用規約</h2>
+          <h2 className="text-2xl font-semibold capitalize lg:text-3xl">その他</h2>
           <p className="mt-4 xl:mt-6">
             投稿はすべてBlueskyのPDSに保存されます。削除を希望される場合は、ご自身で本サイトの削除機能を使用してください。BlueskyのPDSの情報は全て公開情報となりますので、Skyblurを何かを隠匿する目的では使用できません。
           </p>
@@ -71,14 +71,14 @@ export default function Home() {
             個人運営のため、急にサービスを停止する場合があります。また、不具合等については可能な限り対応を検討しますが、お約束をするものではありません。
           </p>
           <p className="mt-4 xl:mt-6">
-            それ以外はBluesky、または、PDSの利用規約に準じます。
+            SkyblurはPDSに全ての情報が保存されるため、各PDSの利用規約が適用されます。また、Blueskyの自動投稿やカスタムフィード機能については、Blueskyの利用規約が適用されます。
           </p>
         </div>
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">改訂履歴</h2>
           <p className="mt-4 xl:mt-6">
-            2025/08/28 利用規約に著作権と責任を明記し、チャットツールとしての利用を禁止するようにしました
+            2025/09/13 利用規約に著作権と責任を明記し、チャットツールとしての利用を禁止するようにしました
           </p>
           <p className="mt-4 xl:mt-6">
             2025/08/21 外部サービスについて追記しました
