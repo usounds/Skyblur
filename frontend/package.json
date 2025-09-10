@@ -16,7 +16,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
-    "@atcute/bluesky": "^3.2.1",
+    "@atcute/bluesky": "^3.2.2",
     "@atcute/client": "^4.0.3",
     "@atcute/lexicons": "^1.1.1",
     "@atcute/oauth-browser-client": "^1.0.26",
@@ -41,8 +41,8 @@
     "@atcute/lex-cli": "^1.1.2",
     "@eslint/eslintrc": "^3.3.1",
     "@types/node": "^20.19.11",
-    "@types/react": "^19.1.11",
-    "@types/react-dom": "^19.1.8",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.34.0",
