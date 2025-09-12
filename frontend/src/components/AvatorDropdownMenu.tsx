@@ -4,12 +4,11 @@ import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
 import { Avatar, Menu } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import {
-    IconSettings
-} from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { CiLogin, CiLogout } from "react-icons/ci";
-import { RxAvatar } from "react-icons/rx";
+import { LogIn } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { Settings } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 export function AvatorDropdownMenu() {
     const agent = useXrpcAgentStore(state => state.agent);
@@ -71,35 +70,33 @@ export function AvatorDropdownMenu() {
             <Menu.Target>
                 {(userProf && agent) ? (
                     userProf.avatar ? (
-                        <Avatar src={userProf.avatar} radius="xl" size={30} />
+                        <Avatar src={userProf.avatar} radius="xl" size={20} />
                     ) : (
-                        <RxAvatar size={30} />
+                        <Users size={20} />
                     )
                 ) : (
-                    <RxAvatar size={30} />
+                    <Users size={20} />
                 )}
             </Menu.Target>
 
             {(userProf && agent) ?
                 <Menu.Dropdown>
                     <Menu.Label>User</Menu.Label>
-                    <Menu.Item>
-                        <span style={{color: 'gray' }}>
-                            @{userProf.handle}
-                        </span>
+                    <Menu.Item leftSection="@" disabled={true}>
+                        {userProf.handle}
                     </Menu.Item>
                     <Menu.Label>Menu</Menu.Label>
-                    <Menu.Item leftSection={<IconSettings size={18} />} onClick={handleSettings}>
+                    <Menu.Item leftSection={<Settings size={18} />} onClick={handleSettings}>
                         {locale.Menu_Settings}
                     </Menu.Item>
                     <Menu.Divider />
-                    <Menu.Item leftSection={<CiLogout size={18} />} onClick={logout} color='red'>
+                    <Menu.Item leftSection={<LogOut size={18} />} onClick={logout} color='red'>
                         {locale.Menu_Logout}
                     </Menu.Item>
                 </Menu.Dropdown>
-                : 
+                :
                 <Menu.Dropdown>
-                    <Menu.Item leftSection={<CiLogin size={18} />} onClick={login} >
+                    <Menu.Item leftSection={<LogIn size={18} />} onClick={login} >
                         {locale.Login_Login}
                     </Menu.Item>
                 </Menu.Dropdown>

@@ -3,8 +3,11 @@ import { transformUrl } from "@/logic/HandleBluesky";
 import { useLocaleStore } from "@/state/Locale";
 import { useViewerStore } from "@/state/Viewer";
 import { useEffect, useState } from "react";
-import { BiCommentCheck, BiHeart, BiRepost } from "react-icons/bi";
+//import { BiCommentCheck, BiHeart, BiRepost } from "react-icons/bi";
+import { MessageSquareText } from 'lucide-react';
 import BeatLoader from "react-spinners/BeatLoader";
+import { Repeat2 } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
 interface Props {
   atUriPost: string;
@@ -86,19 +89,19 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
         <>
           {intent !== null && intent > 0 && (
             <div className="flex items-center gap-0.5">
-              <BiCommentCheck size={18} />
+              <MessageSquareText size={18} />
               <span>{intent}</span>
             </div>
           )}
           {repostCount !== null && quoteCount !== null && repostCount + quoteCount > 0 && (
             <div className="flex items-center gap-0.5">
-              <BiRepost size={20} />
+              <Repeat2 size={20} />
               <span>{repostCount + quoteCount}</span>
             </div>
           )}
           {likeCount !== null && likeCount > 0 && (
             <div className="flex items-center gap-0.5">
-              <BiHeart size={20} />
+              <Heart size={20} />
               <span>{likeCount}</span>
             </div>
           )}
