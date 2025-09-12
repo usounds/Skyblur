@@ -72,7 +72,7 @@ export function AvatorDropdownMenu() {
                     userProf.avatar ? (
                         <Avatar src={userProf.avatar} radius="xl" size={20} />
                     ) : (
-                        <Users size={30} />
+                        <Users size={20} />
                     )
                 ) : (
                     <Users size={20} />
