@@ -2,7 +2,7 @@
 import { Locales, useLocaleStore } from "@/state/Locale";
 import { ActionIcon } from '@mantine/core';
 import React from "react";
-import { IoLanguageSharp } from "react-icons/io5";
+import { Languages } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const LanguageToggle: React.FC = () => {
@@ -40,7 +40,7 @@ const LanguageToggle: React.FC = () => {
             size="lg"
             aria-label="Toggle color scheme"
         >
-            <IoLanguageSharp size={20} />
+            <Languages size={20} />
         </ActionIcon>
     )
 };

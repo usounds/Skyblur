@@ -11,8 +11,8 @@ import Image from "next/image";
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
-import { HiCheck } from "react-icons/hi";
-import { MdArrowBack } from "react-icons/md";
+import { Check } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function Settings() {
   const agent = useXrpcAgentStore((state) => state.agent);
@@ -285,7 +285,7 @@ export default function Settings() {
         title: 'Success',
         message: locale.Pref_SaveCompleted,
         color: 'teal',
-        icon: <HiCheck />
+        icon: <Check />
       });
       router.push('/')
     } catch (e) {
@@ -415,7 +415,7 @@ export default function Settings() {
               <Button
                 variant="default"
                 color="gray"
-                leftSection={<MdArrowBack />}
+                leftSection={<ArrowLeft />}
               >
                 {locale.Menu_Back}
               </Button>

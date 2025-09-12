@@ -28,6 +28,7 @@ const messages = {
     Login_WithAt: "ハンドルに@は不要です",
     Login_BackOperation: "認証画面で戻るが使用されました",
     Login_HandleCaption: "ハンドル",
+    Login_CannotUseWhiteSpace: "ハンドルに空白（スペース・改行・タブなど）は使用できません。",
     CreatePost_Fixed: "[全文を読む]",
     CreatePost_Post: "本文",
     CreatePost_PostPlaceHolder: "本文を入力してください",

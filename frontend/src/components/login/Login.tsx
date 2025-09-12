@@ -12,7 +12,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from "react";
-import { HiX } from "react-icons/hi";
+import { X } from 'lucide-react';
 import LanguageSelect from "../LanguageSelect";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
@@ -34,10 +34,21 @@ export function AuthenticationTitle() {
                 title: 'Error',
                 message: locale.Login_InputHandle,
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
             setIsLoading(false)
             return
+        }
+
+        if (/\s/.test(handle)) {
+            notifications.show({
+                title: 'Error',
+                message: locale.Login_CannotUseWhiteSpace,
+                color: 'red',
+                icon: <X />
+            });
+            setIsLoading(false);
+            return;
         }
 
         if (!handle.includes('.')) {
@@ -45,7 +56,7 @@ export function AuthenticationTitle() {
                 title: 'Error',
                 message: locale.Login_NotDomain,
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
             setIsLoading(false)
             return
@@ -55,7 +66,7 @@ export function AuthenticationTitle() {
                 title: 'Error',
                 message: locale.Login_WithAt,
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
             setIsLoading(false)
             return
@@ -110,7 +121,7 @@ export function AuthenticationTitle() {
                             color: 'red',
                             loading: false,
                             autoClose: true,
-                            icon: <HiX />
+                            icon: <X />
                         });
                         setIsLoading(false);
                         return;
@@ -139,7 +150,7 @@ export function AuthenticationTitle() {
                 color: 'red',
                 loading: false,
                 autoClose: true,
-                icon: <HiX />
+                icon: <X />
             });
             setIsLoading(false);
             return;
@@ -169,7 +180,7 @@ export function AuthenticationTitle() {
             authUrl = await createAuthorizationUrl({
                 metadata: metadata,
                 identity: identity,
-                scope: 'atproto transition:generic',
+                scope: "atproto include:uk.skyblur.permissionSet rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview repo:app.bsky.feed.post?action=create&action=delete repo:app.bsky.feed.generator?action=create&action=update&action=delete rpc:app.bsky.feed.getFeedGenerator?aud=*"
             });
         } catch (e) {
             console.error('createAuthorizationUrl error:', e);
@@ -178,7 +189,7 @@ export function AuthenticationTitle() {
                 title: 'Error',
                 message: 'Failed to create authorization URL',
                 color: 'red',
-                icon: <HiX />
+                icon: <X />
             });
             setIsLoading(false);
             return;

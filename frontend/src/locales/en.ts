@@ -28,6 +28,7 @@ const messages = {
     Login_WithAt: "Please do not include the \"@\" in the handle.",
     Login_BackOperation: "User navigated back from the authentication screen",
     Login_HandleCaption: "Handle",
+    Login_CannotUseWhiteSpace: "Handles cannot contain whitespace (spaces, line breaks, or tabs).",
     CreatePost_Fixed: "[Read full text]",
     CreatePost_Post: "Post content",
     CreatePost_PostPlaceHolder: "Please enter the content.",
