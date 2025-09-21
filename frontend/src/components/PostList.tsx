@@ -145,7 +145,7 @@ export const PostList: React.FC<PostListProps> = ({
         try {
             const host = new URL(origin).host;
             let apiHost = 'api.skyblur.uk'
-            if (host?.endsWith('usounds.work')) {
+            if (host?.endsWith('dev.skyblur.uk')) {
                 apiHost = 'skyblurapi.usounds.work'
             }
 

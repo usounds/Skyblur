@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   let apiEndpoint = 'api.skyblur.uk'
 
   if (process.env.NODE_ENV !== 'production') {
-    appViewHost = 'skyblur.usounds.work'
+    appViewHost = 'dev.skyblur.uk'
     apiEndpoint = 'skyblurapi.usounds.work'
   }
 

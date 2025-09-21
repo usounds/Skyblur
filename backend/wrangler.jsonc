@@ -7,7 +7,7 @@
     "nodejs_compat"
   ],
   "vars": {
-    "APPVIEW_HOST": "skyblur.usounds.work"
+    "APPVIEW_HOST": "dev.skyblur.uk"
   },
   "kv_namespaces": [
     {

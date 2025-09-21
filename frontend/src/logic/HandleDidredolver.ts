@@ -12,7 +12,7 @@ export class ResolverError extends Error {
 export const resolveHandleViaHttp = async (handle: string): Promise<Did> => {
 	const host = new URL(origin).host;
 	let apiHost = 'api.skyblur.uk'
-	if (host?.endsWith('usounds.work')) {
+	if (host?.endsWith('dev.skyblur.uk')) {
 		apiHost = 'skyblurapi.usounds.work'
 	}
 	const res = await fetch(`https://${apiHost}/xrpc/uk.skyblur.admin.resolveHandle?handle=${encodeURIComponent(handle)}`);
