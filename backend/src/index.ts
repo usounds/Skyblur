@@ -16,7 +16,7 @@ app.options('*', (c) => {
 });
 
 const allowedOrigins = [
-  'https://skyblur.usounds.work',
+  'https://dev.skyblur.uk',
   'https://skyblur.uk',
   'https://preview.skyblur.uk'
 ];

@@ -4,8 +4,10 @@ export async function GET(request: Request) {
   const origin = request.headers.get('host') || ''
   let envLocal = ''
   if (process.env.NODE_ENV === 'production') {
-    if (origin.includes('preview')) {
+    if (origin.includes('preview.skyblur.uk')) {
       envLocal = 'preview'
+    } else if (origin.includes('dev.skyblur.uk')) {
+      envLocal = 'local'
     } else if (origin.includes('skyblur.uk')) {
       envLocal = 'production'
     }

@@ -492,8 +492,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 const host = new URL(origin).host;
                 let appViewUrl = 'skyblur.uk'
-                if (host?.endsWith('usounds.work')) {
-                    appViewUrl = 'skyblur.usounds.work'
+                if (host?.endsWith('dev.skyblur.uk')) {
+                    appViewUrl = 'dev.skyblur.uk'
                 }
 
                 const body: UkSkyblurPostEncrypt.Input = {
