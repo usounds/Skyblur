@@ -1,7 +1,7 @@
 {
   "name": "skyblurapi",
   "scripts": {
-    "dev": "wrangler dev --ip 192.168.1.130",
+    "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production --minify",
     "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts"
   },
