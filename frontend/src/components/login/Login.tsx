@@ -158,14 +158,14 @@ export function AuthenticationTitle() {
             return;
         }
 
-        let scope = "atproto include:uk.skyblur.permissionSet rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview repo:app.bsky.feed.post?action=create&action=delete repo:app.bsky.feed.generator?action=create&action=update&action=delete rpc:app.bsky.feed.searchPosts?aud=* rpc:app.bsky.feed.getFeedGenerator?aud=*"
+        const scope = "atproto include:uk.skyblur.permissionSet rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview repo:app.bsky.feed.post?action=create&action=delete repo:app.bsky.feed.generator?action=create&action=update&action=delete rpc:app.bsky.feed.searchPosts?aud=* rpc:app.bsky.feed.getFeedGenerator?aud=*"
 
         let host;
         if (identity.pds.host.endsWith('.bsky.network')) {
             host = 'bsky.social'
         } else {
             host = identity.pds.host
-            scope = scope + " repo:uk.skyblur.post repo:uk.skyblur.preference rpc:uk.skyblur.post.encrypt?aud=* blob:*/*"
+            //scope = scope + " repo:uk.skyblur.post repo:uk.skyblur.preference rpc:uk.skyblur.post.encrypt?aud=* blob:*/*"
         }
 
         const message = locale.Login_Redirect.replace("{1}", host)
