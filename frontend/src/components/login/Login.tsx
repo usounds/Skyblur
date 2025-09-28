@@ -230,6 +230,10 @@ export function AuthenticationTitle() {
                     placeholder="alice.bsky.social"
                     required
                     radius="md"
+                    autoCapitalize={"none"}
+                    autoCorrect={"off"}
+                    autoComplete={"off"}
+                    spellCheck={false}
                     value={handle}
                     onChange={(event) => setHandle(event.target.value)}
                     styles={{
