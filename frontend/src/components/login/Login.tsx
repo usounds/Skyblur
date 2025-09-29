@@ -8,7 +8,7 @@ import {
     Button,
     Container,
     Paper,
-    TextInput
+    Autocomplete
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from "react";
@@ -19,6 +19,7 @@ import { ActorIdentifier } from '@atcute/lexicons/syntax';
 
 export function AuthenticationTitle() {
     const [handle, setHandle] = useState("");
+    const [suggestions, setSuggestions] = useState<string[]>([]);
     const locale = useLocaleStore((state) => state.localeData);
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
@@ -222,10 +223,38 @@ export function AuthenticationTitle() {
         if (!handle) setHandle(localStorage.getItem('oauth.handle') || '');
     }, [handle]);
 
+    const handleInput = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const val = event.currentTarget.value;
+
+        console.log(val)
+
+        if (!val) {
+            setSuggestions([]);
+            return;
+        }
+
+        try {
+            const res = await publicAgent.get("app.bsky.actor.searchActorsTypeahead", {
+                params: {
+                    q: val,
+                    limit: 5,
+                },
+            });
+
+            if (res.ok) {
+                // actor.handle を候補として表示
+                setSuggestions(res.data.actors.map((a) => a.handle));
+            }
+        } catch (err) {
+            console.error("searchActorsTypeahead error", err);
+        }
+    };
+
+
     return (
         <Container size={320} >
             <Paper withBorder shadow="sm" p={22} mt={30} radius="md">
-                <TextInput
+                <Autocomplete
                     label={locale.Login_HandleCaption}
                     placeholder="alice.bsky.social"
                     required
@@ -235,7 +264,12 @@ export function AuthenticationTitle() {
                     autoComplete={"off"}
                     spellCheck={false}
                     value={handle}
-                    onChange={(event) => setHandle(event.target.value)}
+                    data={suggestions}
+                    onInput={handleInput}
+                    onChange={(value) => {
+                        setHandle(value);
+                        setSuggestions([]);
+                    }}
                     styles={{
                         input: {
                             fontSize: 16,  // 16pxに設定
