@@ -4,6 +4,10 @@
   "type": "module",
   "sideEffects": false,
   "private": true,
+    "engines": {
+    "node": ">=20.19.0 <21",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "next dev -p 4500",
     "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts",
