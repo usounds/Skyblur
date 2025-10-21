@@ -4,7 +4,7 @@
   "type": "module",
   "sideEffects": false,
   "private": true,
-    "engines": {
+  "engines": {
     "node": ">=20.19.0 <21",
     "npm": ">=9.0.0"
   },
@@ -20,15 +20,15 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
-    "@atcute/bluesky": "^3.2.2",
-    "@atcute/client": "^4.0.3",
-    "@atcute/lexicons": "^1.1.1",
-    "@atcute/oauth-browser-client": "^1.0.26",
-    "@atcute/tid": "^1.0.2",
+    "@atcute/bluesky": "^3.2.8",
+    "@atcute/client": "^4.0.5",
+    "@atcute/lexicons": "^1.2.2",
+    "@atcute/oauth-browser-client": "^1.0.27",
+    "@atcute/tid": "^1.0.3",
     "@mantine/core": "^8.2.4",
     "@mantine/hooks": "^8.2.4",
     "@mantine/notifications": "^8.2.4",
-    "@opennextjs/cloudflare": "^1.6.5",
+    "@opennextjs/aws": "^3.8.5",
     "@tabler/icons-react": "^3.34.1",
     "dompurify": "^3.2.6",
     "franc": "^6.2.0",
