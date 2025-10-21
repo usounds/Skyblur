@@ -9,7 +9,7 @@ export const scopeList = [
   "rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview",
   "repo:app.bsky.feed.post?action=create&action=delete",
   "repo:app.bsky.feed.generator?action=create&action=update&action=delete",
-  "repo:app.bsky.feed.threadgate?action=create&action=update&action=delete",
+//  "repo:app.bsky.feed.threadgate?action=create&action=update&action=delete",
   "rpc:app.bsky.feed.getFeedGenerator?aud=*",
   "rpc:app.bsky.feed.searchPosts?aud=*",
   "blob:*/*",
