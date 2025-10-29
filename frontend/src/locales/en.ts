@@ -20,7 +20,7 @@ const messages = {
     Login_InvalidHandle: "Invalid handle.",
     Login_DidResolve: "Resolving DID",
     Login_PDSResolve: "Resolving PDS",
-    Login_Redirect: "Redirecting to {1}",
+    Login_Redirect: "Redirecting to PDS...",
     Login_RedirectFailed: "Failed to redirect to the authorization page.",
     Login_Login: "Login",
     Login_TapToLinkProfile: "Tap here to check if your account is displayed.",

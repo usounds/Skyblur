@@ -1,9 +1,14 @@
 "use client";
-import { resolveHandleViaDoH, resolveHandleViaHttp } from '@/logic/HandleDidredolver';
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata, scopeList } from '@/types/ClientMetadataContext';
-import type { Did } from '@atcute/lexicons';
-import { configureOAuth, createAuthorizationUrl, IdentityMetadata, AuthorizationServerMetadata, resolveFromIdentity } from '@atcute/oauth-browser-client';
+import { configureOAuth, defaultIdentityResolver } from '@atcute/oauth-browser-client';
+import { createAuthorizationUrl } from '@atcute/oauth-browser-client';
+import {
+    CompositeDidDocumentResolver,
+    PlcDidDocumentResolver,
+    WebDidDocumentResolver,
+    XrpcHandleResolver
+} from '@atcute/identity-resolver';
 import {
     Button,
     Container,
@@ -76,8 +81,6 @@ export function AuthenticationTitle() {
 
         const serverMetadata = getClientMetadata();
 
-        console.log(serverMetadata)
-
         if (serverMetadata === undefined) {
             return
         }
@@ -87,8 +90,18 @@ export function AuthenticationTitle() {
                 client_id: serverMetadata.client_id || '',
                 redirect_uri: serverMetadata.redirect_uris[0] || '',
             },
+            identityResolver: defaultIdentityResolver({
+                handleResolver: new XrpcHandleResolver({ serviceUrl: 'https://public.api.bsky.app' }),
+
+                didDocumentResolver: new CompositeDidDocumentResolver({
+                    methods: {
+                        plc: new PlcDidDocumentResolver(),
+                        web: new WebDidDocumentResolver(),
+                    },
+                }),
+            }),
         });
-        let identity: IdentityMetadata, metadata: AuthorizationServerMetadata, did: Did | null = null;
+
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,
@@ -97,102 +110,49 @@ export function AuthenticationTitle() {
             autoClose: false
         });
 
-        try {
-
-            try {
-                //　HTTP 解決
-                did = await resolveHandleViaHttp(handle);
-            } catch (e) {
-                console.warn('HTTP resolve failed, trying DoH:', e);
-                try {
-                    // DoH 解決
-                    did = await resolveHandleViaDoH(handle);
-                } catch (e2) {
-                    console.error('DoH resolve failed:', e2);
-
-                    // app.bsky.actor.getProfileからDID解決
-                    const userProfileResponse = await publicAgent.get('app.bsky.actor.getProfile', {
-                        params: { actor: handle as ActorIdentifier },
-                    })
-
-                    if (!userProfileResponse.ok) {
-                        // 両方ダメなら通知出して終了
-                        notifications.update({
-                            id: 'login-process',
-                            title: 'Error',
-                            message: locale.Login_InvalidHandle,
-                            color: 'red',
-                            loading: false,
-                            autoClose: true,
-                            icon: <X />
-                        });
-                        setIsLoading(false);
-                        return;
-                    }
-
-                    did = userProfileResponse.data.did
-
-                }
-            }
-
-            // DIDからDid DocumentとPDSのOAuth Metadataを取得
-            const resolved = await resolveFromIdentity(did);
-            identity = resolved.identity
-            metadata = resolved.metadata
-
-            // rawはhandleに上書き
-            identity.raw = handle
-
-        } catch (e) {
-            // 想定外の例外キャッチ
-            console.error('resolveFromIdentity unexpected error:', e);
-            notifications.update({
-                id: 'login-process',
-                title: 'Error',
-                message: 'Unexpected Error:' + e,
-                color: 'red',
-                loading: false,
-                autoClose: true,
-                icon: <X />
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        let host;
-        if (identity.pds.host.endsWith('.bsky.network')) {
-            host = 'bsky.social'
-        } else {
-            host = identity.pds.host
-        }
-
-        const message = locale.Login_Redirect.replace("{1}", host)
-        window.localStorage.setItem('oauth.handle', handle)
-
-        notifications.update({
-            id: 'login-process',
-            title: locale.Login_Login,
-            message: message,
-            loading: true,
-            autoClose: false
-        });
 
         let authUrl;
         try {
             authUrl = await createAuthorizationUrl({
-                metadata: metadata,
-                identity: identity,
+                target: { type: 'account', identifier: handle as ActorIdentifier },
                 scope: scopeList
             });
-        } catch (e) {
-            console.error('createAuthorizationUrl error:', e);
-            notifications.clean()
-            notifications.show({
-                title: 'Error',
-                message: 'Failed to create authorization URL',
-                color: 'red',
-                icon: <X />
+
+            const message = locale.Login_Redirect
+            window.localStorage.setItem('oauth.handle', handle)
+
+            notifications.update({
+                id: 'login-process',
+                title: locale.Login_Login,
+                message: message,
+                loading: true,
+                autoClose: false
             });
+
+        } catch (e) {
+            notifications.clean()
+            const errorName = e instanceof Error ? e.name : '';
+            console.error('createAuthorizationUrl error:', errorName);
+
+            if (errorName === 'DidNotFoundError') {
+                notifications.show({
+                    id: 'login-process',
+                    title: 'Error',
+                    message: locale.Login_InvalidHandle,
+                    color: 'red',
+                    loading: false,
+                    autoClose: true,
+                    icon: <X />
+                });
+            } else {
+                notifications.show({
+                    title: 'Error',
+                    message: 'Failed to create authorization URL',
+                    color: 'red',
+                    icon: <X />
+                });
+
+            }
             setIsLoading(false);
             return;
         }
