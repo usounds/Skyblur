@@ -13,6 +13,7 @@ import type { } from '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
 import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
+import { resolveFromIdentity } from '@atcute/oauth-browser-client';
 import * as TID from '@atcute/tid';
 import { Button, Card, Group, Modal, Switch, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -21,11 +22,6 @@ import DOMPurify from 'dompurify';
 import { franc } from 'franc';
 import { useEffect, useState } from "react";
 import { X , Check} from 'lucide-react';
-import {
-    DohJsonHandleResolver,
-    WellKnownHandleResolver,
-    CompositeHandleResolver
-} from '@atcute/identity-resolver';
 import type { } from '../../src/lexicon/UkSkyblur';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -82,14 +78,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         return lang2;
     }
 
-
-const handleResolver = new CompositeHandleResolver({
-	strategy: 'race',
-	methods: {
-		dns: new DohJsonHandleResolver({ dohUrl: 'https://mozilla.cloudflare-dns.com/dns-query' }),
-		http: new WellKnownHandleResolver(),
-	},
-});
 
 
     function handleSetIsReply(param: boolean) {
@@ -373,9 +361,7 @@ const handleResolver = new CompositeHandleResolver({
 
                         const startIndexUtf16 = match.index ?? 0;
                         const endIndexUtf16 = startIndexUtf16 + match[0].length;
-                        const result = await handleResolver.resolve(handle as `${string}.${string}`);
-
-                        console.log(result)
+                        const result = await resolveFromIdentity(handle)
 
                         facets.push({
                             $type: "app.bsky.richtext.facet",
@@ -386,7 +372,7 @@ const handleResolver = new CompositeHandleResolver({
                             features: [
                                 {
                                     $type: "app.bsky.richtext.facet#mention",
-                                    did: result,
+                                    did: result.identity.id,
                                 },
                             ],
                         });

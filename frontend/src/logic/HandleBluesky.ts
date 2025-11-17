@@ -1,28 +1,15 @@
 import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
-import { SKYBLUR_PREFERENCE_COLLECTION, DIDDocument, Service } from '@/types/types';
+import { SKYBLUR_PREFERENCE_COLLECTION, DIDDocument,Service } from '@/types/types';
 import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
-import {
-    CompositeDidDocumentResolver,
-    PlcDidDocumentResolver,
-    WebDidDocumentResolver
-} from '@atcute/identity-resolver';
+import { resolveFromIdentity } from '@atcute/oauth-browser-client';
 
 export const fetchServiceEndpoint = async (did: string) => {
     try {
-        const docResolver = new CompositeDidDocumentResolver({
-            methods: {
-                plc: new PlcDidDocumentResolver(),
-                web: new WebDidDocumentResolver(),
-            },
-        });
-        const doc = await docResolver.resolve(did as `did:plc:${string}` | `did:web:${string}`);
 
-        const resolved = doc.service?.find(
-            (svc): svc is Service & { endpoint: string } => svc.id === '#atproto_pds'
-        );
+        const resolved = await resolveFromIdentity(did);
 
-        return resolved?.serviceEndpoint || '';
+        return resolved.identity.pds.toString()
 
     } catch (error) {
         console.error('Error fetching service endpoint:', error);

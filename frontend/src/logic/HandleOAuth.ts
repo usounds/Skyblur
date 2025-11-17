@@ -4,13 +4,6 @@ import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client } from '@atcute/client';
 import { ClientMetadata, OAuthUserAgent, configureOAuth, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
-import {
-  CompositeDidDocumentResolver,
-  PlcDidDocumentResolver,
-  WebDidDocumentResolver,
-  XrpcHandleResolver
-} from '@atcute/identity-resolver';
-import { defaultIdentityResolver } from '@atcute/oauth-browser-client';
 
 export async function handleOAuth(
   getClientMetadata: () => ClientMetadata | null | undefined,
@@ -32,16 +25,6 @@ export async function handleOAuth(
       client_id: serverMetadata.client_id || '',
       redirect_uri: serverMetadata.redirect_uris[0],
     },
-    identityResolver: defaultIdentityResolver({
-      handleResolver: new XrpcHandleResolver({ serviceUrl: 'https://public.api.bsky.app' }),
-
-      didDocumentResolver: new CompositeDidDocumentResolver({
-        methods: {
-          plc: new PlcDidDocumentResolver(),
-          web: new WebDidDocumentResolver(),
-        },
-      }),
-    }),
   });
 
   const params = new URLSearchParams(location.hash.slice(1))
@@ -56,10 +39,10 @@ export async function handleOAuth(
       history.replaceState(null, '', location.pathname + location.search);
 
       // you'd be given a session object that you can then pass to OAuthUserAgent!
-      const result = await finalizeAuthorization(params);
+      const session = await finalizeAuthorization(params);
 
       // now you can start making requests!
-      const agent = new OAuthUserAgent(result.session);
+      const agent = new OAuthUserAgent(session);
       setOauthUserAgent(agent)
       const rpc = new Client({ handler: agent });
       setAgent(rpc)

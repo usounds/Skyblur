@@ -20,7 +20,7 @@ const messages = {
     Login_InvalidHandle: "無効なハンドルです。",
     Login_DidResolve: "DIDを解決しています",
     Login_PDSResolve: "PDSを解決しています",
-    Login_Redirect: "PDSに遷移します...",
+    Login_Redirect: "{1}に遷移します",
     Login_RedirectFailed: "認可ページへの遷移に失敗しました",
     Login_Login: "ログイン",
     Login_TapToLinkProfile: "ここをタップして、あなたのアカウントが表示されるか確認してください。",
