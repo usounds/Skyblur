@@ -42,9 +42,7 @@ const DynamicHeader = () => {
   }, [locale]);
 
   useEffect(() => {
-    if (!rehydrated) return; // rehydration 待ち
-
-    console.log(langParam)
+    if (!rehydrated) return; 
 
     if (!langParam) {
       const currentUrl = window.location.pathname;
