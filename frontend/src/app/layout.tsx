@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import HtmlLang from "@/components/HtmlLang";
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
@@ -13,13 +14,17 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+  children
+}: {
   children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" {...mantineHtmlProps}>
+}) {
 
+  return (
+    <html {...mantineHtmlProps}>
+      <head>
+      <HtmlLang />
+
+      </head>
       <body>
         <ColorSchemeScript />
         <MantineProvider>
