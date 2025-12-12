@@ -35,10 +35,10 @@
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
     "lucide-react": "^0.543.0",
-    "next": "^15.5.7",
-    "react": "^19.2.1",
+    "next": "^15.5.9",
+    "react": "^19.2.3",
     "react-content-loader": "^7.1.1",
-    "react-dom": "^19.2.1",
+    "react-dom": "^19.2.3",
     "react-spinners": "^0.17.0",
     "zustand": "^5.0.8"
   },
