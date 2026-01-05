@@ -1,63 +1,87 @@
-
 import * as didJWT from 'did-jwt';
-import { DIDDocument, DIDResolver, Resolver, ResolverRegistry } from 'did-resolver';
+import {
+  Resolver,
+  DIDDocument,
+  DIDResolutionResult,
+} from 'did-resolver';
 import { getResolver as getWebResolver } from 'web-did-resolver';
-import { getResolver } from '@/logic/DidPlcResolver';
+import { getResolver as getPlcResolver } from '@/logic/DidPlcResolver';
 
-const myResolver = getResolver()
-const web = getWebResolver()
-const resolver: ResolverRegistry = {
-    'plc': myResolver.DidPlcResolver as unknown as DIDResolver,
-    'web': web as unknown as DIDResolver,
-}
-export const resolverInstance = new Resolver(resolver)
+/* =========================
+   Resolver インスタンス
+   ========================= */
+
+export const resolverInstance = new Resolver({
+  ...getPlcResolver(),
+  ...getWebResolver(),
+});
+
+/* =========================
+   型定義
+   ========================= */
+
 export type Service = {
-    id: string;
-    type: string;
-    serviceEndpoint: string | Record<string, any> | Array<Record<string, any>>;
-}
-
-export const verifyJWT = async (auth: string, audience:string) => {
-    const authorization = auth.replace('Bearer ', '').trim()
-    const decodedJWT = authorization.replace('Bearer ', '').trim()
-
-    const result = await didJWT.verifyJWT(decodedJWT, {
-        resolver: resolverInstance,
-        audience: audience
-    })
-
-    return result
-
-}
-export const fetchDiDDocument = async (did: string) => {
-    try {
-        const didDocument = await resolverInstance.resolve(did)
-        return didDocument
-    } catch (error) {
-        console.error('Error fetching service endpoint:', error);
-    }
-
-    
+  id: string;
+  type: string;
+  serviceEndpoint:
+    | string
+    | Record<string, any>
+    | Array<Record<string, any>>;
 };
 
-export const fetchServiceEndpoint = async (did: string) => {
-    try {
-        const response = await fetchDiDDocument(did);
-        if (!response) {
-            throw new Error('Invalid DID document response');
-        }
+/* =========================
+   JWT 検証
+   ========================= */
 
-        const didDocument = response as unknown as DIDDocument;
+export const verifyJWT = async (
+  auth: string,
+  audience: string
+) => {
+  const token = auth.replace(/^Bearer\s+/i, '').trim();
 
-        // didDocument.serviceが存在するかチェック
-        const service = didDocument.service?.find((s: Service) => s.id === '#atproto_pds');
+  return didJWT.verifyJWT(token, {
+    resolver: resolverInstance,
+    audience,
+  });
+};
 
-        if (service && service.serviceEndpoint) {
-            return service.serviceEndpoint;
-        } else {
-            throw new Error('Service with id #atproto_pds not found or no service endpoint available');
-        }
-    } catch (error) {
-        console.error('Error fetching service endpoint:', error);
-    }
+/* =========================
+   DID Document 取得
+   ========================= */
+
+export const fetchDidDocument = async (
+  did: string
+): Promise<DIDDocument> => {
+  const result: DIDResolutionResult =
+    await resolverInstance.resolve(did);
+
+  if (!result.didDocument) {
+    throw new Error(
+      `Failed to resolve DID: ${did}`
+    );
+  }
+
+  return result.didDocument;
+};
+
+/* =========================
+   Service Endpoint 取得
+   ========================= */
+
+export const fetchServiceEndpoint = async (
+  did: string
+) => {
+  const didDocument = await fetchDidDocument(did);
+
+  const service = didDocument.service?.find(
+    (s: Service) => s.id === '#atproto_pds'
+  );
+
+  if (!service?.serviceEndpoint) {
+    throw new Error(
+      'Service #atproto_pds not found'
+    );
+  }
+
+  return service.serviceEndpoint;
 };
