@@ -115,10 +115,7 @@ export default function Home() {
                       <div className="flex justify-center mt-4"></div>
 
                       <div className="flex justify-center mt-4">
-                        <Affix
-                          position={{ bottom: 60, left: '50%' }}
-                          style={{ transform: 'translateX(-50%)' }}
-                        >
+                        <Affix position={{ bottom: 60, left:  '20%' }}>
                           <Button
                             variant="default"
                             color="gray"
