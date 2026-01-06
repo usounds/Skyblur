@@ -1,5 +1,4 @@
 import Header from "@/components/Header";
-import HtmlLang from "@/components/HtmlLang";
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
@@ -13,18 +12,11 @@ export const metadata: Metadata = {
   description: "伏字を使った投稿ができます / You can post with blur.",
 };
 
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
 
   return (
-    <html {...mantineHtmlProps}>
-      <head>
-      <HtmlLang />
+    <html  lang='ja' {...mantineHtmlProps} className="notranslate">
 
-      </head>
       <body>
         <ColorSchemeScript />
         <MantineProvider>
