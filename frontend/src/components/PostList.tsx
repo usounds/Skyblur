@@ -1,6 +1,5 @@
 "use client";
 import DropdownMenu from "@/components/DropdownMenu";
-import PostListLoading from "@/components/PostListLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
@@ -234,14 +233,8 @@ export const PostList: React.FC<PostListProps> = ({
     return (
         <>
             <div className="max-w-screen-sm">
-                {(!isLoading && deleteList.length > 0) && <Text ta="center">{locale.DeleteList_ChooseDeleteItem}</Text>}
+                {deleteList.length > 0 && <Text ta="center">{locale.DeleteList_ChooseDeleteItem}</Text>}
                 {(!isLoading && deleteList.length === 0) && <Text ta="center">{locale.DeleteList_NoListItem}</Text>}
-                {(isLoading) && <Text ta="center">{locale.DeleteList_Loading}</Text>}
-                {(isLoading && deleteList.length === 0) ?
-                    <PostListLoading />
-                    :
-                    <></>
-                }
 
                 <Timeline bulletSize={20} lineWidth={2} mx="sm" mt='sm'>
                     {deleteList.map((item, index) => (

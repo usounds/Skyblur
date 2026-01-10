@@ -14,7 +14,6 @@ import '@mantine/notifications/styles.css';
 import { useEffect, useState } from "react";
 import { Pencil } from 'lucide-react';
 import { ArrowLeft } from 'lucide-react';
-import { Loader } from '@mantine/core';
 
 export default function Home() {
   const [prevBlur, setPrevBlur] = useState<PostListItem>()
@@ -54,7 +53,18 @@ export default function Home() {
 
   if (!isMounted) {
     return (
-      <Loading />
+      <div>
+        <main>
+          <div className="mx-auto max-w-screen-md">
+            <div className="flex items-center justify-center h-full mt-4 mx-4">
+              &nbsp;
+            </div>
+            <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
+              <Loading />
+            </div>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -74,10 +84,7 @@ export default function Home() {
 
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
                 {isLoginProcess || (typeof window !== 'undefined' && (window.localStorage.getItem('oauth.did') || window.localStorage.getItem('oauth.authPending') === 'true')) ?
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <p className="mb-2"><Loader color="blue" /></p>
-                    {locale.Home_inAuthProgress}
-                  </div>
+                  <Loading />
                   :
                   <AuthenticationTitle />
                 }
