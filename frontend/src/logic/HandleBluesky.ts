@@ -2,14 +2,14 @@ import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
 import { SKYBLUR_PREFERENCE_COLLECTION, DIDDocument, Service } from '@/types/types';
 import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
-import { resolveFromIdentity } from '@atcute/oauth-browser-client';
+import { IdentityResolver } from './IdentityResolver';
 
 export const fetchServiceEndpoint = async (did: string) => {
     try {
 
-        const resolved = await resolveFromIdentity(did);
+        const resolved = await IdentityResolver.resolve(did as ActorIdentifier);
 
-        return resolved.identity.pds.toString()
+        return resolved.pds
 
     } catch (error) {
         console.error('Error fetching service endpoint:', error);

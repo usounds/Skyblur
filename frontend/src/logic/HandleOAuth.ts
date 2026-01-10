@@ -1,6 +1,7 @@
 "use client"
 import en from "@/locales/en";
 import { fetchServiceEndpointWithCache } from "@/logic/HandleBluesky";
+import { IdentityResolver } from "@/logic/IdentityResolver";
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client } from '@atcute/client';
 import { ClientMetadata, OAuthUserAgent, configureOAuth, finalizeAuthorization, getSession } from '@atcute/oauth-browser-client';
@@ -25,6 +26,7 @@ export async function handleOAuth(
       client_id: serverMetadata.client_id || '',
       redirect_uri: serverMetadata.redirect_uris[0],
     },
+    identityResolver: IdentityResolver,
   });
 
   const params = new URLSearchParams(location.hash.slice(1))
@@ -39,7 +41,7 @@ export async function handleOAuth(
       history.replaceState(null, '', location.pathname + location.search);
 
       // you'd be given a session object that you can then pass to OAuthUserAgent!
-      const session = await finalizeAuthorization(params);
+      const { session } = await finalizeAuthorization(params);
 
       // now you can start making requests!
       const agent = new OAuthUserAgent(session);

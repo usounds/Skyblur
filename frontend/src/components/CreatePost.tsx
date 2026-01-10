@@ -8,12 +8,12 @@ import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, THREADGATE_MENTION, THREADGATE_FOLLOWING, THREADGATE_FOLLOWERS, THREADGATE_QUOTE_ALLOW } from "@/types/types";
-import type { } from '@atcute/atproto';
-import type { } from '@atcute/bluesky';
+import '@atcute/atproto';
+import '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
 import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
-import { resolveFromIdentity } from '@atcute/oauth-browser-client';
+import { IdentityResolver } from '@/logic/IdentityResolver';
 import * as TID from '@atcute/tid';
 import { Button, Card, Chip, Group, Modal, SegmentedControl, Switch, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -23,7 +23,6 @@ import { franc } from 'franc';
 import { useEffect, useState } from "react";
 import { X, Check } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
-import type { } from '../../src/lexicon/UkSkyblur';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
@@ -365,7 +364,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                         const startIndexUtf16 = match.index ?? 0;
                         const endIndexUtf16 = startIndexUtf16 + match[0].length;
-                        const result = await resolveFromIdentity(handle)
+                        const result = await IdentityResolver.resolve(handle as ActorIdentifier)
 
                         facets.push({
                             $type: "app.bsky.richtext.facet",
@@ -376,7 +375,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             features: [
                                 {
                                     $type: "app.bsky.richtext.facet#mention",
-                                    did: result.identity.id,
+                                    did: result.did,
                                 },
                             ],
                         });
@@ -577,20 +576,19 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         input: uint8Array,
                         encoding: 'binary',
                         headers: { 'Content-Type': 'application/octet-stream' }
-                    })
+                    });
 
                     if (!ret.ok) {
-                        console.error("❌ Encryption Error:", data.message);
+                        console.error("❌ Blob Upload Error:", ret.data);
                         handleInitButton()
                         notifications.show({
                             title: 'Error',
-                            message: data.message,
+                            message: "Blob upload failed",
                             color: 'red',
                             icon: <X />
                         });
                         setIsLoading(false)
                         return
-
                     }
 
                     postObject = {
@@ -598,7 +596,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         text: postTextBlur,
                         additional: '',
                         createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
-                        encryptBody: ret.data.blob,
+                        encryptBody: (ret.data as any).blob,
                         visibility: visibility,
                     }
 
@@ -1029,7 +1027,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             </div>
                         )}
 
-                        <div className="flex justify-center gap-4 mb-8 mt-2">
+                        <div className="flex justify-center gap-4 mb-2 mt-6">
                             {!warning && (
                                 (isReply && replyPost) || !isReply
                             ) && (

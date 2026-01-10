@@ -5,13 +5,13 @@ Skyblur AppView works with Next.js 15.
 
 First, run the development server:
 ```
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 For Production build:
 ```
-npm run deploy
+pnpm deploy
 ```
 
 ## Language Support

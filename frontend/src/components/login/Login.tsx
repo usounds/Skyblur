@@ -1,9 +1,8 @@
 "use client";
-import { resolveHandleViaDoH, resolveHandleViaHttp } from '@/logic/HandleDidredolver';
+import { IdentityResolver } from '@/logic/IdentityResolver';
 import { useLocaleStore } from "@/state/Locale";
 import { getClientMetadata, scopeList } from '@/types/ClientMetadataContext';
-import type { Did } from '@atcute/lexicons';
-import { configureOAuth, createAuthorizationUrl, IdentityMetadata, AuthorizationServerMetadata, resolveFromIdentity } from '@atcute/oauth-browser-client';
+import { configureOAuth, createAuthorizationUrl } from '@atcute/oauth-browser-client';
 import {
     Button,
     Container,
@@ -95,8 +94,8 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 client_id: serverMetadata.client_id || '',
                 redirect_uri: serverMetadata.redirect_uris[0] || '',
             },
+            identityResolver: IdentityResolver,
         });
-        let identity: IdentityMetadata, metadata: AuthorizationServerMetadata, did: Did | null = null;
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,
@@ -106,123 +105,70 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         });
 
         try {
+            // Resolve identity to get PDS host for display message
+            const resolved = await IdentityResolver.resolve(handle as ActorIdentifier);
 
+            let host: string;
             try {
-                //　HTTP 解決
-                did = await resolveHandleViaHttp(handle);
-            } catch (e) {
-                console.warn('HTTP resolve failed, trying DoH:', e);
-                try {
-                    // DoH 解決
-                    did = await resolveHandleViaDoH(handle);
-                } catch (e2) {
-                    console.error('DoH resolve failed:', e2);
-
-                    // app.bsky.actor.getProfileからDID解決
-                    const userProfileResponse = await publicAgent.get('app.bsky.actor.getProfile', {
-                        params: { actor: handle as ActorIdentifier },
-                    })
-
-                    if (!userProfileResponse.ok) {
-                        // 両方ダメなら通知出して終了
-                        notifications.update({
-                            id: 'login-process',
-                            title: 'Error',
-                            message: locale.Login_InvalidHandle,
-                            color: 'red',
-                            loading: false,
-                            autoClose: true,
-                            icon: <X />
-                        });
-                        setIsLoading(false);
-                        return;
-                    }
-
-                    did = userProfileResponse.data.did
-
+                const pdsUrl = new URL(resolved.pds);
+                if (pdsUrl.host.endsWith('.bsky.network')) {
+                    host = 'bsky.social';
+                } else {
+                    host = pdsUrl.host;
                 }
+            } catch {
+                host = resolved.pds;
             }
 
-            // DIDからDid DocumentとPDSのOAuth Metadataを取得
-            const resolved = await resolveFromIdentity(did);
-            identity = resolved.identity
-            metadata = resolved.metadata
+            const message = locale.Login_Redirect.replace("{1}", host);
+            window.localStorage.setItem('oauth.handle', handle);
+            window.localStorage.setItem('oauth.callbackUrl', window.location.href);
 
-            // rawはhandleに上書き
-            identity.raw = handle
-
-        } catch (e) {
-            // 想定外の例外キャッチ
-            console.error('resolveFromIdentity unexpected error:', e);
             notifications.update({
                 id: 'login-process',
-                title: 'Error',
-                message: 'Unexpected Error:' + e,
-                color: 'red',
-                loading: false,
-                autoClose: true,
-                icon: <X />
+                title: locale.Login_Login,
+                message: message,
+                loading: true,
+                autoClose: false
             });
-            setIsLoading(false);
-            return;
-        }
 
-        let host;
-        if (identity.pds.host.endsWith('.bsky.network')) {
-            host = 'bsky.social'
-        } else {
-            host = identity.pds.host
-        }
-
-        const message = locale.Login_Redirect.replace("{1}", host)
-        window.localStorage.setItem('oauth.handle', handle)
-        window.localStorage.setItem('oauth.callbackUrl', window.location.href)
-
-        notifications.update({
-            id: 'login-process',
-            title: locale.Login_Login,
-            message: message,
-            loading: true,
-            autoClose: false
-        });
-
-        let authUrl;
-        try {
-            authUrl = await createAuthorizationUrl({
-                metadata: metadata,
-                identity: identity,
-                scope: scopeList
+            const authUrl = await createAuthorizationUrl({
+                target: {
+                    type: 'account',
+                    identifier: handle as ActorIdentifier,
+                },
+                scope: scopeList,
             });
+
+            // recommended to wait for the browser to persist local storage before proceeding
+            await sleep(200);
+
+            // redirect the user to sign in and authorize the app
+            window.location.assign(authUrl);
+
+            // if this is on an async function, ideally the function should never ever resolve.
+            // the only way it should resolve at this point is if the user aborted the authorization
+            // by returning back to this page (thanks to back-forward page caching)
+            await new Promise((_resolve, reject) => {
+                const listener = () => {
+                    reject(new Error(`user aborted the login request`));
+                };
+
+                window.addEventListener('pageshow', listener, { once: true });
+
+            })
         } catch (e) {
-            console.error('createAuthorizationUrl error:', e);
-            notifications.clean()
+            console.error('Login error:', e);
+            notifications.clean();
             notifications.show({
                 title: 'Error',
-                message: 'Failed to create authorization URL',
+                message: locale.Login_InvalidHandle,
                 color: 'red',
                 icon: <X />
             });
             setIsLoading(false);
             return;
         }
-
-        // recommended to wait for the browser to persist local storage before proceeding
-        await sleep(200);
-
-        // redirect the user to sign in and authorize the app
-        window.location.assign(authUrl);
-
-        // if this is on an async function, ideally the function should never ever resolve.
-        // the only way it should resolve at this point is if the user aborted the authorization
-        // by returning back to this page (thanks to back-forward page caching)
-        await new Promise((_resolve, reject) => {
-            const listener = () => {
-                reject(new Error(`user aborted the login request`));
-            };
-
-            window.addEventListener('pageshow', listener, { once: true });
-
-        })
     }
 
 
