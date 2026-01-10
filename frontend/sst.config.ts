@@ -11,7 +11,7 @@ export default $config({
     };
   },
   async run() {
-    const stage = $app.stage; 
+    const stage = $app.stage;
 
     new sst.aws.Nextjs("Skyblur", {
       domain: {
@@ -24,6 +24,11 @@ export default $config({
           : "arn:aws:acm:us-east-1:036820509199:certificate/ee0b076b-692f-4e28-9c05-733cc33d9792",
       },
       regions: ["ap-northeast-1"],
+      transform: {
+        server: {
+          runtime: "nodejs22.x",
+        },
+      },
     });
   },
 });
