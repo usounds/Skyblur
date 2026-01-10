@@ -99,7 +99,7 @@ export async function handleOAuth(
         },
       })
       if (!userProfile.ok) {
-
+        window.localStorage.removeItem('oauth.did')
         return { success: false, message: 'System Error : Cannot get userProfile:' + agent.sub }
 
       }
@@ -110,6 +110,7 @@ export async function handleOAuth(
       return { success: true, message: '' }
     } catch (e) {
       console.log(`OAuth未認証です:${e}`)
+      window.localStorage.removeItem('oauth.did')
       setIsLoginProcess(false)
       return { success: false, message: '' }
     }
@@ -117,6 +118,7 @@ export async function handleOAuth(
 
   //それでもダメなら
   console.log(`OAuth未認証です`)
+  window.localStorage.removeItem('oauth.did')
   setIsLoginProcess(false)
   return { success: false, message: '' }
 

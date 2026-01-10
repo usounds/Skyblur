@@ -56,8 +56,8 @@ export default function Home() {
       <div>
         <main>
           <div className="mx-auto max-w-screen-md">
-            <div className="flex items-center justify-center h-full mt-4 mx-4">
-              &nbsp;
+            <div className={`flex items-center justify-center h-full mt-4 mx-4 invisible`}>
+              Skyblurへようこそ。Blueskyへ伏せ字を使った文章をポストできます。
             </div>
             <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
               <Loading />
@@ -77,18 +77,27 @@ export default function Home() {
 
         <div className="mx-auto max-w-screen-md ">
 
-          {did === "" &&
-            <><div className="flex items-center justify-center h-full mt-4 mx-4">
-              {locale.Home_Welcome}
-            </div>
 
-              <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
-                {isLoginProcess || (typeof window !== 'undefined' && (window.localStorage.getItem('oauth.did') || window.localStorage.getItem('oauth.authPending') === 'true')) ?
-                  <Loading />
-                  :
-                  <AuthenticationTitle />
-                }
-              </div>
+          {did === "" &&
+            <>
+              {(() => {
+                const isRestoring = isLoginProcess || (typeof window !== 'undefined' && (window.localStorage.getItem('oauth.did') || window.localStorage.getItem('oauth.authPending') === 'true'));
+                return (
+                  <>
+                    <div className={`flex items-center justify-center h-full mt-4 mx-4 ${isRestoring ? 'invisible' : ''}`}>
+                      {locale.Home_Welcome}
+                    </div>
+
+                    <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
+                      {isRestoring ?
+                        <Loading />
+                        :
+                        <AuthenticationTitle />
+                      }
+                    </div>
+                  </>
+                );
+              })()}
 
               <div className="mt-8 mx-4 text-center text-sm text-gray-500">
                 <p className="mb-2">{locale.Home_RecommendedClients}</p>
