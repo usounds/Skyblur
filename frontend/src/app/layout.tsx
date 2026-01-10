@@ -43,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div className="mb-2">
                 Developed by usounds.work
               </div>
-              <div className="flex justify-center space-x-4">
+              <div className="flex justify-center space-x-4 mb-4">
                 <a
                   href="https://bsky.app/profile/skyblur.uk"
                   target="_blank"
@@ -57,6 +57,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   className=" transition duration-100"
                 >
                   <GithubIcon size={20} />
+                </a>
+              </div>
+              <div className="flex justify-center">
+                <a href="https://www.buymeacoffee.com/usounds" target="_blank" className="transition duration-100 hover:opacity-80">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style={{ height: '40px', width: 'auto' }} />
                 </a>
               </div>
             </div>
