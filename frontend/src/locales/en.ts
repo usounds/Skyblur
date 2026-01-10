@@ -135,6 +135,9 @@ const messages = {
     Post_ViewReactions: "View Reactions",
     Post_DecryptError: "Failed to unlock. Please check your password.",
     Post_DecryptInProgress: "Unlock is in progress",
+    Home_RecommendedClients: "These recommended clients offer a seamless viewing experience for Skyblur posts.",
+    Home_HagoromoName: "Hagoromo",
+    Home_HagoromoUrl: "https://hagoromo.relog.tech/",
 }
 
 

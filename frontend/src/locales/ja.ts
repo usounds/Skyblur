@@ -135,6 +135,9 @@ const messages = {
     Post_ViewReactions: "リアクションを表示",
     Post_DecryptError: "解除に失敗しました。パスワードを確認してください",
     Post_DecryptInProgress: "解除中です",
+    Home_RecommendedClients: "Skyblurの投稿を快適にチェックできる、おすすめクライアント",
+    Home_HagoromoName: "羽衣",
+    Home_HagoromoUrl: "https://hagoromo.relog.tech/ja/",
 }
 
 export default messages;
