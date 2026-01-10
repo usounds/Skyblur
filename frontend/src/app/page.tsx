@@ -119,7 +119,7 @@ export default function Home() {
                     <>
                       <div className="mx-auto max-w-screen-sm flex flex-col  ">
                         <div className="flex justify-center my-4">
-                          {locale.Menu_LoginMessage.replace("{1}", userProf?.displayName || 'No Name')}
+                          {locale.Menu_LoginMessage.replace("{2}", (new Date().getHours() < 5 || new Date().getHours() >= 18) ? locale.Greeting_Night : (new Date().getHours() < 11) ? locale.Greeting_Morning : locale.Greeting_Day).replace("{1}", userProf?.displayName || 'No Name')}
                         </div>
 
                         <div className="flex justify-center gap-4 mb-8">
