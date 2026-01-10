@@ -1,5 +1,6 @@
 "use client";
 import Loading from "@/components/Loading";
+import { RecommendedClients } from "@/components/RecommendedClients";
 import { handleOAuth } from "@/logic/HandleOAuth";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useModeStore } from "@/state/Mode";
@@ -81,8 +82,14 @@ export default function CallbackPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+
     if (isProcessing) {
-        return <Loading />;
+        return (
+            <>
+                <Loading />
+                <RecommendedClients />
+            </>
+        );
     }
 
     return null;
