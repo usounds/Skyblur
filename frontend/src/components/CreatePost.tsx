@@ -7,7 +7,7 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
+import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, THREADGATE_MENTION, THREADGATE_FOLLOWING, THREADGATE_FOLLOWERS, THREADGATE_QUOTE_ALLOW } from "@/types/types";
 import type { } from '@atcute/atproto';
 import type { } from '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
@@ -15,13 +15,14 @@ import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { resolveFromIdentity } from '@atcute/oauth-browser-client';
 import * as TID from '@atcute/tid';
-import { Button, Card, Group, Modal, Switch, Text, TextInput } from '@mantine/core';
+import { Button, Card, Chip, Group, Modal, SegmentedControl, Switch, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
 import { useEffect, useState } from "react";
-import { X , Check} from 'lucide-react';
+import { X, Check } from 'lucide-react';
+import { BlueskyIcon } from './Icons';
 import type { } from '../../src/lexicon/UkSkyblur';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -58,8 +59,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [replyPost, setReplyPost] = useState<PostView | undefined>()
     const tempReply = useTempPostStore((state) => state.reply);
     const setTempReply = useTempPostStore((state) => state.setReply);
-    const [isEncrypt, setIsEncrypt] = useState<boolean>(false)
+    const [visibility, setVisibilityState] = useState<string>(prevBlur?.blur.visibility || VISIBILITY_PUBLIC);
+    const tempVisibility = useTempPostStore((state) => state.visibility);
+    const setTempVisibility = useTempPostStore((state) => state.setVisibility);
+    const [isEncrypt, setIsEncrypt] = useState<boolean>(prevBlur?.blur.visibility === VISIBILITY_PASSWORD);
     const encryptKey = useTempPostStore((state) => state.encryptKey) || '';
+    const [threadGate, setThreadGate] = useState<string[]>([THREADGATE_QUOTE_ALLOW]);
     const setEncryptKey = useTempPostStore((state) => state.setEncryptKey);
     const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
     const [changeModeOpened, { open: openChangeMode, close: closeChangeMode }] = useDisclosure(false);
@@ -272,8 +277,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             const writes: Write[] = [];
 
             //参照範囲
-            let visibility = VISIBILITY_PUBLIC
-            if (isEncrypt) visibility = VISIBILITY_PASSWORD
+            // visibility state is already used
 
 
             if (!prevBlur) {
@@ -462,6 +466,43 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     value: appBskyFeedPost as unknown as Record<string, unknown>,
                 });
 
+                // Thread Gate (Reply control)
+                const interactionRules = threadGate.filter(val => val !== THREADGATE_QUOTE_ALLOW);
+                if (interactionRules.length > 0) {
+                    const allowRules: { $type: string }[] = [];
+                    if (interactionRules.includes(THREADGATE_MENTION)) allowRules.push({ $type: 'app.bsky.feed.threadgate#mentionRule' });
+                    if (interactionRules.includes(THREADGATE_FOLLOWING)) allowRules.push({ $type: 'app.bsky.feed.threadgate#followingRule' });
+                    if (interactionRules.includes(THREADGATE_FOLLOWERS)) allowRules.push({ $type: 'app.bsky.feed.threadgate#followerRule' });
+
+                    writes.push({
+                        $type: 'com.atproto.repo.applyWrites#create',
+                        collection: 'app.bsky.feed.threadgate',
+                        rkey: rkey,
+                        value: {
+                            $type: 'app.bsky.feed.threadgate',
+                            post: `at://${did}/app.bsky.feed.post/${rkey}`,
+                            allow: allowRules,
+                            createdAt: new Date().toISOString(),
+                        },
+                    });
+                }
+
+                // Post Gate (Quote control)
+                if (!threadGate.includes(THREADGATE_QUOTE_ALLOW)) {
+                    writes.push({
+                        $type: 'com.atproto.repo.applyWrites#create',
+                        collection: 'app.bsky.feed.postgate',
+                        rkey: rkey,
+                        value: {
+                            $type: 'app.bsky.feed.postgate',
+                            post: `at://${did}/app.bsky.feed.post/${rkey}`,
+                            embeddingRules: [{ $type: 'app.bsky.feed.postgate#disableRule' }],
+                            detachedEmbeddingUris: [],
+                            createdAt: new Date().toISOString(),
+                        },
+                    });
+                }
+
             }
 
             let postObject
@@ -597,7 +638,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     rkey: rkey,
                     value: postObject as unknown as Record<string, unknown>,
                 });
-
             }
 
             let buttonName = ''
@@ -702,6 +742,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setTempSimpleMode(false)
         setTempReply('')
         setEncryptKey('')
+        setTempVisibility(VISIBILITY_PUBLIC)
     };
 
     const handleTempApply = async () => {
@@ -709,6 +750,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostText(tempText, tempSimpleMode);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
+        setVisibilityState(tempVisibility ?? VISIBILITY_PUBLIC)
+        setIsEncrypt(tempVisibility === VISIBILITY_PASSWORD)
         if (tempReply && agent && tempReply.includes(did)) {
             const result = await agent.get("app.bsky.feed.getPosts", {
                 params: {
@@ -904,30 +947,44 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                                     <div className="text-sm">{formatDateToLocale(replyPost.record.createdAt)}</div>
                                                     <div className="flex sm:gap-6 gap-4">
                                                         <a href={transformUrl(replyPost.uri)} target="_blank">
-                                                            <svg width="20" height="20" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg"><path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" /></svg>
+                                                            <BlueskyIcon size={20} />
                                                         </a>
                                                     </div>
                                                 </div>
                                             </Card>
                                         }
                                         {!replyPost &&
-                                            <ReplyList handleSetPost={handleSetReplyPost} did={did}/>
+                                            <ReplyList handleSetPost={handleSetReplyPost} did={did} />
                                         }
                                     </>
                                 }
                             </div>
                         }
 
-                        <div className='mb-6 '>
-                            <div className='mt-4 mb-2'>{locale.CreatePost_PasswordTitle}</div>
-                            <div className="block text-sm text-gray-400 mt-1">{locale.CreatePost_PasswordDescription}</div>
-                            <div className="flex items-center mt-2">
-                                <Switch
-                                    checked={isEncrypt}
-                                    onChange={(event) => setIsEncrypt(event.currentTarget.checked)}
-                                    disabled={prevBlur ? true : false}
-                                    label={locale.CreatePost_PasswordRadio}
-                                />
+                        <div className='mb-4 '>
+                            <div className='mt-4 mb-2'>{locale.CreatePost_PublishMethodTitle}</div>
+                            <div className="block text-sm text-gray-400 mt-1 mb-2">{locale.CreatePost_PublishMethodDescription}</div>
+
+                            <SegmentedControl
+                                value={visibility}
+                                onChange={(value) => {
+                                    setVisibilityState(value);
+                                    setIsEncrypt(value === VISIBILITY_PASSWORD);
+                                    if (!prevBlur) setTempVisibility(value);
+                                }}
+                                disabled={prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD}
+                                data={[
+                                    { label: locale.CreatePost_VisibilityPublic, value: VISIBILITY_PUBLIC, disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD },
+                                    { label: locale.CreatePost_VisibilityLogin, value: VISIBILITY_LOGIN, disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD },
+                                    { label: locale.CreatePost_VisibilityPassword, value: VISIBILITY_PASSWORD, disabled: prevBlur && prevBlur.blur.visibility !== VISIBILITY_PASSWORD },
+                                ]}
+                                fullWidth
+                            />
+
+                            <div className="block text-sm text-gray-400 mt-2">
+                                {visibility === VISIBILITY_PUBLIC && locale.CreatePost_VisibilityPublicDescription}
+                                {visibility === VISIBILITY_LOGIN && locale.CreatePost_VisibilityLoginDescription}
+                                {visibility === VISIBILITY_PASSWORD && locale.CreatePost_VisibilityPasswordDescription}
                             </div>
 
                             {isEncrypt &&
@@ -947,8 +1004,30 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     {/[ \t\r\n\u3000]/.test(encryptKey) && <p className="text-red-500">{locale.CreatePost_PasswordErrorSpace}</p>}
                                 </div>
                             }
-
                         </div>
+
+
+                        {!prevBlur && (
+                            <div className="mb-2">
+                                <div className='mt-4 mb-2'>{locale.CreatePost_ThreadGateTitle}</div>
+                                <div className="block text-sm text-gray-400 mt-1 mb-2">
+                                    {locale.CreatePost_ThreadGateDescription}
+                                </div>
+
+                                <Chip.Group
+                                    multiple
+                                    value={threadGate}
+                                    onChange={setThreadGate}
+                                >
+                                    <Group gap="xs" mt="sm">
+                                        <Chip value={THREADGATE_MENTION} size="sm" variant="outline">{locale.CreatePost_ThreadGateMention}</Chip>
+                                        <Chip value={THREADGATE_FOLLOWING} size="sm" variant="outline">{locale.CreatePost_ThreadGateFollowing}</Chip>
+                                        <Chip value={THREADGATE_FOLLOWERS} size="sm" variant="outline">{locale.CreatePost_ThreadGateFollowers}</Chip>
+                                        <Chip value={THREADGATE_QUOTE_ALLOW} size="sm" variant="outline">{locale.CreatePost_ThreadGateQuoteAllow}</Chip>
+                                    </Group>
+                                </Chip.Group>
+                            </div>
+                        )}
 
                         <div className="flex justify-center gap-4 mb-8 mt-2">
                             {!warning && (
@@ -973,7 +1052,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     </>
                 }
 
-            </div>
+            </div >
         </>
     )
 }

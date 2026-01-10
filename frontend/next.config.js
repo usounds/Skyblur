@@ -1,6 +1,6 @@
 export default {
   output: 'standalone',
-  reactStrictMode: true,  
+  reactStrictMode: true,
   images: {
     remotePatterns: [
       {
@@ -11,7 +11,7 @@ export default {
       {
         protocol: 'https',
         hostname: 'cdn.bsky.app',
-        pathname: '/**', 
+        pathname: '/**',
       },
     ],
   },

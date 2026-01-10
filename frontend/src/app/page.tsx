@@ -8,6 +8,7 @@ import { useModeStore } from "@/state/Mode";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { PostListItem } from "@/types/types";
 import { Affix, Button } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { useEffect, useState } from "react";
@@ -27,6 +28,7 @@ export default function Home() {
   const setMode = useModeStore((state) => state.setMode);
   const isLoginProcess = useXrpcAgentStore((state) => state.isLoginProcess);
   const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const handleEdit = (input: PostListItem) => {
     setPrevBlur(input)
@@ -42,6 +44,12 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
+
+    // callbackからのリダイレクト時、認証処理中フラグがあればローディングを表示
+    const authPending = window.localStorage.getItem('oauth.authPending');
+    if (authPending === 'true') {
+      window.localStorage.removeItem('oauth.authPending');
+    }
   }, []);
 
   if (!isMounted) {
@@ -65,7 +73,7 @@ export default function Home() {
             </div>
 
               <div className="row-start-3 flex gap-6 flex-wrap items-center justify-center mt-2">
-                {isLoginProcess ?
+                {isLoginProcess || (typeof window !== 'undefined' && (window.localStorage.getItem('oauth.did') || window.localStorage.getItem('oauth.authPending') === 'true')) ?
                   <div className="flex flex-col items-center justify-center h-full">
                     <p className="mb-2"><Loader color="blue" /></p>
                     {locale.Home_inAuthProgress}
@@ -115,7 +123,7 @@ export default function Home() {
                       <div className="flex justify-center mt-4"></div>
 
                       <div className="flex justify-center mt-4">
-                        <Affix position={{ bottom: 60, left:  '20%' }}>
+                        <Affix position={{ bottom: 60, left: isMobile ? 20 : '20%' }}>
                           <Button
                             variant="default"
                             color="gray"

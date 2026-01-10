@@ -70,7 +70,8 @@ export async function handleOAuth(
       setDid(agent.sub)
       return { success: true, message: '' }
     } catch (e) {
-      console.error(e)
+      console.error('finalizeAuthorization error:', e)
+      console.log('Returning error result from handleOAuth')
       return { success: false, message: locale.Login_BackOperation }
 
     }

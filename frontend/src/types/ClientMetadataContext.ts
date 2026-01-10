@@ -9,14 +9,15 @@ export const scopeList = [
   "rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview",
   "repo:app.bsky.feed.post?action=create&action=delete",
   "repo:app.bsky.feed.generator?action=create&action=update&action=delete",
-//  "repo:app.bsky.feed.threadgate?action=create&action=update&action=delete",
+  "repo:app.bsky.feed.threadgate?action=create&action=update&action=delete",
+  "repo:app.bsky.feed.postgate?action=create&action=update&action=delete",
   "rpc:app.bsky.feed.getFeedGenerator?aud=*",
   "rpc:app.bsky.feed.searchPosts?aud=*",
   "blob:*/*",
 ].join(" ");
 
 // 共通部分を base として定義（必須プロパティをすべて含める）
-const baseClientMetadata: Omit<ClientMetadata, 
+const baseClientMetadata: Omit<ClientMetadata,
   'client_id' | 'client_name' | 'client_uri' | 'redirect_uris' | 'policy_uri' | 'tos_uri'> = {
   scope: scopeList,
   grant_types: ["authorization_code", "refresh_token"],
@@ -33,7 +34,7 @@ export const clientMetadataByEnv: ClientMetadataByEnv = {
     client_id: "https://dev.skyblur.uk/api/client-metadata.json",
     client_name: "Skyblur Local",
     client_uri: "https://dev.skyblur.uk/",
-    redirect_uris: ["https://dev.skyblur.uk/"],
+    redirect_uris: ["https://dev.skyblur.uk/callback"],
     policy_uri: "https://dev.skyblur.uk/termofuse",
     tos_uri: "https://dev.skyblur.uk/termofuse",
   },
@@ -42,7 +43,7 @@ export const clientMetadataByEnv: ClientMetadataByEnv = {
     client_id: "https://preview.skyblur.uk/api/client-metadata.json",
     client_name: "Skyblur Preview",
     client_uri: "https://preview.skyblur.uk",
-    redirect_uris: ["https://preview.skyblur.uk/"],
+    redirect_uris: ["https://preview.skyblur.uk/callback"],
     policy_uri: "https://preview.skyblur.uk/termofuse",
     tos_uri: "https://preview.skyblur.uk/termofuse",
     application_type: "web",
@@ -52,7 +53,7 @@ export const clientMetadataByEnv: ClientMetadataByEnv = {
     client_id: "https://skyblur.uk/api/client-metadata.json",
     client_name: "Skyblur",
     client_uri: "https://skyblur.uk",
-    redirect_uris: ["https://skyblur.uk/"],
+    redirect_uris: ["https://skyblur.uk/callback"],
     policy_uri: "https://skyblur.uk/termofuse",
     tos_uri: "https://skyblur.uk/termofuse",
     application_type: "web",
@@ -66,10 +67,10 @@ export const getClientMetadata = (): ClientMetadata | undefined => {
   const env = hostname.includes("preview")
     ? "preview"
     : hostname.includes("dev.skyblur.uk")
-    ? "local"
-    : hostname.includes("skyblur.uk")
-    ? "production"
-    : "local";
+      ? "local"
+      : hostname.includes("skyblur.uk")
+        ? "production"
+        : "local";
 
   return clientMetadataByEnv[env];
 };

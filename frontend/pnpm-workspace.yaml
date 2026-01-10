@@ -1,0 +1,5 @@
+onlyBuiltDependencies:
+  - '@atcute/time-ms'
+  - esbuild
+  - sharp
+  - unrs-resolver

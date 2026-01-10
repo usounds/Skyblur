@@ -7,6 +7,7 @@ type State = {
   simpleMode: boolean;
   reply?: string;
   encryptKey?: string;
+  visibility?: string;
 };
 
 type Action = {
@@ -15,6 +16,7 @@ type Action = {
   setSimpleMode: (simpleMode: boolean) => void;
   setReply: (reply: string) => void;
   setEncryptKey: (encryptKey: string) => void;
+  setVisibility: (visibility: string) => void;
 };
 
 export const useTempPostStore = create(
@@ -23,11 +25,13 @@ export const useTempPostStore = create(
       text: '',
       additional: '',
       simpleMode: false,
+      visibility: 'public',
       setText: (text: string) => set({ text }),
       setAdditional: (additional: string) => set({ additional }),
       setSimpleMode: (simpleMode: boolean) => set({ simpleMode }),
       setReply: (reply: string) => set({ reply }),
       setEncryptKey: (encryptKey: string) => set({ encryptKey }),
+      setVisibility: (visibility: string) => set({ visibility }),
     }),
     {
       name: 'zustand.temptext', // name of the item in the storage

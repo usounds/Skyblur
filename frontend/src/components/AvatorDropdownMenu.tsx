@@ -2,13 +2,14 @@
 import { useLocaleStore } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
-import { Avatar, Menu } from '@mantine/core';
+import { Avatar, Menu, Modal } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useRouter } from 'next/navigation';
 import { LogIn } from 'lucide-react';
 import { LogOut } from 'lucide-react';
 import { Settings } from 'lucide-react';
 import { Users } from 'lucide-react';
+import { AuthenticationTitle } from './login/Login';
 
 export function AvatorDropdownMenu() {
     const agent = useXrpcAgentStore(state => state.agent);
@@ -18,6 +19,8 @@ export function AvatorDropdownMenu() {
     const did = useXrpcAgentStore(state => state.did);
     const setIsLoginProcess = useXrpcAgentStore(state => state.setIsLoginProcess);
     const setAgent = useXrpcAgentStore(state => state.setAgent);
+    const isLoginModalOpened = useXrpcAgentStore(state => state.isLoginModalOpened);
+    const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
     const router = useRouter();
 
     const logout = async () => {
@@ -49,12 +52,10 @@ export function AvatorDropdownMenu() {
         }
         notifications.clean()
         window.localStorage.removeItem('oauth.did');
-        window.localStorage.removeItem('oauth.handle');
-        router.push('/');
     };
 
     const login = async () => {
-        router.push('/');
+        setIsLoginModalOpened(true);
     }
 
     const handleSettings = async () => {
@@ -101,6 +102,10 @@ export function AvatorDropdownMenu() {
                     </Menu.Item>
                 </Menu.Dropdown>
             }
+
+            <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login}>
+                <AuthenticationTitle isModal={true} />
+            </Modal>
         </Menu>
     );
 }

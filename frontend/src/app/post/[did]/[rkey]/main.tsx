@@ -9,7 +9,7 @@ import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBlue
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocaleStore } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { SKYBLUR_POST_COLLECTION } from '@/types/types';
+import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN } from '@/types/types';
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { X } from 'lucide-react';
+import { BlueskyIcon } from '@/components/Icons';
 
 export const PostPage = () => {
     const params = useParams();
@@ -41,6 +42,9 @@ export const PostPage = () => {
     const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
     const [pdsUrl, setPdsUrl] = useState("");
     const [isMounted, setIsMounted] = useState(false);
+    const loginDid = useXrpcAgentStore((state) => state.did);
+    const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
+    const [visibility, setVisibility] = useState<string>('');
 
     const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
 
@@ -115,6 +119,7 @@ export const PostPage = () => {
                         setPostText(tempPostText);
                         setAddText(postData.additional || '');
                         setPostDate(formatDateToLocale(postData.createdAt));
+                        setVisibility(postData.visibility || '');
 
                         const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
                         setBskyUrl(convertedUri)
@@ -176,14 +181,14 @@ export const PostPage = () => {
 
         const decodedRepo = decodeURIComponent(repo);
         if (!decodedRepo.startsWith('did:')) return
-        const validRepo = decodedRepo as `did:${string}`
+        const validRepo = decodedRepo as `did:${string}:${string}`
+        const validPds = pdsUrl as `${string}:${string}`
 
         const body: UkSkyblurPostDecryptByCid.Input = {
-            pds: pdsUrl,
+            pds: validPds,
             repo: validRepo,
             cid: encryptCid,
             password: encryptKey,
-
         }
         const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
             method: "POST",
@@ -262,15 +267,33 @@ export const PostPage = () => {
                             {!errorMessage &&
                                 <>
                                     <div className="p-2 mx-2 max-w-screen-sm">
-                                        <div className="overflow-hidden break-words">
-                                            <PostTextWithBold postText={postText} isValidateBrackets={true} isMask={null} />
-                                        </div>
-                                        {addText &&
-                                            <div className="">
-                                                <Divider mx='sm' my="sm"/>
-                                                <PostTextWithBold postText={addText} isValidateBrackets={false} isMask={null} />
+                                        {(visibility === VISIBILITY_LOGIN && !loginDid) ? (
+                                            <div className="flex flex-col items-center justify-center m-4 gap-4">
+                                                <div className="text-sm text-gray-500">
+                                                    この投稿を参照するにはログインが必要です。
+                                                </div>
+                                                <Button
+                                                    color="blue"
+                                                    size="sm"
+                                                    onClick={() => setIsLoginModalOpened(true)}
+                                                    leftSection={<BlueskyIcon size={18} />}
+                                                >
+                                                    {locale.Login_Login}
+                                                </Button>
                                             </div>
-                                        }
+                                        ) : (
+                                            <>
+                                                <div className="overflow-hidden break-words">
+                                                    <PostTextWithBold postText={postText} isValidateBrackets={true} isMask={null} />
+                                                </div>
+                                                {addText &&
+                                                    <div className="">
+                                                        <Divider mx='sm' my="sm" />
+                                                        <PostTextWithBold postText={addText} isValidateBrackets={false} isMask={null} />
+                                                    </div>
+                                                }
+                                            </>
+                                        )}
 
                                         {(encryptCid && !isDecrypt) &&
                                             <>
@@ -308,9 +331,7 @@ export const PostPage = () => {
                                             </div>
                                             <div className="flex">
                                                 <a className="text-sm text-gray-500" href={bskyUrl} target="_blank">
-                                                    <svg width="22" height="22" viewBox="0 0 1452 1452" xmlns="http://www.w3.org/2000/svg">
-                                                        <path d="M725.669,684.169c85.954,-174.908 196.522,-329.297 331.704,-463.171c45.917,-43.253 98.131,-74.732 156.638,-94.443c80.779,-23.002 127.157,10.154 139.131,99.467c-2.122,144.025 -12.566,287.365 -31.327,430.015c-29.111,113.446 -96.987,180.762 -203.629,201.947c-36.024,5.837 -72.266,8.516 -108.726,8.038c49.745,11.389 95.815,32.154 138.21,62.292c77.217,64.765 90.425,142.799 39.62,234.097c-37.567,57.717 -83.945,104.938 -139.131,141.664c-82.806,48.116 -154.983,33.716 -216.529,-43.202c-28.935,-38.951 -52.278,-81.818 -70.026,-128.603c-12.177,-34.148 -24.156,-68.309 -35.935,-102.481c-11.779,34.172 -23.757,68.333 -35.934,102.481c-17.748,46.785 -41.091,89.652 -70.027,128.603c-61.545,76.918 -133.722,91.318 -216.529,43.202c-55.186,-36.726 -101.564,-83.947 -139.131,-141.664c-50.804,-91.298 -37.597,-169.332 39.62,-234.097c42.396,-30.138 88.466,-50.903 138.21,-62.292c-36.46,0.478 -72.702,-2.201 -108.725,-8.038c-106.643,-21.185 -174.519,-88.501 -203.629,-201.947c-18.762,-142.65 -29.205,-285.99 -31.328,-430.015c11.975,-89.313 58.352,-122.469 139.132,-99.467c58.507,19.711 110.72,51.19 156.637,94.443c135.183,133.874 245.751,288.263 331.704,463.171Z" fill="currentColor" />
-                                                    </svg>
+                                                    <BlueskyIcon size={22} />
                                                 </a>
                                             </div>
                                         </div>

@@ -4,24 +4,26 @@ import { OAuthUserAgent } from '@atcute/oauth-browser-client';
 import { create } from 'zustand';
 
 type State = {
-    agent: Client | null;
-    oauthUserAgent: OAuthUserAgent | null;
-    publicAgent: Client;
-    userProf: AppBskyActorDefs.ProfileViewDetailed | null;
-    did: string;
-    isLoginProcess: boolean;
-    blueskyLoginMessage: string;
-    serviceUrl: string;
+  agent: Client | null;
+  oauthUserAgent: OAuthUserAgent | null;
+  publicAgent: Client;
+  userProf: AppBskyActorDefs.ProfileViewDetailed | null;
+  did: string;
+  isLoginProcess: boolean;
+  blueskyLoginMessage: string;
+  serviceUrl: string;
+  isLoginModalOpened: boolean;
 };
 
 type Action = {
   setAgent: (agent: Client | null) => void;
-  setOauthUserAgent: (oauthUserAgent:  OAuthUserAgent | null) => void;
+  setOauthUserAgent: (oauthUserAgent: OAuthUserAgent | null) => void;
   setUserProf: (userProf: AppBskyActorDefs.ProfileViewDetailed | null) => void;
   setDid: (did: string) => void;
   setIsLoginProcess: (isLoginProcess: boolean) => void;
   setBlueskyLoginMessage: (blueskyLoginMessage: string) => void;
   setServiceUrl: (setServiceUrl: string) => void;
+  setIsLoginModalOpened: (isLoginModalOpened: boolean) => void;
 };
 
 export const useXrpcAgentStore = create<State & Action>((set) => ({
@@ -34,9 +36,10 @@ export const useXrpcAgentStore = create<State & Action>((set) => ({
   }),
   did: "",
   userProf: null,
-  isLoginProcess: true,
+  isLoginProcess: false,
   blueskyLoginMessage: '',
   serviceUrl: "",
+  isLoginModalOpened: false,
   setAgent: (agent) => set(() => ({ agent: agent })),
   setOauthUserAgent: (oauthUserAgent) => set(() => ({ oauthUserAgent: oauthUserAgent })),
   setUserProf: (userProf) => set(() => ({ userProf: userProf })),
@@ -44,4 +47,5 @@ export const useXrpcAgentStore = create<State & Action>((set) => ({
   setIsLoginProcess: (isLoginProcess) => set(() => ({ isLoginProcess: isLoginProcess })),
   setBlueskyLoginMessage: (blueskyLoginMessage) => set(() => ({ blueskyLoginMessage: blueskyLoginMessage })),
   setServiceUrl: (serviceUrl) => set(() => ({ serviceUrl: serviceUrl })),
+  setIsLoginModalOpened: (isLoginModalOpened) => set(() => ({ isLoginModalOpened: isLoginModalOpened })),
 }));

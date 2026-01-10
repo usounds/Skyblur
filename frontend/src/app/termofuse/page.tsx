@@ -68,6 +68,9 @@ export default function Home() {
             投稿はすべてBlueskyのPDSに保存されます。削除を希望される場合は、ご自身で本サイトの削除機能を使用してください。BlueskyのPDSの情報は全て公開情報となりますので、Skyblurを何かを隠匿する目的では使用できません。
           </p>
           <p className="mt-4 xl:mt-6">
+            公開範囲を「閲覧にログインを必須にする」に設定しても、本サイト上ではログインを必須とされますが、それ以外のサービスにおいては保証されません。
+          </p>
+          <p className="mt-4 xl:mt-6">
             個人運営のため、急にサービスを停止する場合があります。また、不具合等については可能な限り対応を検討しますが、お約束をするものではありません。
           </p>
           <p className="mt-4 xl:mt-6">
@@ -77,6 +80,9 @@ export default function Home() {
 
         <div className="container px-6 pt-4 pb-10 mx-auto">
           <h2 className="text-2xl font-semibold capitalize lg:text-3xl">改訂履歴</h2>
+          <p className="mt-4 xl:mt-6">
+            2026/01/10 「閲覧にログインを必須にする」の追加に伴い、本サイト上でのみ効果を発揮する旨追加しました
+          </p>
           <p className="mt-4 xl:mt-6">
             2025/09/13 利用規約に著作権と責任を明記し、チャットツールとしての利用を禁止するようにしました
           </p>

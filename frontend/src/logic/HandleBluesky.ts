@@ -1,5 +1,5 @@
 import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
-import { SKYBLUR_PREFERENCE_COLLECTION, DIDDocument,Service } from '@/types/types';
+import { SKYBLUR_PREFERENCE_COLLECTION, DIDDocument, Service } from '@/types/types';
 import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import { resolveFromIdentity } from '@atcute/oauth-browser-client';
@@ -47,7 +47,8 @@ export const transformUrl = (inputUrl: string): string => {
     }
 
     if (parts[3] === 'uk.skyblur.post') {
-        return `https://skyblur.uk/post/${parts[2]}/${parts[4]}`;
+        const host = typeof window !== 'undefined' ? window.location.host : 'skyblur.uk';
+        return `https://${host}/post/${parts[2]}/${parts[4]}`;
     }
 
     return ''

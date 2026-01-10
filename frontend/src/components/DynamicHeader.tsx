@@ -11,7 +11,7 @@ import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { getClientMetadata } from '@/types/ClientMetadataContext';
 import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { X } from 'lucide-react';
 
@@ -32,6 +32,7 @@ const DynamicHeader = () => {
   const searchParams = useSearchParams();
   const langParam = searchParams.get('lang');
   const router = useRouter();
+  const pathname = usePathname();
 
   let ignore = false
 
@@ -42,7 +43,7 @@ const DynamicHeader = () => {
   }, [locale]);
 
   useEffect(() => {
-    if (!rehydrated) return; 
+    if (!rehydrated) return;
 
     if (!langParam) {
       const currentUrl = window.location.pathname;
@@ -64,6 +65,12 @@ const DynamicHeader = () => {
     setIsMounted(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ignore = true
+
+    // callbackページではOAuth処理はcallback/page.tsxで行うのでスキップ
+    if (pathname === '/callback') {
+      console.log('Skipping OAuth in DynamicHeader on /callback page')
+      return
+    }
 
     if (did) {
       console.log("has active session")
@@ -88,6 +95,13 @@ const DynamicHeader = () => {
         if (success) {
           setMode('menu')
 
+          const callbackUrl = window.localStorage.getItem('oauth.callbackUrl');
+          if (callbackUrl) {
+            window.localStorage.removeItem('oauth.callbackUrl');
+            if (callbackUrl !== window.location.href) {
+              window.location.href = callbackUrl;
+            }
+          }
         } else if (!success && message) {
           notifications.show({
             title: 'Error',

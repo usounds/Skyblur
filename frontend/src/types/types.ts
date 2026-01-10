@@ -34,6 +34,11 @@ export const SKYBLUR_PREFERENCE_COLLECTION = 'uk.skyblur.preference';
 export const MODAL_TIME = 600;
 export const VISIBILITY_PUBLIC = 'public' as string;
 export const VISIBILITY_PASSWORD = 'password' as string;
+export const VISIBILITY_LOGIN = 'login' as string;
+export const THREADGATE_MENTION = 'mention' as string;
+export const THREADGATE_FOLLOWING = 'following' as string;
+export const THREADGATE_FOLLOWERS = 'followers' as string;
+export const THREADGATE_QUOTE_ALLOW = 'quote' as string;
 
 export type PostListItem = {
     blur: UkSkyblurPost.Record;
@@ -83,6 +88,6 @@ export interface PostView {
 
 export const MENTION_REGEX = /(^|\s|\()(@)([a-zA-Z0-9.-]+)(\b)/g
 export const TAG_REGEX =
-  // eslint-disable-next-line no-misleading-character-class
-  /(^|\s)[#＃]((?!\ufe0f)[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*[^\d\s\p{P}\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]+[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*)?/gu
+    // eslint-disable-next-line no-misleading-character-class
+    /(^|\s)[#＃]((?!\ufe0f)[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*[^\d\s\p{P}\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]+[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*)?/gu
 export const TRAILING_PUNCTUATION_REGEX = /\p{P}+$/gu
