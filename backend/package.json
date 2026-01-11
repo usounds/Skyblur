@@ -3,17 +3,20 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production --minify",
-    "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts"
+    "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts",
+    "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install"
   },
   "dependencies": {
     "did-jwt": "^8.0.18",
     "did-resolver": "^4.1.0",
-    "hono": "^4.10.3",
-    "web-did-resolver": "^2.0.31"
+    "hono": "^4.11.3",
+    "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
-    "@atcute/lex-cli": "^1.1.2",
-    "@cloudflare/workers-types": "^4.20251014.0",
-    "wrangler": "^4.44.0"
+    "@atcute/lex-cli": "^2.5.2",
+    "@cloudflare/unenv-preset": "^2.8.0",
+    "@cloudflare/workers-types": "^4.20260111.0",
+    "unenv": "2.0.0-rc.24",
+    "wrangler": "^4.58.0"
   }
 }
