@@ -29,10 +29,8 @@ export class OAuthStoreDO extends DurableObject {
     if (request.method === "GET") {
       const val = await this.ctx.storage.get(key);
       if (val === undefined) {
-        console.log(`[OAuthStore] GET ${key} -> 404`);
         return new Response(null, { status: 404 });
       }
-      console.log(`[OAuthStore] GET ${key} -> 200 (${JSON.stringify(val).length} bytes)`);
       return new Response(JSON.stringify(val), {
         headers: { "Content-Type": "application/json" },
       });
@@ -40,13 +38,11 @@ export class OAuthStoreDO extends DurableObject {
 
     if (request.method === "PUT") {
       const val = await request.json();
-      console.log(`[OAuthStore] PUT ${key} (${JSON.stringify(val).length} bytes)`);
       await this.ctx.storage.put(key, val);
       return new Response("OK");
     }
 
     if (request.method === "DELETE") {
-      console.log(`[OAuthStore] DELETE ${key}`);
       await this.ctx.storage.delete(key);
       return new Response("OK");
     }
@@ -269,14 +265,17 @@ app.get('/api/did-document', async (c) => {
 // 3. ログイン開始
 app.get('/oauth/login', async (c) => {
   const handle = c.req.query('handle');
-  if (!handle) return c.text('Handle is required', 400);
 
   const origin = getRequestOrigin(c.req.raw, c.env);
   const client = await getOAuthClient(c.env, origin);
 
   try {
+    const authorizeTarget = handle
+      ? { type: 'account' as const, identifier: handle as `${string}.${string}` }
+      : { type: 'pds' as const, serviceUrl: 'https://bsky.social' };
+
     const { url } = await client.authorize({
-      target: { type: 'account', identifier: handle as any },
+      target: authorizeTarget,
       state: { timestamp: Date.now() },
     });
 

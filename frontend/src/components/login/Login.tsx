@@ -2,6 +2,7 @@
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import {
+    Anchor,
     Autocomplete,
     Button,
     Container,
@@ -175,7 +176,16 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 }
             />
             <LanguageSelect />
-            <Button fullWidth mt="xl" radius="md" onClick={handleSignIn} loading={isLoading} loaderProps={{ type: 'dots' }} leftSection={<BlueskyIcon size={20} />}>
+            <Anchor
+                href={`https://${typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')) ? 'devapi.skyblur.uk' : 'api.skyblur.uk'}/oauth/login?redirect_uri=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}`}
+                size="sm"
+                mt="md"
+                ta="center"
+                display="block"
+            >
+                {locale.Login_CreateAccount}
+            </Anchor>
+            <Button fullWidth mt="md" radius="md" onClick={handleSignIn} loading={isLoading} loaderProps={{ type: 'dots' }} leftSection={<BlueskyIcon size={20} />}>
                 {locale.Login_Login}
             </Button>
         </>

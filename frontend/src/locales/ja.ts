@@ -38,6 +38,7 @@ const messages = {
     Visibility_Login: 'ログイン必須',
     Login_HandleCaption: "ハンドル",
     Login_CannotUseWhiteSpace: "ハンドルに空白（スペース・改行・タブなど）は使用できません。",
+    Login_CreateAccount: "新規アカウント作成",
     CreatePost_Fixed: "[全文を読む]",
     CreatePost_Post: "本文",
     CreatePost_PostPlaceHolder: "本文を入力してください",

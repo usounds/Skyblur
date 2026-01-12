@@ -38,6 +38,7 @@ const messages = {
     Visibility_Login: 'Login required',
     Login_HandleCaption: "Handle",
     Login_CannotUseWhiteSpace: "Handles cannot contain whitespace (spaces, line breaks, or tabs).",
+    Login_CreateAccount: "Create Account",
     CreatePost_Fixed: "[Read full text]",
     CreatePost_Post: "Post content",
     CreatePost_PostPlaceHolder: "Please enter the content.",
