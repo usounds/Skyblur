@@ -1,6 +1,8 @@
 const messages = {
     Home_WelcomeTitle: "Skyblurへようこそ",
     Home_WelcomeDescription: "Blueskyへ伏せ字を使った文章をポストできます。",
+    Common_Title: "Skyblur",
+    Common_Description: "伏字を使った投稿ができます",
     Home_Landing001Title: "Skyblurから投稿",
     Home_Landing001Descrtption: "伏せたい投稿はSkyblurから投稿してください！伏せたいところを[秘密だよ]でくくります。Skyblurから投稿すると、Blueskyに自動で投稿されます",
     Home_Landing002Title: "Blueskyは○○○○で表示",
@@ -73,7 +75,7 @@ const messages = {
     CreatePost_VisibilityLogin: "ログイン",
     CreatePost_VisibilityPassword: "パスワード",
     CreatePost_VisibilityPublicDescription: "Bluesky上の誰でも閲覧できます（鍵なし投稿）",
-    CreatePost_VisibilityLoginDescription: "Skyblurへのログインが必須です。Blueskyのアカウントを持たない人からは参照できず、また、Skyblurは1週間に1度のログインが必要になることから参照できるユーザーが減ります",
+    CreatePost_VisibilityLoginDescription: "Skyblurへのログインが必須です。Blueskyのアカウントを持たない人からは本サイト上では参照できません",
     CreatePost_VisibilityPasswordDescription: "パスワードを知っているユーザーのみ閲覧できます",
     CreatePost_NeedLoginTitle: "アクセス制限",
     CreatePost_NeedLoginLabel: "閲覧にログインを必須とする",

@@ -8,34 +8,41 @@ import '@mantine/notifications/styles.css';
 import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script"
+import { cookies } from "next/headers";
 import { BlueskyIcon, GithubIcon } from "@/components/Icons";
+import en from "@/locales/en";
+import ja from "@/locales/ja";
 
-export const metadata: Metadata = {
-  title: "Skyblur",
-  description: "伏字を使った投稿ができます / You can post with blur.",
-};
+export async function generateMetadata() {
+  const cookieStore = await cookies();
+  const lang = cookieStore.get('lang')?.value || 'ja';
+  const locale = lang === 'en' ? en : ja;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return {
+    title: locale.Common_Title,
+    description: locale.Common_Description,
+    openGraph: {
+      title: locale.Common_Title,
+      description: locale.Common_Description,
+      siteName: "Skyblur",
+      locale: lang === 'ja' ? 'ja_JP' : 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: locale.Common_Title,
+      description: locale.Common_Description,
+    },
+  };
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const lang = cookieStore.get('lang')?.value || 'ja';
+
   return (
-    <html {...mantineHtmlProps} className="notranslate" suppressHydrationWarning>
+    <html {...mantineHtmlProps} lang={lang} className="notranslate" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              try {
-                const getCookie = (name) => {
-                  const value = "; " + document.cookie;
-                  const parts = value.split("; " + name + "=");
-                  if (parts.length === 2) return parts.pop().split(";").shift();
-                };
-                const lang = getCookie('lang') || 'ja';
-                document.documentElement.lang = lang;
-              } catch (e) {
-                document.documentElement.lang = 'ja';
-              }
-            })();
-          `
-        }} />
       </head>
       <body>
         <ColorSchemeScript />

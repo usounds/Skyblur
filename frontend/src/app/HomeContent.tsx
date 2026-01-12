@@ -6,7 +6,7 @@ import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { Button, Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconEye, IconEyeOff, IconPencil } from '@tabler/icons-react';
 import { Sparkles } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import classes from './FeaturesGrid.module.css';
 

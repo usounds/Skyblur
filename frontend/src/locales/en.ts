@@ -1,6 +1,8 @@
 const messages = {
     Home_WelcomeTitle: "Welcome to Skyblur",
     Home_WelcomeDescription: "Skyblur is a content warning and spoilers protection tool for Bluesky.",
+    Common_Title: "Skyblur",
+    Common_Description: "You can post with blur",
     Home_Landing001Title: "Post contents from Skyblur",
     Home_Landing001Descrtption: "If you want to post with blur, please post from Skyblur. Enclose the parts you want to blur with [secret]. When posted from Skyblur, it will automatically be posted to Bluesky.",
     Home_Landing002Title: "Bluesky shows the blurred text",
@@ -72,7 +74,7 @@ const messages = {
     CreatePost_VisibilityPublic: "Public",
     CreatePost_VisibilityPublicDescription: "Anyone on Bluesky can see it.",
     CreatePost_VisibilityLogin: "Login",
-    CreatePost_VisibilityLoginDescription: "The viewer's must login to Skyblur. It cannot be accessed by people who do not have a Bluesky account. Also, because Skyblur requires logging in once a week, the number of users who can access it will decrease.",
+    CreatePost_VisibilityLoginDescription: "The viewer's must login to Skyblur. It cannot be accessed by people who do not have a Bluesky account.",
     CreatePost_VisibilityPassword: "Password",
     CreatePost_VisibilityPasswordDescription: "Only users who know the password can view",
     CreatePost_NeedLoginTitle: "Access Control",
