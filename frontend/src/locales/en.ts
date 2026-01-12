@@ -4,7 +4,7 @@ const messages = {
     Home_Landing001Title: "Post contents from Skyblur",
     Home_Landing001Descrtption: "If you want to post with blur, please post from Skyblur. Enclose the parts you want to blur with [secret]. When posted from Skyblur, it will automatically be posted to Bluesky.",
     Home_Landing002Title: "Bluesky shows the blurred text",
-    Home_Landing002Descrtption: "The parts enclosed with [secret] will be blurred. Tap the embed to read the unblurred text on Skyblur.",
+    Home_Landing002Descrtption: "The parts enclosed with [secret] will be blurred as ******. Tap the embed to read the unblurred text on Skyblur.",
     Home_Landing003Title: "Skyblur shows the unblurred text",
     Home_Landing003Descrtption: "The unblurred text will be displayed. If you want to delete a post, you can it from Skyblur.",
     Menu_CreatePost: "Create a post",

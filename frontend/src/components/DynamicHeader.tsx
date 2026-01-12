@@ -45,12 +45,13 @@ const DynamicHeader = () => {
   const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
 
-  // プロフィールフェッチ
+  // プロフィールフェッチは /oauth/session で統合されたため不要になりました
   useEffect(() => {
-    if (did && isSessionChecked) {
+    // ログイン済みだがプロフィールがない場合のみ保険で取得
+    if (did && isSessionChecked && !userProf) {
       useXrpcAgentStore.getState().fetchUserProf();
     }
-  }, [did, isSessionChecked]);
+  }, [did, isSessionChecked, userProf]);
 
   if (!isMounted) return null;
 

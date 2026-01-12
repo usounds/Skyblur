@@ -87,15 +87,20 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
           if (data.authenticated) {
             const pdsUrl = data.pds || 'https://bsky.social';
             // 変更がある場合のみ更新
-            if (get().did !== data.did || get().serviceUrl !== pdsUrl) {
-              set({ did: data.did, serviceUrl: pdsUrl, isSessionChecked: true });
+            const updates: any = { did: data.did, serviceUrl: pdsUrl, isSessionChecked: true };
+            if (data.userProf) {
+              updates.userProf = data.userProf;
+            }
+
+            if (get().did !== data.did || get().serviceUrl !== pdsUrl || data.userProf) {
+              set(updates);
             } else {
               set({ isSessionChecked: true });
             }
             return { authenticated: true, did: data.did, pds: pdsUrl };
           } else {
             if (get().did !== "" || get().isSessionChecked !== true) {
-              set({ did: "", serviceUrl: "", isSessionChecked: true });
+              set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null });
             }
             return { authenticated: false, did: "", pds: "" };
           }

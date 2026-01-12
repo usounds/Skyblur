@@ -29,14 +29,47 @@ class DurableObjectStore {
             method: 'GET'
         });
         if (res.status === 404) return undefined;
-        return await res.json();
+
+        // JSON でデコードした後、Uint8Array などのバイナリを復旧する
+        const data = await res.json();
+        return this.revive(data);
     }
 
     async set(key: string, value: any): Promise<void> {
+        // Uint8Array などのバイナリを JSON 互換形式に変換して保存
+        const data = this.replace(value);
         await this.getStub().fetch(`http://do/?key=${this.name}:${key}`, {
             method: 'PUT',
-            body: JSON.stringify(value)
+            body: JSON.stringify(data)
         });
+    }
+
+    private replace(obj: any): any {
+        if (obj instanceof Uint8Array) {
+            return { __type: 'Uint8Array', data: Array.from(obj) };
+        }
+        if (obj && typeof obj === 'object') {
+            const next: any = Array.isArray(obj) ? [] : {};
+            for (const k in obj) {
+                next[k] = this.replace(obj[k]);
+            }
+            return next;
+        }
+        return obj;
+    }
+
+    private revive(obj: any): any {
+        if (obj && typeof obj === 'object') {
+            if (obj.__type === 'Uint8Array') {
+                return new Uint8Array(obj.data);
+            }
+            const next: any = Array.isArray(obj) ? [] : {};
+            for (const k in obj) {
+                next[k] = this.revive(obj[k]);
+            }
+            return next;
+        }
+        return obj;
     }
 
     async delete(key: string): Promise<void> {
@@ -85,6 +118,8 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
 
     const clientId = `${effectiveOrigin}/api/client-metadata.json`;
     const jwksUri = `${effectiveOrigin}/api/jwks.json`;
+
+    console.log(`[OAuth] Initializing client for origin: ${effectiveOrigin}, clientId: ${clientId}`);
 
     const sessionStore = new DurableObjectStore(env.SKYBLUR_DO, 'session') as any;
     const stateStore = new DurableObjectStore(env.SKYBLUR_DO, 'state') as any;
@@ -155,7 +190,9 @@ export async function restoreSession(oauth: OAuthClient, did: string): Promise<O
     }
 
     try {
+        console.log(`[OAuth] Restoring session for DID: ${did}`);
         const session = await oauth.restore(did as any);
+        console.log(`[OAuth] Session restored successfully for DID: ${did}`);
 
         sessionCache.set(did, {
             session,
@@ -164,6 +201,7 @@ export async function restoreSession(oauth: OAuthClient, did: string): Promise<O
 
         return session;
     } catch (error: any) {
+        console.error(`[OAuth] Failed to restore session for DID: ${did}`, error);
         // ログアウト後のセッション復元エラーは静かに処理
         if (error?.name === 'TokenRefreshError' || error?.message?.includes('session was deleted')) {
             // セッションが削除されている場合はキャッシュもクリア

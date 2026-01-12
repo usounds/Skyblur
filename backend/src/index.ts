@@ -435,10 +435,24 @@ app.get('/oauth/session', async (c) => {
       }
     }
 
+    const client = new Client({ handler: session });
+    let userProf: any = null;
+    try {
+      const profileRes = await (client as any).get('app.bsky.actor.getProfile', {
+        params: { actor: session.did },
+      });
+      if (profileRes.ok) {
+        userProf = profileRes.data;
+      }
+    } catch (err) {
+      console.error('Failed to fetch profile during session check:', err);
+    }
+
     return c.json({
       authenticated: true,
       did: session.did || (session as any).sub,
       pds: resolvedPds,
+      userProf,
     });
   } catch (e: any) {
     // ログアウト後のセッション復元エラーは静かに処理
