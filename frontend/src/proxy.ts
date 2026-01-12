@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-    const { pathname, searchParams } = request.nextUrl;
+export function proxy(request: NextRequest) {
+    const { pathname } = request.nextUrl;
 
     // 静的ファイルなどは即時復帰
     if (pathname.includes('.')) {
