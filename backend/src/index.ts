@@ -202,37 +202,45 @@ async function withSession(
 
 // --- OAuth エンドポイント ---
 
-// 1. クライアントメタデータ
+// 1. クライアントメタデータ (軽量版: getOAuthClient を呼ばない)
 app.get('/oauth/client-metadata.json', async (c) => {
   const origin = getRequestOrigin(c.req.raw, c.env);
-  const client = await getOAuthClient(c.env, origin);
-  return c.json(client.metadata);
+  const { scopeList } = await import('@/logic/ATPOauth');
+
+  const metadata = {
+    client_id: `${origin}/oauth/client-metadata.json`,
+    client_name: 'Skyblur',
+    client_uri: origin,
+    redirect_uris: [`${origin}/oauth/callback`],
+    jwks_uri: `${origin}/oauth/jwks.json`,
+    scope: scopeList,
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    token_endpoint_auth_method: 'private_key_jwt',
+    token_endpoint_auth_signing_alg: 'ES256',
+    dpop_bound_access_tokens: true,
+  };
+
+  return c.json(metadata, 200, {
+    'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+  });
 });
 
-// 2. JWKS
-app.get('/oauth/jwks.json', async (c) => {
-  try {
-    const privateKeyRaw = c.env.OAUTH_PRIVATE_KEY_JWK;
-    if (!privateKeyRaw) {
-      throw new Error('OAUTH_PRIVATE_KEY_JWK is not set');
-    }
-
-    const privateKey = JSON.parse(privateKeyRaw);
-
-    // 秘密鍵 D 以外を抽出して公開鍵 JWK を作成
-    const { d, ...publicKey } = privateKey;
-
-    // kid がない場合はデフォルトを付与
-    if (!publicKey.kid) publicKey.kid = 'k1';
-    if (!publicKey.alg) publicKey.alg = 'ES256';
-
-    return c.json({
-      keys: [publicKey]
-    });
-  } catch (e) {
-    console.error('JWKS Error:', e);
-    return c.json({ error: 'Internal Server Error', detail: String(e) }, 500);
+// 2. JWKS (軽量版: JWK パースのみ)
+app.get('/oauth/jwks.json', (c) => {
+  const privateKeyRaw = c.env.OAUTH_PRIVATE_KEY_JWK;
+  if (!privateKeyRaw) {
+    return c.json({ error: 'OAUTH_PRIVATE_KEY_JWK is not set' }, 500);
   }
+
+  const privateKey = JSON.parse(privateKeyRaw);
+  const { d, ...publicKey } = privateKey;
+  if (!publicKey.kid) publicKey.kid = 'k1';
+  if (!publicKey.alg) publicKey.alg = 'ES256';
+
+  return c.json({ keys: [publicKey] }, 200, {
+    'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+  });
 });
 
 // 2.5 DID Document
