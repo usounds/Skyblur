@@ -8,14 +8,23 @@ import '@mantine/notifications/styles.css';
 import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script"
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { BlueskyIcon, GithubIcon } from "@/components/Icons";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
 
 export async function generateMetadata() {
   const cookieStore = await cookies();
-  const lang = cookieStore.get('lang')?.value || 'ja';
+  const headersList = await headers();
+
+  // 1. クッキーを優先
+  // 2. クッキーがない場合はAccept-Languageヘッダーで判定（SNSクローラー対応）
+  let lang = cookieStore.get('lang')?.value;
+  if (!lang) {
+    const acceptLanguage = headersList.get('accept-language') || '';
+    lang = acceptLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+  }
+
   const locale = lang === 'en' ? en : ja;
 
   return {
@@ -23,7 +32,7 @@ export async function generateMetadata() {
     description: locale.Common_Description,
     openGraph: {
       title: locale.Common_Title,
-      description: locale.Common_Description,
+      description: locale.Common_OGDescription,
       siteName: "Skyblur",
       locale: lang === 'ja' ? 'ja_JP' : 'en_US',
       type: 'website',
@@ -31,7 +40,7 @@ export async function generateMetadata() {
     twitter: {
       card: 'summary_large_image',
       title: locale.Common_Title,
-      description: locale.Common_Description,
+      description: locale.Common_OGDescription,
     },
   };
 }

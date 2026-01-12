@@ -1,12 +1,11 @@
 import { AvatorDropdownMenu } from '@/components/AvatorDropdownMenu';
 import LanguageToggle from '@/components/LanguageToggle';
-import { AuthenticationTitle } from '@/components/login/Login';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
-import { Modal } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { X } from 'lucide-react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 
@@ -18,7 +17,6 @@ const DynamicHeader = () => {
   const searchParams = useSearchParams();
   const loginError = searchParams.get('loginError');
   const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
-  const isLoginModalOpened = useXrpcAgentStore(state => state.isLoginModalOpened);
 
   useEffect(() => {
     setIsMounted(true);
@@ -63,20 +61,13 @@ const DynamicHeader = () => {
   return (
     <>
       <div className="flex flex-row items-center gap-3 sm:mt-0">
-        <a href="/termofuse" className="flex-none text-sm mr-2">
+        <Link href="/termofuse" className="flex-none text-sm mr-2">
           {locale?.Menu_TermOfUse}
-        </a>
-        {did && <AvatorDropdownMenu />}
+        </Link>
+        <AvatorDropdownMenu />
         <LanguageToggle />
         <SwitchColorMode />
       </div>
-
-      {/* Login Modal - always rendered so it can be triggered from anywhere */}
-      {!did && (
-        <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login} closeOnClickOutside={false}>
-          <AuthenticationTitle isModal={true} />
-        </Modal>
-      )}
     </>
   );
 };

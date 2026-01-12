@@ -3,6 +3,7 @@ const messages = {
     Home_WelcomeDescription: "Blueskyへ伏せ字を使った文章をポストできます。",
     Common_Title: "Skyblur",
     Common_Description: "伏字を使った投稿ができます",
+    Common_OGDescription: "ATProtocolに対応した、Blueskyに伏せ字の投稿ができるアプリケーションです。",
     Home_Landing001Title: "Skyblurから投稿",
     Home_Landing001Descrtption: "伏せたい投稿はSkyblurから投稿してください！伏せたいところを[秘密だよ]でくくります。Skyblurから投稿すると、Blueskyに自動で投稿されます",
     Home_Landing002Title: "Blueskyは○○○○で表示",

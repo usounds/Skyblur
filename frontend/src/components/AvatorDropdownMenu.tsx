@@ -3,7 +3,6 @@ import { ActionIcon, Avatar, Group, Menu, Text, UnstyledButton, rem, Modal } fro
 import { notifications } from '@mantine/notifications';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
-import { IconChevronDown, IconLogout, IconSettings, IconUser } from '@tabler/icons-react';
 import { LogOut, LogIn, Users, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

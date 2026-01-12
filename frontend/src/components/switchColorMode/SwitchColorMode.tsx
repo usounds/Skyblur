@@ -1,5 +1,5 @@
 import { ActionIcon, useMantineColorScheme, useComputedColorScheme } from '@mantine/core';
-import { IconSun, IconMoon } from '@tabler/icons-react';
+import { Sun, Moon } from 'lucide-react';
 import { useEffect, useState } from "react";
 
 export function SwitchColorMode() {
@@ -18,7 +18,7 @@ export function SwitchColorMode() {
         size="lg"
         aria-label="Toggle color scheme"
       >
-        <IconSun stroke={1.5} />
+        <Sun stroke="currentColor" strokeWidth={1.5} size={20} />
       </ActionIcon>
     );
   }
@@ -30,10 +30,10 @@ export function SwitchColorMode() {
       size="lg"
       aria-label="Toggle color scheme"
     >
-      {computedColorScheme === 'dark' ? (
-        <IconSun stroke={1.5} />
+      {computedColorScheme === 'light' ? (
+        <Moon stroke="currentColor" strokeWidth={1.5} size={20} />
       ) : (
-        <IconMoon stroke={1.5} />
+        <Sun stroke="currentColor" strokeWidth={1.5} size={20} />
       )}
     </ActionIcon>
   );

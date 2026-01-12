@@ -4,8 +4,7 @@ import { RecommendedClients } from "@/components/RecommendedClients";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { Button, Container, Loader, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconEye, IconEyeOff, IconPencil } from '@tabler/icons-react';
-import { Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Pencil, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import classes from './FeaturesGrid.module.css';
@@ -20,7 +19,7 @@ export function Feature({ icon: Icon, title, description }: FeatureProps) {
     return (
         <div>
             <ThemeIcon variant="light" size={40} radius={40}>
-                <Icon size={18} stroke={1.5} />
+                <Icon size={18} strokeWidth={1.5} />
             </ThemeIcon>
             <Text mt="sm" mb={7} fw={500}>
                 {title}
@@ -80,17 +79,17 @@ export function HomeContent() {
 
     const features = [
         {
-            icon: IconPencil,
+            icon: Pencil,
             title: locale.Home_Landing001Title,
             description: locale.Home_Landing001Descrtption
         },
         {
-            icon: IconEyeOff,
+            icon: EyeOff,
             title: locale.Home_Landing002Title,
             description: locale.Home_Landing002Descrtption
         },
         {
-            icon: IconEye,
+            icon: Eye,
             title: locale.Home_Landing003Title,
             description: locale.Home_Landing003Descrtption
         }

@@ -41,7 +41,6 @@
     "@mantine/hooks": "^8.3.12",
     "@mantine/notifications": "^8.3.12",
     "@opennextjs/aws": "^3.9.7",
-    "@tabler/icons-react": "^3.36.1",
     "dompurify": "^3.3.1",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
