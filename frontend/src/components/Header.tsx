@@ -1,4 +1,5 @@
-'use client';
+"use client";
+import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { Divider } from '@mantine/core';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -7,6 +8,8 @@ import dynamic from 'next/dynamic';
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false });
 
 const Header = () => {
+  const did = useXrpcAgentStore(state => state.did);
+
   return (
     <>
       <div
@@ -17,7 +20,7 @@ const Header = () => {
         }}
       >
         <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row h-full">
-          <Link href="/" className="text-xl font-semibold">
+          <Link href={did ? "/console" : "/"} className="text-xl font-semibold">
             Skyblur
           </Link>
           <DynamicHeader />

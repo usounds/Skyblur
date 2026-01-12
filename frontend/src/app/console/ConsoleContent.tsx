@@ -1,0 +1,134 @@
+"use client";
+import { CreatePostForm } from "@/components/CreatePost";
+import Loading from "@/components/Loading";
+import { AuthenticationTitle } from "@/components/login/Login";
+import { PostList } from "@/components/PostList";
+import { useLocale } from "@/state/Locale";
+import { useModeStore } from "@/state/Mode";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { PostListItem } from "@/types/types";
+import { Button } from '@mantine/core';
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
+import { useEffect, useState } from "react";
+import { Pencil } from 'lucide-react';
+
+export function ConsoleContent() {
+    const [prevBlur, setPrevBlur] = useState<PostListItem>()
+    const setDid = useXrpcAgentStore((state) => state.setDid);
+    const did = useXrpcAgentStore((state) => state.did);
+    const agent = useXrpcAgentStore((state) => state.agent);
+    const { localeData: locale } = useLocale();
+    const userProf = useXrpcAgentStore((state) => state.userProf);
+    const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
+    const mode = useModeStore((state) => state.mode);
+    const setMode = useModeStore((state) => state.setMode);
+    const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
+    const setServiceUrl = useXrpcAgentStore((state) => state.setServiceUrl);
+
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+    const handleEdit = (input: PostListItem) => {
+        setPrevBlur(input)
+        setMode("create")
+    };
+
+    const handleNew = () => {
+        setPrevBlur(undefined)
+        setMode("create")
+    };
+
+    // セッションの確認（マウント時）
+    useEffect(() => {
+        // 既に DID と ServiceURL がある場合は再チェックしない（HomeContentなどで取得済みの場合）
+        if (did && serviceUrl) {
+            setIsAuthenticated(true);
+            return;
+        }
+
+        const checkSession = async () => {
+            const result = await useXrpcAgentStore.getState().checkSession();
+            setIsAuthenticated(result.authenticated);
+        };
+
+        checkSession();
+    }, [did, serviceUrl]);
+
+    // ログアウト等で DID がクリアされた場合、認証状態も未認証に戻す
+    useEffect(() => {
+        if (isAuthenticated === true && !did) {
+            setIsAuthenticated(false);
+        }
+    }, [did, isAuthenticated]);
+
+    const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
+    const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
+    const fetchUserProf = useXrpcAgentStore((state) => state.fetchUserProf);
+
+    // プロフィールフェッチは DynamicHeader 側で行うため、ここでは行わない
+    // とコメントしていたが、ConsoleContentでも必要なのであれば fetchUserProf を呼ぶ
+
+    // モード調整
+    useEffect(() => {
+        if (did && mode === 'login') {
+            setMode('menu');
+        }
+    }, [did, mode, setMode]);
+
+    useEffect(() => {
+        if (isAuthenticated === true && did && !userProf) {
+            fetchUserProf();
+        }
+    }, [isAuthenticated, did, userProf, fetchUserProf]);
+
+    // --- ここから早期リターン ---
+
+    // 認証確認中、またはプロフィール取得中の場合
+    if (isAuthenticated === null || (isAuthenticated === true && !userProf)) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loading />
+            </div>
+        );
+    }
+
+    // 未認証の場合
+    if (isAuthenticated === false) {
+        return (
+            <div className="mx-auto max-w-screen-md px-4 pt-4 pb-12 flex flex-col items-center">
+                <main className="w-full">
+                    <AuthenticationTitle />
+                </main>
+            </div>
+        );
+    }
+
+    // 認証済みの場合
+    return (
+        <div className="mx-auto max-w-screen-md px-4 pt-4 pb-12">
+            <main>
+                <div className="w-full">
+                    {mode === 'create' ? (
+                        <CreatePostForm setMode={setMode} prevBlur={prevBlur} onBack={() => setMode("menu")} />
+                    ) : (
+                        <div className="mx-auto max-w-screen-sm flex flex-col">
+                            <div className="my-4 text-center">
+                                {locale.Menu_LoginMessage.replace("{2}", (new Date().getHours() < 5 || new Date().getHours() >= 18) ? locale.Greeting_Night : (new Date().getHours() < 11) ? locale.Greeting_Morning : locale.Greeting_Day).replace("{1}", userProf?.displayName || 'No Name')}
+                            </div>
+
+                            <div className="flex justify-center gap-4 mb-8">
+                                <Button leftSection={<Pencil size={14} />} variant="filled" onClick={() => handleNew()}>
+                                    {locale.Menu_CreatePost}
+                                </Button>
+                            </div>
+
+                            {isSessionChecked && did && (
+                                <PostList handleEdit={handleEdit} agent={apiProxyAgent} did={did} pds={serviceUrl} />
+                            )}
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+}

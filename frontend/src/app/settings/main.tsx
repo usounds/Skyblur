@@ -2,7 +2,7 @@
 import Loading from "@/components/Loading";
 import URLCopyButton from "@/components/URLCopyButton";
 import { getPreference } from "@/logic/HandleBluesky";
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { Button, LoadingOverlay, Switch, Textarea, TextInput } from '@mantine/core';
@@ -11,7 +11,7 @@ import Image from "next/image";
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
-import { Check } from 'lucide-react';
+import { Check, Save } from 'lucide-react';
 import { ArrowLeft } from 'lucide-react';
 
 export default function Settings() {
@@ -24,7 +24,7 @@ export default function Settings() {
   const [myPageDescription, setMyPageDescription] = useState<string>('')
   const [isCustomFeed, setIsCustomFeed] = useState<boolean>(false)
   const [isSave, setIsSave] = useState<boolean>(false)
-  const locale = useLocaleStore((state) => state.localeData);
+  const { localeData: locale } = useLocale();
   const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', did || '') || '')
   const [feedDescription, setFeedDescription] = useState<string>('')
   const [feedUpdateMessage, setFeedUpdateMessage] = useState<string>('')
@@ -32,58 +32,71 @@ export default function Settings() {
   const [feedAvatar, setFeedAvatar] = useState<File>()
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
+  const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
   const searchParams = useSearchParams();
+  const setDid = useXrpcAgentStore((state) => state.setDid);
+  const setServiceUrl = useXrpcAgentStore((state) => state.setServiceUrl);
   const lang = searchParams.get('lang') || 'ja';
 
   useEffect(() => {
-    if (!agent || !did) {
+    if (!isSessionChecked) return;
+    if (!did) {
       router.push('/')
       return
     }
+    if (!agent) return;
+
+    let isAborted = false;
+
     setIsMounted(true);
     setIsLoading(true)
     const fetchData = async () => {
       try {
-
         const value = await getPreference(agent, did)
+        if (isAborted) return;
+
         if (value === null) {
           setPreferenceMode('create')
-          setIsLoading(false)
-          return
+          // 早期リターンせず、カスタムフィードの読み込みは続行
+        } else {
+          setPreferenceMode('update')
+          if (value.myPage.isUseMyPage) setIsUseMyPage(true)
+          setMyPageDescription(value.myPage.description || '')
         }
-        setPreferenceMode('update')
-        if (value.myPage.isUseMyPage) setIsUseMyPage(true)
-        setMyPageDescription(value.myPage.description || '')
+
+        const feedATUri = 'at://' + did + '/app.bsky.feed.generator/skyblurCustomFeed'
+        const result = await agent.get('app.bsky.feed.getFeedGenerator', {
+          params: {
+            feed: feedATUri as ResourceUri,
+          },
+        });
+
+        if (isAborted) return;
+
+        if (!result.ok) {
+          setFeedName(locale.Pref_CustomFeedDefaltName?.replace('{1}', userProf?.displayName || '').slice(0, 24) || '')
+          setFeedDescription('')
+        } else {
+          setFeedName(result.data.view.displayName)
+          setFeedDescription(result.data.view.description || '')
+          setFeedAvatarImg(result.data.view.avatar || '')
+          setIsCustomFeed(true)
+        }
 
       } catch (e) {
-        console.error(e)
+        console.error("Settings fetchData failed:", e);
+      } finally {
+        if (!isAborted) setIsLoading(false);
       }
-
-      const feedATUri = 'at://' + did + '/app.bsky.feed.generator/skyblurCustomFeed'
-      const result = await agent.get('app.bsky.feed.getFeedGenerator', {
-        params: {
-          feed: feedATUri as ResourceUri,
-        },
-      });
-
-      if (!result.ok) {
-        setFeedName(locale.Pref_CustomFeedDefaltName?.replace('{1}', userProf?.displayName || '').slice(0, 24) || '')
-        setFeedDescription('')
-      } else {
-        setFeedName(result.data.view.displayName)
-        setFeedDescription(result.data.view.description || '')
-        setFeedAvatarImg(result.data.view.avatar || '')
-        setIsCustomFeed(true)
-
-      }
-      setIsLoading(false)
-
     };
 
     fetchData();
 
+    return () => {
+      isAborted = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [did]);
+  }, [did, agent]);
 
 
   const changeFeedAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,7 +300,7 @@ export default function Settings() {
         color: 'teal',
         icon: <Check />
       });
-      router.push('/')
+      router.push('/console')
     } catch (e) {
       notifications.clean()
       setFeedUpdateMessage('Error:' + e)
@@ -297,7 +310,7 @@ export default function Settings() {
   }
 
 
-  if (!isMounted) {
+  if (!isMounted || (!did && !isSessionChecked)) {
     return (
       <Loading />
     );
@@ -392,38 +405,39 @@ export default function Settings() {
                   </>
                 )}
 
-                <div className="flex flex-col items-center gap-2 mt-6">
-                  <Button
-                    onClick={handleSave}
-                    loading={isSave}
-                    loaderProps={{ type: 'dots' }}
+                <div className="flex justify-between items-center gap-4 mt-6 px-4">
+                  <Link
+                    href={{
+                      pathname: '/console',
+                      query: { lang },
+                    }}
                   >
-                    {locale.Pref_CustomFeedButton}
-                  </Button>
-                  <div className="text-red-500 mb-1">{feedUpdateMessage}</div>
+                    <Button
+                      variant="default"
+                      color="gray"
+                      leftSection={<ArrowLeft />}
+                    >
+                      {locale.Menu_Back}
+                    </Button>
+                  </Link>
+                  <div className="flex flex-col items-end">
+                    <Button
+                      onClick={handleSave}
+                      loading={isSave}
+                      loaderProps={{ type: 'dots' }}
+                      leftSection={<Save />}
+                    >
+                      {locale.Pref_CustomFeedButton}
+                    </Button>
+                    {feedUpdateMessage && <div className="text-red-500 mt-1">{feedUpdateMessage}</div>}
+                  </div>
                 </div>
               </>
             </>
           </div>
-          <div className="flex flex-col items-center gap-4 mt-6">
-            <Link
-              href={{
-                pathname: '/',
-                query: { lang },
-              }}
-            >
-              <Button
-                variant="default"
-                color="gray"
-                leftSection={<ArrowLeft />}
-              >
-                {locale.Menu_Back}
-              </Button>
-            </Link>
-          </div>
         </>
 
       </main>
-    </ >
+    </>
   );
 }

@@ -14,18 +14,21 @@ export async function handle(c: Context) {
     return c.json({ error: 'Missing forceRefresh parameter' }, 400);
   }
 
-  const kv = c.env.SKYBLUR_KV_CACHE;
-  if (!kv) {
-    return c.json({ error: 'KV binding not found' }, 500);
+  const doNamespace = c.env.SKYBLUR_DO;
+  if (!doNamespace) {
+    return c.json({ error: 'DO binding not found' }, 500);
   }
 
+  const doId = doNamespace.idFromName('global_cache');
+  const stub = doNamespace.get(doId);
   const cacheKey = `diddoc_${did}`;
 
   try {
     // キャッシュから取得
     if (forceRefresh === 'false') {
-      const cachedDoc = await kv.get(cacheKey, { type: 'json' });
-      if (cachedDoc) {
+      const res = await stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`));
+      if (res.ok) {
+        const cachedDoc = await res.json();
         return c.json(cachedDoc);
       }
     }
@@ -38,9 +41,12 @@ export async function handle(c: Context) {
 
     const didDocument = await resolverInstance.resolve(did);
 
-    // KVに保存（非同期）
+    // DOに保存（非同期）
     c.executionCtx.waitUntil(
-      kv.put(cacheKey, JSON.stringify(didDocument.didDocument))
+      stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`, {
+        method: 'PUT',
+        body: JSON.stringify(didDocument.didDocument)
+      }))
     );
 
     return c.json(didDocument.didDocument);

@@ -1,57 +1,37 @@
 "use client"
-import { useLocaleStore } from '@/state/Locale';
+import { ActionIcon, Avatar, Group, Menu, Text, UnstyledButton, rem, Modal } from '@mantine/core';
+import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
-import { OAuthUserAgent, deleteStoredSession, getSession } from '@atcute/oauth-browser-client';
-import { Avatar, Menu, Modal } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { IconChevronDown, IconLogout, IconSettings, IconUser } from '@tabler/icons-react';
+import { LogOut, LogIn, Users, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { LogIn } from 'lucide-react';
-import { LogOut } from 'lucide-react';
-import { Settings } from 'lucide-react';
-import { Users } from 'lucide-react';
+import { useState } from 'react';
+import classes from './AvatorDropdownMenu.module.css';
 import { AuthenticationTitle } from './login/Login';
 
 export function AvatorDropdownMenu() {
     const agent = useXrpcAgentStore(state => state.agent);
-    const locale = useLocaleStore(state => state.localeData);
+    const { localeData: locale } = useLocale();
     const userProf = useXrpcAgentStore(state => state.userProf);
     const setDid = useXrpcAgentStore(state => state.setDid);
     const did = useXrpcAgentStore(state => state.did);
-    const setIsLoginProcess = useXrpcAgentStore(state => state.setIsLoginProcess);
-    const setAgent = useXrpcAgentStore(state => state.setAgent);
     const isLoginModalOpened = useXrpcAgentStore(state => state.isLoginModalOpened);
     const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
     const router = useRouter();
 
     const logout = async () => {
-        notifications.show({
-            id: 'Delete-process',
-            title: locale.Menu_Logout,
-            message: locale.Menu_LogoutProgress,
-            loading: true,
-            autoClose: false
-        });
         try {
-
-            const session = await getSession(did as `did:${string}:${string}`, { allowStale: true });
-            const agent = new OAuthUserAgent(session);
-
-            await agent.signOut();
-
+            await fetch('/api/oauth/logout', { method: 'POST' });
             setDid('');
-            setIsLoginProcess(false);
-            setAgent(null);
-
-        } catch {
-            deleteStoredSession(did as `did:${string}:${string}`);
-
-            setAgent(null);
-            setDid('');
-            setIsLoginProcess(false);
-
+            useXrpcAgentStore.getState().setUserProf(null);
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            window.localStorage.removeItem('oauth.did');
+            // 念のためフロントエンドの DID 関連クッキーも消去試行 (ブラウザによる)
+            document.cookie = "oauth_did=; Path=/; Max-Age=0";
+            router.refresh();
         }
-        notifications.clean()
-        window.localStorage.removeItem('oauth.did');
     };
 
     const login = async () => {

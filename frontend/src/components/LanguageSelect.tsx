@@ -1,24 +1,25 @@
 "use client";
 
-import { Locales, localeDataMap, useLocaleStore } from "@/state/Locale";
+import { Locales, useLocale } from "@/state/Locale";
 import { Select } from "@mantine/core";
 import React from "react";
 import { useRouter } from 'next/navigation';
 
+const localeOptions = [
+  { value: 'ja', label: 'Japanese' },
+  { value: 'en', label: 'English' },
+];
+
 const LanguageSelect: React.FC = () => {
   const router = useRouter();
-  const localeString = useLocaleStore((state) => state.locale);
-  const setLocale = useLocaleStore((state) => state.setLocale);
+  const { locale: localeString } = useLocale();
 
   const handleChange = (val: string | null) => {
     if (!val) return;
 
     const newLocale: Locales = val as Locales;
 
-    // Zustand の状態を更新
-    setLocale(newLocale);
-
-    // URL のクエリを置き換え
+    // URL のクエリを置き換え (状態更新はURL変更で行われる)
     if (typeof window !== 'undefined') {
       const currentUrl = window.location.pathname;
       router.replace(`${currentUrl}?lang=${newLocale}`);
@@ -32,10 +33,7 @@ const LanguageSelect: React.FC = () => {
       searchable
       autoSelectOnBlur
       mt="md"
-      data={Object.entries(localeDataMap).map(([value, info]) => ({
-        value,
-        label: info.label,
-      }))}
+      data={localeOptions}
       styles={{
         input: {
           fontSize: 16, // 16pxに設定

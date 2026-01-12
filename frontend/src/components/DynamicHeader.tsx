@@ -4,134 +4,66 @@ import LanguageToggle from '@/components/LanguageToggle';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
 import en from "@/locales/en";
 import ja from "@/locales/ja";
-import { handleOAuth } from "@/logic/HandleOAuth";
-import { useLocaleStore } from '@/state/Locale';
-import { useModeStore } from '@/state/Mode';
+import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
-import { getClientMetadata } from '@/types/ClientMetadataContext';
-import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
-import { X } from 'lucide-react';
 
 const DynamicHeader = () => {
-  const locale = useLocaleStore(state => state.localeData);
-  const setOauthUserAgent = useXrpcAgentStore(state => state.setOauthUserAgent);
-  const setAgent = useXrpcAgentStore(state => state.setAgent);
+  const { locale: currentLocale, localeData: locale } = useLocale();
+  const agent = useXrpcAgentStore(state => state.agent);
   const did = useXrpcAgentStore(state => state.did);
   const setDid = useXrpcAgentStore(state => state.setDid);
-  const setIsLoginProcess = useXrpcAgentStore(state => state.setIsLoginProcess);
   const setServiceUrl = useXrpcAgentStore(state => state.setServiceUrl);
-  const setMode = useModeStore(state => state.setMode);
+  const userProf = useXrpcAgentStore((state) => state.userProf);
   const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
   const [isMounted, setIsMounted] = useState(false);
-  const localeString = useLocaleStore((state) => state.locale);
-  const setLocaleData = useLocaleStore((state) => state.setLocaleData);
-  const [rehydrated, setRehydrated] = useState(false);
   const searchParams = useSearchParams();
   const langParam = searchParams.get('lang');
-  const router = useRouter();
-  const pathname = usePathname();
-
-  let ignore = false
-
-  useEffect(() => {
-    if (locale !== null) {
-      setRehydrated(true);
-    }
-  }, [locale]);
+  const loginError = searchParams.get('loginError');
+  const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
+  const setIsSessionChecked = useXrpcAgentStore(state => state.setIsSessionChecked);
 
   useEffect(() => {
-    if (!rehydrated) return;
-
-    if (!langParam) {
-      const currentUrl = window.location.pathname;
-      router.replace(`${currentUrl}?lang=${localeString || 'ja'}`);
-      return;
-    }
-
-    if (langParam === 'en') setLocaleData(en);
-    else setLocaleData(ja);
-  }, [langParam, router, rehydrated, localeString, setLocaleData]);
-
-
-  useEffect(() => {
-    if (ignore) {
-      console.log("useEffect duplicate call")
-      return
-    }
-
     setIsMounted(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    ignore = true
 
-    // callbackページではOAuth処理はcallback/page.tsxで行うのでスキップ
-    if (pathname === '/callback') {
-      console.log('Skipping OAuth in DynamicHeader on /callback page')
-      return
-    }
-
-    if (did) {
-      console.log("has active session")
-      return
-    }
-
-    (
-      async function () {
-        setIsLoginProcess(true)
-
-        const { success, message } = await handleOAuth(
-          getClientMetadata,
-          setAgent,
-          setUserProf,
-          setIsLoginProcess,
-          setOauthUserAgent,
-          setDid,
-          setServiceUrl,
-          locale
-        );
-
-        if (success) {
-          setMode('menu')
-
-          const callbackUrl = window.localStorage.getItem('oauth.callbackUrl');
-          if (callbackUrl) {
-            window.localStorage.removeItem('oauth.callbackUrl');
-            if (callbackUrl !== window.location.href) {
-              window.location.href = callbackUrl;
-            }
-          }
-        } else if (!success && message) {
-          notifications.show({
-            title: 'Error',
-            message: message,
-            color: 'red',
-            icon: <X />
-          });
-        }
-        setIsLoginProcess(false)
-
-      })();
-
-    // クリーンアップ
-    return () => {
+    // セッションを確認
+    const syncSession = async () => {
+      await useXrpcAgentStore.getState().checkSession();
     };
-  }, [])
+    syncSession();
+  }, []);
 
-  if (!isMounted) {
-    return (
-      <></>
-    );
-  }
 
+  // loginError がある場合にログインモーダルを開く
+  useEffect(() => {
+    if (loginError && isMounted && langParam) {
+      setIsLoginModalOpened(true);
+    }
+  }, [loginError, isMounted, langParam, setIsLoginModalOpened]);
+
+  const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
+  const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
+
+  // プロフィールフェッチ
+  useEffect(() => {
+    if (did && isSessionChecked) {
+      useXrpcAgentStore.getState().fetchUserProf();
+    }
+  }, [did, isSessionChecked]);
+
+  if (!isMounted) return null;
+
+  // lang パラメータがあるのにまだ適用されていない場合…は不要になったのでブロック自体削除
+  // if (langParam && !rehydrated) return null;
 
   return (
     <div className="flex flex-row items-center gap-3 sm:mt-0">
       <Link href="/termofuse" className="flex-none text-sm mr-2">
-        {locale.Menu_TermOfUse}
+        {locale?.Menu_TermOfUse}
       </Link>
-      <AvatorDropdownMenu />
+      {did && <AvatorDropdownMenu />}
       <LanguageToggle />
       <SwitchColorMode />
     </div>

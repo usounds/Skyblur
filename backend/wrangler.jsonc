@@ -7,12 +7,29 @@
     "nodejs_compat"
   ],
   "vars": {
-    "APPVIEW_HOST": "dev.skyblur.uk"
+    "APPVIEW_HOST": "dev.skyblur.uk",
+    "OAUTH_PRIVATE_KEY_JWK": ""
   },
   "kv_namespaces": [
     {
       "binding": "SKYBLUR_KV_CACHE",
       "id": "a29848660cb649cf8ebaffced3041ea0"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SKYBLUR_DO",
+        "class_name": "OAuthStoreDO"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": [
+        "OAuthStoreDO"
+      ]
     }
   ],
   "env": {

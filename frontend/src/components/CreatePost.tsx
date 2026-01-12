@@ -4,14 +4,14 @@ import { ReplyList } from "@/components/ReplyList";
 import { UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblur";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, TRAILING_PUNCTUATION_REGEX, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, THREADGATE_MENTION, THREADGATE_FOLLOWING, THREADGATE_FOLLOWERS, THREADGATE_QUOTE_ALLOW } from "@/types/types";
 import '@atcute/atproto';
 import '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
-import { Client } from '@atcute/client';
+import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { IdentityResolver } from '@/logic/IdentityResolver';
 import * as TID from '@atcute/tid';
@@ -21,7 +21,7 @@ import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
 import { useEffect, useState } from "react";
-import { X, Check } from 'lucide-react';
+import { X, Check, ArrowLeft } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -29,11 +29,13 @@ const iso6393to1 = require('iso-639-3-to-1');
 type CreatePostProps = {
     setMode: (value: string) => void;
     prevBlur?: PostListItem;
+    onBack?: () => void;
 };
 
 export const CreatePostForm: React.FC<CreatePostProps> = ({
     setMode,
-    prevBlur
+    prevBlur,
+    onBack
 }) => {
     const [postText, setPostTest] = useState("");
     const [postTextForRecord, setPostTextForRecord] = useState("");
@@ -45,9 +47,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [simpleMode, setSimpleMode] = useState<boolean>(false)
     const [isIncludeFullBranket, setIsIncludeFullBranket] = useState<boolean>(false)
     const agent = useXrpcAgentStore((state) => state.agent);
-    const locale = useLocaleStore((state) => state.localeData);
+    const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
+    const { localeData: locale } = useLocale();
     const did = useXrpcAgentStore((state) => state.did);
-    const oauthUserAgent = useXrpcAgentStore((state) => state.oauthUserAgent);
+    const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
     const setTempText = useTempPostStore((state) => state.setText);
     const setTempAdditional = useTempPostStore((state) => state.setAdditional);
     const setTempSimpleMode = useTempPostStore((state) => state.setSimpleMode);
@@ -530,7 +533,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     autoClose: false
                 });
 
-                const host = new URL(origin).host;
+                const host = new URL(window.location.origin).host;
                 let appViewUrl = 'skyblur.uk'
                 if (host?.endsWith('dev.skyblur.uk')) {
                     appViewUrl = 'dev.skyblur.uk'
@@ -541,19 +544,11 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     password: encryptKey
                 }
 
-                if (!oauthUserAgent) return
-
-                const apiProxyAgent = new Client({
-                    handler: oauthUserAgent,
-                    proxy: {
-                        did: `did:web:${appViewUrl}`,
-                        serviceId: '#skyblur_api'
-                    }
-                })
+                if (!agent || !serviceUrl) return
 
                 const response = await apiProxyAgent.post('uk.skyblur.post.encrypt', {
                     input: body as unknown as Record<string, unknown>,
-                    as: 'json',
+                    as: 'json'
                 });
 
                 const data: UkSkyblurPostEncrypt.Output = response.data as UkSkyblurPostEncrypt.Output;
@@ -1027,7 +1022,17 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             </div>
                         )}
 
-                        <div className="flex justify-center gap-4 mb-2 mt-6">
+                        <div className="flex justify-between items-center gap-4 mb-2 mt-6 px-4">
+                            {onBack ? (
+                                <Button
+                                    variant="default"
+                                    color="gray"
+                                    leftSection={<ArrowLeft />}
+                                    onClick={onBack}
+                                >
+                                    {locale.Menu_Back}
+                                </Button>
+                            ) : <div />}
                             {!warning && (
                                 (isReply && replyPost) || !isReply
                             ) && (

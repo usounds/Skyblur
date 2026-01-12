@@ -2,14 +2,38 @@ import { UkSkyblurPostEncrypt } from '@/lexicon/UkSkyblur'
 import { deriveKey } from '@/logic/CryptHandler'
 import { verifyJWT } from '@/logic/JWTTokenHandler'
 import { Context } from 'hono'
+import { getCookie } from 'hono/cookie'
+
+async function signDid(did: string, secret: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const key = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+    );
+    const signature = await crypto.subtle.sign(
+        'HMAC',
+        key,
+        encoder.encode(did)
+    );
+
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+
+    return `${did}.${b64}`;
+}
 
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
-    if (!authorization) {
-        return c.json({ message: 'Authorization Header required. This api shoud be call via atproto-proxy.' }, 500);
-    }
+    const rawDid = getCookie(c, 'oauth_did')
+    const secret = (c.env as any).OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
 
-    const origin = c.env.APPVIEW_HOST
+    const origin = (c.env as any).APPVIEW_HOST
     const audience = `did:web:${origin}`
 
     const { body, password } = await c.req.json() as UkSkyblurPostEncrypt.Input
@@ -21,12 +45,28 @@ export const handle = async (c: Context) => {
     }
 
     try {
-        const veriry = await verifyJWT(authorization, audience)
-
-        if (!veriry.verified) {
-            return c.json({ message: 'Cannot verify JWT Token.' }, 500);
-
+        let requesterDid = ''
+        if (authorization) {
+            const veriry = await verifyJWT(authorization, audience)
+            if (!veriry.verified) {
+                return c.json({ message: 'Cannot verify JWT Token.' }, 403);
+            }
+            requesterDid = (veriry as any).did || (veriry as any).sub;
+        } else if (rawDid) {
+            const parts = rawDid.split('.');
+            if (parts.length === 2) {
+                const [did] = parts;
+                const expectedSigned = await signDid(did, secret);
+                if (rawDid === expectedSigned) {
+                    requesterDid = did;
+                }
+            }
         }
+
+        if (!requesterDid) {
+            return c.json({ message: 'Authentication required.' }, 401);
+        }
+
         const encoder = new TextEncoder();
 
         //Salt生成
@@ -50,7 +90,5 @@ export const handle = async (c: Context) => {
     } catch (e) {
         console.log(e)
         return c.json({ message: 'Unexpected error. ' + e }, 500);
-
     }
-
 }

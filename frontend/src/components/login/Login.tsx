@@ -1,8 +1,4 @@
 "use client";
-import { IdentityResolver } from '@/logic/IdentityResolver';
-import { useLocaleStore } from "@/state/Locale";
-import { getClientMetadata, scopeList } from '@/types/ClientMetadataContext';
-import { configureOAuth, createAuthorizationUrl } from '@atcute/oauth-browser-client';
 import {
     Button,
     Container,
@@ -11,11 +7,11 @@ import {
     Title
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from 'lucide-react';
 import LanguageSelect from "../LanguageSelect";
+import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { ActorIdentifier } from '@atcute/lexicons/syntax';
 
 import { BlueskyIcon } from '../Icons';
 
@@ -27,13 +23,18 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         return '';
     });
     const [suggestions, setSuggestions] = useState<string[]>([]);
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    function sleep(ms: number) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    // loginError パラメータがある場合、エラーメッセージを表示
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('loginError')) {
+            setErrorMessage(locale.Login_InvalidHandle || '無効なハンドルです');
+        }
+    }, [locale.Login_InvalidHandle]);
 
     const handleSignIn = async () => {
         setIsLoading(true)
@@ -78,24 +79,8 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             });
             setIsLoading(false)
             return
-
         }
 
-        const serverMetadata = getClientMetadata();
-
-        console.log(serverMetadata)
-
-        if (serverMetadata === undefined) {
-            return
-        }
-
-        configureOAuth({
-            metadata: {
-                client_id: serverMetadata.client_id || '',
-                redirect_uri: serverMetadata.redirect_uris[0] || '',
-            },
-            identityResolver: IdentityResolver,
-        });
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,
@@ -105,58 +90,19 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         });
 
         try {
-            // Resolve identity to get PDS host for display message
-            const resolved = await IdentityResolver.resolve(handle as ActorIdentifier);
+            // バックエンドのログインAPIへリダイレクト
+            window.localStorage.setItem('oauth.handle', handle);
 
-            let host: string;
-            try {
-                const pdsUrl = new URL(resolved.pds);
-                if (pdsUrl.host.endsWith('.bsky.network')) {
-                    host = 'bsky.social';
-                } else {
-                    host = pdsUrl.host;
-                }
-            } catch {
-                host = resolved.pds;
+            let apiEndpoint = 'api.skyblur.uk';
+            if (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')) {
+                apiEndpoint = 'devapi.skyblur.uk';
             }
 
-            const message = locale.Login_Redirect.replace("{1}", host);
-            window.localStorage.setItem('oauth.handle', handle);
-            window.localStorage.setItem('oauth.callbackUrl', window.location.href);
+            const loginUrl = `https://${apiEndpoint}/api/oauth/login?handle=${encodeURIComponent(handle)}`;
+            window.location.assign(loginUrl);
 
-            notifications.update({
-                id: 'login-process',
-                title: locale.Login_Login,
-                message: message,
-                loading: true,
-                autoClose: false
-            });
-
-            const authUrl = await createAuthorizationUrl({
-                target: {
-                    type: 'account',
-                    identifier: handle as ActorIdentifier,
-                },
-                scope: scopeList,
-            });
-
-            // recommended to wait for the browser to persist local storage before proceeding
-            await sleep(200);
-
-            // redirect the user to sign in and authorize the app
-            window.location.assign(authUrl);
-
-            // if this is on an async function, ideally the function should never ever resolve.
-            // the only way it should resolve at this point is if the user aborted the authorization
-            // by returning back to this page (thanks to back-forward page caching)
-            await new Promise((_resolve, reject) => {
-                const listener = () => {
-                    reject(new Error(`user aborted the login request`));
-                };
-
-                window.addEventListener('pageshow', listener, { once: true });
-
-            })
+            // リダイレクトまで待機
+            await new Promise(() => { });
         } catch (e) {
             console.error('Login error:', e);
             notifications.clean();
@@ -167,16 +113,12 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 icon: <X />
             });
             setIsLoading(false);
-            return;
         }
     }
 
 
     const handleInput = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const val = event.currentTarget.value;
-
-        console.log(val)
-
         if (!val) {
             setSuggestions([]);
             return;
@@ -191,7 +133,6 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             });
 
             if (res.ok) {
-                // actor.handle を候補として表示
                 setSuggestions(res.data.actors.map((a) => a.handle));
             }
         } catch (err) {
@@ -218,10 +159,12 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 onChange={(value) => {
                     setHandle(value);
                     setSuggestions([]);
+                    setErrorMessage(null); // 入力時にエラーをクリア
                 }}
+                error={errorMessage}
                 styles={{
                     input: {
-                        fontSize: 16,  // 16pxに設定
+                        fontSize: 16,
                     },
                 }
                 }
@@ -242,7 +185,6 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             <Paper withBorder shadow="sm" p={22} mt={30} radius="md">
                 {loginForm}
             </Paper>
-
         </Container>
     );
 }

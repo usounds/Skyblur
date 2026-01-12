@@ -13,8 +13,7 @@ export const metadata: Metadata = {
   description: "伏字を使った投稿ができます / You can post with blur.",
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html {...mantineHtmlProps} className="notranslate">
       <head>
@@ -75,8 +74,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           strategy="afterInteractive"
         />
       </body>
-
-
     </html>
   );
 }

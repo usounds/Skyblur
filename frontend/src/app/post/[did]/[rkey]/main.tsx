@@ -7,7 +7,7 @@ import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN } from '@/types/types';
 import { AppBskyActorDefs } from '@atcute/bluesky';
@@ -34,7 +34,7 @@ export const PostPage = () => {
     const [postDate, setPostDate] = useState<string>('')
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
     const apiAgent = useXrpcAgentStore((state) => state.publicAgent);
     const [encryptKey, setEncryptKey] = useState("");
     const [encryptCid, setEncryptCid] = useState('')
@@ -171,10 +171,10 @@ export const PostPage = () => {
         }
         setIsDecrypting(true)
 
-        const host = new URL(origin).host;
+        const host = new URL(window.location.origin).host;
         let apiHost = 'api.skyblur.uk'
         if (host?.endsWith('dev.skyblur.uk')) {
-            apiHost = 'skyblurapi.usounds.work'
+            apiHost = 'devapi.skyblur.uk'
         }
 
         const repo = Array.isArray(did) ? did[0] : did || ''

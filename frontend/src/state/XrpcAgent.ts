@@ -1,51 +1,139 @@
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
-import { OAuthUserAgent } from '@atcute/oauth-browser-client';
 import { create } from 'zustand';
 
 type State = {
-  agent: Client | null;
-  oauthUserAgent: OAuthUserAgent | null;
+  agent: Client;
+  apiProxyAgent: Client;
   publicAgent: Client;
   userProf: AppBskyActorDefs.ProfileViewDetailed | null;
   did: string;
-  isLoginProcess: boolean;
   blueskyLoginMessage: string;
   serviceUrl: string;
   isLoginModalOpened: boolean;
+  isSessionChecked: boolean;
 };
 
 type Action = {
-  setAgent: (agent: Client | null) => void;
-  setOauthUserAgent: (oauthUserAgent: OAuthUserAgent | null) => void;
   setUserProf: (userProf: AppBskyActorDefs.ProfileViewDetailed | null) => void;
   setDid: (did: string) => void;
-  setIsLoginProcess: (isLoginProcess: boolean) => void;
   setBlueskyLoginMessage: (blueskyLoginMessage: string) => void;
   setServiceUrl: (setServiceUrl: string) => void;
   setIsLoginModalOpened: (isLoginModalOpened: boolean) => void;
+  setIsSessionChecked: (isSessionChecked: boolean) => void;
+  checkSession: () => Promise<{ authenticated: boolean; did: string; pds: string }>;
+  fetchUserProf: () => Promise<void>;
 };
+const host = typeof window !== 'undefined' ? new URL(window.location.origin).host : '';
 
-export const useXrpcAgentStore = create<State & Action>((set) => ({
-  agent: null,
-  oauthUserAgent: null,
-  publicAgent: new Client({
-    handler: simpleFetchHandler({
-      service: 'https://public.api.bsky.app',
+let sessionCheckPromise: Promise<{ authenticated: boolean; did: string; pds: string }> | null = null;
+let profFetchPromise: Promise<void> | null = null;
+
+export const useXrpcAgentStore = create<State & Action>((set, get) => {
+  const apiEndpoint = typeof window !== 'undefined'
+    ? (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')
+      ? 'devapi.skyblur.uk'
+      : 'api.skyblur.uk')
+    : '';
+
+  return ({
+    agent: new Client({
+      handler: simpleFetchHandler({
+        service: apiEndpoint ? `https://${apiEndpoint}` : '',
+        // @ts-ignore
+        fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+      }),
     }),
-  }),
-  did: "",
-  userProf: null,
-  isLoginProcess: false,
-  blueskyLoginMessage: '',
-  serviceUrl: "",
-  isLoginModalOpened: false,
-  setAgent: (agent) => set(() => ({ agent: agent })),
-  setOauthUserAgent: (oauthUserAgent) => set(() => ({ oauthUserAgent: oauthUserAgent })),
-  setUserProf: (userProf) => set(() => ({ userProf: userProf })),
-  setDid: (did) => set(() => ({ did: did })),
-  setIsLoginProcess: (isLoginProcess) => set(() => ({ isLoginProcess: isLoginProcess })),
-  setBlueskyLoginMessage: (blueskyLoginMessage) => set(() => ({ blueskyLoginMessage: blueskyLoginMessage })),
-  setServiceUrl: (serviceUrl) => set(() => ({ serviceUrl: serviceUrl })),
-  setIsLoginModalOpened: (isLoginModalOpened) => set(() => ({ isLoginModalOpened: isLoginModalOpened })),
-}));
+    apiProxyAgent: new Client({
+      handler: simpleFetchHandler({
+        service: apiEndpoint ? `https://${apiEndpoint}` : '',
+        // @ts-ignore
+        fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+      }),
+      proxy: {
+        did: `did:web:${host}`,
+        serviceId: '#skyblur_api'
+      }
+    }),
+    publicAgent: new Client({
+      handler: simpleFetchHandler({
+        service: 'https://public.api.bsky.app',
+      }),
+    }),
+    did: "",
+    userProf: null,
+    blueskyLoginMessage: '',
+    serviceUrl: "",
+    isLoginModalOpened: false,
+    isSessionChecked: false,
+    setUserProf: (userProf) => set({ userProf }),
+    setDid: (did) => set({ did }),
+    setBlueskyLoginMessage: (blueskyLoginMessage) => set({ blueskyLoginMessage }),
+    setServiceUrl: (serviceUrl) => set({ serviceUrl }),
+    setIsLoginModalOpened: (isLoginModalOpened) => set({ isLoginModalOpened }),
+    setIsSessionChecked: (isSessionChecked) => set({ isSessionChecked }),
+    checkSession: async () => {
+      if (get().isSessionChecked) {
+        return { authenticated: !!get().did, did: get().did, pds: get().serviceUrl };
+      }
+      if (sessionCheckPromise) return sessionCheckPromise;
+
+      sessionCheckPromise = (async () => {
+        try {
+          const res = await fetch(`https://${apiEndpoint}/api/oauth/session`, {
+            credentials: 'include'
+          });
+          const data = await res.json() as any;
+          if (data.authenticated) {
+            const pdsUrl = data.pds || 'https://bsky.social';
+            // 変更がある場合のみ更新
+            if (get().did !== data.did || get().serviceUrl !== pdsUrl) {
+              set({ did: data.did, serviceUrl: pdsUrl, isSessionChecked: true });
+            } else {
+              set({ isSessionChecked: true });
+            }
+            return { authenticated: true, did: data.did, pds: pdsUrl };
+          } else {
+            if (get().did !== "" || get().isSessionChecked !== true) {
+              set({ did: "", serviceUrl: "", isSessionChecked: true });
+            }
+            return { authenticated: false, did: "", pds: "" };
+          }
+        } catch (e) {
+          console.error('Session check failed:', e);
+          set({ isSessionChecked: true });
+          return { authenticated: false, did: "", pds: "" };
+        } finally {
+          sessionCheckPromise = null;
+        }
+      })();
+
+      return sessionCheckPromise;
+    },
+    fetchUserProf: async () => {
+      const { did, apiProxyAgent, userProf, setUserProf, isSessionChecked } = get();
+      if (!did || !isSessionChecked) return;
+
+      // 取得済み、かつ同じ DID ならスキップ
+      if (userProf && userProf.did === did) return;
+
+      if (profFetchPromise) return profFetchPromise;
+
+      profFetchPromise = (async () => {
+        try {
+          console.log(`Fetching profile for ${did}...`);
+          const res = await apiProxyAgent.get('app.bsky.actor.getProfile', { params: { actor: did as any } });
+          if (res.ok) {
+            setUserProf(res.data);
+          }
+        } catch (e) {
+          console.error('Failed to fetch user profile:', e);
+        } finally {
+          profFetchPromise = null;
+        }
+      })();
+
+      return profFetchPromise;
+    }
+  });
+});

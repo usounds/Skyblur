@@ -4,7 +4,7 @@ import Loading from "@/components/Loading";
 import { PostList } from "@/components/PostList";
 import PostLoading from "@/components/PostLoading";
 import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBluesky";
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
@@ -20,7 +20,7 @@ export const ProfilePage = () => {
     const [errorMessage, setErrorMessage] = useState<string>('')
     const [userProf, setUserProf] = useState<AppBskyActorDefs.ProfileViewDetailed>()
     const [myPageDescription, setMyPageDescription] = useState<string>('')
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
     const apiAgent = useXrpcAgentStore((state) => state.publicAgent);
     const [agent, setAgent] = useState<Client | null>(null)
     const [repo, setRepo] = useState<string>('')

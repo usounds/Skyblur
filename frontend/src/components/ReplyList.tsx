@@ -1,7 +1,7 @@
 "use client"
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { PostView } from "@/types/types";
 import { Button, Input, Timeline, Group } from '@mantine/core';
 import { useEffect, useState } from "react";
@@ -23,7 +23,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     const LIMIT = 20
     const [postList, setPostList] = useState<PostView[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
 
 
     const handleValueChange = (value: string) => {
@@ -97,11 +97,11 @@ export const ReplyList: React.FC<ReplyListProps> = ({
 
 
     useEffect(() => {
-        getPosts()
-
-
+        if (agent) {
+            getPosts()
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [agent]);
 
     return (
 

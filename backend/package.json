@@ -7,6 +7,11 @@
     "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install"
   },
   "dependencies": {
+    "@atcute/atproto": "^3.1.10",
+    "@atcute/client": "^4.2.1",
+    "@atcute/identity-resolver": "^1.2.2",
+    "@atcute/identity-resolver-node": "^1.0.3",
+    "@atcute/oauth-node-client": "^0.1.3",
     "did-jwt": "^8.0.18",
     "did-resolver": "^4.1.0",
     "hono": "^4.11.3",

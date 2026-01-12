@@ -1,6 +1,6 @@
 "use client"
 import { transformUrl } from "@/logic/HandleBluesky";
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { useViewerStore } from "@/state/Viewer";
 import { useEffect, useState } from "react";
 //import { BiCommentCheck, BiHeart, BiRepost } from "react-icons/bi";
@@ -21,7 +21,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
   const [intent, setIntent] = useState<number | null>(null);
   const isHideReactions = useViewerStore((state) => state.isHideReactions);
   const setIsHideReactions = useViewerStore((state) => state.setIsHideReactions);
-  const locale = useLocaleStore((state) => state.localeData);
+  const { localeData: locale } = useLocale();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

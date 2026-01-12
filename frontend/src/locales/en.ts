@@ -1,6 +1,6 @@
 const messages = {
-    Home_inAuthProgress: "Authorization is in progress",
-    Home_Welcome: "Welcome to Skyblur. Skyblur is content warning and spoilers protection tool for Bluesky.",
+    Home_WelcomeTitle: "Welcome to Skyblur",
+    Home_WelcomeDescription: "Skyblur is a content warning and spoilers protection tool for Bluesky.",
     Home_Landing001Title: "Post contents from Skyblur",
     Home_Landing001Descrtption: "If you want to post with blur, please post from Skyblur. Enclose the parts you want to blur with [secret]. When posted from Skyblur, it will automatically be posted to Bluesky.",
     Home_Landing002Title: "Bluesky shows the blurred text",
@@ -59,7 +59,7 @@ const messages = {
     CreatePost_BracketFromFullToHalf: "Convert Full-width Brackets to Half-width Brackets",
     CreatePost_BracketsUnbalanced: "The brackets are not correct. The number of [ and ] do not match.",
     CreatePost_isPrevBlurLoading: "Retrieving the content of the previous post.",
-    CreatePost_UpdateButton: "Update (Only applicable to Skyblur)",
+    CreatePost_UpdateButton: "Update (Applicable to Skyblur)",
     CreatePost_RestoreTitle: "Would you like to restore the content you entered halfway?",
     CreatePost_RestoreButton: "Restore",
     CreatePost_Complete: "Post completed!",
@@ -141,6 +141,8 @@ const messages = {
     Home_RecommendedClients: "These recommended clients offer a seamless viewing experience for Skyblur posts.",
     Home_HagoromoName: "Hagoromo",
     Home_HagoromoUrl: "https://hagoromo.relog.tech/",
+    Home_inAuthProgress: "Logging in...",
+    Landing_StartButton: "Start",
 }
 
 

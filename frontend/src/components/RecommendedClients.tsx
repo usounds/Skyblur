@@ -1,7 +1,7 @@
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 
 export const RecommendedClients = () => {
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
 
     return (
         <div className="mt-8 mx-4 text-center text-sm text-gray-500">

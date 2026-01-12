@@ -5,14 +5,14 @@ import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD } from "@/types/types";
 import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Lock } from 'lucide-react';
 import { LockOpen } from 'lucide-react';
 import { X } from 'lucide-react';
@@ -34,27 +34,26 @@ export const PostList: React.FC<PostListProps> = ({
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true)
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
     const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
     const loginDid = useXrpcAgentStore((state) => state.did);
     const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
     const [isLast, setIsLast] = useState<boolean>(false)
 
-    const getPosts = async (cursor: string) => {
-        if (!agent) {
-            console.error("未ログインです")
-            return
+    const isMounted = useRef(true);
+
+    const getPosts = async (currentCursor: string, isInitial: boolean = false) => {
+        if (!agent || !did) {
+            return;
         }
 
-        console.log('cursor:' + cursor)
-
         setIsLoading(true)
-        const deleteListLocal: PostListItem[] = []; // 初期化
+        const deleteListLocal: PostListItem[] = [];
         try {
             const param = {
                 repo: did as ActorIdentifier,
                 collection: SKYBLUR_POST_COLLECTION as `${string}.${string}.${string}`,
-                cursor: cursor,
+                cursor: currentCursor,
                 limit: 10
             };
 
@@ -62,8 +61,10 @@ export const PostList: React.FC<PostListProps> = ({
                 params: param
             });
 
+            if (!result.ok || !isMounted.current) {
+                return;
+            }
 
-            if (!result.ok) return
             if (result.data.records.length === 0) {
                 setIsLast(true)
             }
@@ -89,19 +90,37 @@ export const PostList: React.FC<PostListProps> = ({
             });
 
             // setDeleteList を呼び出して UI を更新
-            setDeleteList([...deleteList, ...deleteListLocal]);
-            setIsLoading(false);
+            if (isInitial) {
+                setDeleteList(deleteListLocal);
+            } else {
+                setDeleteList(prev => [...prev, ...deleteListLocal]);
+            }
 
         } catch (error) {
-            console.error('Error fetching bookmarks:', error);
+            console.error('PostList: Error fetching records:', error);
+        } finally {
+            if (isMounted.current) {
+                setIsLoading(false);
+            }
         }
     };
 
-    useEffect(() => {
-        getPosts(cursor);
+    const isSessionChecked = useXrpcAgentStore(state => state.isSessionChecked);
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    useEffect(() => {
+        isMounted.current = true;
+        if (did && agent && isSessionChecked) {
+            setDeleteList([]);
+            setCursor("");
+            setIsLast(false);
+
+            // 引数で初期読み込みであることを伝える
+            getPosts("", true);
+        }
+        return () => {
+            isMounted.current = false;
+        };
+    }, [did, agent, isSessionChecked]);
 
     const handleDisplay = async (item: PostListItem) => {
         if (!item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD) {
@@ -150,19 +169,17 @@ export const PostList: React.FC<PostListProps> = ({
         });
 
         try {
-            const host = new URL(origin).host;
+            const host = window.location.host;
             let apiHost = 'api.skyblur.uk'
-            if (host?.endsWith('dev.skyblur.uk')) {
-                apiHost = 'skyblurapi.usounds.work'
+            if (host.includes('dev.skyblur.uk') || host.includes('localhost')) {
+                apiHost = 'devapi.skyblur.uk'
             }
 
             const repo = Array.isArray(did) ? did[0] : did || ''
             if (!repo.startsWith('did:')) return
             const validRepo = repo as `did:${string}:${string}`
-            const validPds = (pds || '') as `${string}:${string}`
 
-            const decryptByCidBody: UkSkyblurPostDecryptByCid.Input = {
-                pds: validPds,
+            const decryptByCidBody: any = {
                 repo: validRepo,
                 cid: item.blur.encryptBody?.ref.$link || '',
                 password: item.encryptKey,
@@ -172,6 +189,7 @@ export const PostList: React.FC<PostListProps> = ({
                 headers: {
                     "Content-Type": "application/json"
                 },
+                credentials: 'include',
                 body: JSON.stringify(decryptByCidBody)
             });
 

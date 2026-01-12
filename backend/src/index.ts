@@ -1,19 +1,67 @@
+import { getOAuthClient, getRequestOrigin } from "@/logic/ATPOauth";
 import { handle as decryptByCidHandle } from "@/api/decryptByCid"
 import { handle as getDidDoc } from "@/api/DidDocCache"
 import { handle as ecnryptHandle } from "@/api/ecnrypt"
 import { handle as getPostHandler } from "@/api/getPost"
 import { handle as resolveHandle } from "@/api/resolveHandle"
+import { handle as uploadBlobHandle } from "@/api/uploadBlob"
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
+import { DurableObject } from "cloudflare:workers";
+import { Client } from "@atcute/client";
 
-const app = new Hono()
+// 1. DOクラスの定義
+export class OAuthStoreDO extends DurableObject {
+  constructor(state: DurableObjectState, env: Env) {
+    super(state, env);
+  }
 
-app.options('*', (c) => {
-  c.header('Access-Control-Allow-Origin', '*');
-  c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  return c.text(''); // OPTIONSリクエストに対する空のレスポンス
-});
+  async fetch(request: Request) {
+    const url = new URL(request.url);
+    const key = url.searchParams.get("key");
+
+    if (!key) {
+      return new Response("Missing key", { status: 400 });
+    }
+
+    if (request.method === "GET") {
+      const val = await this.ctx.storage.get(key);
+      if (val === undefined) {
+        return new Response(null, { status: 404 });
+      }
+      return new Response(JSON.stringify(val), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (request.method === "PUT") {
+      const val = await request.json();
+      await this.ctx.storage.put(key, val);
+      return new Response("OK");
+    }
+
+    if (request.method === "DELETE") {
+      await this.ctx.storage.delete(key);
+      return new Response("OK");
+    }
+
+    return new Response("Method not allowed", { status: 405 });
+  }
+}
+
+
+// 型定義
+export interface Env {
+  SKYBLUR_DO: DurableObjectNamespace<OAuthStoreDO>;
+  SKYBLUR_KV_CACHE: KVNamespace;
+  APPVIEW_HOST?: string;
+  OAUTH_PRIVATE_KEY_JWK?: string;
+}
+
+const app = new Hono<{ Bindings: Env }>()
+
+
 
 const allowedOrigins = [
   'https://dev.skyblur.uk',
@@ -21,7 +69,282 @@ const allowedOrigins = [
   'https://preview.skyblur.uk'
 ];
 
-app.use(cors()) // すべてのリクエストでCORSを許可
+app.use('*', cors({
+  origin: (origin, c) => {
+    const allowedOrigins = [
+      'https://dev.skyblur.uk',
+      'https://skyblur.uk',
+      'https://preview.skyblur.uk',
+      'http://localhost:3000'
+    ];
+    if (allowedOrigins.includes(origin) || origin.endsWith('.skyblur.uk') || origin.startsWith('http://localhost:')) {
+      return origin;
+    }
+    return origin; // 全て許可するか、本番では制限を強める
+  },
+  credentials: true,
+  allowMethods: ['GET', 'POST', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'DPoP', 'atproto-proxy', 'x-atproto-allow-proxy'],
+}))
+
+// --- OAuth Helpers ---
+
+async function signDid(did: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(did)
+  );
+
+  // Base64Url conversion
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+
+  return `${did}.${b64}`;
+}
+
+// --- OAuth エンドポイント ---
+
+// 1. クライアントメタデータ
+app.get('/api/client-metadata.json', async (c) => {
+  const origin = getRequestOrigin(c.req.raw, c.env);
+  const client = await getOAuthClient(c.env, origin);
+  return c.json(client.metadata);
+});
+
+// 2. JWKS
+app.get('/api/jwks.json', async (c) => {
+  try {
+    const privateKeyRaw = c.env.OAUTH_PRIVATE_KEY_JWK;
+    if (!privateKeyRaw) {
+      throw new Error('OAUTH_PRIVATE_KEY_JWK is not set');
+    }
+
+    const privateKey = JSON.parse(privateKeyRaw);
+
+    // 秘密鍵 D 以外を抽出して公開鍵 JWK を作成
+    const { d, ...publicKey } = privateKey;
+
+    // kid がない場合はデフォルトを付与
+    if (!publicKey.kid) publicKey.kid = 'k1';
+    if (!publicKey.alg) publicKey.alg = 'ES256';
+
+    return c.json({
+      keys: [publicKey]
+    });
+  } catch (e) {
+    console.error('JWKS Error:', e);
+    return c.json({ error: 'Internal Server Error', detail: String(e) }, 500);
+  }
+});
+
+// 2.5 DID Document
+app.get('/api/did-document', async (c) => {
+  const host = c.req.query('host') || c.env.APPVIEW_HOST || 'skyblur.uk';
+  const apiOrigin = getRequestOrigin(c.req.raw, c.env);
+  const apiHost = new URL(apiOrigin).host;
+
+  const didDocument = {
+    "@context": [
+      "https://www.w3.org/ns/did/v1"
+    ],
+    "id": `did:web:${host}`,
+    "service": [
+      {
+        "id": "#skyblur_appview",
+        "type": "AtprotoAppView",
+        "serviceEndpoint": `https://${c.env.APPVIEW_HOST || host}`
+      },
+      {
+        "id": "#skyblur_api",
+        "type": "SkyblurAPI",
+        "serviceEndpoint": `https://${apiHost}`
+      }
+    ]
+  };
+  return c.json(didDocument);
+});
+
+// 3. ログイン開始
+app.get('/api/oauth/login', async (c) => {
+  const handle = c.req.query('handle');
+  if (!handle) return c.text('Handle is required', 400);
+
+  const origin = getRequestOrigin(c.req.raw, c.env);
+  const client = await getOAuthClient(c.env, origin);
+
+  try {
+    const { url } = await client.authorize({
+      target: { type: 'account', identifier: handle as any },
+      state: { timestamp: Date.now() },
+    });
+
+    const referer = c.req.header('referer');
+    let callbackUrl = '/console';
+    if (referer) {
+      try {
+        const refUrl = new URL(referer);
+        refUrl.searchParams.delete('loginError');
+        if (refUrl.pathname !== '/') {
+          callbackUrl = refUrl.pathname + refUrl.search;
+        }
+      } catch { }
+    }
+
+    const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
+
+    setCookie(c, 'oauth_callback', callbackUrl, {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 3600,
+      domain: domain,
+    });
+
+    return c.redirect(url.toString());
+  } catch (e) {
+    console.error('OAuth Login Error:', e);
+    return c.redirect(`/?loginError=1`);
+  }
+});
+
+// 4. コールバック
+app.get('/api/oauth/callback', async (c) => {
+  const origin = getRequestOrigin(c.req.raw, c.env);
+  const client = await getOAuthClient(c.env, origin);
+  const url = new URL(c.req.url);
+
+  try {
+    const { session } = await client.callback(url.searchParams);
+
+    const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+    const signedDid = await signDid(session.did, secret);
+
+    const callbackCookie = getCookie(c, 'oauth_callback');
+    const redirectTo = callbackCookie ? decodeURIComponent(callbackCookie) : '/';
+
+    const appViewUrl = c.env.APPVIEW_HOST ? `https://${c.env.APPVIEW_HOST}` : 'https://skyblur.uk';
+    const finalRedirect = redirectTo.startsWith('http') ? redirectTo : `${appViewUrl}${redirectTo}`;
+
+    const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
+
+    setCookie(c, 'oauth_did', signedDid, {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 30 * 24 * 60 * 60,
+      domain: domain,
+    });
+
+    deleteCookie(c, 'oauth_callback', { path: '/', domain: domain });
+
+    return c.redirect(finalRedirect);
+  } catch (e) {
+    console.error('OAuth Callback Error:', e);
+    return c.text('OAuth callback failed', 400);
+  }
+});
+
+// 5. セッション確認
+app.get('/api/oauth/session', async (c) => {
+  const rawDid = getCookie(c, 'oauth_did');
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+
+  if (!rawDid) return c.json({ authenticated: false });
+
+  // 署名検証 (signDid の逆回転)
+  const parts = rawDid.split('.');
+  if (parts.length !== 2) return c.json({ authenticated: false });
+
+  const [did, signature] = parts;
+  const expectedSigned = await signDid(did, secret);
+  if (rawDid !== expectedSigned) {
+    return c.json({ authenticated: false });
+  }
+
+  try {
+    const origin = getRequestOrigin(c.req.raw, c.env);
+    const oauth = await getOAuthClient(c.env, origin);
+    const { restoreSession } = await import('@/logic/ATPOauth');
+    const session = await restoreSession(oauth, did);
+
+    // デバッグログから判明した構造 (session.server.serverMetadata.issuer) を含めて PDS を抽出
+    let resolvedPds = (session as any).pds ||
+      (session as any).server?.serverMetadata?.issuer ||
+      (session as any).info?.pds ||
+      (session as any).info?.identity?.pds?.[0] ||
+      (session as any).info?.identity?.services?.atproto_pds?.[0] ||
+      (session as any).info?.server ||
+      '';
+
+    // もし PDS が見つからない場合、キャッシュまたは DID から直接解決を試みる
+    if (!resolvedPds) {
+      const cacheKey = `diddoc_${did}`;
+      try {
+        const doNamespace = c.env.SKYBLUR_DO;
+        const doId = doNamespace.idFromName('global_cache');
+        const stub = doNamespace.get(doId);
+
+        let didDoc: any = null;
+
+        const cacheRes = await stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`));
+        if (cacheRes.ok) {
+          didDoc = await cacheRes.json();
+        }
+
+        if (!didDoc) {
+          console.log(`PDS not found in DO for ${did}, fetching from directory...`);
+          if (did.startsWith('did:plc:')) {
+            const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
+            if (res.ok) {
+              didDoc = await res.json();
+              c.executionCtx.waitUntil(
+                stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`, {
+                  method: 'PUT',
+                  body: JSON.stringify(didDoc)
+                }))
+              );
+            }
+          }
+        }
+
+        if (didDoc) {
+          const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
+          if (service) {
+            resolvedPds = service.serviceEndpoint;
+            console.log(`Resolved PDS from DID Document for ${did}: ${resolvedPds}`);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to resolve PDS from cache/directory:', e);
+      }
+    }
+
+    return c.json({
+      authenticated: true,
+      did: session.did || (session as any).sub,
+      pds: resolvedPds,
+    });
+  } catch (e) {
+    console.error('Session Restore Error:', e);
+    return c.json({ authenticated: false });
+  }
+});
+
+// --- API エンドポイント ---
 
 app.post('/xrpc/uk.skyblur.post.encrypt', (c) => {
   return ecnryptHandle(c)
@@ -47,6 +370,85 @@ app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
 app.get('/xrpc/uk.skyblur.admin.resolveHandle', (c) => {
   return resolveHandle(c)
 })
+
+app.post('/xrpc/com.atproto.repo.uploadBlob', async (c) => {
+  const rawDid = getCookie(c, 'oauth_did');
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+  if (!rawDid) return c.json({ error: 'Authentication required' }, 401);
+  const parts = rawDid.split('.');
+  if (parts.length !== 2) return c.json({ error: 'Authentication required' }, 401);
+  const [did] = parts;
+  const expectedSigned = await signDid(did, secret);
+  if (rawDid !== expectedSigned) return c.json({ error: 'Authentication required' }, 401);
+
+  const origin = getRequestOrigin(c.req.raw, c.env);
+  const oauth = await getOAuthClient(c.env, origin);
+  const session = await (await import('@/logic/ATPOauth')).restoreSession(oauth, did);
+  const client = new Client({ handler: session });
+  return uploadBlobHandle(c, client);
+})
+
+// --- Catch-all XRPC Proxy ---
+// 明示的に定義されていない全ての XRPC リクエストを PDS へプロキシする
+app.all('/xrpc/:method{.*}', async (c) => {
+  const method = c.req.param('method');
+
+  // セッションを確認
+  const rawDid = getCookie(c, 'oauth_did');
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+
+  if (!rawDid) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
+  // 署名検証
+  const parts = rawDid.split('.');
+  if (parts.length !== 2) return c.json({ error: 'Authentication required' }, 401);
+  const [did, signature] = parts;
+  const expectedSigned = await signDid(did, secret);
+  if (rawDid !== expectedSigned) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
+  try {
+    const origin = getRequestOrigin(c.req.raw, c.env);
+    const oauth = await getOAuthClient(c.env, origin);
+    const { restoreSession } = await import('@/logic/ATPOauth');
+    const session = await restoreSession(oauth, did);
+    const requestMethod = c.req.method.toUpperCase();
+
+    const client = new Client({ handler: session });
+
+    if (requestMethod === 'POST') {
+      const contentType = c.req.header('content-type') || 'application/json';
+      let requestData: any;
+
+      if (contentType.includes('application/json')) {
+        requestData = await c.req.json();
+      } else {
+        requestData = new Uint8Array(await c.req.arrayBuffer());
+      }
+
+      console.log(`XRPC Proxy: POST ${method} with encoding ${contentType}`);
+      const response = await (client as any).post(method, {
+        input: requestData,
+        data: requestData,
+        encoding: contentType,
+      });
+      console.log(`XRPC Proxy: POST ${method} responded with ${response.ok ? 'OK' : 'ERR'}`);
+      return c.json(response.data, response.ok ? 200 : 400);
+    } else {
+      const response = await (client as any).get(method, {
+        params: c.req.query(),
+      });
+      console.log(`XRPC Proxy: GET ${method} responded with ${response.ok ? 'OK' : 'ERR'}`);
+      return c.json(response.data, response.ok ? 200 : 400);
+    }
+  } catch (e) {
+    console.error(`XRPC Proxy Error [${method}] for ${did}:`, e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
 
 app.get('/', (c) => {
   const returnDocument = {

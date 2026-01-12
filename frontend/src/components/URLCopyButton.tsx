@@ -1,5 +1,5 @@
 "use client"
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import Link from 'next/link';
 import { Button } from '@mantine/core';
 import React from 'react';
@@ -11,7 +11,7 @@ interface URLCopyButtonProps {
 }
 
 const URLCopyButton: React.FC<URLCopyButtonProps> = ({ url }) => {
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
     const handleCopy = () => {
         navigator.clipboard
             .writeText(url)

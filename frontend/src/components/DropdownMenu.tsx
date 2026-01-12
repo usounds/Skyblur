@@ -1,5 +1,5 @@
 "use client"
-import { useLocaleStore } from "@/state/Locale";
+import { useLocale } from "@/state/Locale";
 import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
 import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
@@ -23,7 +23,7 @@ type DropsownMenuProps = {
 };
 
 function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownMenuProps) {
-    const locale = useLocaleStore((state) => state.localeData);
+    const { localeData: locale } = useLocale();
     const [opened, { open, close }] = useDisclosure(false);
     const [isDeleting, setIsDeleting] = useState(false);
 

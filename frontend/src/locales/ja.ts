@@ -1,6 +1,6 @@
 const messages = {
-    Home_inAuthProgress: "認可処理中です",
-    Home_Welcome: "Skyblurへようこそ。Blueskyへ伏せ字を使った文章をポストできます。",
+    Home_WelcomeTitle: "Skyblurへようこそ",
+    Home_WelcomeDescription: "Blueskyへ伏せ字を使った文章をポストできます。",
     Home_Landing001Title: "Skyblurから投稿",
     Home_Landing001Descrtption: "伏せたい投稿はSkyblurから投稿してください！伏せたいところを[秘密だよ]でくくります。Skyblurから投稿すると、Blueskyに自動で投稿されます",
     Home_Landing002Title: "Blueskyは○○○○で表示",
@@ -59,7 +59,7 @@ const messages = {
     CreatePost_BracketFromFullToHalf: "全角のカッコを半角に変換する",
     CreatePost_BracketsUnbalanced: "カッコが正しくありません。[と]の数が一致しません。",
     CreatePost_isPrevBlurLoading: "前回の投稿内容を取得しています",
-    CreatePost_UpdateButton: "更新する(Skyblurのみ反映されます)",
+    CreatePost_UpdateButton: "更新(Skyblurのみ反映)",
     CreatePost_RestoreTitle: "途中まで入力した内容を復元しますか？",
     CreatePost_RestoreButton: "復元",
     CreatePost_Complete: "投稿しました！",
@@ -141,6 +141,8 @@ const messages = {
     Home_RecommendedClients: "Skyblurの投稿を快適にチェックできる、おすすめクライアント",
     Home_HagoromoName: "羽衣",
     Home_HagoromoUrl: "https://hagoromo.relog.tech/ja/",
+    Home_inAuthProgress: "ログイン処理中...",
+    Landing_StartButton: "始める",
 }
 
 export default messages;
