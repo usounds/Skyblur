@@ -3,7 +3,7 @@ import PageLoading from "@/components/PageLoading";
 import { RecommendedClients } from "@/components/RecommendedClients";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { Button, Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
+import { Button, Container, Loader, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconEye, IconEyeOff, IconPencil } from '@tabler/icons-react';
 import { Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -54,7 +54,6 @@ export function HomeContent() {
 
     const handleStart = async () => {
         setIsLoading(true);
-
 
         try {
             // セッションチェックが終わっていない場合はまずチェック
@@ -107,16 +106,20 @@ export function HomeContent() {
                 {locale.Home_WelcomeDescription}
             </Text>
 
-            <div className="flex justify-center mt-10 mb-12">
-                <Button
-                    variant="outline" size="md" radius="lg"
-                    onClick={handleStart}
-                    loading={isLoading}
-                    leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg"
-                >
-                    {locale.Landing_StartButton || 'Start'}
-                </Button>
+            <div className="flex justify-center mt-10 mb-12" style={{ minHeight: '64px' }}>
+                {!isSessionChecked ? (
+                    <Loader color="blue" type="dots" />
+                ) : (
+                    <Button
+                        variant="outline" size="md" radius="lg"
+                        onClick={handleStart}
+                        loading={isLoading}
+                        leftSection={<Sparkles size={24} />}
+                        className="px-10 h-16 text-lg"
+                    >
+                        {locale.Landing_StartButton || 'Start'}
+                    </Button>
+                )}
             </div>
 
             <SimpleGrid
