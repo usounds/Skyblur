@@ -5,11 +5,12 @@ import { handle as ecnryptHandle } from "@/api/ecnrypt"
 import { handle as getPostHandler } from "@/api/getPost"
 import { handle as resolveHandle } from "@/api/resolveHandle"
 import { handle as uploadBlobHandle } from "@/api/uploadBlob"
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { cors } from 'hono/cors'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { DurableObject } from "cloudflare:workers";
 import { Client } from "@atcute/client";
+import type { OAuthSession } from "@atcute/oauth-node-client";
 
 // 1. DOクラスの定義
 export class OAuthStoreDO extends DurableObject {
@@ -28,8 +29,10 @@ export class OAuthStoreDO extends DurableObject {
     if (request.method === "GET") {
       const val = await this.ctx.storage.get(key);
       if (val === undefined) {
+        console.log(`[OAuthStore] GET ${key} -> 404`);
         return new Response(null, { status: 404 });
       }
+      console.log(`[OAuthStore] GET ${key} -> 200 (${JSON.stringify(val).length} bytes)`);
       return new Response(JSON.stringify(val), {
         headers: { "Content-Type": "application/json" },
       });
@@ -37,11 +40,13 @@ export class OAuthStoreDO extends DurableObject {
 
     if (request.method === "PUT") {
       const val = await request.json();
+      console.log(`[OAuthStore] PUT ${key} (${JSON.stringify(val).length} bytes)`);
       await this.ctx.storage.put(key, val);
       return new Response("OK");
     }
 
     if (request.method === "DELETE") {
+      console.log(`[OAuthStore] DELETE ${key}`);
       await this.ctx.storage.delete(key);
       return new Response("OK");
     }
@@ -167,6 +172,36 @@ async function signDid(did: string, secret: string): Promise<string> {
     .replace(/=/g, '');
 
   return `${did}.${b64}`;
+}
+
+// --- Session Helpers ---
+
+async function withSession(
+  c: Context<{ Bindings: Env }>,
+  did: string,
+  callback: (session: OAuthSession) => Promise<Response>
+): Promise<Response> {
+  const origin = getRequestOrigin(c.req.raw, c.env);
+  const oauth = await getOAuthClient(c.env, origin);
+  const { restoreSession, clearSessionCache } = await import('@/logic/ATPOauth');
+
+  try {
+    const session = await restoreSession(oauth, did);
+    return await callback(session);
+  } catch (e: any) {
+    // リフレッシュエラー時は、ローカルキャッシュをクリアして最大1回リトライする
+    if (e?.name === 'TokenRefreshError' || e?.message?.includes('session was deleted')) {
+      console.warn(`[OAuth] TokenRefreshError for ${did}, retrying...`);
+      clearSessionCache(did);
+      try {
+        const session = await restoreSession(oauth, did);
+        return await callback(session);
+      } catch (retryError) {
+        throw retryError;
+      }
+    }
+    throw e;
+  }
 }
 
 // --- OAuth エンドポイント ---
@@ -431,38 +466,30 @@ app.get('/oauth/session', async (c) => {
     }
 
     try {
-      const origin = getRequestOrigin(c.req.raw, c.env);
-      const oauth = await getOAuthClient(c.env, origin);
-      const { restoreSession } = await import('@/logic/ATPOauth');
-      const session = await restoreSession(oauth, did);
+      return await withSession(c, did, async (session) => {
+        // PDS の特定
+        let resolvedPds = (session as any).pds ||
+          (session as any).server?.serverMetadata?.issuer ||
+          (session as any).info?.pds ||
+          (session as any).info?.identity?.pds?.[0] ||
+          (session as any).info?.identity?.services?.atproto_pds?.[0] ||
+          (session as any).info?.server ||
+          '';
 
-      // デバッグログから判明した構造 (session.server.serverMetadata.issuer) を含めて PDS を抽出
-      let resolvedPds = (session as any).pds ||
-        (session as any).server?.serverMetadata?.issuer ||
-        (session as any).info?.pds ||
-        (session as any).info?.identity?.pds?.[0] ||
-        (session as any).info?.identity?.services?.atproto_pds?.[0] ||
-        (session as any).info?.server ||
-        '';
+        if (!resolvedPds) {
+          const cacheKey = `diddoc_${did}`;
+          try {
+            const doNamespace = c.env.SKYBLUR_DO;
+            const doId = doNamespace.idFromName('global_cache');
+            const stub = doNamespace.get(doId);
 
-      // もし PDS が見つからない場合、キャッシュまたは DID から直接解決を試みる
-      if (!resolvedPds) {
-        const cacheKey = `diddoc_${did}`;
-        try {
-          const doNamespace = c.env.SKYBLUR_DO;
-          const doId = doNamespace.idFromName('global_cache');
-          const stub = doNamespace.get(doId);
+            let didDoc: any = null;
+            const cacheRes = await stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`));
+            if (cacheRes.ok) {
+              didDoc = await cacheRes.json();
+            }
 
-          let didDoc: any = null;
-
-          const cacheRes = await stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`));
-          if (cacheRes.ok) {
-            didDoc = await cacheRes.json();
-          }
-
-          if (!didDoc) {
-
-            if (did.startsWith('did:plc:')) {
+            if (!didDoc && did.startsWith('did:plc:')) {
               const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
               if (res.ok) {
                 didDoc = await res.json();
@@ -474,51 +501,41 @@ app.get('/oauth/session', async (c) => {
                 );
               }
             }
-          }
 
-          if (didDoc) {
-            const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
-            if (service) {
-              resolvedPds = service.serviceEndpoint;
-
+            if (didDoc) {
+              const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
+              if (service) resolvedPds = service.serviceEndpoint;
             }
+          } catch (e) {
+            console.error('Failed to resolve PDS from cache/directory:', e);
           }
-        } catch (e) {
-          console.error('Failed to resolve PDS from cache/directory:', e);
         }
-      }
 
-      const client = new Client({ handler: session });
-      let userProf: any = null;
-      try {
-        const profileRes = await (client as any).get('app.bsky.actor.getProfile', {
-          params: { actor: session.did },
+        const client = new Client({ handler: session });
+        let userProf: any = null;
+        try {
+          const profileRes = await (client as any).get('app.bsky.actor.getProfile', {
+            params: { actor: session.did },
+          });
+          if (profileRes.ok) userProf = profileRes.data;
+        } catch (err) {
+          console.error('Failed to fetch profile during session check:', err);
+        }
+
+        const scope = await session.getTokenInfo();
+        return c.json({
+          authenticated: true,
+          did: session.did,
+          pds: scope.aud,
+          userProf,
+          scope: scope.scope,
         });
-        if (profileRes.ok) {
-          userProf = profileRes.data;
-        }
-      } catch (err) {
-        console.error('Failed to fetch profile during session check:', err);
-      }
-
-      const scope = await session.getTokenInfo();
-      return c.json({
-        authenticated: true,
-        did: session.did || (session as any).sub,
-        pds: scope.aud,
-        userProf,
-        scope: scope.scope,
       });
     } catch (e: any) {
-      // ログアウト後のセッション復元エラーは静かに処理
       if (e?.name === 'TokenRefreshError' || e?.message?.includes('session was deleted')) {
         return c.json({ authenticated: false });
       }
-      // その他のエラーはログに記録
       console.error('Session Restore Error:', e);
-      if (e instanceof Error) {
-        console.error(e.stack);
-      }
       return c.json({ authenticated: false });
     }
   } catch (e: any) {
@@ -614,11 +631,15 @@ app.post('/xrpc/com.atproto.repo.uploadBlob', async (c) => {
   const expectedSigned = await signDid(did, secret);
   if (rawDid !== expectedSigned) return c.json({ error: 'Authentication required' }, 401);
 
-  const origin = getRequestOrigin(c.req.raw, c.env);
-  const oauth = await getOAuthClient(c.env, origin);
-  const session = await (await import('@/logic/ATPOauth')).restoreSession(oauth, did);
-  const client = new Client({ handler: session });
-  return uploadBlobHandle(c, client);
+  try {
+    return await withSession(c, did, async (session) => {
+      const client = new Client({ handler: session });
+      return uploadBlobHandle(c, client);
+    });
+  } catch (e) {
+    console.error('UploadBlob Error:', e);
+    return c.json({ error: String(e) }, 500);
+  }
 })
 
 // --- Catch-all XRPC Proxy ---
@@ -645,37 +666,33 @@ app.all('/xrpc/:method{.*}', async (c) => {
   }
 
   try {
-    const origin = getRequestOrigin(c.req.raw, c.env);
-    const oauth = await getOAuthClient(c.env, origin);
+    return await withSession(c, did, async (session) => {
+      const requestMethod = c.req.method.toUpperCase();
+      const client = new Client({ handler: session });
 
-    const { restoreSession } = await import('@/logic/ATPOauth');
-    const session = await restoreSession(oauth, did);
+      if (requestMethod === 'POST') {
+        const contentType = c.req.header('content-type') || 'application/json';
+        let requestData: any;
 
-    const requestMethod = c.req.method.toUpperCase();
-    const client = new Client({ handler: session });
+        if (contentType.includes('application/json')) {
+          requestData = await c.req.json();
+        } else {
+          requestData = new Uint8Array(await c.req.arrayBuffer());
+        }
 
-    if (requestMethod === 'POST') {
-      const contentType = c.req.header('content-type') || 'application/json';
-      let requestData: any;
-
-      if (contentType.includes('application/json')) {
-        requestData = await c.req.json();
+        const response = await (client as any).post(method, {
+          input: requestData,
+          data: requestData,
+          encoding: contentType,
+        });
+        return c.json(response.data, response.ok ? 200 : 400);
       } else {
-        requestData = new Uint8Array(await c.req.arrayBuffer());
+        const response = await (client as any).get(method, {
+          params: c.req.query(),
+        });
+        return c.json(response.data, response.ok ? 200 : 400);
       }
-
-      const response = await (client as any).post(method, {
-        input: requestData,
-        data: requestData,
-        encoding: contentType,
-      });
-      return c.json(response.data, response.ok ? 200 : 400);
-    } else {
-      const response = await (client as any).get(method, {
-        params: c.req.query(),
-      });
-      return c.json(response.data, response.ok ? 200 : 400);
-    }
+    });
   } catch (e) {
     console.error(`XRPC Proxy Error [${method}] for ${did}:`, e);
     return c.json({ error: String(e) }, 500);

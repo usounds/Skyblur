@@ -38,23 +38,26 @@ class DurableObjectStore {
     }
 
     async get(key: string): Promise<any> {
-        const res = await this.getStub().fetch(`http://do/?key=${this.name}:${key}`, {
+        const fullKey = `${this.name}:${key}`;
+        const res = await this.getStub().fetch(`http://do/?key=${encodeURIComponent(fullKey)}`, {
             method: 'GET'
         });
         if (res.status === 404) return undefined;
 
-        // JSON でデコードした後、Uint8Array などのバイナリを復旧する
         const data = await res.json();
         return this.revive(data);
     }
 
     async set(key: string, value: any): Promise<void> {
-        // Uint8Array などのバイナリを JSON 互換形式に変換して保存
+        const fullKey = `${this.name}:${key}`;
         const data = this.replace(value);
-        await this.getStub().fetch(`http://do/?key=${this.name}:${key}`, {
+        const res = await this.getStub().fetch(`http://do/?key=${encodeURIComponent(fullKey)}`, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
+        if (!res.ok) {
+            throw new Error(`Failed to store ${this.name}:${key}: ${res.statusText}`);
+        }
     }
 
     private replace(obj: any): any {
@@ -62,9 +65,12 @@ class DurableObjectStore {
             return { __type: 'Uint8Array', data: Array.from(obj) };
         }
         if (obj && typeof obj === 'object') {
-            const next: any = Array.isArray(obj) ? [] : {};
-            for (const k in obj) {
-                next[k] = this.replace(obj[k]);
+            if (Array.isArray(obj)) {
+                return obj.map(item => this.replace(item));
+            }
+            const next: any = {};
+            for (const [k, v] of Object.entries(obj)) {
+                next[k] = this.replace(v);
             }
             return next;
         }
@@ -73,12 +79,15 @@ class DurableObjectStore {
 
     private revive(obj: any): any {
         if (obj && typeof obj === 'object') {
-            if (obj.__type === 'Uint8Array') {
+            if (obj.__type === 'Uint8Array' && Array.isArray(obj.data)) {
                 return new Uint8Array(obj.data);
             }
-            const next: any = Array.isArray(obj) ? [] : {};
-            for (const k in obj) {
-                next[k] = this.revive(obj[k]);
+            if (Array.isArray(obj)) {
+                return obj.map(item => this.revive(item));
+            }
+            const next: any = {};
+            for (const [k, v] of Object.entries(obj)) {
+                next[k] = this.revive(v);
             }
             return next;
         }
