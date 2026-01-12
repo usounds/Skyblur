@@ -1,6 +1,6 @@
 "use client";
 
-import { Locales, useLocale } from "@/state/Locale";
+import { Locales, useLocale, useLocaleStore } from "@/state/Locale";
 import { Select } from "@mantine/core";
 import React from "react";
 import { useRouter } from 'next/navigation';
@@ -13,16 +13,17 @@ const localeOptions = [
 const LanguageSelect: React.FC = () => {
   const router = useRouter();
   const { locale: localeString } = useLocale();
+  const setLocale = useLocaleStore(state => state.setLocale);
 
   const handleChange = (val: string | null) => {
     if (!val) return;
 
     const newLocale: Locales = val as Locales;
 
-    // URL のクエリを置き換え (状態更新はURL変更で行われる)
     if (typeof window !== 'undefined') {
-      const currentUrl = window.location.pathname;
-      router.replace(`${currentUrl}?lang=${newLocale}`);
+      setLocale(newLocale);
+      // ページをリフレッシュして変更を反映
+      router.refresh();
     }
   };
 

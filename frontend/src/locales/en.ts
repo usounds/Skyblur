@@ -21,7 +21,7 @@ const messages = {
     Login_Title: "Please enter your handle and tap login.",
     Login_InputHandle: "Please enter your handle.",
     Login_InvalidHandle: "Invalid handle.",
-    Login_DidResolve: "Resolving DID",
+    Login_DidResolve: "Redirecting to authorization screen if necessary",
     Login_PDSResolve: "Resolving PDS",
     Login_Redirect: "Redirecting to {1}",
     Login_RedirectFailed: "Failed to redirect to the authorization page.",
@@ -141,7 +141,7 @@ const messages = {
     Home_RecommendedClients: "These recommended clients offer a seamless viewing experience for Skyblur posts.",
     Home_HagoromoName: "Hagoromo",
     Home_HagoromoUrl: "https://hagoromo.relog.tech/",
-    Home_inAuthProgress: "Logging in...",
+    Home_inAuthProgress: "Redirecting to authorization screen if necessary...",
     Landing_StartButton: "Start",
 }
 

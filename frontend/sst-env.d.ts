@@ -5,10 +5,6 @@
 
 declare module "sst" {
   export interface Resource {
-    "OAuthStore": {
-      "name": string
-      "type": "sst.aws.Dynamo"
-    }
     "Skyblur": {
       "type": "sst.aws.Nextjs"
       "url": string

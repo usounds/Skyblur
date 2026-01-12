@@ -1,15 +1,20 @@
 "use client";
-import { useXrpcAgentStore } from '@/state/XrpcAgent';
+
 import { Divider } from '@mantine/core';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useEffect } from 'react';
+import { useLocaleStore } from '@/state/Locale';
 
 // SSRを無効にしてクライアントでのみロード
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false });
 
 const Header = () => {
-  const did = useXrpcAgentStore(state => state.did);
+  const initLocale = useLocaleStore(state => state.initLocale);
 
+  useEffect(() => {
+    initLocale();
+  }, [initLocale]);
   return (
     <>
       <div
@@ -20,7 +25,7 @@ const Header = () => {
         }}
       >
         <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row h-full">
-          <Link href={did ? "/console" : "/"} className="text-xl font-semibold">
+          <Link href="/" className="text-xl font-semibold">
             Skyblur
           </Link>
           <DynamicHeader />

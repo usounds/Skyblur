@@ -126,49 +126,44 @@ export const ProfilePage = () => {
                 <meta name="robots" content="noindex, nofollow" />
             </Head>
 
-            <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2">
-                <div className="mx-auto rounded-lg">
-                    {userProf &&
-                        <div className="mb-2 mx-2">
-                            <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
-                        </div>
-                    }
-
-                    {myPageDescription &&
-                        <div className="whitespace-pre-wrap break-words mx-3 my-4">
-                            {myPageDescription}
-                        </div>
-                    }
-
-                    {isLoading ?
-                        <div className="">
-                            <PostLoading />
-                        </div>
-                        :
-                        <>
-                            {!errorMessage &&
-                                <>
-
-                                    {agent &&
-                                        <div className="mx-auto max-w-screen-sm">
-                                            <PostList agent={agent} handleEdit={null} did={repo} pds={pdsUrl} />
-                                        </div>
-                                    }
-
-                                </>
-                            }
-                        </>
-                    }
-
-                    {errorMessage &&
-                        <div className="flex justify-center">
-                            <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 mt-4">
-                                {locale.Profile_NotPublish}
+            {/* 初期読み込み中は全体をローディング表示 */}
+            {isLoading ? (
+                <Loading />
+            ) : (
+                <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2">
+                    <div className="mx-auto rounded-lg">
+                        {userProf &&
+                            <div className="mb-2 mx-2">
+                                <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
                             </div>
-                        </div>
-                    }
+                        }
+
+                        {myPageDescription &&
+                            <div className="whitespace-pre-wrap break-words mx-3 my-4">
+                                {myPageDescription}
+                            </div>
+                        }
+
+                        {!errorMessage &&
+                            <>
+                                {agent &&
+                                    <div className="mx-auto max-w-screen-sm">
+                                        <PostList agent={agent} handleEdit={null} did={repo} pds={pdsUrl} />
+                                    </div>
+                                }
+                            </>
+                        }
+
+                        {errorMessage &&
+                            <div className="flex justify-center">
+                                <div className="whitespace-pre-wrap break-words text-gray-600 mx-2 mt-4">
+                                    {locale.Profile_NotPublish}
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
-            </div >
+            )}
 
         </>
     );

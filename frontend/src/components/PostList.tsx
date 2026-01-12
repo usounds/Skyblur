@@ -17,6 +17,7 @@ import { Lock } from 'lucide-react';
 import { LockOpen } from 'lucide-react';
 import { X } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
+import Loading from './Loading';
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -252,6 +253,10 @@ export const PostList: React.FC<PostListProps> = ({
         <>
             <div className="max-w-screen-sm">
                 {deleteList.length > 0 && <Text ta="center">{locale.DeleteList_ChooseDeleteItem}</Text>}
+
+                {/* 初期読み込み中のローダー */}
+                {isLoading && deleteList.length === 0 && <Loading />}
+
                 {(!isLoading && deleteList.length === 0) && <Text ta="center">{locale.DeleteList_NoListItem}</Text>}
 
                 <Timeline bulletSize={20} lineWidth={2} mx="sm" mt='sm'>

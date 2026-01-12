@@ -21,7 +21,7 @@ const messages = {
     Login_Title: "ハンドルを入力してログインをタップして「bsky.social」のドメインであることを確認してから「通常のパスワード」を使ってください。",
     Login_InputHandle: "ハンドルを入力してください。",
     Login_InvalidHandle: "無効なハンドルです。",
-    Login_DidResolve: "DIDを解決しています",
+    Login_DidResolve: "必要に応じて認可画面へ遷移します",
     Login_PDSResolve: "PDSを解決しています",
     Login_Redirect: "{1}に遷移します",
     Login_RedirectFailed: "認可ページへの遷移に失敗しました",
@@ -141,7 +141,7 @@ const messages = {
     Home_RecommendedClients: "Skyblurの投稿を快適にチェックできる、おすすめクライアント",
     Home_HagoromoName: "羽衣",
     Home_HagoromoUrl: "https://hagoromo.relog.tech/ja/",
-    Home_inAuthProgress: "ログイン処理中...",
+    Home_inAuthProgress: "必要に応じて認可画面へ遷移します...",
     Landing_StartButton: "始める",
 }
 

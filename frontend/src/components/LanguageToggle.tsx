@@ -1,5 +1,5 @@
 "use client"
-import { Locales, useLocale } from "@/state/Locale";
+import { Locales, useLocale, useLocaleStore } from "@/state/Locale";
 import { ActionIcon } from '@mantine/core';
 import React from "react";
 import { Languages } from 'lucide-react';
@@ -7,15 +7,13 @@ import { useRouter } from 'next/navigation';
 
 const LanguageToggle: React.FC = () => {
     const { locale: localeString } = useLocale();
+    const setLocale = useLocaleStore(state => state.setLocale);
     const router = useRouter();
 
     const toggleLocale = () => {
-        // 新しい言語を決定
         const newLocale: Locales = localeString === "ja" ? "en" : "ja";
-
-        // URL にクエリパラメータを追加 (状態更新はURL変更で行われる)
-        const currentUrl = window.location.pathname;
-        router.replace(`${currentUrl}?lang=${newLocale}`);
+        setLocale(newLocale);
+        router.refresh();
     };
 
     return (

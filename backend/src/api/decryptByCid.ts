@@ -24,7 +24,7 @@ export const handle = async (c: Context) => {
             }
 
             if (!didDoc && repo.startsWith('did:plc:')) {
-                console.log(`PDS not found in DO for ${repo}, fetching from directory...`);
+
                 const res = await fetch(`https://plc.directory/${encodeURIComponent(repo)}`);
                 if (res.ok) {
                     didDoc = await res.json();
@@ -43,7 +43,7 @@ export const handle = async (c: Context) => {
                 const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
                 if (service) {
                     pds = service.serviceEndpoint;
-                    console.log(`Resolved PDS from DID Document for ${repo}: ${pds}`);
+
                 }
             }
         } catch (e) {

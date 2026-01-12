@@ -7,8 +7,7 @@
     "nodejs_compat"
   ],
   "vars": {
-    "APPVIEW_HOST": "dev.skyblur.uk",
-    "OAUTH_PRIVATE_KEY_JWK": ""
+    "APPVIEW_HOST": "dev.skyblur.uk"
   },
   "kv_namespaces": [
     {
@@ -27,7 +26,7 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": [
+      "new_sqlite_classes": [
         "OAuthStoreDO"
       ]
     }
@@ -43,6 +42,14 @@
           "id": "a29848660cb649cf8ebaffced3041ea0"
         }
       ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "SKYBLUR_DO",
+            "class_name": "OAuthStoreDO"
+          }
+        ]
+      },
       "routes": [
         {
           "pattern": "api.skyblur.uk",
@@ -52,7 +59,7 @@
       "observability": {
         "enabled": true,
         "head_sampling_rate": 0.05
-      },
+      }
     }
   }
 }

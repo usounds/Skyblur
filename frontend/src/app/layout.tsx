@@ -1,4 +1,6 @@
 import Header from "@/components/Header";
+import PageLoading from "@/components/PageLoading";
+import { Suspense } from "react";
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
@@ -15,14 +17,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html {...mantineHtmlProps} className="notranslate">
+    <html {...mantineHtmlProps} className="notranslate" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{
           __html: `
             (function() {
               try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const lang = urlParams.get('lang') || 'ja';
+                const getCookie = (name) => {
+                  const value = "; " + document.cookie;
+                  const parts = value.split("; " + name + "=");
+                  if (parts.length === 2) return parts.pop().split(";").shift();
+                };
+                const lang = getCookie('lang') || 'ja';
                 document.documentElement.lang = lang;
               } catch (e) {
                 document.documentElement.lang = 'ja';
@@ -36,7 +42,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MantineProvider>
           <Notifications position="top-right" zIndex={1000} />
           <Header />
-          {children}
+          <Suspense fallback={<PageLoading />}>
+            {children}
+          </Suspense>
           <footer className="flex gap-6 flex-wrap items-center justify-center py-4 mt-10">
             <div className="text-center mb-4">
               <div className="mb-2">

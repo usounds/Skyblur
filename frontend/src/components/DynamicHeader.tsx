@@ -7,7 +7,6 @@ import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { Modal } from '@mantine/core';
 import { AuthenticationTitle } from '@/components/login/Login';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 
@@ -21,7 +20,6 @@ const DynamicHeader = () => {
   const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
   const [isMounted, setIsMounted] = useState(false);
   const searchParams = useSearchParams();
-  const langParam = searchParams.get('lang');
   const loginError = searchParams.get('loginError');
   const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
   const setIsSessionChecked = useXrpcAgentStore(state => state.setIsSessionChecked);
@@ -38,12 +36,11 @@ const DynamicHeader = () => {
   }, []);
 
 
-  // loginError がある場合にログインモーダルを開く
   useEffect(() => {
-    if (loginError && isMounted && langParam) {
+    if (loginError && isMounted) {
       setIsLoginModalOpened(true);
     }
-  }, [loginError, isMounted, langParam, setIsLoginModalOpened]);
+  }, [loginError, isMounted, setIsLoginModalOpened]);
 
   const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
@@ -63,9 +60,9 @@ const DynamicHeader = () => {
   return (
     <>
       <div className="flex flex-row items-center gap-3 sm:mt-0">
-        <Link href="/termofuse" className="flex-none text-sm mr-2">
+        <a href="/termofuse" className="flex-none text-sm mr-2">
           {locale?.Menu_TermOfUse}
-        </Link>
+        </a>
         {did && <AvatorDropdownMenu />}
         <LanguageToggle />
         <SwitchColorMode />

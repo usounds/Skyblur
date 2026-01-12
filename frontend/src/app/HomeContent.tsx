@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Sparkles } from 'lucide-react';
 import { notifications } from '@mantine/notifications';
 import Loading from "@/components/Loading";
+import PageLoading from "@/components/PageLoading";
 import { RecommendedClients } from "@/components/RecommendedClients";
 import classes from './FeaturesGrid.module.css';
 
@@ -40,26 +41,21 @@ export function HomeContent() {
     const setServiceUrl = useXrpcAgentStore((state) => state.setServiceUrl);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const langParam = searchParams.get('lang');
+    const did = useXrpcAgentStore((state) => state.did);
+    const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
     const [isLoading, setIsLoading] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
 
         const checkSession = async () => {
-            const result = await useXrpcAgentStore.getState().checkSession();
-            setIsAuthenticated(result.authenticated);
+            await useXrpcAgentStore.getState().checkSession();
         };
         checkSession();
     }, []);
 
-    if (!isMounted) return (
-        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loading />
-        </div>
-    );
+    if (!isMounted) return <PageLoading />;
 
     const handleStart = async () => {
         setIsLoading(true);
@@ -69,34 +65,19 @@ export function HomeContent() {
             : 'api.skyblur.uk';
 
         try {
-            let auth = isAuthenticated;
-            if (auth === null) {
+            // セッションチェックが終わっていない場合はまずチェック
+            let currentDid = did;
+            if (!isSessionChecked) {
                 const result = await useXrpcAgentStore.getState().checkSession();
-                auth = result.authenticated;
+                currentDid = result.did;
             }
 
-            if (auth) {
+            if (currentDid) {
                 // 認証済みならコンソールへ
                 router.push('/console');
             } else {
-                // 未認証なら localStorage のハンドルを確認
-                const handle = localStorage.getItem('oauth.handle');
-                if (handle) {
-                    // ログイン中通知を表示
-                    notifications.show({
-                        title: 'Skyblur',
-                        message: locale.Home_inAuthProgress || 'Logging in...',
-                        loading: true,
-                        autoClose: false,
-                        withCloseButton: false,
-                    });
-
-                    // 数秒待たずに即時リダイレクト
-                    window.location.assign(`https://${apiEndpoint}/oauth/login?handle=${encodeURIComponent(handle)}`);
-                } else {
-                    // ハンドルもなければログインモーダルを表示
-                    setIsLoginModalOpened(true);
-                }
+                // 未認証ならログインモーダルを表示
+                setIsLoginModalOpened(true);
             }
         } catch (err) {
             console.error("Failed to check session", err);
@@ -138,8 +119,7 @@ export function HomeContent() {
 
             <div className="flex justify-center mt-10 mb-12">
                 <Button
-                    size="lg"
-                    radius="md"
+                    variant="outline" size="md" radius="lg"
                     onClick={handleStart}
                     loading={isLoading}
                     leftSection={<Sparkles size={24} />}

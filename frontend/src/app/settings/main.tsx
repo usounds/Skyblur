@@ -36,12 +36,10 @@ export default function Settings() {
   const searchParams = useSearchParams();
   const setDid = useXrpcAgentStore((state) => state.setDid);
   const setServiceUrl = useXrpcAgentStore((state) => state.setServiceUrl);
-  const lang = searchParams.get('lang') || 'ja';
-
   useEffect(() => {
     if (!isSessionChecked) return;
     if (!did) {
-      router.push('/')
+      router.push(`/`)
       return
     }
     if (!agent) return;
@@ -96,7 +94,7 @@ export default function Settings() {
       isAborted = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [did, agent]);
+  }, [did, agent, isSessionChecked]);
 
 
   const changeFeedAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -310,7 +308,7 @@ export default function Settings() {
   }
 
 
-  if (!isMounted || (!did && !isSessionChecked)) {
+  if (!isMounted) {
     return (
       <Loading />
     );
@@ -407,10 +405,7 @@ export default function Settings() {
 
                 <div className="flex justify-between items-center gap-4 mt-6 px-4">
                   <Link
-                    href={{
-                      pathname: '/console',
-                      query: { lang },
-                    }}
+                    href="/console"
                   >
                     <Button
                       variant="default"

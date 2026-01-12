@@ -98,7 +98,9 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 apiEndpoint = 'devapi.skyblur.uk';
             }
 
-            const loginUrl = `https://${apiEndpoint}/oauth/login?handle=${encodeURIComponent(handle)}`;
+
+            const currentUrl = window.location.href;
+            const loginUrl = `https://${apiEndpoint}/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
             window.location.assign(loginUrl);
 
             // リダイレクトまで待機

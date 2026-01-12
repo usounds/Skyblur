@@ -159,7 +159,7 @@ export async function restoreSession(oauth: OAuthClient, did: string): Promise<O
 
         sessionCache.set(did, {
             session,
-            expiresAt: now + 5 * 60 * 1000,
+            expiresAt: now + 30 * 60 * 1000, // 30分キャッシュ
         });
 
         return session;

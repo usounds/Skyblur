@@ -1,6 +1,7 @@
 "use client";
 import { CreatePostForm } from "@/components/CreatePost";
 import Loading from "@/components/Loading";
+import PageLoading from "@/components/PageLoading";
 import { AuthenticationTitle } from "@/components/login/Login";
 import { PostList } from "@/components/PostList";
 import { useLocale } from "@/state/Locale";
@@ -85,11 +86,7 @@ export function ConsoleContent() {
 
     // 認証確認中、またはプロフィール取得中の場合
     if (isAuthenticated === null || (isAuthenticated === true && !userProf)) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <Loading />
-            </div>
-        );
+        return <PageLoading />;
     }
 
     // 未認証の場合

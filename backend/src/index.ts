@@ -245,9 +245,49 @@ app.get('/oauth/login', async (c) => {
       state: { timestamp: Date.now() },
     });
 
+    // 許可されたオリジンの一覧（ドメイン検証用）
+    const allowedPatterns = [
+      '^https://dev\\.skyblur\\.uk$',
+      '^https://skyblur\\.uk$',
+      '^https://[^/]*\\.skyblur\\.uk$'
+    ];
+
+    const isAllowedOrigin = (urlStr: string) => {
+      try {
+        const u = new URL(urlStr);
+        const origin = u.origin;
+        return allowedPatterns.some(pattern => new RegExp(pattern).test(origin));
+      } catch {
+        return false;
+      }
+    };
+
+    // redirect_uri クエリパラメータを優先、なければ Referer ヘッダーを使用
+    const redirectUriParam = c.req.query('redirect_uri');
     const referer = c.req.header('referer');
     let callbackUrl = '/console';
-    if (referer) {
+
+    if (redirectUriParam && isAllowedOrigin(redirectUriParam)) {
+      // 絶対URLとして許可されている場合、そのまま保持
+      const url = new URL(redirectUriParam);
+      url.searchParams.delete('loginError');
+      callbackUrl = url.toString();
+    } else if (referer && isAllowedOrigin(referer)) {
+      // Refererが許可されている場合、絶対URLとして保持
+      const url = new URL(referer);
+      url.searchParams.delete('loginError');
+      callbackUrl = url.toString();
+    } else if (redirectUriParam) {
+      // 相対パスまたは許可されていないドメインの場合のフォールバック
+      try {
+        const redirectUrl = new URL(redirectUriParam, origin);
+        redirectUrl.searchParams.delete('loginError');
+        if (redirectUrl.pathname !== '/') {
+          callbackUrl = redirectUrl.pathname + redirectUrl.search;
+        }
+      } catch { }
+    } else if (referer) {
+      // Refererのフォールバック
       try {
         const refUrl = new URL(referer);
         refUrl.searchParams.delete('loginError');
@@ -290,8 +330,15 @@ app.get('/oauth/callback', async (c) => {
     const callbackCookie = getCookie(c, 'oauth_callback');
     const redirectTo = callbackCookie ? decodeURIComponent(callbackCookie) : '/';
 
-    const appViewUrl = c.env.APPVIEW_HOST ? `https://${c.env.APPVIEW_HOST}` : 'https://skyblur.uk';
-    const finalRedirect = redirectTo.startsWith('http') ? redirectTo : `${appViewUrl}${redirectTo}`;
+    // redirectTo が絶対URL（httpで始まるなど）の場合はそのまま使い、
+    // 相対パスの場合は APPVIEW_HOST または skyblur.uk をベースとする
+    let finalRedirect: string;
+    if (redirectTo.startsWith('http')) {
+      finalRedirect = redirectTo;
+    } else {
+      const appViewUrl = c.env.APPVIEW_HOST ? `https://${c.env.APPVIEW_HOST}` : 'https://skyblur.uk';
+      finalRedirect = `${appViewUrl}${redirectTo}`;
+    }
 
     const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
 
@@ -515,10 +562,11 @@ app.all('/xrpc/:method{.*}', async (c) => {
   try {
     const origin = getRequestOrigin(c.req.raw, c.env);
     const oauth = await getOAuthClient(c.env, origin);
+
     const { restoreSession } = await import('@/logic/ATPOauth');
     const session = await restoreSession(oauth, did);
-    const requestMethod = c.req.method.toUpperCase();
 
+    const requestMethod = c.req.method.toUpperCase();
     const client = new Client({ handler: session });
 
     if (requestMethod === 'POST') {
@@ -531,19 +579,16 @@ app.all('/xrpc/:method{.*}', async (c) => {
         requestData = new Uint8Array(await c.req.arrayBuffer());
       }
 
-
       const response = await (client as any).post(method, {
         input: requestData,
         data: requestData,
         encoding: contentType,
       });
-
       return c.json(response.data, response.ok ? 200 : 400);
     } else {
       const response = await (client as any).get(method, {
         params: c.req.query(),
       });
-
       return c.json(response.data, response.ok ? 200 : 400);
     }
   } catch (e) {

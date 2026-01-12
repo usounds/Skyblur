@@ -39,7 +39,12 @@ export function AvatorDropdownMenu() {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            router.refresh();
+            // 設定ページからのログアウト時のみホームにリダイレクト
+            if (window.location.pathname.startsWith('/settings')) {
+                router.push(`/`);
+            } else {
+                router.refresh();
+            }
         }
     };
 
@@ -48,10 +53,8 @@ export function AvatorDropdownMenu() {
     }
 
     const handleSettings = async () => {
-        const params = new URLSearchParams(window.location.search);
-        const lang = params.get('lang') || 'ja';
         setTimeout(() => {
-            router.push(`/settings?lang=${lang}`);
+            router.push(`/settings`);
         }, 0);
     }
 
