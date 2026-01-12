@@ -10,10 +10,10 @@ import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD } from "@/types/types";
 import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
-import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline } from '@mantine/core';
+import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState, useRef } from "react";
-import { Lock, LockOpen, LogIn, X } from 'lucide-react';
+import { Lock, LockOpen, LogIn, X, Globe } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import Loading from './Loading';
 
@@ -262,11 +262,27 @@ export const PostList: React.FC<PostListProps> = ({
                         <Timeline.Item
                             key={index}
                             bullet={
-                                item.blur?.visibility === VISIBILITY_PASSWORD ? (
-                                    item.isDecrypt ? <LockOpen size={16} /> : <Lock size={16} />
-                                ) : item.blur?.visibility === VISIBILITY_LOGIN ? (
-                                    <LogIn size={16} />
-                                ) : null
+                                (() => {
+                                    if (item.blur?.visibility === VISIBILITY_PASSWORD) {
+                                        return (
+                                            <Tooltip label={locale.Visibility_Password} withArrow position="right">
+                                                {item.isDecrypt ? <LockOpen size={14} /> : <Lock size={14} />}
+                                            </Tooltip>
+                                        );
+                                    }
+                                    if (item.blur?.visibility === VISIBILITY_LOGIN) {
+                                        return (
+                                            <Tooltip label={locale.Visibility_Login} withArrow position="right">
+                                                <LogIn size={14} />
+                                            </Tooltip>
+                                        );
+                                    }
+                                    return (
+                                        <Tooltip label={locale.Visibility_Public} withArrow position="right">
+                                            <Globe size={14} />
+                                        </Tooltip>
+                                    );
+                                })()
                             }
                         >
                             {/* 本文 */}

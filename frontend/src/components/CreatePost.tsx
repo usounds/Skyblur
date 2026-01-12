@@ -15,13 +15,13 @@ import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { IdentityResolver } from '@/logic/IdentityResolver';
 import * as TID from '@atcute/tid';
-import { Button, Card, Chip, Group, Modal, SegmentedControl, Switch, Text, TextInput } from '@mantine/core';
+import { Button, Card, Chip, Group, Modal, SegmentedControl, Switch, Text, TextInput, Center } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
 import { useEffect, useState } from "react";
-import { X, Check, ArrowLeft } from 'lucide-react';
+import { X, Check, ArrowLeft, Globe, LogIn, Lock } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -967,9 +967,36 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 }}
                                 disabled={prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD}
                                 data={[
-                                    { label: locale.CreatePost_VisibilityPublic, value: VISIBILITY_PUBLIC, disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD },
-                                    { label: locale.CreatePost_VisibilityLogin, value: VISIBILITY_LOGIN, disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD },
-                                    { label: locale.CreatePost_VisibilityPassword, value: VISIBILITY_PASSWORD, disabled: prevBlur && prevBlur.blur.visibility !== VISIBILITY_PASSWORD },
+                                    {
+                                        value: VISIBILITY_PUBLIC,
+                                        disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD,
+                                        label: (
+                                            <Center style={{ gap: 4 }}>
+                                                <Globe size={16} />
+                                                <span style={{ fontSize: '13px' }}>{locale.CreatePost_VisibilityPublic}</span>
+                                            </Center>
+                                        ),
+                                    },
+                                    {
+                                        value: VISIBILITY_LOGIN,
+                                        disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD,
+                                        label: (
+                                            <Center style={{ gap: 4 }}>
+                                                <LogIn size={16} />
+                                                <span style={{ fontSize: '13px' }}>{locale.CreatePost_VisibilityLogin}</span>
+                                            </Center>
+                                        ),
+                                    },
+                                    {
+                                        value: VISIBILITY_PASSWORD,
+                                        disabled: prevBlur && prevBlur.blur.visibility !== VISIBILITY_PASSWORD,
+                                        label: (
+                                            <Center style={{ gap: 4 }}>
+                                                <Lock size={16} />
+                                                <span style={{ fontSize: '13px' }}>{locale.CreatePost_VisibilityPassword}</span>
+                                            </Center>
+                                        ),
+                                    },
                                 ]}
                                 fullWidth
                             />
