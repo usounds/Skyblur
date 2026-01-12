@@ -73,7 +73,7 @@ const DynamicHeader = () => {
 
       {/* Login Modal - always rendered so it can be triggered from anywhere */}
       {!did && (
-        <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login}>
+        <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login} closeOnClickOutside={false}>
           <AuthenticationTitle isModal={true} />
         </Modal>
       )}

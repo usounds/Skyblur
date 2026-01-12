@@ -93,7 +93,7 @@ export function AvatorDropdownMenu() {
                 </Menu.Dropdown>
             }
 
-            <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login}>
+            <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login} closeOnClickOutside={false}>
                 <AuthenticationTitle isModal={true} />
             </Modal>
         </Menu>
