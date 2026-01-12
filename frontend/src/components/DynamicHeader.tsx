@@ -1,4 +1,3 @@
-"use client";
 import { AvatorDropdownMenu } from '@/components/AvatorDropdownMenu';
 import LanguageToggle from '@/components/LanguageToggle';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
@@ -6,6 +5,8 @@ import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
+import { Modal } from '@mantine/core';
+import { AuthenticationTitle } from '@/components/login/Login';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ const DynamicHeader = () => {
   const loginError = searchParams.get('loginError');
   const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
   const setIsSessionChecked = useXrpcAgentStore(state => state.setIsSessionChecked);
+  const isLoginModalOpened = useXrpcAgentStore(state => state.isLoginModalOpened);
 
   useEffect(() => {
     setIsMounted(true);
@@ -59,14 +61,23 @@ const DynamicHeader = () => {
   // if (langParam && !rehydrated) return null;
 
   return (
-    <div className="flex flex-row items-center gap-3 sm:mt-0">
-      <Link href="/termofuse" className="flex-none text-sm mr-2">
-        {locale?.Menu_TermOfUse}
-      </Link>
-      {did && <AvatorDropdownMenu />}
-      <LanguageToggle />
-      <SwitchColorMode />
-    </div>
+    <>
+      <div className="flex flex-row items-center gap-3 sm:mt-0">
+        <Link href="/termofuse" className="flex-none text-sm mr-2">
+          {locale?.Menu_TermOfUse}
+        </Link>
+        {did && <AvatorDropdownMenu />}
+        <LanguageToggle />
+        <SwitchColorMode />
+      </div>
+
+      {/* Login Modal - always rendered so it can be triggered from anywhere */}
+      {!did && (
+        <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login}>
+          <AuthenticationTitle isModal={true} />
+        </Modal>
+      )}
+    </>
   );
 };
 

@@ -75,17 +75,72 @@ app.use('*', cors({
       'https://dev.skyblur.uk',
       'https://skyblur.uk',
       'https://preview.skyblur.uk',
-      'http://localhost:3000'
     ];
-    if (allowedOrigins.includes(origin) || origin.endsWith('.skyblur.uk') || origin.startsWith('http://localhost:')) {
+
+    // 許可されたオリジンまたは *.skyblur.uk サブドメインのみ許可
+    if (allowedOrigins.includes(origin) || (origin && origin.match(/^https:\/\/[^\/]*\.skyblur\.uk$/))) {
       return origin;
     }
-    return origin; // 全て許可するか、本番では制限を強める
+
+    // 不正なオリジンは拒否
+    return null;
   },
   credentials: true,
   allowMethods: ['GET', 'POST', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'DPoP', 'atproto-proxy', 'x-atproto-allow-proxy'],
 }))
+
+// --- CSRF Protection Middleware ---
+app.use('*', async (c, next) => {
+  // GET, HEAD, OPTIONS は CSRF 保護不要
+  if (c.req.method === 'GET' || c.req.method === 'HEAD' || c.req.method === 'OPTIONS') {
+    return next();
+  }
+
+  const path = new URL(c.req.url).pathname;
+
+  // 読み取り専用の Skyblur エンドポイントは CSRF 保護不要
+  const readOnlyPaths = [
+    '/xrpc/uk.skyblur.post.ecnrypt',
+    '/xrpc/uk.skyblur.post.decryptByCid',
+    '/xrpc/uk.skyblur.post.getPost',
+    '/xrpc/uk.skyblur.admin.getDidDocument',
+    '/xrpc/uk.skyblur.admin.resolveHandle',
+  ];
+
+  if (readOnlyPaths.includes(path)) {
+    return next();
+  }
+
+  const origin = c.req.header('origin');
+  const referer = c.req.header('referer');
+
+  const allowedOrigins = [
+    'https://dev.skyblur.uk',
+    'https://skyblur.uk',
+    'https://preview.skyblur.uk',
+  ];
+
+  // Origin ヘッダーの検証
+  const isValidOrigin = origin && (
+    allowedOrigins.includes(origin) ||
+    /^https:\/\/[^\/]*\.skyblur\.uk$/.test(origin)
+  );
+
+  // Referer ヘッダーの検証（Origin がない場合のフォールバック）
+  const isValidReferer = referer && (
+    allowedOrigins.some(o => referer.startsWith(o)) ||
+    /^https:\/\/[^\/]*\.skyblur\.uk\//.test(referer)
+  );
+
+  // Origin または Referer のいずれかが有効であれば許可
+  if (!isValidOrigin && !isValidReferer) {
+    console.warn(`CSRF protection: Rejected request from origin=${origin}, referer=${referer}`);
+    return c.json({ error: 'Invalid origin or referer' }, 403);
+  }
+
+  return next();
+});
 
 // --- OAuth Helpers ---
 
@@ -177,7 +232,7 @@ app.get('/api/did-document', async (c) => {
 });
 
 // 3. ログイン開始
-app.get('/api/oauth/login', async (c) => {
+app.get('/oauth/login', async (c) => {
   const handle = c.req.query('handle');
   if (!handle) return c.text('Handle is required', 400);
 
@@ -221,7 +276,7 @@ app.get('/api/oauth/login', async (c) => {
 });
 
 // 4. コールバック
-app.get('/api/oauth/callback', async (c) => {
+app.get('/oauth/callback', async (c) => {
   const origin = getRequestOrigin(c.req.raw, c.env);
   const client = await getOAuthClient(c.env, origin);
   const url = new URL(c.req.url);
@@ -259,7 +314,7 @@ app.get('/api/oauth/callback', async (c) => {
 });
 
 // 5. セッション確認
-app.get('/api/oauth/session', async (c) => {
+app.get('/oauth/session', async (c) => {
   const rawDid = getCookie(c, 'oauth_did');
   const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
 
@@ -306,7 +361,7 @@ app.get('/api/oauth/session', async (c) => {
         }
 
         if (!didDoc) {
-          console.log(`PDS not found in DO for ${did}, fetching from directory...`);
+
           if (did.startsWith('did:plc:')) {
             const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
             if (res.ok) {
@@ -325,7 +380,7 @@ app.get('/api/oauth/session', async (c) => {
           const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
           if (service) {
             resolvedPds = service.serviceEndpoint;
-            console.log(`Resolved PDS from DID Document for ${did}: ${resolvedPds}`);
+
           }
         }
       } catch (e) {
@@ -338,7 +393,12 @@ app.get('/api/oauth/session', async (c) => {
       did: session.did || (session as any).sub,
       pds: resolvedPds,
     });
-  } catch (e) {
+  } catch (e: any) {
+    // ログアウト後のセッション復元エラーは静かに処理
+    if (e?.name === 'TokenRefreshError' || e?.message?.includes('session was deleted')) {
+      return c.json({ authenticated: false });
+    }
+    // その他のエラーはログに記録
     console.error('Session Restore Error:', e);
     return c.json({ authenticated: false });
   }
@@ -349,6 +409,48 @@ app.get('/api/oauth/session', async (c) => {
 app.post('/xrpc/uk.skyblur.post.encrypt', (c) => {
   return ecnryptHandle(c)
 })
+
+// 6. ログアウト
+app.post('/oauth/logout', async (c) => {
+  const rawDid = getCookie(c, 'oauth_did');
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+
+  if (rawDid) {
+    const parts = rawDid.split('.');
+    if (parts.length === 2) {
+      const [did] = parts;
+      const expectedSigned = await signDid(did, secret);
+
+      if (rawDid === expectedSigned) {
+        try {
+          const origin = getRequestOrigin(c.req.raw, c.env);
+          const oauth = await getOAuthClient(c.env, origin);
+
+          // OAuth セッションを取り消す
+          await oauth.revoke(did as any);
+
+          // セッションキャッシュをクリア
+          const { clearSessionCache } = await import('@/logic/ATPOauth');
+          clearSessionCache(did);
+        } catch (err) {
+          console.error('OAuth revoke error:', err);
+          // エラーでも続行してクッキーは削除する
+        }
+      }
+    }
+  }
+
+  // oauth_did クッキーを削除
+  setCookie(c, 'oauth_did', '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 0,
+  });
+
+  return c.json({ success: true });
+});
 
 app.post('/xrpc/uk.skyblur.post.decryptByCid', (c) => {
   return decryptByCidHandle(c)
@@ -429,19 +531,19 @@ app.all('/xrpc/:method{.*}', async (c) => {
         requestData = new Uint8Array(await c.req.arrayBuffer());
       }
 
-      console.log(`XRPC Proxy: POST ${method} with encoding ${contentType}`);
+
       const response = await (client as any).post(method, {
         input: requestData,
         data: requestData,
         encoding: contentType,
       });
-      console.log(`XRPC Proxy: POST ${method} responded with ${response.ok ? 'OK' : 'ERR'}`);
+
       return c.json(response.data, response.ok ? 200 : 400);
     } else {
       const response = await (client as any).get(method, {
         params: c.req.query(),
       });
-      console.log(`XRPC Proxy: GET ${method} responded with ${response.ok ? 'OK' : 'ERR'}`);
+
       return c.json(response.data, response.ok ? 200 : 400);
     }
   } catch (e) {

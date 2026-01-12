@@ -21,15 +21,24 @@ export function AvatorDropdownMenu() {
 
     const logout = async () => {
         try {
-            await fetch('/api/oauth/logout', { method: 'POST' });
+            // バックエンドAPIを直接呼ぶ（フロントエンドのリダイレクトを回避）
+            const apiEndpoint = window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')
+                ? 'devapi.skyblur.uk'
+                : 'api.skyblur.uk';
+
+            await fetch(`https://${apiEndpoint}/oauth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
             setDid('');
             useXrpcAgentStore.getState().setUserProf(null);
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
+            useXrpcAgentStore.getState().setIsSessionChecked(false); // Reset session check flag
             window.localStorage.removeItem('oauth.did');
             // 念のためフロントエンドの DID 関連クッキーも消去試行 (ブラウザによる)
             document.cookie = "oauth_did=; Path=/; Max-Age=0";
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
             router.refresh();
         }
     };

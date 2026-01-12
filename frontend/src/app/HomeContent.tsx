@@ -55,7 +55,11 @@ export function HomeContent() {
         checkSession();
     }, []);
 
-    if (!isMounted) return <Loading />;
+    if (!isMounted) return (
+        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loading />
+        </div>
+    );
 
     const handleStart = async () => {
         setIsLoading(true);
@@ -88,7 +92,7 @@ export function HomeContent() {
                     });
 
                     // 数秒待たずに即時リダイレクト
-                    window.location.assign(`https://${apiEndpoint}/api/oauth/login?handle=${encodeURIComponent(handle)}`);
+                    window.location.assign(`https://${apiEndpoint}/oauth/login?handle=${encodeURIComponent(handle)}`);
                 } else {
                     // ハンドルもなければログインモーダルを表示
                     setIsLoginModalOpened(true);

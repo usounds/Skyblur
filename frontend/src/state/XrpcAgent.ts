@@ -80,7 +80,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
 
       sessionCheckPromise = (async () => {
         try {
-          const res = await fetch(`https://${apiEndpoint}/api/oauth/session`, {
+          const res = await fetch(`https://${apiEndpoint}/oauth/session`, {
             credentials: 'include'
           });
           const data = await res.json() as any;
