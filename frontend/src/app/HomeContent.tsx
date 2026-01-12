@@ -1,15 +1,13 @@
 "use client";
-import { useLocale } from "@/state/Locale";
-import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { IconPencil, IconEyeOff, IconEye } from '@tabler/icons-react';
-import { Button, Title, Container, Text, SimpleGrid, ThemeIcon } from '@mantine/core';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from "react";
-import { Sparkles } from 'lucide-react';
-import { notifications } from '@mantine/notifications';
-import Loading from "@/components/Loading";
 import PageLoading from "@/components/PageLoading";
 import { RecommendedClients } from "@/components/RecommendedClients";
+import { useLocale } from "@/state/Locale";
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { Button, Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
+import { IconEye, IconEyeOff, IconPencil } from '@tabler/icons-react';
+import { Sparkles } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from "react";
 import classes from './FeaturesGrid.module.css';
 
 interface FeatureProps {
@@ -35,12 +33,9 @@ export function Feature({ icon: Icon, title, description }: FeatureProps) {
 }
 
 export function HomeContent() {
-    const { locale: currentLocale, localeData: locale } = useLocale();
+    const { localeData: locale } = useLocale();
     const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
-    const setDid = useXrpcAgentStore((state) => state.setDid);
-    const setServiceUrl = useXrpcAgentStore((state) => state.setServiceUrl);
     const router = useRouter();
-    const searchParams = useSearchParams();
     const did = useXrpcAgentStore((state) => state.did);
     const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
     const [isLoading, setIsLoading] = useState(false);
@@ -60,9 +55,6 @@ export function HomeContent() {
     const handleStart = async () => {
         setIsLoading(true);
 
-        const apiEndpoint = window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')
-            ? 'devapi.skyblur.uk'
-            : 'api.skyblur.uk';
 
         try {
             // セッションチェックが終わっていない場合はまずチェック

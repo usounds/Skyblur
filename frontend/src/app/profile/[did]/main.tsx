@@ -2,7 +2,6 @@
 import { Avatar } from "@/components/Avatar";
 import Loading from "@/components/Loading";
 import { PostList } from "@/components/PostList";
-import PostLoading from "@/components/PostLoading";
 import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBluesky";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";

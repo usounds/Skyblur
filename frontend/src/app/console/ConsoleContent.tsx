@@ -1,8 +1,7 @@
 "use client";
 import { CreatePostForm } from "@/components/CreatePost";
-import Loading from "@/components/Loading";
-import PageLoading from "@/components/PageLoading";
 import { AuthenticationTitle } from "@/components/login/Login";
+import PageLoading from "@/components/PageLoading";
 import { PostList } from "@/components/PostList";
 import { useLocale } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
@@ -11,21 +10,17 @@ import { PostListItem } from "@/types/types";
 import { Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
-import { useEffect, useState } from "react";
 import { Pencil } from 'lucide-react';
+import { useEffect, useState } from "react";
 
 export function ConsoleContent() {
     const [prevBlur, setPrevBlur] = useState<PostListItem>()
-    const setDid = useXrpcAgentStore((state) => state.setDid);
     const did = useXrpcAgentStore((state) => state.did);
-    const agent = useXrpcAgentStore((state) => state.agent);
     const { localeData: locale } = useLocale();
     const userProf = useXrpcAgentStore((state) => state.userProf);
-    const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
     const mode = useModeStore((state) => state.mode);
     const setMode = useModeStore((state) => state.setMode);
     const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
-    const setServiceUrl = useXrpcAgentStore((state) => state.setServiceUrl);
 
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 

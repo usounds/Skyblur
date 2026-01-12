@@ -1,30 +1,23 @@
 import { AvatorDropdownMenu } from '@/components/AvatorDropdownMenu';
 import LanguageToggle from '@/components/LanguageToggle';
+import { AuthenticationTitle } from '@/components/login/Login';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
-import en from "@/locales/en";
-import ja from "@/locales/ja";
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { Modal } from '@mantine/core';
-import { AuthenticationTitle } from '@/components/login/Login';
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from "react";
 import { notifications } from '@mantine/notifications';
 import { X } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from "react";
 
 const DynamicHeader = () => {
-  const { locale: currentLocale, localeData: locale } = useLocale();
-  const agent = useXrpcAgentStore(state => state.agent);
+  const { localeData: locale } = useLocale();
   const did = useXrpcAgentStore(state => state.did);
-  const setDid = useXrpcAgentStore(state => state.setDid);
-  const setServiceUrl = useXrpcAgentStore(state => state.setServiceUrl);
   const userProf = useXrpcAgentStore((state) => state.userProf);
-  const setUserProf = useXrpcAgentStore((state) => state.setUserProf);
   const [isMounted, setIsMounted] = useState(false);
   const searchParams = useSearchParams();
   const loginError = searchParams.get('loginError');
   const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
-  const setIsSessionChecked = useXrpcAgentStore(state => state.setIsSessionChecked);
   const isLoginModalOpened = useXrpcAgentStore(state => state.isLoginModalOpened);
 
   useEffect(() => {
@@ -52,7 +45,6 @@ const DynamicHeader = () => {
     }
   }, [loginError, isMounted, setIsLoginModalOpened, locale.Login_Rejected]);
 
-  const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
 
   // プロフィールフェッチは /oauth/session で統合されたため不要になりました

@@ -1,17 +1,17 @@
 "use client";
+import { useLocale } from '@/state/Locale';
+import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import {
+    Autocomplete,
     Button,
     Container,
     Paper,
-    Autocomplete,
     Title
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useEffect, useState } from "react";
 import { X } from 'lucide-react';
+import { useEffect, useState } from "react";
 import LanguageSelect from "../LanguageSelect";
-import { useLocale } from '@/state/Locale';
-import { useXrpcAgentStore } from "@/state/XrpcAgent";
 
 import { BlueskyIcon } from '../Icons';
 

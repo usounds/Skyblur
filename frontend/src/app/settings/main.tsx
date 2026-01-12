@@ -34,9 +34,7 @@ export default function Settings() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
-  const searchParams = useSearchParams();
-  const setDid = useXrpcAgentStore((state) => state.setDid);
-  const setServiceUrl = useXrpcAgentStore((state) => state.setServiceUrl);
+
   useEffect(() => {
     if (!isSessionChecked) return;
     if (!did) {
