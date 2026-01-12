@@ -40,6 +40,7 @@ export const PostList: React.FC<PostListProps> = ({
     const [isLast, setIsLast] = useState<boolean>(false)
 
     const isMounted = useRef(true);
+    const observerTarget = useRef<HTMLDivElement>(null);
 
     const getPosts = async (currentCursor: string, isInitial: boolean = false) => {
         if (!agent || !did) {
@@ -120,6 +121,28 @@ export const PostList: React.FC<PostListProps> = ({
             isMounted.current = false;
         };
     }, [did, agent, isSessionChecked]);
+
+    useEffect(() => {
+        const target = observerTarget.current;
+        if (!target || isLoading || isLast) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !isLoading && !isLast) {
+                    getPosts(cursor);
+                }
+            },
+            { threshold: 1.0 }
+        );
+
+        observer.observe(target);
+
+        return () => {
+            if (target) {
+                observer.unobserve(target);
+            }
+        };
+    }, [cursor, isLoading, isLast]);
 
     const handleDisplay = async (item: PostListItem) => {
         if (!item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD) {
@@ -405,13 +428,11 @@ export const PostList: React.FC<PostListProps> = ({
                     ))}
                 </Timeline>
 
-                {!isLoading && !isLast &&
-                    <div className="flex justify-center gap-4 mt-6">
-                        <Button variant="outline" color="gray" disabled={isLoading} onClick={() => getPosts(cursor)} >
-                            {locale.DeleteList_ReadMore}
-                        </Button>
+                {!isLast && (
+                    <div ref={observerTarget} className="flex justify-center h-20 items-center">
+                        {isLoading && deleteList.length > 0 && <Loading />}
                     </div>
-                }
+                )}
 
             </div >
         </>)
