@@ -138,8 +138,8 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
     // AppView (フロントエンド) のオリジン
     const appViewOrigin = env.APPVIEW_HOST ? `https://${env.APPVIEW_HOST}` : 'https://skyblur.uk';
 
-    const clientId = `${effectiveOrigin}/api/client-metadata.json`;
-    const jwksUri = `${effectiveOrigin}/api/jwks.json`;
+    const clientId = `${effectiveOrigin}/oauth/client-metadata.json`;
+    const jwksUri = `${effectiveOrigin}/oauth/jwks.json`;
 
 
     const sessionStore = new DurableObjectStore(env.SKYBLUR_DO, 'session') as any;

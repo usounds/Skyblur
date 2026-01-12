@@ -203,14 +203,14 @@ async function withSession(
 // --- OAuth エンドポイント ---
 
 // 1. クライアントメタデータ
-app.get('/api/client-metadata.json', async (c) => {
+app.get('/oauth/client-metadata.json', async (c) => {
   const origin = getRequestOrigin(c.req.raw, c.env);
   const client = await getOAuthClient(c.env, origin);
   return c.json(client.metadata);
 });
 
 // 2. JWKS
-app.get('/api/jwks.json', async (c) => {
+app.get('/oauth/jwks.json', async (c) => {
   try {
     const privateKeyRaw = c.env.OAUTH_PRIVATE_KEY_JWK;
     if (!privateKeyRaw) {
