@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import PageLoading from "@/components/PageLoading";
 import { Suspense } from "react";
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
 import '@mantine/notifications/styles.css';
@@ -52,10 +52,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Suspense fallback={<PageLoading />}>
             {children}
           </Suspense>
-          <footer className="flex gap-6 flex-wrap items-center justify-center py-4 mt-10">
+          <footer className="flex gap-6 flex-wrap items-center justify-center py-4 mt-4 text-gray-400">
             <div className="text-center mb-4">
               <div className="mb-2">
-                Developed by usounds.work
+                <Text size="sm" c="dimmed">Developed by usounds.work</Text>
               </div>
               <div className="flex justify-center space-x-4 mb-4">
                 <a

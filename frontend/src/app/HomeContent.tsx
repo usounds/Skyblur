@@ -128,6 +128,8 @@ export function HomeContent() {
                 {features}
             </SimpleGrid>
 
+            <div className="h-8 sm:h-4" />
+
             <RecommendedClients />
         </Container>
     );
