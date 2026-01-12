@@ -1,5 +1,6 @@
 "use client"
 import { ActionIcon, Avatar, Group, Menu, Text, UnstyledButton, rem, Modal } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { IconChevronDown, IconLogout, IconSettings, IconUser } from '@tabler/icons-react';
@@ -20,6 +21,15 @@ export function AvatorDropdownMenu() {
     const router = useRouter();
 
     const logout = async () => {
+        // ログアウト処理中の通知を表示
+        notifications.show({
+            id: 'logout-process',
+            title: locale.Menu_Logout,
+            message: locale.Menu_LogoutProgress,
+            loading: true,
+            autoClose: false
+        });
+
         try {
             // バックエンドAPIを直接呼ぶ（フロントエンドのリダイレクトを回避）
             const apiEndpoint = window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')
@@ -37,6 +47,8 @@ export function AvatorDropdownMenu() {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
+            // 通知を閉じる
+            notifications.hide('logout-process');
             // 設定ページからのログアウト時のみホームにリダイレクト
             if (window.location.pathname.startsWith('/settings')) {
                 router.push(`/`);
