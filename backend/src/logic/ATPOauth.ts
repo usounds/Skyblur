@@ -29,12 +29,43 @@ export const scopeList = [
 /**
  * Durable Object をバックエンドとした OAuth ストレージ
  */
+
+/**
+ * Durable Object をバックエンドとした OAuth ストレージ
+ */
 class DurableObjectStore {
-    constructor(private namespace: DurableObjectNamespace<OAuthStoreDO>, private name: string) { }
+    private aesKey: CryptoKey | null = null;
+
+    constructor(
+        private namespace: DurableObjectNamespace<OAuthStoreDO>,
+        private name: string,
+        private encryptionKeyStr?: string
+    ) { }
 
     private getStub() {
         const id = this.namespace.idFromName('oauth_storage');
         return this.namespace.get(id);
+    }
+
+    private async getKey(): Promise<CryptoKey | null> {
+        if (this.aesKey) return this.aesKey;
+        if (!this.encryptionKeyStr) return null;
+
+        try {
+            // base64 decode
+            const binaryKey = Uint8Array.from(atob(this.encryptionKeyStr), c => c.charCodeAt(0));
+            this.aesKey = await crypto.subtle.importKey(
+                "raw",
+                binaryKey,
+                { name: "AES-GCM" },
+                false,
+                ["encrypt", "decrypt"]
+            );
+            return this.aesKey;
+        } catch (e) {
+            console.error("Failed to import encryption key", e);
+            return null;
+        }
     }
 
     async get(key: string): Promise<any> {
@@ -45,19 +76,81 @@ class DurableObjectStore {
         if (res.status === 404) return undefined;
 
         const data = await res.json();
+
+        // 復号化を試みる
+        if (data && typeof data === 'object' && (data as any).__encrypted) {
+            try {
+                const decrypted = await this.decryptData(data);
+                return this.revive(decrypted);
+            } catch (e) {
+                console.error(`Failed to decrypt data for ${key}, falling back or failing`, e);
+                // 復号できない場合は読めないものとして扱う
+                return undefined;
+            }
+        }
+
         return this.revive(data);
     }
 
     async set(key: string, value: any): Promise<void> {
         const fullKey = `${this.name}:${key}`;
-        const data = this.replace(value);
+        // データ変換: replace -> 暗号化 (optional)
+        const replaced = this.replace(value);
+        let payload = replaced;
+
+        if (this.encryptionKeyStr) {
+            try {
+                payload = await this.encryptData(replaced);
+            } catch (e) {
+                console.error(`Failed to encrypt data for ${key}`, e);
+                throw e;
+            }
+        }
+
         const res = await this.getStub().fetch(`http://do/?key=${encodeURIComponent(fullKey)}`, {
             method: 'PUT',
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
         if (!res.ok) {
             throw new Error(`Failed to store ${this.name}:${key}: ${res.statusText}`);
         }
+    }
+
+    private async encryptData(data: any): Promise<any> {
+        const key = await this.getKey();
+        if (!key) return data;
+
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encodedData = new TextEncoder().encode(JSON.stringify(data));
+
+        const encrypted = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv },
+            key,
+            encodedData
+        );
+
+        return {
+            __encrypted: true,
+            iv: btoa(String.fromCharCode(...iv)),
+            data: btoa(String.fromCharCode(...new Uint8Array(encrypted)))
+        };
+    }
+
+    private async decryptData(encryptedWrapper: any): Promise<any> {
+        const key = await this.getKey();
+        if (!key) throw new Error("No encryption key available");
+
+        const iv = Uint8Array.from(atob(encryptedWrapper.iv), c => c.charCodeAt(0));
+        const data = Uint8Array.from(atob(encryptedWrapper.data), c => c.charCodeAt(0));
+
+        const decrypted = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv },
+            key,
+            data
+        );
+
+        const decoded = new TextDecoder().decode(decrypted);
+        return JSON.parse(decoded);
     }
 
     private replace(obj: any): any {
@@ -141,9 +234,10 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
     const clientId = `${effectiveOrigin}/oauth/client-metadata.json`;
     const jwksUri = `${effectiveOrigin}/oauth/jwks.json`;
 
-
-    const sessionStore = new DurableObjectStore(env.SKYBLUR_DO, 'session') as any;
-    const stateStore = new DurableObjectStore(env.SKYBLUR_DO, 'state') as any;
+    // 暗号化キーを渡す
+    const encryptionKey = env.DATA_ENCRYPTION_KEY;
+    const sessionStore = new DurableObjectStore(env.SKYBLUR_DO, 'session', encryptionKey) as any;
+    const stateStore = new DurableObjectStore(env.SKYBLUR_DO, 'state', encryptionKey) as any;
 
     const privateKeyRaw = env.OAUTH_PRIVATE_KEY_JWK;
     if (!privateKeyRaw) {

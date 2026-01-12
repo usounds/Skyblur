@@ -47,9 +47,13 @@ export async function generateMetadata({ params }: { params: Promise<{ did: stri
   };
 }
 
-const PostPage = () => {
+const PostPage = async ({ params }: { params: Promise<{ did: string; rkey: string }> }) => {
+  const { did, rkey } = await params;
+  const decodedDid = decodeURIComponent(did);
+
   return (
     <>
+      <link rel="alternate" href={`at://${decodedDid}/app.bsky.feed.post/${rkey}`} />
       <MainPostPage />
     </>
   );

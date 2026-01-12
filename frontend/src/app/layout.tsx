@@ -12,6 +12,15 @@ import { cookies, headers } from "next/headers";
 import { BlueskyIcon, GithubIcon } from "@/components/Icons";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
+import { Viewport } from "next";
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export async function generateMetadata() {
   const cookieStore = await cookies();
@@ -20,30 +29,47 @@ export async function generateMetadata() {
   // 1. クッキーを優先
   // 2. クッキーがない場合はAccept-Languageヘッダーで判定（SNSクローラー対応）
   let lang = cookieStore.get('lang')?.value;
+  let isHybridFallback = false;
+
   if (!lang) {
-    const acceptLanguage = headersList.get('accept-language') || '';
-    lang = acceptLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+    const acceptLanguage = headersList.get('accept-language');
+    if (acceptLanguage) {
+      lang = acceptLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+    } else {
+      // 3. どちらもない場合は日英併記（一部のクローラー、ブラウザ設定不明時）
+      isHybridFallback = true;
+      lang = 'ja'; // デフォルトのベース言語
+    }
   }
 
   const locale = lang === 'en' ? en : ja;
+  const description = isHybridFallback
+    ? `${ja.Common_OGDescription} / ${en.Common_OGDescription}`
+    : locale.Common_OGDescription;
+
+  const title = isHybridFallback
+    ? `${ja.Common_Title} / ${en.Common_Title}`
+    : locale.Common_Title;
 
   return {
-    title: locale.Common_Title,
+    title: title,
     description: locale.Common_Description,
     openGraph: {
-      title: locale.Common_Title,
-      description: locale.Common_OGDescription,
+      title: title,
+      description: description,
       siteName: "Skyblur",
       locale: lang === 'ja' ? 'ja_JP' : 'en_US',
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: locale.Common_Title,
-      description: locale.Common_OGDescription,
+      title: title,
+      description: description,
     },
   };
 }
+
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
@@ -54,6 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
       </head>
       <body>
+        <ServiceWorkerRegister />
         <ColorSchemeScript />
         <MantineProvider>
           <Notifications position="top-right" zIndex={1000} />

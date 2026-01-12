@@ -10,9 +10,13 @@ export const metadata: Metadata = {
   },
 };
 
-const PostPage = () => {
+const PostPage = async ({ params }: { params: Promise<{ did: string }> }) => {
+  const { did } = await params;
+  const decodedDid = decodeURIComponent(did);
+
   return (
     <>
+      <link rel="alternate" href={`at://${decodedDid}`} />
       <MainProfilePage />
     </>
   );

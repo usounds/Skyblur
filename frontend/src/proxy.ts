@@ -14,16 +14,13 @@ export function proxy(request: NextRequest) {
 
     // 2. ブラウザの言語設定を取得
     const acceptLanguage = request.headers.get('accept-language');
-    const browserLang = acceptLanguage?.startsWith('en') ? 'en' : 'ja';
-
-    // 最終的な言語を決定
-    const targetLang = langCookie || browserLang;
 
     const response = NextResponse.next();
 
-    // クッキーがない場合にセット
-    if (!langCookie) {
-        response.cookies.set('lang', targetLang, {
+    // クッキーがない場合にセット（ただし、accept-languageがある場合のみ）
+    if (!langCookie && acceptLanguage) {
+        const browserLang = acceptLanguage.startsWith('en') ? 'en' : 'ja';
+        response.cookies.set('lang', browserLang, {
             path: '/',
             maxAge: 60 * 60 * 24 * 365, // 1 year
             sameSite: 'lax',
