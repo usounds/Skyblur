@@ -103,8 +103,10 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             }
 
 
-            const currentUrl = window.location.href;
-            const loginUrl = `https://${apiEndpoint}/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
+            // ホームページからログインした場合は /console へリダイレクト
+            const currentPath = window.location.pathname;
+            const redirectUrl = currentPath === '/' ? `${window.location.origin}/console` : window.location.href;
+            const loginUrl = `https://${apiEndpoint}/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
             window.location.assign(loginUrl);
 
             // リダイレクトまで待機
@@ -177,7 +179,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             />
             <LanguageSelect />
             <Anchor
-                href={`https://${typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')) ? 'devapi.skyblur.uk' : 'api.skyblur.uk'}/oauth/login?redirect_uri=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}`}
+                href={`https://${typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')) ? 'devapi.skyblur.uk' : 'api.skyblur.uk'}/oauth/login?redirect_uri=${typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname === '/' ? `${window.location.origin}/console` : window.location.href) : ''}`}
                 size="sm"
                 mt="md"
                 ta="center"
