@@ -13,6 +13,19 @@ import type { Env, OAuthStoreDO } from '../index';
 const oauthClients = new Map<string, OAuthClient>();
 const sessionCache = new Map<string, { session: OAuthSession, expiresAt: number }>();
 
+export const scopeList = [
+    "atproto",
+    "include:uk.skyblur.permissionSet",
+    "rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview",
+    "repo:app.bsky.feed.post?action=create&action=delete",
+    "repo:app.bsky.feed.generator?action=create&action=update&action=delete",
+    "repo:app.bsky.feed.threadgate?action=create&action=update&action=delete",
+    "repo:app.bsky.feed.postgate?action=create&action=update&action=delete",
+    "rpc:app.bsky.feed.getFeedGenerator?aud=*",
+    "rpc:app.bsky.feed.searchPosts?aud=*",
+    "blob:*/*",
+].join(" ");
+
 /**
  * Durable Object をバックエンドとした OAuth ストレージ
  */
@@ -119,7 +132,6 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
     const clientId = `${effectiveOrigin}/api/client-metadata.json`;
     const jwksUri = `${effectiveOrigin}/api/jwks.json`;
 
-    console.log(`[OAuth] Initializing client for origin: ${effectiveOrigin}, clientId: ${clientId}`);
 
     const sessionStore = new DurableObjectStore(env.SKYBLUR_DO, 'session') as any;
     const stateStore = new DurableObjectStore(env.SKYBLUR_DO, 'state') as any;
@@ -150,7 +162,7 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
             client_id: clientId,
             redirect_uris: [`${effectiveOrigin}/oauth/callback`],
             jwks_uri: jwksUri,
-            scope: "atproto include:uk.skyblur.permissionSet rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview repo:app.bsky.feed.post?action=create&action=delete repo:app.bsky.feed.generator?action=create&action=update&action=delete repo:app.bsky.feed.threadgate?action=create&action=update&action=delete repo:app.bsky.feed.postgate?action=create&action=update&action=delete rpc:app.bsky.feed.getFeedGenerator?aud=* rpc:app.bsky.feed.searchPosts?aud=* blob:*/*",
+            scope: scopeList,
         },
         keyset: [importedKey],
         stores: {
@@ -190,9 +202,7 @@ export async function restoreSession(oauth: OAuthClient, did: string): Promise<O
     }
 
     try {
-        console.log(`[OAuth] Restoring session for DID: ${did}`);
         const session = await oauth.restore(did as any);
-        console.log(`[OAuth] Session restored successfully for DID: ${did}`);
 
         sessionCache.set(did, {
             session,
@@ -202,6 +212,9 @@ export async function restoreSession(oauth: OAuthClient, did: string): Promise<O
         return session;
     } catch (error: any) {
         console.error(`[OAuth] Failed to restore session for DID: ${did}`, error);
+        if (error instanceof Error) {
+            console.error(error.stack);
+        }
         // ログアウト後のセッション復元エラーは静かに処理
         if (error?.name === 'TokenRefreshError' || error?.message?.includes('session was deleted')) {
             // セッションが削除されている場合はキャッシュもクリア

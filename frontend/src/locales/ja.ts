@@ -30,6 +30,7 @@ const messages = {
     Login_NotDomain: "alice.bsky.socialのように「.bsky.social」を付与してください",
     Login_WithAt: "ハンドルに@は不要です",
     Login_BackOperation: "認証画面で戻るが使用されました",
+    Login_Rejected: "認証がキャンセルされました",
     Login_HandleCaption: "ハンドル",
     Login_CannotUseWhiteSpace: "ハンドルに空白（スペース・改行・タブなど）は使用できません。",
     CreatePost_Fixed: "[全文を読む]",

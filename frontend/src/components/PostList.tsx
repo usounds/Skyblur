@@ -13,9 +13,7 @@ import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState, useRef } from "react";
-import { Lock } from 'lucide-react';
-import { LockOpen } from 'lucide-react';
-import { X } from 'lucide-react';
+import { Lock, LockOpen, LogIn, X } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import Loading from './Loading';
 
@@ -264,13 +262,11 @@ export const PostList: React.FC<PostListProps> = ({
                         <Timeline.Item
                             key={index}
                             bullet={
-                                item.blur?.visibility === VISIBILITY_PASSWORD && (
-                                    item.isDecrypt ? (
-                                        <LockOpen size={20} />
-                                    ) : (
-                                        <Lock size={20} />
-                                    )
-                                )
+                                item.blur?.visibility === VISIBILITY_PASSWORD ? (
+                                    item.isDecrypt ? <LockOpen size={16} /> : <Lock size={16} />
+                                ) : item.blur?.visibility === VISIBILITY_LOGIN ? (
+                                    <LogIn size={16} />
+                                ) : null
                             }
                         >
                             {/* 本文 */}

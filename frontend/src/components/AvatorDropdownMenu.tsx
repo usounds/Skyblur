@@ -32,10 +32,8 @@ export function AvatorDropdownMenu() {
             });
             setDid('');
             useXrpcAgentStore.getState().setUserProf(null);
-            useXrpcAgentStore.getState().setIsSessionChecked(false); // Reset session check flag
+            useXrpcAgentStore.getState().setIsSessionChecked(true); // ログアウト成功をマーク
             window.localStorage.removeItem('oauth.did');
-            // 念のためフロントエンドの DID 関連クッキーも消去試行 (ブラウザによる)
-            document.cookie = "oauth_did=; Path=/; Max-Age=0";
         } catch (error) {
             console.error('Logout error:', error);
         } finally {

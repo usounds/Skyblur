@@ -23,6 +23,7 @@ export default function Settings() {
   const [preferenceMode, setPreferenceMode] = useState<"create" | "update">('create')
   const [myPageDescription, setMyPageDescription] = useState<string>('')
   const [isCustomFeed, setIsCustomFeed] = useState<boolean>(false)
+  const [originallyHasCustomFeed, setOriginallyHasCustomFeed] = useState<boolean>(false)
   const [isSave, setIsSave] = useState<boolean>(false)
   const { localeData: locale } = useLocale();
   const [feedName, setFeedName] = useState<string>(locale.Pref_CustomFeedDefaltName?.replace('{1}', did || '') || '')
@@ -79,6 +80,7 @@ export default function Settings() {
           setFeedDescription(result.data.view.description || '')
           setFeedAvatarImg(result.data.view.avatar || '')
           setIsCustomFeed(true)
+          setOriginallyHasCustomFeed(true)
         }
 
       } catch (e) {
@@ -111,44 +113,26 @@ export default function Settings() {
 
   };
 
-  const handleIsUseMyPage = async (param: boolean) => {
-    if (!agent || !did) return
-    setIsSave(true)
+  const getPreferenceWrite = (param: boolean) => {
+    if (!did) return null;
 
-    try {
-      const writes = [
-        {
-          $type: `com.atproto.repo.applyWrites#${preferenceMode}` as const,
-          collection: 'uk.skyblur.preference' as `${string}.${string}.${string}`,
-          rkey: 'self',
-          value: {
-            myPage: {
-              isUseMyPage: param,
-              description: myPageDescription,
-            },
-          },
+    return {
+      $type: `com.atproto.repo.applyWrites#${preferenceMode}` as const,
+      collection: 'uk.skyblur.preference' as `${string}.${string}.${string}`,
+      rkey: 'self',
+      value: {
+        $type: 'uk.skyblur.preference' as any,
+        myPage: {
+          isUseMyPage: param,
+          description: myPageDescription,
         },
-      ];
-
-      await agent.post('com.atproto.repo.applyWrites', {
-        input: {
-          repo: did as ActorIdentifier,
-          writes: writes,
-        },
-      });
-      setIsUseMyPage(param)
+      },
+    };
+  };
 
 
-    } catch (e) {
-      console.error(e)
-    }
-    setIsSave(false)
-
-  }
-
-
-  const submitFeedRecord = async () => {
-    if (!agent || !did) return
+  const getFeedRecord = async () => {
+    if (!agent || !did) return null;
     let avatarRef: Blob | null = null;
 
     let encoding: string = ''
@@ -217,63 +201,45 @@ export default function Settings() {
         avatarRef = blobRes.data.blob as unknown as Blob;
       }
 
-      const record = {
+      return {
+        $type: 'app.bsky.feed.generator',
         did: 'did:web:feed.skyblur.uk',
         displayName: feedName,
         description: feedDescription,
         createdAt: new Date().toISOString(),
         ...(avatarRef ? { avatar: avatarRef } : {}),
       };
-
-      await agent.post('com.atproto.repo.putRecord', {
-        input: {
-          repo: did as ActorIdentifier,
-          collection: 'app.bsky.feed.generator' as `${string}.${string}.${string}`,
-          rkey: 'skyblurCustomFeed',
-          record,
-        },
-      });
     } catch (e) {
       setFeedUpdateMessage('Error:' + e)
-      setIsSave(false)
-      return
+      throw e;
     }
-
   }
 
-  const handleCustomFeed = async (param: boolean) => {
-    if (!agent || !did) return
+  const getCustomFeedWrite = async (param: boolean) => {
+    if (!did) return null;
 
-    try {
-      if (param) {
-        await submitFeedRecord();
-      } else {
-        const writes: {
-          $type: 'com.atproto.repo.applyWrites#delete';
-          collection: 'app.bsky.feed.generator';  // 削除対象のコレクション名に変更
-          rkey: string;
-        }[] = [];
+    if (param) {
+      const record = await getFeedRecord();
+      if (!record) return null;
 
-        writes.push({
-          $type: 'com.atproto.repo.applyWrites#delete',
-          collection: 'app.bsky.feed.generator',  // 元の collection に合わせる
-          rkey: 'skyblurCustomFeed',  // 削除したい rkey を指定
-        });
-
-        await agent.post('com.atproto.repo.applyWrites', {
-          input: {
-            repo: did as ActorIdentifier,
-            writes,
-          },
-        });
-
-
-      }
-
-    } catch (e) {
-      console.error(e)
+      // 最初に読み込まれた時に存在していたなら update、そうでなければ create
+      const mode = originallyHasCustomFeed ? 'update' : 'create';
+      return {
+        $type: `com.atproto.repo.applyWrites#${mode}` as const,
+        collection: 'app.bsky.feed.generator' as `${string}.${string}.${string}`,
+        rkey: 'skyblurCustomFeed',
+        value: record,
+      };
+    } else if (originallyHasCustomFeed) {
+      // 削除する場合（元々存在していた場合のみ）
+      return {
+        $type: 'com.atproto.repo.applyWrites#delete' as const,
+        collection: 'app.bsky.feed.generator' as `${string}.${string}.${string}`,
+        rkey: 'skyblurCustomFeed',
+      };
     }
 
+    return null;
   }
 
 
@@ -289,8 +255,23 @@ export default function Settings() {
       message: locale.Pref_SaveIsInProgress,
     });
     try {
-      await handleCustomFeed(isCustomFeed)
-      await handleIsUseMyPage(isUseMyPage)
+      const writes: any[] = [];
+
+      const feedWrite = await getCustomFeedWrite(isCustomFeed);
+      if (feedWrite) writes.push(feedWrite);
+
+      const prefWrite = getPreferenceWrite(isUseMyPage);
+      if (prefWrite) writes.push(prefWrite);
+
+      if (writes.length > 0) {
+        await agent.post('com.atproto.repo.applyWrites', {
+          input: {
+            repo: did as ActorIdentifier,
+            writes,
+          },
+        });
+      }
+
       notifications.clean()
       notifications.show({
         title: 'Success',

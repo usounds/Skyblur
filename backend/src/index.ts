@@ -311,7 +311,25 @@ app.get('/oauth/login', async (c) => {
     return c.redirect(url.toString());
   } catch (e) {
     console.error('OAuth Login Error:', e);
-    return c.redirect(`/?loginError=1`);
+
+    // エラー時の戻り先を特定する（referer または redirect_uri パラメータからオリジンを抽出）
+    const redirectUriParam = c.req.query('redirect_uri');
+    const referer = c.req.header('referer');
+    let targetOrigin = '';
+
+    try {
+      if (redirectUriParam) {
+        targetOrigin = new URL(redirectUriParam).origin;
+      } else if (referer) {
+        targetOrigin = new URL(referer).origin;
+      }
+    } catch { }
+
+    if (!targetOrigin) {
+      targetOrigin = c.env.APPVIEW_HOST ? `https://${c.env.APPVIEW_HOST}` : 'https://skyblur.uk';
+    }
+
+    return c.redirect(`${targetOrigin}/?loginError=invalid_handle`);
   }
 });
 
@@ -341,11 +359,12 @@ app.get('/oauth/callback', async (c) => {
     }
 
     const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
+    const isSecure = origin.startsWith('https');
 
     setCookie(c, 'oauth_did', signedDid, {
       path: '/',
       httpOnly: true,
-      secure: true,
+      secure: isSecure,
       sameSite: 'Lax',
       maxAge: 30 * 24 * 60 * 60,
       domain: domain,
@@ -354,9 +373,37 @@ app.get('/oauth/callback', async (c) => {
     deleteCookie(c, 'oauth_callback', { path: '/', domain: domain });
 
     return c.redirect(finalRedirect);
-  } catch (e) {
+  } catch (e: any) {
     console.error('OAuth Callback Error:', e);
-    return c.text('OAuth callback failed', 400);
+
+    // ユーザーが拒否した場合などは、エラーを表示せずアプリに戻す
+    const isRejected = e?.name === 'OAuthCallbackError' && (e?.message?.includes('rejected') || e?.message?.includes('denied'));
+
+    const callbackCookie = getCookie(c, 'oauth_callback');
+    const redirectTo = callbackCookie ? decodeURIComponent(callbackCookie) : '/';
+    const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
+
+    // エラー時もクッキーは掃除する
+    deleteCookie(c, 'oauth_callback', { path: '/', domain: domain });
+
+    if (isRejected) {
+      // 拒否された場合は loginError パラメータを付けて戻す
+      let finalRedirect: string;
+      if (redirectTo.startsWith('http')) {
+        finalRedirect = redirectTo;
+      } else {
+        const appViewUrl = c.env.APPVIEW_HOST ? `https://${c.env.APPVIEW_HOST}` : 'https://skyblur.uk';
+        finalRedirect = `${appViewUrl}${redirectTo}`;
+      }
+
+      const separator = finalRedirect.includes('?') ? '&' : '?';
+      return c.redirect(`${finalRedirect}${separator}loginError=rejected`);
+    }
+
+    if (e instanceof Error) {
+      console.error(e.stack);
+    }
+    return c.text(`OAuth callback failed: ${String(e)}`, 400);
   }
 });
 
@@ -367,100 +414,115 @@ app.get('/oauth/session', async (c) => {
 
   if (!rawDid) return c.json({ authenticated: false });
 
-  // 署名検証 (signDid の逆回転)
-  const parts = rawDid.split('.');
-  if (parts.length !== 2) return c.json({ authenticated: false });
-
-  const [did, signature] = parts;
-  const expectedSigned = await signDid(did, secret);
-  if (rawDid !== expectedSigned) {
-    return c.json({ authenticated: false });
-  }
-
   try {
-    const origin = getRequestOrigin(c.req.raw, c.env);
-    const oauth = await getOAuthClient(c.env, origin);
-    const { restoreSession } = await import('@/logic/ATPOauth');
-    const session = await restoreSession(oauth, did);
-
-    // デバッグログから判明した構造 (session.server.serverMetadata.issuer) を含めて PDS を抽出
-    let resolvedPds = (session as any).pds ||
-      (session as any).server?.serverMetadata?.issuer ||
-      (session as any).info?.pds ||
-      (session as any).info?.identity?.pds?.[0] ||
-      (session as any).info?.identity?.services?.atproto_pds?.[0] ||
-      (session as any).info?.server ||
-      '';
-
-    // もし PDS が見つからない場合、キャッシュまたは DID から直接解決を試みる
-    if (!resolvedPds) {
-      const cacheKey = `diddoc_${did}`;
-      try {
-        const doNamespace = c.env.SKYBLUR_DO;
-        const doId = doNamespace.idFromName('global_cache');
-        const stub = doNamespace.get(doId);
-
-        let didDoc: any = null;
-
-        const cacheRes = await stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`));
-        if (cacheRes.ok) {
-          didDoc = await cacheRes.json();
-        }
-
-        if (!didDoc) {
-
-          if (did.startsWith('did:plc:')) {
-            const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
-            if (res.ok) {
-              didDoc = await res.json();
-              c.executionCtx.waitUntil(
-                stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`, {
-                  method: 'PUT',
-                  body: JSON.stringify(didDoc)
-                }))
-              );
-            }
-          }
-        }
-
-        if (didDoc) {
-          const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
-          if (service) {
-            resolvedPds = service.serviceEndpoint;
-
-          }
-        }
-      } catch (e) {
-        console.error('Failed to resolve PDS from cache/directory:', e);
-      }
-    }
-
-    const client = new Client({ handler: session });
-    let userProf: any = null;
-    try {
-      const profileRes = await (client as any).get('app.bsky.actor.getProfile', {
-        params: { actor: session.did },
-      });
-      if (profileRes.ok) {
-        userProf = profileRes.data;
-      }
-    } catch (err) {
-      console.error('Failed to fetch profile during session check:', err);
-    }
-
-    return c.json({
-      authenticated: true,
-      did: session.did || (session as any).sub,
-      pds: resolvedPds,
-      userProf,
-    });
-  } catch (e: any) {
-    // ログアウト後のセッション復元エラーは静かに処理
-    if (e?.name === 'TokenRefreshError' || e?.message?.includes('session was deleted')) {
+    // 署名検証 (DIDs containing dots like did:web are supported)
+    const lastDotIndex = rawDid.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+      console.warn(`[OAuth] /oauth/session invalid token format (no dots)`);
       return c.json({ authenticated: false });
     }
-    // その他のエラーはログに記録
-    console.error('Session Restore Error:', e);
+
+    const did = rawDid.substring(0, lastDotIndex);
+    const signature = rawDid.substring(lastDotIndex + 1);
+
+    const expectedSigned = await signDid(did, secret);
+    if (rawDid !== expectedSigned) {
+      return c.json({ authenticated: false });
+    }
+
+    try {
+      const origin = getRequestOrigin(c.req.raw, c.env);
+      const oauth = await getOAuthClient(c.env, origin);
+      const { restoreSession } = await import('@/logic/ATPOauth');
+      const session = await restoreSession(oauth, did);
+
+      // デバッグログから判明した構造 (session.server.serverMetadata.issuer) を含めて PDS を抽出
+      let resolvedPds = (session as any).pds ||
+        (session as any).server?.serverMetadata?.issuer ||
+        (session as any).info?.pds ||
+        (session as any).info?.identity?.pds?.[0] ||
+        (session as any).info?.identity?.services?.atproto_pds?.[0] ||
+        (session as any).info?.server ||
+        '';
+
+      // もし PDS が見つからない場合、キャッシュまたは DID から直接解決を試みる
+      if (!resolvedPds) {
+        const cacheKey = `diddoc_${did}`;
+        try {
+          const doNamespace = c.env.SKYBLUR_DO;
+          const doId = doNamespace.idFromName('global_cache');
+          const stub = doNamespace.get(doId);
+
+          let didDoc: any = null;
+
+          const cacheRes = await stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`));
+          if (cacheRes.ok) {
+            didDoc = await cacheRes.json();
+          }
+
+          if (!didDoc) {
+
+            if (did.startsWith('did:plc:')) {
+              const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
+              if (res.ok) {
+                didDoc = await res.json();
+                c.executionCtx.waitUntil(
+                  stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(didDoc)
+                  }))
+                );
+              }
+            }
+          }
+
+          if (didDoc) {
+            const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
+            if (service) {
+              resolvedPds = service.serviceEndpoint;
+
+            }
+          }
+        } catch (e) {
+          console.error('Failed to resolve PDS from cache/directory:', e);
+        }
+      }
+
+      const client = new Client({ handler: session });
+      let userProf: any = null;
+      try {
+        const profileRes = await (client as any).get('app.bsky.actor.getProfile', {
+          params: { actor: session.did },
+        });
+        if (profileRes.ok) {
+          userProf = profileRes.data;
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile during session check:', err);
+      }
+
+      const scope = await session.getTokenInfo();
+      return c.json({
+        authenticated: true,
+        did: session.did || (session as any).sub,
+        pds: scope.aud,
+        userProf,
+        scope: scope.scope,
+      });
+    } catch (e: any) {
+      // ログアウト後のセッション復元エラーは静かに処理
+      if (e?.name === 'TokenRefreshError' || e?.message?.includes('session was deleted')) {
+        return c.json({ authenticated: false });
+      }
+      // その他のエラーはログに記録
+      console.error('Session Restore Error:', e);
+      if (e instanceof Error) {
+        console.error(e.stack);
+      }
+      return c.json({ authenticated: false });
+    }
+  } catch (e: any) {
+    console.error('Unexpected error in /oauth/session:', e);
     return c.json({ authenticated: false });
   }
 });
@@ -477,9 +539,9 @@ app.post('/oauth/logout', async (c) => {
   const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
 
   if (rawDid) {
-    const parts = rawDid.split('.');
-    if (parts.length === 2) {
-      const [did] = parts;
+    const lastDotIndex = rawDid.lastIndexOf('.');
+    if (lastDotIndex !== -1) {
+      const did = rawDid.substring(0, lastDotIndex);
       const expectedSigned = await signDid(did, secret);
 
       if (rawDid === expectedSigned) {
@@ -501,13 +563,18 @@ app.post('/oauth/logout', async (c) => {
     }
   }
 
+  const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
+  const origin = getRequestOrigin(c.req.raw, c.env);
+  const isSecure = origin.startsWith('https');
+
   // oauth_did クッキーを削除
   setCookie(c, 'oauth_did', '', {
     httpOnly: true,
-    secure: true,
+    secure: isSecure,
     sameSite: 'Lax',
     path: '/',
     maxAge: 0,
+    domain: domain,
   });
 
   return c.json({ success: true });
@@ -538,9 +605,12 @@ app.post('/xrpc/com.atproto.repo.uploadBlob', async (c) => {
   const rawDid = getCookie(c, 'oauth_did');
   const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
   if (!rawDid) return c.json({ error: 'Authentication required' }, 401);
-  const parts = rawDid.split('.');
-  if (parts.length !== 2) return c.json({ error: 'Authentication required' }, 401);
-  const [did] = parts;
+
+  const lastDotIndex = rawDid.lastIndexOf('.');
+  if (lastDotIndex === -1) return c.json({ error: 'Authentication required' }, 401);
+
+  const did = rawDid.substring(0, lastDotIndex);
+
   const expectedSigned = await signDid(did, secret);
   if (rawDid !== expectedSigned) return c.json({ error: 'Authentication required' }, 401);
 
@@ -565,9 +635,10 @@ app.all('/xrpc/:method{.*}', async (c) => {
   }
 
   // 署名検証
-  const parts = rawDid.split('.');
-  if (parts.length !== 2) return c.json({ error: 'Authentication required' }, 401);
-  const [did, signature] = parts;
+  const lastDotIndex = rawDid.lastIndexOf('.');
+  if (lastDotIndex === -1) return c.json({ error: 'Authentication required' }, 401);
+
+  const did = rawDid.substring(0, lastDotIndex);
   const expectedSigned = await signDid(did, secret);
   if (rawDid !== expectedSigned) {
     return c.json({ error: 'Authentication required' }, 401);

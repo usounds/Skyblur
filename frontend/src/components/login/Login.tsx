@@ -31,8 +31,11 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     // loginError パラメータがある場合、エラーメッセージを表示
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('loginError')) {
+        const error = params.get('loginError');
+        if (error === 'invalid_handle') {
             setErrorMessage(locale.Login_InvalidHandle || '無効なハンドルです');
+        } else {
+            setErrorMessage(null);
         }
     }, [locale.Login_InvalidHandle]);
 

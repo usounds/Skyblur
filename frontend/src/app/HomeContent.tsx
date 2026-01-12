@@ -111,11 +111,9 @@ export function HomeContent() {
                 {locale.Home_WelcomeTitle}
             </Title>
 
-            <Container size={560} p={0}>
-                <Text size="sm" className={classes.description}>
-                    {locale.Home_WelcomeDescription}
-                </Text>
-            </Container>
+            <Text size="sm" className={classes.description}>
+                {locale.Home_WelcomeDescription}
+            </Text>
 
             <div className="flex justify-center mt-10 mb-12">
                 <Button

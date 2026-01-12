@@ -12,6 +12,7 @@ type State = {
   serviceUrl: string;
   isLoginModalOpened: boolean;
   isSessionChecked: boolean;
+  scope: string;
 };
 
 type Action = {
@@ -66,6 +67,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     serviceUrl: "",
     isLoginModalOpened: false,
     isSessionChecked: false,
+    scope: '',
     setUserProf: (userProf) => set({ userProf }),
     setDid: (did) => set({ did }),
     setBlueskyLoginMessage: (blueskyLoginMessage) => set({ blueskyLoginMessage }),
@@ -92,15 +94,15 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
               updates.userProf = data.userProf;
             }
 
-            if (get().did !== data.did || get().serviceUrl !== pdsUrl || data.userProf) {
-              set(updates);
+            if (get().did !== data.did || get().serviceUrl !== pdsUrl || data.userProf || get().scope !== (data.scope || '')) {
+              set({ ...updates, scope: data.scope || '' });
             } else {
               set({ isSessionChecked: true });
             }
             return { authenticated: true, did: data.did, pds: pdsUrl };
           } else {
             if (get().did !== "" || get().isSessionChecked !== true) {
-              set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null });
+              set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "" });
             }
             return { authenticated: false, did: "", pds: "" };
           }

@@ -9,6 +9,8 @@ import { Modal } from '@mantine/core';
 import { AuthenticationTitle } from '@/components/login/Login';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
+import { notifications } from '@mantine/notifications';
+import { X } from 'lucide-react';
 
 const DynamicHeader = () => {
   const { locale: currentLocale, localeData: locale } = useLocale();
@@ -38,9 +40,17 @@ const DynamicHeader = () => {
 
   useEffect(() => {
     if (loginError && isMounted) {
+      if (loginError === 'rejected') {
+        notifications.show({
+          title: 'Login',
+          message: locale.Login_Rejected,
+          color: 'red',
+          icon: <X size={18} />,
+        });
+      }
       setIsLoginModalOpened(true);
     }
-  }, [loginError, isMounted, setIsLoginModalOpened]);
+  }, [loginError, isMounted, setIsLoginModalOpened, locale.Login_Rejected]);
 
   const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
