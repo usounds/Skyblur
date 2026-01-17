@@ -64,6 +64,28 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return;
         }
 
+        if (handle.includes('_')) {
+            notifications.show({
+                title: 'Error',
+                message: locale.Login_CannotUseUnderscore,
+                color: 'red',
+                icon: <X />
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        if (/[^a-zA-Z0-9.-]/.test(handle)) {
+            notifications.show({
+                title: 'Error',
+                message: locale.Login_InvalidCharacter,
+                color: 'red',
+                icon: <X />
+            });
+            setIsLoading(false);
+            return;
+        }
+
         if (!handle.includes('.')) {
             notifications.show({
                 title: 'Error',

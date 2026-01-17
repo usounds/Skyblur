@@ -39,6 +39,8 @@ const messages = {
     Visibility_Login: 'ログイン必須',
     Login_HandleCaption: "ハンドル",
     Login_CannotUseWhiteSpace: "ハンドルに空白（スペース・改行・タブなど）は使用できません。",
+    Login_CannotUseUnderscore: "ハンドルにアンダースコアは使用できません。ハイフン (-) を使用してください。",
+    Login_InvalidCharacter: "ハンドルには英数字、ハイフン、ドットのみ使用できます。",
     Login_CreateAccount: "新規アカウント作成",
     CreatePost_Fixed: "[全文を読む]",
     CreatePost_Post: "本文",

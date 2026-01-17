@@ -39,6 +39,8 @@ const messages = {
     Visibility_Login: 'Login required',
     Login_HandleCaption: "Handle",
     Login_CannotUseWhiteSpace: "Handles cannot contain whitespace (spaces, line breaks, or tabs).",
+    Login_CannotUseUnderscore: "Handles cannot contain underscores. Use hyphens (-) instead.",
+    Login_InvalidCharacter: "Handles can only contain letters, numbers, hyphens, and dots.",
     Login_CreateAccount: "Create Account",
     CreatePost_Fixed: "[Read full text]",
     CreatePost_Post: "Post content",

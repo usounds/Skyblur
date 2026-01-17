@@ -19,9 +19,9 @@ export const handle = async (c: Context) => {
     const text = await response.text();
     const did = text.split("\n")[0]!.trim();
 
-	// validate did
+    // validate did
     if (!did.startsWith("did:plc:") && !did.startsWith("did:web:")) {
-        return c.json({ error: "Invalid DID" }, 400);
+      return c.json({ error: "Invalid DID" }, 400);
     }
 
     return c.json({ did });
