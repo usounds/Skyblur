@@ -26,8 +26,11 @@ export class OAuthStoreDO extends DurableObject {
       return new Response("Missing key", { status: 400 });
     }
 
+    console.log(`[DO] ${request.method} key=${key}`);
+
     if (request.method === "GET") {
       const val = await this.ctx.storage.get(key);
+      console.log(`[DO] GET result for ${key}:`, val ? "Found" : "Not Found");
       if (val === undefined) {
         return new Response(null, { status: 404 });
       }
@@ -38,11 +41,13 @@ export class OAuthStoreDO extends DurableObject {
 
     if (request.method === "PUT") {
       const val = await request.json();
+      console.log(`[DO] PUT ${key}`);
       await this.ctx.storage.put(key, val);
       return new Response("OK");
     }
 
     if (request.method === "DELETE") {
+      console.log(`[DO] DELETE ${key}`);
       await this.ctx.storage.delete(key);
       return new Response("OK");
     }
@@ -104,6 +109,7 @@ app.use('*', async (c, next) => {
   // 読み取り専用の Skyblur エンドポイントは CSRF 保護不要
   const readOnlyPaths = [
     '/xrpc/uk.skyblur.post.ecnrypt',
+    '/xrpc/uk.skyblur.post.encrypt',
     '/xrpc/uk.skyblur.post.decryptByCid',
     '/xrpc/uk.skyblur.post.getPost',
     '/xrpc/uk.skyblur.admin.getDidDocument',
@@ -141,6 +147,7 @@ app.use('*', async (c, next) => {
     return c.json({ error: 'Invalid origin or referer' }, 403);
   }
 
+  return next();
   return next();
 });
 

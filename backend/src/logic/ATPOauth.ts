@@ -83,7 +83,12 @@ class DurableObjectStore {
                 const decrypted = await this.decryptData(data);
                 return this.revive(decrypted);
             } catch (e) {
-                console.error(`Failed to decrypt data for ${key}, falling back or failing`, e);
+                console.error(`[DurableObjectStore] Failed to decrypt data for ${key}.`);
+                console.error(`[DurableObjectStore] Key available: ${!!this.encryptionKeyStr}`);
+                if (this.encryptionKeyStr) {
+                    console.error(`[DurableObjectStore] Key length: ${this.encryptionKeyStr.length}`);
+                }
+                console.error(`[DurableObjectStore] Error details:`, e);
                 // 復号できない場合は読めないものとして扱う
                 return undefined;
             }
@@ -236,6 +241,8 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
 
     // 暗号化キーを渡す
     const encryptionKey = env.DATA_ENCRYPTION_KEY;
+    console.log(`[ATPOauth] Initializing client for ${effectiveOrigin}. Encryption key stored: ${!!encryptionKey}, length: ${encryptionKey?.length}`);
+
     const sessionStore = new DurableObjectStore(env.SKYBLUR_DO, 'session', encryptionKey) as any;
     const stateStore = new DurableObjectStore(env.SKYBLUR_DO, 'state', encryptionKey) as any;
 
