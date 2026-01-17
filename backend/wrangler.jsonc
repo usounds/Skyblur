@@ -7,7 +7,8 @@
     "nodejs_compat"
   ],
   "vars": {
-    "APPVIEW_HOST": "dev.skyblur.uk"
+    "APPVIEW_HOST": "dev.skyblur.uk",
+    "API_HOST": "devapi.skyblur.uk"
   },
   "kv_namespaces": [
     {
@@ -34,7 +35,8 @@
   "env": {
     "production": {
       "vars": {
-        "APPVIEW_HOST": "skyblur.uk"
+        "APPVIEW_HOST": "skyblur.uk",
+        "API_HOST": "api.skyblur.uk"
       },
       "kv_namespaces": [
         {

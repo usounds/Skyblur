@@ -214,6 +214,15 @@ export function clearSessionCache(did: string) {
  * 開発時はホスト名を使い、不明な場合は本番ドメインを返す
  */
 export function getRequestOrigin(request: Request, env: Env) {
+    if (env.API_HOST) {
+        const host = env.API_HOST;
+        let proto = 'https';
+        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+            proto = 'http'; // ローカル時は http 固定（必要に応じて）
+        }
+        return `${proto}://${host}`;
+    }
+
     const url = new URL(request.url);
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || url.host;
 

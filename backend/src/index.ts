@@ -64,6 +64,7 @@ export interface Env {
   APPVIEW_HOST?: string;
   OAUTH_PRIVATE_KEY_JWK?: string;
   DATA_ENCRYPTION_KEY?: string;
+  API_HOST?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>()
