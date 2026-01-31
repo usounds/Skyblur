@@ -19,8 +19,8 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { ArrowLeft, Check, Globe, Lock, LogIn, X } from 'lucide-react';
-import { useEffect, useState } from "react";
+import { ArrowLeft, Check, Globe, Lock, LogIn, X, Save } from 'lucide-react';
+import { useEffect, useState, ChangeEvent } from "react";
 import { BlueskyIcon } from './Icons';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -468,7 +468,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 });
 
                 // Thread Gate (Reply control)
-                const interactionRules = threadGate.filter(val => val !== THREADGATE_QUOTE_ALLOW);
+                const interactionRules = threadGate.filter((val: string) => val !== THREADGATE_QUOTE_ALLOW);
                 if (interactionRules.length > 0) {
                     const allowRules: { $type: string }[] = [];
                     if (interactionRules.includes(THREADGATE_MENTION)) allowRules.push({ $type: 'app.bsky.feed.threadgate#mentionRule' });
@@ -751,10 +751,13 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 }
             });
 
-            if (!result.ok) return
+            if (!result.ok || !result.data) return
 
-            setIsReply(true)
-            setReplyPost(result.data.posts[0] as PostView)
+            const post = result.data.posts[0]
+            if (post) {
+                setIsReply(true)
+                setReplyPost(post as PostView)
+            }
         }
         if (encryptKey) setIsEncrypt(true)
     };
@@ -917,7 +920,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 <div className="flex items-center mt-2">
                                     <Switch
                                         checked={isReply}
-                                        onChange={(event) => handleSetIsReply(event.currentTarget.checked)}
+                                        onChange={(event: ChangeEvent<HTMLInputElement>) => handleSetIsReply(event.currentTarget.checked)}
                                         label={locale.ReplyList_UseReply}
                                     />
                                 </div>
@@ -959,7 +962,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                             <SegmentedControl
                                 value={visibility}
-                                onChange={(value) => {
+                                onChange={(value: string) => {
                                     setVisibilityState(value);
                                     setIsEncrypt(value === VISIBILITY_PASSWORD);
                                     if (!prevBlur) setTempVisibility(value);
@@ -1018,7 +1021,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                                 fontSize: 16,  // 16pxに設定
                                             },
                                         }}
-                                        onChange={(event) => setEncryptKey(event.currentTarget.value)}
+                                        onChange={(event: ChangeEvent<HTMLInputElement>) => setEncryptKey(event.currentTarget.value)}
                                     />
                                     {/[ \t\r\n\u3000]/.test(encryptKey) && <p className="text-red-500">{locale.CreatePost_PasswordErrorSpace}</p>}
                                 </div>
@@ -1068,6 +1071,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                         loaderProps={{ type: 'dots' }}
                                         disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0) || /[ \t\r\n\u3000]/.test(encryptKey)}
                                         loading={isLoading}
+                                        leftSection={<Save />}
                                     >
                                         {isLoading &&
                                             <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">

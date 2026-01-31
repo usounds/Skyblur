@@ -147,7 +147,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     }
 
 
-    const handleInput = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInput = async (event: React.FormEvent<HTMLInputElement>) => {
         const val = event.currentTarget.value;
         if (!val) {
             setSuggestions([]);
