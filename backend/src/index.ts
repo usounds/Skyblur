@@ -26,11 +26,11 @@ export class OAuthStoreDO extends DurableObject {
       return new Response("Missing key", { status: 400 });
     }
 
-    console.log(`[DO] ${request.method} key=${key}`);
+    // console.log(`[DO] ${request.method} key=${key}`);
 
     if (request.method === "GET") {
       const val = await this.ctx.storage.get(key);
-      console.log(`[DO] GET result for ${key}:`, val ? "Found" : "Not Found");
+      // console.log(`[DO] GET result for ${key}:`, val ? "Found" : "Not Found");
       if (val === undefined) {
         return new Response(null, { status: 404 });
       }
@@ -41,13 +41,13 @@ export class OAuthStoreDO extends DurableObject {
 
     if (request.method === "PUT") {
       const val = await request.json();
-      console.log(`[DO] PUT ${key}`);
+      // console.log(`[DO] PUT ${key}`);
       await this.ctx.storage.put(key, val);
       return new Response("OK");
     }
 
     if (request.method === "DELETE") {
-      console.log(`[DO] DELETE ${key}`);
+      // console.log(`[DO] DELETE ${key}`);
       await this.ctx.storage.delete(key);
       return new Response("OK");
     }
@@ -393,7 +393,10 @@ app.get('/oauth/callback', async (c) => {
   try {
     const { session } = await client.callback(url.searchParams);
 
-    const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+    const secret = c.env.OAUTH_PRIVATE_KEY_JWK;
+    if (!secret) {
+      throw new Error('OAUTH_PRIVATE_KEY_JWK is not set');
+    }
     const signedDid = await signDid(session.did, secret);
 
     const callbackCookie = getCookie(c, 'oauth_callback');
@@ -461,7 +464,11 @@ app.get('/oauth/callback', async (c) => {
 // 5. セッション確認
 app.get('/oauth/session', async (c) => {
   const rawDid = getCookie(c, 'oauth_did');
-  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK;
+  if (!secret) {
+    console.error('Configuration Error: OAUTH_PRIVATE_KEY_JWK missing');
+    return c.json({ authenticated: false });
+  }
 
   if (!rawDid) return c.json({ authenticated: false });
 
@@ -569,7 +576,11 @@ app.post('/xrpc/uk.skyblur.post.encrypt', (c) => {
 // 6. ログアウト
 app.post('/oauth/logout', async (c) => {
   const rawDid = getCookie(c, 'oauth_did');
-  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK;
+  if (!secret) {
+    console.error('Configuration Error: OAUTH_PRIVATE_KEY_JWK missing');
+    return c.json({ success: false, error: 'Configuration Error' }, 500);
+  }
 
   if (rawDid) {
     const lastDotIndex = rawDid.lastIndexOf('.');
@@ -636,7 +647,8 @@ app.get('/xrpc/uk.skyblur.admin.resolveHandle', (c) => {
 
 app.post('/xrpc/com.atproto.repo.uploadBlob', async (c) => {
   const rawDid = getCookie(c, 'oauth_did');
-  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK;
+  if (!secret) return c.json({ error: 'Configuration Error' }, 500);
   if (!rawDid) return c.json({ error: 'Authentication required' }, 401);
 
   const lastDotIndex = rawDid.lastIndexOf('.');
@@ -665,7 +677,11 @@ app.all('/xrpc/:method{.*}', async (c) => {
 
   // セッションを確認
   const rawDid = getCookie(c, 'oauth_did');
-  const secret = c.env.OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+  const secret = c.env.OAUTH_PRIVATE_KEY_JWK;
+  if (!secret) {
+    console.error('OAUTH_PRIVATE_KEY_JWK is not set');
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
 
   if (!rawDid) {
     return c.json({ error: 'Authentication required' }, 401);

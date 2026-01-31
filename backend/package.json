@@ -11,17 +11,18 @@
     "@atcute/client": "^4.2.1",
     "@atcute/identity-resolver": "^1.2.2",
     "@atcute/identity-resolver-node": "^1.0.3",
-    "@atcute/oauth-node-client": "^0.1.3",
+    "@atcute/oauth-crypto": "^0.1.0",
+    "@atcute/oauth-node-client": "^1.1.0",
     "did-jwt": "^8.0.18",
     "did-resolver": "^4.1.0",
-    "hono": "^4.11.4",
+    "hono": "^4.11.7",
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
-    "@atcute/lex-cli": "^2.5.2",
-    "@cloudflare/unenv-preset": "^2.10.0",
-    "@cloudflare/workers-types": "^4.20260118.0",
+    "@atcute/lex-cli": "^2.5.3",
+    "@cloudflare/unenv-preset": "^2.12.0",
+    "@cloudflare/workers-types": "^4.20260131.0",
     "unenv": "2.0.0-rc.24",
-    "wrangler": "^4.59.2"
+    "wrangler": "^4.61.1"
   }
 }

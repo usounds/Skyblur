@@ -7,7 +7,7 @@ import {
     WellKnownHandleResolver,
 } from '@atcute/identity-resolver';
 import { NodeDnsHandleResolver } from '@atcute/identity-resolver-node';
-import { OAuthClient, importJwkKey, type OAuthSession } from '@atcute/oauth-node-client';
+import { OAuthClient, type OAuthSession, type ClientAssertionPrivateJwk } from '@atcute/oauth-node-client';
 import type { Env, OAuthStoreDO } from '../index';
 
 const oauthClients = new Map<string, OAuthClient>();
@@ -250,7 +250,7 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
 
     // 暗号化キーを渡す
     const encryptionKey = env.DATA_ENCRYPTION_KEY;
-    console.log(`[ATPOauth] Initializing client for ${effectiveOrigin}. Encryption key stored: ${!!encryptionKey}, length: ${encryptionKey?.length}`);
+    // console.log(`[ATPOauth] Initializing client for ${effectiveOrigin}. Encryption key stored: ${!!encryptionKey}, length: ${encryptionKey?.length}`);
 
     const sessionStore = new DurableObjectStore(env.SKYBLUR_DO, 'session', encryptionKey) as any;
     const stateStore = new DurableObjectStore(env.SKYBLUR_DO, 'state', encryptionKey) as any;
@@ -262,7 +262,11 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
     }
 
     const privateKey = JSON.parse(privateKeyRaw);
-    const importedKey = await importJwkKey(privateKey, { kid: 'k1', alg: 'ES256' });
+    const importedKey: ClientAssertionPrivateJwk = {
+        ...privateKey,
+        kid: 'k1',
+        alg: 'ES256',
+    };
 
     // Cloudflare Workers では redirect: 'error' や cache: 'no-cache' が使えないためラップする
     const safeFetch: typeof fetch = (input, init) => {
