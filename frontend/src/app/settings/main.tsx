@@ -2,6 +2,7 @@
 import Loading from "@/components/Loading";
 import URLCopyButton from "@/components/URLCopyButton";
 import { getPreference } from "@/logic/HandleBluesky";
+import { compressImage } from "@/logic/ImageCompression";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
@@ -97,10 +98,19 @@ export default function Settings() {
   }, [did, agent, isSessionChecked]);
 
 
-  const changeFeedAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const changeFeedAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
-    const imgObject = e.target.files[0];
+    let imgObject = e.target.files[0];
+
+    if (imgObject.size > 900 * 1024) {
+      try {
+        imgObject = await compressImage(imgObject);
+      } catch (e) {
+        console.error("Compression failed", e);
+      }
+    }
+
     setFeedAvatar(imgObject)
     if (imgObject) {
       setFeedAvatarImg(window.URL.createObjectURL(imgObject))
