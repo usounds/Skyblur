@@ -149,7 +149,6 @@ app.use('*', async (c, next) => {
   }
 
   return next();
-  return next();
 });
 
 // --- OAuth Helpers ---
@@ -198,6 +197,10 @@ async function withSession(
     if (e?.name === 'TokenRefreshError' || e?.message?.includes('session was deleted')) {
       console.warn(`[OAuth] TokenRefreshError for ${did}, retrying...`);
       clearSessionCache(did);
+
+      // 競合状態を避けるためにランダムな待機時間を設ける (500ms - 1500ms)
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+
       try {
         const session = await restoreSession(oauth, did);
         return await callback(session);
