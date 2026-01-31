@@ -14,6 +14,8 @@ import type { OAuthSession } from "@atcute/oauth-node-client";
 
 // 1. DOクラスの定義
 export class OAuthStoreDO extends DurableObject {
+  locks: Map<string, number> = new Map();
+
   constructor(state: DurableObjectState, env: Env) {
     super(state, env);
   }
@@ -24,6 +26,22 @@ export class OAuthStoreDO extends DurableObject {
 
     if (!key) {
       return new Response("Missing key", { status: 400 });
+    }
+
+    if (url.pathname === "/lock") {
+      const now = Date.now();
+      const currentLock = this.locks.get(key);
+      // 60秒以上経っていたら強制解除 (Deadlock防止)
+      if (currentLock && now - currentLock < 60000) {
+        return new Response("Locked", { status: 423 });
+      }
+      this.locks.set(key, now);
+      return new Response("OK");
+    }
+
+    if (url.pathname === "/unlock") {
+      this.locks.delete(key);
+      return new Response("OK");
     }
 
     // console.log(`[DO] ${request.method} key=${key}`);

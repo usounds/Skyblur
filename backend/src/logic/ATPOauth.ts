@@ -292,6 +292,41 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
             sessions: sessionStore,
             states: stateStore,
         },
+        async requestLock(name, fn) {
+            const id = env.SKYBLUR_DO.idFromName('oauth_storage');
+            const stub = env.SKYBLUR_DO.get(id);
+            const lockKey = `lock:${name}`;
+            const maxAttempts = 20; // 最大10秒程度待つ
+
+            for (let i = 0; i < maxAttempts; i++) {
+                const res = await stub.fetch(`http://do/lock?key=${encodeURIComponent(lockKey)}`, {
+                    method: 'POST'
+                });
+
+                if (res.ok) {
+                    try {
+                        return await fn();
+                    } finally {
+                        // 処理が終わったら必ずロック解除
+                        await stub.fetch(`http://do/unlock?key=${encodeURIComponent(lockKey)} `, {
+                            method: 'POST'
+                        });
+                    }
+                }
+
+                if (res.status === 423) {
+                    // ロック中の場合は少し待って再試行
+                    // ランダムなバックオフ (200ms - 800ms)
+                    const wait = 200 + Math.floor(Math.random() * 600);
+                    await new Promise(resolve => setTimeout(resolve, wait));
+                    continue;
+                }
+
+                throw new Error(`Failed to acquire lock: ${res.status} ${res.statusText}`);
+            }
+
+            throw new Error(`Lock acquisition timed out for ${name}`);
+        },
         fetch: safeFetch,
         actorResolver: new LocalActorResolver({
             handleResolver: new CompositeHandleResolver({
