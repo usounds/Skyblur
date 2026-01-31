@@ -62,6 +62,7 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
+    "@aws-sdk/client-lambda": "^3.980.0",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/dompurify": "^3.2.0",
