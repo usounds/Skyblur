@@ -6,10 +6,12 @@ import { PostList } from "@/components/PostList";
 import { useLocale } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem } from "@/types/types";
+import { PostListItem, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
 import { Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import { notifications } from '@mantine/notifications'; // Added
+import { ResourceUri } from '@atcute/lexicons/syntax'; // Added
 import { Pencil } from 'lucide-react';
 import { useEffect, useState } from "react";
 
@@ -24,8 +26,56 @@ export function ConsoleContent() {
 
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-    const handleEdit = (input: PostListItem) => {
-        setPrevBlur(input)
+    const handleEdit = async (input: PostListItem) => {
+        // Restricted content pre-fetch
+        if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(input.blur.visibility || '')) {
+            notifications.show({
+                id: 'edit-fetch',
+                title: 'Loading',
+                message: locale.Post_Restricted_FetchingAuth, // existing string or close enough
+                loading: true,
+                autoClose: false,
+                withCloseButton: false,
+            });
+
+            try {
+                if (!apiProxyAgent) throw new Error("No agent");
+                const res = await apiProxyAgent.post('uk.skyblur.post.getPost', {
+                    input: {
+                        uri: input.blurATUri as ResourceUri
+                    }
+                });
+
+                if (res.ok && res.data) {
+                    const data = res.data as { text: string, additional: string };
+                    // Clone input to avoid mutation if strict
+                    const newInput = {
+                        ...input,
+                        blur: {
+                            ...input.blur,
+                            text: data.text,
+                            additional: data.additional
+                        }
+                    };
+                    setPrevBlur(newInput);
+                } else {
+                    // Fallback
+                    setPrevBlur(input);
+                }
+            } catch (e) {
+                console.error("Pre-fetch failed", e);
+                setPrevBlur(input);
+                notifications.show({
+                    title: 'Error',
+                    message: "Failed to load restricted content.",
+                    color: 'red'
+                });
+            } finally {
+                notifications.hide('edit-fetch');
+            }
+        } else {
+            setPrevBlur(input);
+        }
         setMode("create")
     };
 

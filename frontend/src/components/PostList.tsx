@@ -7,13 +7,13 @@ import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD } from "@/types/types";
+import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
 import { Client } from '@atcute/client';
-import { ActorIdentifier } from '@atcute/lexicons/syntax';
+import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState, useRef } from "react";
-import { Lock, LockOpen, LogIn, X, Globe } from 'lucide-react';
+import { Lock, LockOpen, LogIn, X, Globe, Users, UserPlus, UserCheck } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import Loading from './Loading';
 
@@ -36,7 +36,9 @@ export const PostList: React.FC<PostListProps> = ({
     const { localeData: locale } = useLocale();
     const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
     const loginDid = useXrpcAgentStore((state) => state.did);
+    const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
     const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
+
     const [isLast, setIsLast] = useState<boolean>(false)
 
     const isMounted = useRef(true);
@@ -148,9 +150,112 @@ export const PostList: React.FC<PostListProps> = ({
         if (!item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD) {
             return
         }
-        if (item.blur?.visibility === VISIBILITY_LOGIN && !loginDid) {
+        const isLoginRequiredVisibility = [VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any);
+        if (isLoginRequiredVisibility && !loginDid) {
             setIsLoginModalOpened(true);
             return
+        }
+
+        // Tap-to-Reveal Logic (Restricted Posts)
+        const isRestricted = [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any) || (item.blur?.visibility as any) === 'UNKNOWN' || (/^([○◯]+)$/.test(item.blur?.text?.trim() || '') && !item.blur?.visibility);
+
+        if (!item.isDetailDisplay && isRestricted) {
+            if (!apiProxyAgent) {
+                return;
+            }
+
+            notifications.show({
+                id: 'auth-fetch',
+                title: 'Loading',
+                loading: true,
+                message: locale.Post_Restricted_FetchingAuth,
+                autoClose: false,
+                withCloseButton: false,
+            });
+
+            try {
+                const res = await apiProxyAgent.post('uk.skyblur.post.getPost', {
+                    input: {
+                        uri: item.blurATUri as ResourceUri
+                    }
+                });
+
+                notifications.hide('auth-fetch');
+
+                if (res.ok && res.data) {
+                    const data = res.data as { text: string, additional: string, debug?: any };
+
+                    // Only update masked text if we have no debug info (meaning success)
+                    if (data.text && !data.debug) { // If we got text and no error debug info
+                        // Success: Update item and show detail
+                        const updatedList = deleteList.map((currentItem) =>
+                            currentItem === item
+                                ? {
+                                    ...currentItem,
+                                    blur: { ...currentItem.blur, text: data.text, additional: data.additional },
+                                    isDetailDisplay: true
+                                }
+                                : currentItem
+                        );
+                        setDeleteList(updatedList);
+                    }
+
+                    if (data.debug) {
+                        // Check for errors in debug info
+                        const reason = data.debug.reason;
+                        let errorMsg = '';
+                        // Refined logic: If text is still masked ('◯') OR we have a specific error reason, show error.
+                        const isStillMasked = data.text.trim() === '○' || data.text.trim() === '◯';
+
+                        if (isStillMasked && reason) {
+                            if (reason === 'Not authorized') {
+                                if (item.blur?.visibility === VISIBILITY_FOLLOWERS) {
+                                    errorMsg = locale.Post_Restricted_NotAuthorized_Followers;
+                                } else if (item.blur?.visibility === VISIBILITY_FOLLOWING) {
+                                    errorMsg = locale.Post_Restricted_NotAuthorized_Following;
+                                } else if (item.blur?.visibility === VISIBILITY_MUTUAL) {
+                                    errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
+                                } else {
+                                    errorMsg = locale.Post_Restricted_NotAuthorized;
+                                }
+                            } else if (reason === 'No requesterDid') {
+                                errorMsg = locale.Post_Restricted_LoginRequired;
+                            } else if (reason === 'Content missing in DO') {
+                                errorMsg = locale.Post_Restricted_ContentMissing;
+                            } else {
+                                errorMsg = `Restricted content access denied: ${JSON.stringify(data.debug)}`;
+                            }
+                        }
+
+                        if (errorMsg) {
+                            notifications.show({
+                                title: 'Error',
+                                message: errorMsg,
+                                color: 'red',
+                                icon: <X />,
+                                autoClose: 10000,
+                            });
+                        }
+                    }
+                } else {
+                    notifications.show({
+                        title: 'Error',
+                        message: "Failed to fetch content.",
+                        color: 'red',
+                        icon: <X />
+                    });
+                }
+            } catch (e) {
+                notifications.hide('auth-fetch');
+                console.error("Tap-to-Reveal fetch error:", e);
+                notifications.show({
+                    title: 'Error',
+                    message: "Network error during fetch.",
+                    color: 'red',
+                    icon: <X />
+                });
+            }
+            return;
         }
 
         const updatedList = deleteList.map((currentItem) =>
@@ -203,7 +308,7 @@ export const PostList: React.FC<PostListProps> = ({
 
             const decryptByCidBody: any = {
                 repo: validRepo,
-                cid: item.blur.encryptBody?.ref.$link || '',
+                cid: (item.blur.encryptBody as any)?.ref.$link || '',
                 password: item.encryptKey,
             }
             const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
@@ -300,6 +405,27 @@ export const PostList: React.FC<PostListProps> = ({
                                             </Tooltip>
                                         );
                                     }
+                                    if (item.blur?.visibility === VISIBILITY_FOLLOWERS) {
+                                        return (
+                                            <Tooltip label={locale.CreatePost_VisibilityFollowers} withArrow position="right">
+                                                <Users size={14} />
+                                            </Tooltip>
+                                        );
+                                    }
+                                    if (item.blur?.visibility === VISIBILITY_FOLLOWING) {
+                                        return (
+                                            <Tooltip label={locale.CreatePost_VisibilityFollowing} withArrow position="right">
+                                                <UserPlus size={14} />
+                                            </Tooltip>
+                                        );
+                                    }
+                                    if (item.blur?.visibility === VISIBILITY_MUTUAL) {
+                                        return (
+                                            <Tooltip label={locale.CreatePost_VisibilityMutual} withArrow position="right">
+                                                <UserCheck size={14} />
+                                            </Tooltip>
+                                        );
+                                    }
                                     return (
                                         <Tooltip label={locale.Visibility_Public} withArrow position="right">
                                             <Globe size={14} />
@@ -310,7 +436,7 @@ export const PostList: React.FC<PostListProps> = ({
                         >
                             {/* 本文 */}
                             <Box onClick={() => handleDisplay(item)}>
-                                {item.blur?.visibility === VISIBILITY_LOGIN && !loginDid && !handleEdit ? (
+                                {([VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any) && !loginDid && !handleEdit) ? (
                                     <div className="p-2 text-sm text-gray-500 italic">
                                         {locale.PostList_NeedLoginMessage}
                                     </div>

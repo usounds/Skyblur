@@ -81,6 +81,12 @@ const messages = {
     CreatePost_VisibilityLoginDescription: "The viewer's must login to Skyblur. It cannot be accessed by people who do not have a Bluesky account.",
     CreatePost_VisibilityPassword: "Password",
     CreatePost_VisibilityPasswordDescription: "Only users who know the password can view",
+    CreatePost_VisibilityFollowers: 'Followers only',
+    CreatePost_VisibilityFollowersDescription: 'Only users who follow you can view (Login required)',
+    CreatePost_VisibilityFollowing: 'Following only',
+    CreatePost_VisibilityFollowingDescription: 'Only users you follow can view (Login required)',
+    CreatePost_VisibilityMutual: 'Mutuals only',
+    CreatePost_VisibilityMutualDescription: 'Only mutual followers can view (Login required)',
     CreatePost_NeedLoginTitle: "Access Control",
     CreatePost_NeedLoginLabel: "Require login to view",
     CreatePost_ThreadGateTitle: "Reply Control",
@@ -153,6 +159,13 @@ const messages = {
     Home_HagoromoUrl: "https://hagoromo.relog.tech/",
     Home_inAuthProgress: "Redirecting to authorization screen if necessary...",
     Landing_StartButton: "Start",
+    Post_Restricted_FetchingAuth: "Checking authorization...",
+    Post_Restricted_NotAuthorized: "You do not have permission to view this post.",
+    Post_Restricted_LoginRequired: "Please log in to view this post.",
+    Post_Restricted_ContentMissing: "Content not found.",
+    Post_Restricted_NotAuthorized_Followers: "You do not have permission to view this post (Followers only).",
+    Post_Restricted_NotAuthorized_Following: "You do not have permission to view this post (Following only).",
+    Post_Restricted_NotAuthorized_Mutual: "You do not have permission to view this post (Mutuals only).",
 }
 
 

@@ -1,0 +1,36 @@
+{
+    "lexicon": 1,
+    "id": "uk.skyblur.post.deleteStored",
+    "defs": {
+        "main": {
+            "type": "procedure",
+            "description": "Delete stored restricted post content from Durable Object",
+            "input": {
+                "encoding": "application/json",
+                "schema": {
+                    "type": "object",
+                    "required": [
+                        "uri"
+                    ],
+                    "properties": {
+                        "uri": {
+                            "type": "string",
+                            "description": "AT URI of the post to delete"
+                        }
+                    }
+                }
+            },
+            "output": {
+                "encoding": "application/json",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "success": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

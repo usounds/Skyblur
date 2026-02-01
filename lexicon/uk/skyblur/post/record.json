@@ -43,7 +43,10 @@
                         "enum": [
                             "public",
                             "password",
-                            "login"
+                            "login",
+                            "followers",
+                            "following",
+                            "mutual"
                         ],
                         "maxLength": 100,
                         "description": "For 'login', the post requires login to view (Bluesky account required). For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody.",

@@ -21,6 +21,10 @@
       {
         "name": "SKYBLUR_DO",
         "class_name": "OAuthStoreDO"
+      },
+      {
+        "name": "SKYBLUR_DO_RESTRICTED",
+        "class_name": "RestrictedPostDO"
       }
     ]
   },
@@ -29,6 +33,12 @@
       "tag": "v1",
       "new_sqlite_classes": [
         "OAuthStoreDO"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "RestrictedPostDO"
       ]
     }
   ],
@@ -49,6 +59,10 @@
           {
             "name": "SKYBLUR_DO",
             "class_name": "OAuthStoreDO"
+          },
+          {
+            "name": "SKYBLUR_DO_RESTRICTED",
+            "class_name": "RestrictedPostDO"
           }
         ]
       },

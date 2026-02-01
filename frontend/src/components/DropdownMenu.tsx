@@ -1,8 +1,8 @@
 "use client"
 import { useLocale } from "@/state/Locale";
-import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
+import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
 import { Client } from '@atcute/client';
-import { ActorIdentifier } from '@atcute/lexicons/syntax';
+import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { Button, Group, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
@@ -115,6 +115,21 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
             return
         }
 
+        // Clean up DO if post was restricted
+        if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(post.blur.visibility || '')) {
+            try {
+                await agent.post('uk.skyblur.post.deleteStored', {
+                    input: {
+                        uri: post.blurATUri as ResourceUri
+                    }
+                });
+                console.log('Deleted from DO due to post deletion');
+            } catch (e) {
+                console.error('Failed to delete from DO:', e);
+                // Don't fail the whole operation if DO cleanup fails
+            }
+        }
+
         notifications.update({
             id: 'Delete-process',
             title: 'Success',
@@ -152,7 +167,9 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
 
             <Menu.Dropdown>
                 <Menu.Label>Menu</Menu.Label>
-                {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) || post.blur.visibility === VISIBILITY_PUBLIC || post.blur.visibility === VISIBILITY_LOGIN || !post.blur.visibility) &&
+                {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) ||
+                    [VISIBILITY_PUBLIC, VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(post.blur.visibility || '') ||
+                    !post.blur.visibility) &&
                     <Menu.Item leftSection={<SquarePen size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
                 }
                 <Menu.Item

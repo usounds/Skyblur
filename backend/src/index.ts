@@ -5,12 +5,18 @@ import { handle as ecnryptHandle } from "@/api/ecnrypt"
 import { handle as getPostHandler } from "@/api/getPost"
 import { handle as resolveHandle } from "@/api/resolveHandle"
 import { handle as uploadBlobHandle } from "@/api/uploadBlob"
+import { handle as storeHandle } from "@/api/store"
+import { handle as deleteStoredHandle } from "@/api/deleteStored"
+import { RestrictedPostDO } from "@/api/RestrictedPostDO"
 import { Hono, type Context } from 'hono'
 import { cors } from 'hono/cors'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { DurableObject } from "cloudflare:workers";
 import { Client } from "@atcute/client";
 import type { OAuthSession } from "@atcute/oauth-node-client";
+
+// 1. DOクラスの定義
+export { RestrictedPostDO } from "@/api/RestrictedPostDO"
 
 // 1. DOクラスの定義
 export class OAuthStoreDO extends DurableObject {
@@ -78,6 +84,7 @@ export class OAuthStoreDO extends DurableObject {
 // 型定義
 export interface Env {
   SKYBLUR_DO: DurableObjectNamespace<OAuthStoreDO>;
+  SKYBLUR_DO_RESTRICTED: DurableObjectNamespace<RestrictedPostDO>;
   SKYBLUR_KV_CACHE: KVNamespace;
   APPVIEW_HOST?: string;
   OAUTH_PRIVATE_KEY_JWK?: string;
@@ -592,6 +599,14 @@ app.get('/oauth/session', async (c) => {
 
 app.post('/xrpc/uk.skyblur.post.encrypt', (c) => {
   return ecnryptHandle(c)
+})
+
+app.post('/xrpc/uk.skyblur.post.store', (c) => {
+  return storeHandle(c)
+})
+
+app.post('/xrpc/uk.skyblur.post.deleteStored', (c) => {
+  return deleteStoredHandle(c)
 })
 
 // 6. ログアウト

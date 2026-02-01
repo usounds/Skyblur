@@ -1,25 +1,25 @@
 "use client"
 import AutoResizeTextArea from "@/components/AutoResizeTextArea";
 import { ReplyList } from "@/components/ReplyList";
-import { UkSkyblurPostEncrypt } from "@/lexicon/UkSkyblur";
+import { UkSkyblurPostEncrypt, UkSkyblurPostStore } from "@/lexicon/UkSkyblur";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { IdentityResolver } from '@/logic/IdentityResolver';
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocale } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, THREADGATE_FOLLOWERS, THREADGATE_FOLLOWING, THREADGATE_MENTION, THREADGATE_QUOTE_ALLOW, TRAILING_PUNCTUATION_REGEX, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC } from "@/types/types";
+import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, THREADGATE_FOLLOWERS, THREADGATE_FOLLOWING, THREADGATE_MENTION, THREADGATE_QUOTE_ALLOW, TRAILING_PUNCTUATION_REGEX, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
 import '@atcute/atproto';
 import '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import * as TID from '@atcute/tid';
-import { Button, Card, Center, Chip, Group, Modal, SegmentedControl, Switch, Text, TextInput } from '@mantine/core';
+import { Button, Card, Center, Chip, Group, Modal, Select, SegmentedControl, Switch, Text, TextInput, SimpleGrid } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { ArrowLeft, Check, Globe, Lock, LogIn, X, Save } from 'lucide-react';
+import { ArrowLeft, Check, Globe, Lock, LogIn, Users, UserPlus, UserCheck, X, Save, Handshake } from 'lucide-react';
 import { useEffect, useState, ChangeEvent } from "react";
 import { BlueskyIcon } from './Icons';
 
@@ -546,7 +546,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 if (!agent || !serviceUrl) return
 
                 const response = await apiProxyAgent.post('uk.skyblur.post.encrypt', {
-                    input: body as unknown as Record<string, unknown>,
+                    input: body,
                     as: 'json'
                 });
 
@@ -615,6 +615,56 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     setIsLoading(false)
                     return
                 }
+            } else if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility)) {
+                // Restricted Visibility
+
+                notifications.show({
+                    id: 'post-process',
+                    title: locale.Menu_Post,
+                    message: "Storing restricted content...",
+                    loading: true,
+                    autoClose: false
+                });
+
+                const storeBody: UkSkyblurPostStore.Input = {
+                    text: postText,
+                    additional: addText,
+                    visibility: visibility as "followers" | "following" | "mutual",
+                    uri: blurUri as ResourceUri
+                }
+
+                const response = await apiProxyAgent.post('uk.skyblur.post.store', {
+                    input: storeBody,
+                    as: 'json'
+                });
+
+                if (response.ok) {
+                    postObject = {
+                        uri: localPrevPostAturi,
+                        text: postTextBlur,
+                        createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
+                        visibility: visibility,
+                    }
+                    writes.push({
+                        $type: applyKey,
+                        collection: SKYBLUR_POST_COLLECTION as `${string}.${string}.${string}`,
+                        rkey: rkey,
+                        value: postObject as unknown as Record<string, unknown>,
+                    });
+                } else {
+                    console.error("❌ Store Restricted Content Error:", response);
+                    handleInitButton()
+                    notifications.clean()
+                    notifications.show({
+                        title: 'Error',
+                        message: "Failed to store restricted content.",
+                        color: 'red',
+                        icon: <X />
+                    });
+                    setIsLoading(false)
+                    return
+                }
+
             } else {
                 postObject = {
                     uri: localPrevPostAturi,
@@ -655,6 +705,25 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
             if (ret.ok) {
+                // Clean up DO if visibility changed from restricted to non-restricted
+                if (prevBlur && [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(prevBlur.blur.visibility || '')) {
+                    // Previous was restricted
+                    if (![VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility)) {
+                        // New visibility is not restricted, delete from DO
+                        try {
+                            await apiProxyAgent.post('uk.skyblur.post.deleteStored', {
+                                input: {
+                                    uri: blurUri as ResourceUri
+                                }
+                            });
+                            console.log('Deleted from DO due to visibility change');
+                        } catch (e) {
+                            console.error('Failed to delete from DO:', e);
+                            // Don't fail the whole operation if DO cleanup fails
+                        }
+                    }
+                }
+
                 const convertedUri = "completed";
                 notifications.clean()
                 notifications.show({
@@ -701,8 +770,12 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     useEffect(() => {
         if (prevBlur) {
             handleInitButton()
+
+            // Parent component (ConsoleContent) handles fetching restricted content now.
+            // We just use what's given.
             setPostText(prevBlur.blur.text, false)
             setAddText(prevBlur.blur.additional || '')
+
             if (prevBlur.encryptKey) {
                 setEncryptKey(prevBlur.encryptKey)
                 setIsEncrypt(true)
@@ -960,54 +1033,65 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             <div className='mt-4 mb-2'>{locale.CreatePost_PublishMethodTitle}</div>
                             <div className="block text-sm text-gray-400 mt-1 mb-2">{locale.CreatePost_PublishMethodDescription}</div>
 
-                            <SegmentedControl
-                                value={visibility}
-                                onChange={(value: string) => {
-                                    setVisibilityState(value);
-                                    setIsEncrypt(value === VISIBILITY_PASSWORD);
-                                    if (!prevBlur) setTempVisibility(value);
-                                }}
-                                disabled={prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD}
-                                data={[
-                                    {
-                                        value: VISIBILITY_PUBLIC,
-                                        disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD,
-                                        label: (
-                                            <Center style={{ gap: 4 }}>
-                                                <Globe size={16} />
-                                                <span style={{ fontSize: '13px' }}>{locale.CreatePost_VisibilityPublic}</span>
-                                            </Center>
-                                        ),
-                                    },
-                                    {
-                                        value: VISIBILITY_LOGIN,
-                                        disabled: prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD,
-                                        label: (
-                                            <Center style={{ gap: 4 }}>
-                                                <LogIn size={16} />
-                                                <span style={{ fontSize: '13px' }}>{locale.CreatePost_VisibilityLogin}</span>
-                                            </Center>
-                                        ),
-                                    },
-                                    {
-                                        value: VISIBILITY_PASSWORD,
-                                        disabled: prevBlur && prevBlur.blur.visibility !== VISIBILITY_PASSWORD,
-                                        label: (
-                                            <Center style={{ gap: 4 }}>
-                                                <Lock size={16} />
-                                                <span style={{ fontSize: '13px' }}>{locale.CreatePost_VisibilityPassword}</span>
-                                            </Center>
-                                        ),
-                                    },
-                                ]}
-                                fullWidth
-                            />
+                            <SimpleGrid cols={{ base: 2, sm: 3, md: 6 }} spacing="xs">
+                                {[
+                                    { value: VISIBILITY_PUBLIC, label: locale.CreatePost_VisibilityPublic, icon: Globe },
+                                    { value: VISIBILITY_LOGIN, label: locale.CreatePost_VisibilityLogin, icon: LogIn },
+                                    { value: VISIBILITY_PASSWORD, label: locale.CreatePost_VisibilityPassword, icon: Lock },
+                                    { value: VISIBILITY_FOLLOWERS, label: locale.CreatePost_VisibilityFollowers, icon: Users },
+                                    { value: VISIBILITY_FOLLOWING, label: locale.CreatePost_VisibilityFollowing, icon: UserCheck },
+                                    { value: VISIBILITY_MUTUAL, label: locale.CreatePost_VisibilityMutual, icon: Handshake },
+                                ].map((option) => {
+                                    const isSelected = visibility === option.value;
+                                    const isDisabled = prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD && option.value !== VISIBILITY_PASSWORD ||
+                                        (option.value === VISIBILITY_PASSWORD && prevBlur && prevBlur.blur.visibility !== VISIBILITY_PASSWORD);
+
+                                    return (
+                                        <Button
+                                            key={option.value}
+                                            variant={isSelected ? 'light' : 'default'}
+                                            color='blue'
+                                            disabled={isDisabled}
+                                            h={70}
+                                            fullWidth
+                                            fw="normal"
+                                            px={2}
+                                            onClick={() => {
+                                                if (isDisabled) return;
+                                                setVisibilityState(option.value);
+                                                setIsEncrypt(option.value === VISIBILITY_PASSWORD);
+                                                if (!prevBlur) setTempVisibility(option.value);
+                                            }}
+                                            styles={{
+                                                label: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '4px',
+                                                    whiteSpace: 'normal',
+                                                    lineHeight: '1.2',
+                                                    width: '100%',
+                                                    height: '100%',
+                                                }
+                                            }}
+                                        >
+                                            <option.icon size={22} strokeWidth={1.5} />
+                                            <span style={{ fontSize: '11px' }}>{option.label}</span>
+                                        </Button>
+                                    );
+                                })}
+                            </SimpleGrid>
 
                             <div className="block text-sm text-gray-400 mt-2">
                                 {visibility === VISIBILITY_PUBLIC && locale.CreatePost_VisibilityPublicDescription}
                                 {visibility === VISIBILITY_LOGIN && locale.CreatePost_VisibilityLoginDescription}
                                 {visibility === VISIBILITY_PASSWORD && locale.CreatePost_VisibilityPasswordDescription}
+                                {visibility === VISIBILITY_FOLLOWERS && locale.CreatePost_VisibilityFollowersDescription}
+                                {visibility === VISIBILITY_FOLLOWING && locale.CreatePost_VisibilityFollowingDescription}
+                                {visibility === VISIBILITY_MUTUAL && locale.CreatePost_VisibilityMutualDescription}
                             </div>
+
 
                             {isEncrypt &&
                                 <div className=''>

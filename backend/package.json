@@ -1,9 +1,10 @@
 {
   "name": "skyblurapi",
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production --minify",
-    "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts",
+    "gen-lex": "lex-cli generate -o ./src/lexicon/UkSkyblur.ts ../lexicon/uk/skyblur/*/*.json",
     "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install"
   },
   "dependencies": {
@@ -11,6 +12,7 @@
     "@atcute/client": "^4.2.1",
     "@atcute/identity-resolver": "^1.2.2",
     "@atcute/identity-resolver-node": "^1.0.3",
+    "@atcute/lexicons": "^1.2.7",
     "@atcute/oauth-crypto": "^0.1.0",
     "@atcute/oauth-node-client": "^1.1.0",
     "did-jwt": "^8.0.18",

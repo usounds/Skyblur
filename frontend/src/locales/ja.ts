@@ -81,6 +81,12 @@ const messages = {
     CreatePost_VisibilityPublicDescription: "Bluesky上の誰でも閲覧できます（鍵なし投稿）",
     CreatePost_VisibilityLoginDescription: "Skyblurへのログインが必須です。Blueskyのアカウントを持たない人からは本サイト上では参照できません",
     CreatePost_VisibilityPasswordDescription: "パスワードを知っているユーザーのみ閲覧できます",
+    CreatePost_VisibilityFollowers: 'フォロワー限定',
+    CreatePost_VisibilityFollowersDescription: 'あなたをフォローしているユーザーのみ閲覧できます（ログイン必須）',
+    CreatePost_VisibilityFollowing: 'フォロイー限定',
+    CreatePost_VisibilityFollowingDescription: 'あなたがフォローしているユーザーのみ閲覧できます（ログイン必須）',
+    CreatePost_VisibilityMutual: '相互フォロー限定',
+    CreatePost_VisibilityMutualDescription: '相互フォローしているユーザーのみ閲覧できます（ログイン必須）',
     CreatePost_NeedLoginTitle: "アクセス制限",
     CreatePost_NeedLoginLabel: "閲覧にログインを必須とする",
     CreatePost_ThreadGateTitle: "返信の制限",
@@ -153,6 +159,13 @@ const messages = {
     Home_HagoromoUrl: "https://hagoromo.relog.tech/ja/",
     Home_inAuthProgress: "必要に応じて認可画面へ遷移します...",
     Landing_StartButton: "始める",
+    Post_Restricted_FetchingAuth: "認証情報を確認しています...",
+    Post_Restricted_NotAuthorized: "この投稿を表示する権限がありません（例：相互フォロー限定など）。",
+    Post_Restricted_LoginRequired: "この投稿を表示するにはログインしてください。",
+    Post_Restricted_ContentMissing: "投稿データが見つかりません。",
+    Post_Restricted_NotAuthorized_Followers: "この投稿を表示する権限がありません（フォロワー限定）。",
+    Post_Restricted_NotAuthorized_Following: "この投稿を表示する権限がありません（フォロー中限定）。",
+    Post_Restricted_NotAuthorized_Mutual: "この投稿を表示する権限がありません（相互フォロー限定）。",
 }
 
 export default messages;

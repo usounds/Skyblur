@@ -1,0 +1,62 @@
+{
+    "lexicon": 1,
+    "id": "uk.skyblur.post.store",
+    "defs": {
+        "main": {
+            "type": "procedure",
+            "description": "Stores a restricted post in the Durable Object.",
+            "input": {
+                "encoding": "application/json",
+                "schema": {
+                    "type": "object",
+                    "required": [
+                        "text",
+                        "uri",
+                        "visibility"
+                    ],
+                    "properties": {
+                        "text": {
+                            "type": "string",
+                            "maxLength": 3000,
+                            "maxGraphemes": 300
+                        },
+                        "additional": {
+                            "type": "string",
+                            "maxLength": 100000,
+                            "maxGraphemes": 10000
+                        },
+                        "uri": {
+                            "type": "string",
+                            "format": "at-uri"
+                        },
+                        "visibility": {
+                            "type": "string",
+                            "enum": [
+                                "followers",
+                                "following",
+                                "mutual"
+                            ]
+                        }
+                    }
+                }
+            },
+            "output": {
+                "encoding": "application/json",
+                "schema": {
+                    "type": "object",
+                    "required": [
+                        "success"
+                    ],
+                    "properties": {
+                        "success": {
+                            "type": "boolean"
+                        },
+                        "message": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
