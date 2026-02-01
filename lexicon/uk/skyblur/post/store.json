@@ -4,7 +4,7 @@
     "defs": {
         "main": {
             "type": "procedure",
-            "description": "Stores a restricted post in the Durable Object.",
+            "description": "Stores a restricted post in the Skyblur AppView.",
             "input": {
                 "encoding": "application/json",
                 "schema": {
