@@ -12,7 +12,7 @@ import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { notifications } from '@mantine/notifications'; // Added
 import { ResourceUri } from '@atcute/lexicons/syntax'; // Added
-import { Pencil } from 'lucide-react';
+import { Pencil, X } from 'lucide-react';
 import { useEffect, useState } from "react";
 
 export function ConsoleContent() {
@@ -47,17 +47,50 @@ export function ConsoleContent() {
                 });
 
                 if (res.ok && res.data) {
-                    const data = res.data as { text: string, additional: string };
-                    // Clone input to avoid mutation if strict
-                    const newInput = {
-                        ...input,
-                        blur: {
-                            ...input.blur,
-                            text: data.text,
-                            additional: data.additional
+                    const data = res.data as { text: string, additional: string, message?: string, errorCode?: string };
+
+                    if (data.errorCode) {
+                        const code = data.errorCode;
+                        let errorMsg = '';
+                        if (code === 'NotFollower') {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_Followers;
+                        } else if (code === 'NotFollowing') {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_Following;
+                        } else if (code === 'NotMutual') {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
+                        } else if (code === 'AuthRequired') {
+                            errorMsg = locale.Post_Restricted_LoginRequired;
+                        } else if (code === 'ContentMissing') {
+                            errorMsg = locale.Post_Restricted_ContentMissing;
+                        } else {
+                            errorMsg = locale.Post_Restricted_NotAuthorized;
                         }
-                    };
-                    setPrevBlur(newInput);
+
+                        if (errorMsg) {
+                            notifications.show({
+                                title: 'Error',
+                                message: errorMsg,
+                                color: 'red',
+                                icon: <X />,
+                                autoClose: 10000,
+                            });
+                        }
+
+                        // Fail safe: keep original input
+                        setPrevBlur(input);
+
+                    } else {
+                        // Success
+                        const newInput = {
+                            ...input,
+                            blur: {
+                                ...input.blur,
+                                text: data.text,
+                                additional: data.additional
+                            }
+                        };
+                        setPrevBlur(newInput);
+                    }
                 } else {
                     // Fallback
                     setPrevBlur(input);

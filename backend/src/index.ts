@@ -421,6 +421,10 @@ app.get('/oauth/callback', async (c) => {
   try {
     const { session } = await client.callback(url.searchParams);
 
+    // ログイン成功時にキャッシュをクリアして、確実に新しいセッションが使われるようにする
+    const { clearSessionCache } = await import('@/logic/ATPOauth');
+    clearSessionCache(session.did);
+
     const secret = c.env.OAUTH_PRIVATE_KEY_JWK;
     if (!secret) {
       throw new Error('OAUTH_PRIVATE_KEY_JWK is not set');
@@ -661,6 +665,18 @@ app.post('/oauth/logout', async (c) => {
 });
 
 app.post('/oauth/soft-logout', async (c) => {
+  const rawDid = getCookie(c, 'oauth_did');
+
+  if (rawDid) {
+    const lastDotIndex = rawDid.lastIndexOf('.');
+    if (lastDotIndex !== -1) {
+      const did = rawDid.substring(0, lastDotIndex);
+      // キャッシュをクリア（署名検証はスキップしても良いが、念のため形式チェック程度にDID抽出）
+      const { clearSessionCache } = await import('@/logic/ATPOauth');
+      clearSessionCache(did);
+    }
+  }
+
   const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
   const origin = getRequestOrigin(c.req.raw, c.env);
   const isSecure = origin.startsWith('https');

@@ -1,4 +1,4 @@
-import * as Gd from './generated/index.js';
+import * as Gd from './index.js';
 
 export namespace UkSkyblurPost {
     export type Record = Gd.UkSkyblurPost.Main;

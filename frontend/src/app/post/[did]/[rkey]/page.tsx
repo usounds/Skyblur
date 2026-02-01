@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ did: stri
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const apiAgent = new Client({
       handler: simpleFetchHandler({
@@ -32,8 +32,12 @@ export async function generateMetadata({ params }: { params: Promise<{ did: stri
     } finally {
       clearTimeout(timeoutId);
     }
-  } catch (error) {
-    console.error("Failed to fetch profile for metadata:", error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.warn("Failed to fetch profile for metadata: Timed out");
+    } else {
+      console.error("Failed to fetch profile for metadata:", error);
+    }
   }
 
   return {

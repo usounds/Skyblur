@@ -41,6 +41,24 @@
             },
             "message": {
               "type": "string"
+            },
+            "errorCode": {
+              "type": "string",
+              "description": "Error code for restricted content. e.g. AuthRequired, NotFollower, NotFollowing, NotMutual"
+            },
+            "errorDescription": {
+              "type": "string",
+              "description": "Description of the error code."
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "datetime"
+            },
+            "visibility": {
+              "type": "string"
+            },
+            "encryptCid": {
+              "type": "string"
             }
           }
         }

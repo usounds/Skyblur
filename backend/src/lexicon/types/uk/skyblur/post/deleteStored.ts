@@ -2,27 +2,21 @@ import type {} from "@atcute/lexicons";
 import * as v from "@atcute/lexicons/validations";
 import type {} from "@atcute/lexicons/ambient";
 
-const _mainSchema = /*#__PURE__*/ v.procedure("uk.skyblur.post.getPost", {
+const _mainSchema = /*#__PURE__*/ v.procedure("uk.skyblur.post.deleteStored", {
   params: null,
   input: {
     type: "lex",
     schema: /*#__PURE__*/ v.object({
       /**
-       * If the specified uri is password-protected, please provide the password. If no password is specified, the non-protected content will be returned.
+       * AT URI of the post to delete
        */
-      password: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),
-      /**
-       * Skyblur post at-uri. It shoud be uk.skyblur.post collection.
-       */
-      uri: /*#__PURE__*/ v.resourceUriString(),
+      uri: /*#__PURE__*/ v.string(),
     }),
   },
   output: {
     type: "lex",
     schema: /*#__PURE__*/ v.object({
-      additional: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),
-      message: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),
-      text: /*#__PURE__*/ v.string(),
+      success: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.boolean()),
     }),
   },
 });
@@ -39,6 +33,6 @@ export interface $output extends v.InferXRPCBodyInput<mainSchema["output"]> {}
 
 declare module "@atcute/lexicons/ambient" {
   interface XRPCProcedures {
-    "uk.skyblur.post.getPost": mainSchema;
+    "uk.skyblur.post.deleteStored": mainSchema;
   }
 }

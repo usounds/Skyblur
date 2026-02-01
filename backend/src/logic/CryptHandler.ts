@@ -1,4 +1,4 @@
-import { Context } from 'hono'
+
 
 export async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
     const encoder = new TextEncoder();
@@ -24,16 +24,16 @@ export async function deriveKey(password: string, salt: Uint8Array): Promise<Cry
     );
 }
 
-export async function getDecrypt(c: Context, pds: string, repo: string, cid: string, password: string) {
+export async function getDecrypt(pds: string, repo: string, cid: string, password: string) {
     let decodedData
     //Blob取得
     try {
-        const sanitizedPds = pds.replace(/\/$/, ""); 
-        const url = `${sanitizedPds}/xrpc/com.atproto.sync.getBlob?did=${repo}&cid=${cid}`;        
+        const sanitizedPds = pds.replace(/\/$/, "");
+        const url = `${sanitizedPds}/xrpc/com.atproto.sync.getBlob?did=${repo}&cid=${cid}`;
         const response = await fetch(url);
         if (!response.ok) {
             console.log(`getDecrypt error ${url}`)
-            return c.json({ message: `Cannot get blob from ${url}` }, 500);
+            throw new Error(`Cannot get blob from ${url}`);
         }
 
         const blob = await response.blob();
@@ -43,8 +43,7 @@ export async function getDecrypt(c: Context, pds: string, repo: string, cid: str
         decodedData = new TextDecoder().decode(uint8Array);
 
     } catch (e) {
-        return c.json({ message: 'Cannot get blob. ' + e }, 500);
-
+        throw new Error('Cannot get blob. ' + e);
     }
 
     try {
@@ -74,9 +73,8 @@ export async function getDecrypt(c: Context, pds: string, repo: string, cid: str
         let decoder = new TextDecoder();
         let decryptedText = JSON.parse(decoder.decode(decrypted)) as { text: string, additional: string }
 
-        return c.json({ text: decryptedText.text, additional: decryptedText.additional });
+        return { text: decryptedText.text, additional: decryptedText.additional };
     } catch (e) {
-        return c.json({ message: "Decrypt failed." }, 403);
-
+        throw new Error("Decrypt failed.");
     }
 }

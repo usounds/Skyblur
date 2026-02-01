@@ -55,61 +55,101 @@ export const PostPage = () => {
 
 
 
-    const getRestrictedPost = async (uri: string) => {
-        console.log(`[PostPage] getRestrictedPost called for ${uri}`);
-        setIsRestrictedFetching(true);
+    const getPostData = async (passwordArg?: string) => {
+        if (!did || !rkey) return;
+
+        console.log(`[PostPage] getPostData called for ${aturi}, pass=${!!passwordArg}`);
+        if (!passwordArg) {
+            setIsLoading(true);
+            setErrorMessage('');
+        }
+
         try {
-            notifications.show({
-                id: 'auth-check',
-                title: 'Loading',
-                message: locale.Post_Restricted_FetchingAuth,
-                loading: true,
-                autoClose: false,
-                withCloseButton: false,
-            });
+            // Ensure we have PDS URL
+            let repo = Array.isArray(did) ? did[0] : did;
+            repo = repo.replace(/%3A/g, ':');
 
-            setDebugStatus('Fetching...');
+            // Fetch PDS URL (needed for decryption later if password protected)
+            let pdsUrlFetched = await fetchServiceEndpointWithCache(repo, false);
+            setPdsUrl(pdsUrlFetched || '');
 
+            // Unify fetch: user uk.skyblur.post.getPost directly
+            // This handles both public and restricted content in one go
+
+            // We use apiProxyAgent which should handle Auth header if user is logged in
             const res = await apiProxyAgent.post('uk.skyblur.post.getPost', {
                 input: {
-                    uri: uri as ResourceUri
+                    uri: aturi as ResourceUri,
+                    password: passwordArg || '' // Password logic handled separately or initially empty
                 }
             });
-            console.log("[PostPage] getRestrictedPost response:", res.status);
 
-            notifications.hide('auth-check');
+            console.log("[PostPage] getPost response:", res.status);
 
             if (res.ok && res.data) {
-                const data = res.data as { text: string, additional: string, debug?: any };
-                console.log("getRestrictedPost success:", data);
-                setDebugStatus(`Success. Text len: ${data.text.length}, Debug: ${JSON.stringify(data.debug)}`);
+                const data = res.data as {
+                    text: string,
+                    additional: string,
+                    message?: string,
+                    errorCode?: string,
+                    createdAt?: string,
+                    visibility?: string,
+                    encryptCid?: string
+                };
 
-                // If we have real content (not masked), update the UI
-                if (data.text !== '◯') {
+                console.log("getPost success:", data);
+
+                // Set Metadata
+                if (data.createdAt) setPostDate(formatDateToLocale(data.createdAt));
+                if (data.visibility) setVisibility(data.visibility);
+
+                // Construct Bluesky URL (Approximate)
+                const convertedUri = aturi.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
+                setBskyUrl(convertedUri);
+                setPostAtUri(aturi);
+
+                // Handle Content
+                if (!data.errorCode) {
                     setPostText(data.text);
                     setAddText(data.additional || '');
-                    // Clear error message in case it was set previously (though we don't use it anymore)
-                    setErrorMessage('');
-                } else if (data.debug) {
-                    // It's masked, check debug reason for error notification
-                    const reason = data.debug.reason;
+                    setDebugStatus(`Success. Text len: ${data.text.length}`);
+
+                    // If we successfully got content with password, unlock logic
+                    if (passwordArg) {
+                        setIsDecrypt(true);
+                        setIsDecrypting(false);
+                    }
+                } else {
+                    // It's masked or error
+                    // We still set text/additional if provided (e.g. masked '○')
+                    setPostText(data.text);
+                    setAddText(data.additional || '');
+
+                    // Handle Error Code
+                    const code = data.errorCode;
                     let errorMsg = '';
-                    if (reason === 'Not authorized') {
-                        if (visibility === VISIBILITY_FOLLOWERS) {
-                            errorMsg = locale.Post_Restricted_NotAuthorized_Followers;
-                        } else if (visibility === VISIBILITY_FOLLOWING) {
-                            errorMsg = locale.Post_Restricted_NotAuthorized_Following;
-                        } else if (visibility === VISIBILITY_MUTUAL) {
-                            errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
-                        } else {
-                            errorMsg = locale.Post_Restricted_NotAuthorized;
-                        }
-                    } else if (reason === 'No requesterDid') {
+
+                    if (code === 'NotFollower') {
+                        errorMsg = locale.Post_Restricted_NotAuthorized_Followers;
+                    } else if (code === 'NotFollowing') {
+                        errorMsg = locale.Post_Restricted_NotAuthorized_Following;
+                    } else if (code === 'NotMutual') {
+                        errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
+                    } else if (code === 'AuthRequired') {
                         errorMsg = locale.Post_Restricted_LoginRequired;
-                    } else if (reason === 'Content missing in DO') {
+                    } else if (code === 'ContentMissing') {
                         errorMsg = locale.Post_Restricted_ContentMissing;
+                    } else if (code === 'PasswordRequired') {
+                        // Password required logic
+                        if (data.encryptCid) {
+                            setEncryptCid(data.encryptCid);
+                            setIsDecrypt(false);
+                        }
+                        // Don't show error notification, UI will show password input
                     } else {
-                        errorMsg = `Restricted content access denied: ${JSON.stringify(data.debug)}`;
+                        // NotAuthorized or other
+                        errorMsg = locale.Post_Restricted_NotAuthorized;
+                        if (data.message && !errorMsg) errorMsg = data.message;
                     }
 
                     if (errorMsg) {
@@ -118,151 +158,46 @@ export const PostPage = () => {
                             message: errorMsg,
                             color: 'red',
                             icon: <X />,
-                            autoClose: 10000, // Longer timeout for auth errors
+                            autoClose: 10000,
                         });
                     }
                 }
+
+                // Fetch User Profile for Avatar
+                try {
+                    const userProfileResponse = await apiAgent.get('app.bsky.actor.getProfile', {
+                        params: { actor: repo as ActorIdentifier },
+                    });
+                    if (userProfileResponse.ok) {
+                        setUserProf(userProfileResponse.data);
+                    }
+                    await getPreferenceProcess(repo, new Client({ handler: simpleFetchHandler({ service: pdsUrlFetched ?? '' }) }));
+
+                } catch (e) {
+                    console.warn("Failed to fetch profile", e);
+                }
+
             } else {
-                setDebugStatus(`Fetch failed. OK=${res.ok}, Status=${res.status}`);
-                notifications.show({
-                    title: 'Error',
-                    message: "Failed to fetch content.",
-                    color: 'red',
-                    icon: <X />
-                });
+                setErrorMessage('Get Post Failed.');
             }
+
         } catch (e) {
-            console.error("Failed to fetch restricted content", e);
-            notifications.hide('auth-check');
-            setDebugStatus(`Fetch Error: ${e}`);
-            notifications.show({
-                title: 'Error',
-                message: "Failed to fetch restricted content: " + String(e),
-                color: 'red',
-                icon: <X />
-            });
+            console.error("Failed to fetch post", e);
+            setErrorMessage(String(e));
         } finally {
-            setIsRestrictedFetching(false);
+            setIsLoading(false);
             setIsRestrictedFetchDone(true);
         }
     }
 
     useEffect(() => {
         setIsMounted(true);
-        if (did && rkey) {
-
-
-
-            const fetchRecord = async () => {
-
-                try {
-                    let repo = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
-                    repo = repo.replace(/%3A/g, ':');
-                    const rkeyParam = Array.isArray(rkey) ? rkey[0] : rkey; // 配列なら最初の要素を使う
-                    setIsLoading(true);
-                    setErrorMessage('')
-
-                    let pdsUrl = await fetchServiceEndpointWithCache(repo, false)
-
-                    let pdsAgent = new Client({
-                        handler: simpleFetchHandler({
-                            service: pdsUrl ?? '',
-                        }),
-                    })
-
-                    setPdsUrl(pdsUrl || '')
-
-                    try {
-                        let userProfileResponse = await apiAgent.get('app.bsky.actor.getProfile', {
-                            params: { actor: repo as ActorIdentifier },
-                        })
-
-                        const postResponse = await getPostResponse(repo, rkeyParam, pdsAgent)
-                        await getPreferenceProcess(repo, pdsAgent)
-
-                        if (!userProfileResponse.ok) {
-                            pdsUrl = await fetchServiceEndpointWithCache(repo, true)
-                            pdsAgent = new Client({
-                                handler: simpleFetchHandler({
-                                    service: pdsUrl ?? '',
-                                }),
-                            })
-
-                            userProfileResponse = await apiAgent.get('app.bsky.actor.getProfile', {
-                                params: { actor: repo as ActorIdentifier },
-                            })
-
-                            if (!userProfileResponse.ok) {
-
-                                setErrorMessage('Get Profile Failed.');
-                                setIsLoading(false);
-                                return
-                            }
-                        }
-                        if (!postResponse.ok) {
-                            setErrorMessage('Get Post Failed.');
-                            setIsLoading(false);
-                            return
-
-                        }
-
-                        // userProfileのデータをセット
-                        setUserProf(userProfileResponse.data);
-
-                        // postDataのデータをセット
-                        const postData: UkSkyblurPost.Record = postResponse.data.value as unknown as UkSkyblurPost.Record;
-
-                        const tempPostText = postData.text
-
-                        setPostText(tempPostText);
-                        setAddText(postData.additional || '');
-                        setPostDate(formatDateToLocale(postData.createdAt));
-                        const vis: string = postData.visibility || '';
-                        setVisibility(vis);
-
-                        const convertedUri = postData.uri.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
-                        setBskyUrl(convertedUri)
-                        const blurUri = postResponse.data.uri;
-                        setPostAtUri(blurUri);
-
-                        setIsLoading(false); // Metadata fetch done
-
-                        // Auto-fetch restricted content if logged in and visibility suggests it's restricted
-                        const isRestrictedTarget = [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(vis) ||
-                            (vis === 'UNKNOWN' || (/^([○◯]+)$/.test(tempPostText.trim()) && !vis));
-
-                        if (loginDid && isRestrictedTarget && !isRestrictedFetchDone) {
-                            console.log("Auto-fetching restricted content for logged-in user");
-                            getRestrictedPost(blurUri);
-                        }
-
-                    } catch (err) {
-                        // エラーハンドリング
-                        setErrorMessage(err + '');
-                        setIsLoading(false); // ローディング状態を終了
-                    }
-                } catch (err) {
-                    setErrorMessage(err + '');
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            fetchRecord();
+        if (did && rkey && isSessionChecked) {
+            getPostData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [did, rkey]); // Removed loginDid to prevent double-fetch on session restore
+    }, [did, rkey, isSessionChecked, loginDid]);
 
-    // Effect for auto-fetching restricted content when session is ready
-    useEffect(() => {
-        const isRestrictedTarget = [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility as any) ||
-            (visibility === 'UNKNOWN' || (/^([○◯]+)$/.test(postText.trim()) && !visibility));
-
-        if (isSessionChecked && loginDid && isRestrictedTarget && postAtUri && !isRestrictedFetchDone && !isRestrictedFetching && !isLoading) {
-            console.log("Session ready, auto-fetching restricted content");
-            getRestrictedPost(postAtUri);
-        }
-    }, [isSessionChecked, loginDid, visibility, postText, postAtUri, isRestrictedFetchDone, isRestrictedFetching, isLoading]);
 
 
     async function getPreferenceProcess(repo: string, pdsAgent: Client) {
@@ -287,50 +222,8 @@ export const PostPage = () => {
         }
         setIsDecrypting(true)
 
-        const host = new URL(window.location.origin).host;
-        let apiHost = 'api.skyblur.uk'
-        if (host?.endsWith('dev.skyblur.uk')) {
-            apiHost = 'devapi.skyblur.uk'
-        }
-
-        const repo = Array.isArray(did) ? did[0] : did || ''
-
-        const decodedRepo = decodeURIComponent(repo);
-        if (!decodedRepo.startsWith('did:')) return
-        const validRepo = decodedRepo as `did:${string}:${string}`
-        const validPds = pdsUrl as `${string}:${string}`
-
-        const body: UkSkyblurPostDecryptByCid.Input = {
-            pds: validPds,
-            repo: validRepo,
-            cid: encryptCid,
-            password: encryptKey,
-        }
-        const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(body)
-        });
-
-        if (response.ok || response.status === 200) {
-            const data = await response.json() as UkSkyblurPostDecryptByCid.Output
-            setPostText(data.text);
-            setAddText(data.additional || '');
-
-            setIsDecrypt(true)
-            return
-        }
-
-        notifications.show({
-            title: 'Error',
-            message: locale.DeleteList_DecryptErrorMessage,
-            color: 'red',
-            icon: <X />
-        });
-        setIsDecrypting(false)
-
+        // Use Unified getPostData with password
+        await getPostData(encryptKey);
     }
 
     async function getPostResponse(repo: string, rkey: string, pdsAgent: Client) {
@@ -420,14 +313,7 @@ export const PostPage = () => {
                                                 <div className="overflow-hidden break-words">
                                                     {isMasked ? (
                                                         <div
-                                                            className="cursor-pointer hover:opacity-70 transition-opacity font-bold text-lg"
-                                                            onClick={(e) => {
-                                                                console.error("Masked text clicked (Direct div)");
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                getRestrictedPost(aturi);
-                                                            }}
-                                                            title="Tap to reveal"
+                                                            className="font-bold text-lg"
                                                         >
                                                             {postText}
                                                         </div>

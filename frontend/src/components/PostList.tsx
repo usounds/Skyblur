@@ -183,10 +183,10 @@ export const PostList: React.FC<PostListProps> = ({
                 notifications.hide('auth-fetch');
 
                 if (res.ok && res.data) {
-                    const data = res.data as { text: string, additional: string, debug?: any };
+                    const data = res.data as { text: string, additional: string, message?: string, errorCode?: string };
 
-                    // Only update masked text if we have no debug info (meaning success)
-                    if (data.text && !data.debug) { // If we got text and no error debug info
+                    // Only update masked text if we have no error code (meaning success)
+                    if (data.text && !data.errorCode) {
                         // Success: Update item and show detail
                         const updatedList = deleteList.map((currentItem) =>
                             currentItem === item
@@ -200,31 +200,24 @@ export const PostList: React.FC<PostListProps> = ({
                         setDeleteList(updatedList);
                     }
 
-                    if (data.debug) {
-                        // Check for errors in debug info
-                        const reason = data.debug.reason;
+                    if (data.errorCode) {
+                        // Check for errors in errorCode
+                        const code = data.errorCode;
                         let errorMsg = '';
-                        // Refined logic: If text is still masked ('◯') OR we have a specific error reason, show error.
-                        const isStillMasked = data.text.trim() === '○' || data.text.trim() === '◯';
 
-                        if (isStillMasked && reason) {
-                            if (reason === 'Not authorized') {
-                                if (item.blur?.visibility === VISIBILITY_FOLLOWERS) {
-                                    errorMsg = locale.Post_Restricted_NotAuthorized_Followers;
-                                } else if (item.blur?.visibility === VISIBILITY_FOLLOWING) {
-                                    errorMsg = locale.Post_Restricted_NotAuthorized_Following;
-                                } else if (item.blur?.visibility === VISIBILITY_MUTUAL) {
-                                    errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
-                                } else {
-                                    errorMsg = locale.Post_Restricted_NotAuthorized;
-                                }
-                            } else if (reason === 'No requesterDid') {
-                                errorMsg = locale.Post_Restricted_LoginRequired;
-                            } else if (reason === 'Content missing in DO') {
-                                errorMsg = locale.Post_Restricted_ContentMissing;
-                            } else {
-                                errorMsg = `Restricted content access denied: ${JSON.stringify(data.debug)}`;
-                            }
+                        // Refined logic: If we have an error code, show error regardless of text content.
+                        if (code === 'NotFollower') {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_Followers;
+                        } else if (code === 'NotFollowing') {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_Following;
+                        } else if (code === 'NotMutual') {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
+                        } else if (code === 'AuthRequired') {
+                            errorMsg = locale.Post_Restricted_LoginRequired;
+                        } else if (code === 'ContentMissing') {
+                            errorMsg = locale.Post_Restricted_ContentMissing;
+                        } else {
+                            errorMsg = locale.Post_Restricted_NotAuthorized;
                         }
 
                         if (errorMsg) {

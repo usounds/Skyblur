@@ -26,7 +26,7 @@
   "scripts": {
     "dev": "next dev -p 4500",
     "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install",
-    "gen-lex": "lex-cli generate-main ../lexicon/uk/skyblur/*/*.json -o ./src/lexicon/UkSkyblur.ts",
+    "gen-lex": "lex-cli generate",
     "build": "next build",
     "start": "next start",
     "dev:aws": "pnpm dlx sst dev",

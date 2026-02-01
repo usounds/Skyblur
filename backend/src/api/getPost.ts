@@ -78,11 +78,16 @@ export const handle = async (c: Context) => {
             return c.json({
                 text: recordObj.text,
                 additional: '',
-                message: `Login required. Visibility: ${visibility}`
+                message: `Login required. Visibility: ${visibility}`,
+                errorCode: 'AuthRequired',
+                errorDescription: `Login is required to view this content (Visibility: ${visibility})`,
+                createdAt: recordObj.createdAt,
+                visibility: visibility
             });
         }
 
         let isAuthorized = false;
+        let errorCode = '';
 
         if (requesterDid === repo) {
 
@@ -109,14 +114,20 @@ export const handle = async (c: Context) => {
 
                     if (visibility === 'followers') {
                         isAuthorized = isFollowing || requesterDid === repo;
+                        if (!isAuthorized) errorCode = 'NotFollower';
                     } else if (visibility === 'following') {
                         isAuthorized = isFollowedBy || requesterDid === repo;
+                        if (!isAuthorized) errorCode = 'NotFollowing';
                     } else if (visibility === 'mutual') {
                         isAuthorized = (isFollowing && isFollowedBy) || requesterDid === repo;
+                        if (!isAuthorized) errorCode = 'NotMutual';
                     }
+                } else {
+                    errorCode = 'RelationshipNotFound';
                 }
             } catch (e) {
                 console.error("Error checking relationships", e);
+                errorCode = 'RelationshipCheckFailed';
             }
         }
 
@@ -125,7 +136,11 @@ export const handle = async (c: Context) => {
             return c.json({
                 text: recordObj.text,
                 additional: '',
-                message: `Not authorized. Requester: ${requesterDid}, Repo: ${repo}, Visibility: ${visibility}`
+                message: `Not authorized. Requester: ${requesterDid}, Repo: ${repo}, Visibility: ${visibility}`,
+                errorCode: errorCode || 'NotAuthorized',
+                errorDescription: `One of the requirements is not met: ${visibility}`,
+                createdAt: recordObj.createdAt,
+                visibility: visibility
             });
         }
 
@@ -139,16 +154,21 @@ export const handle = async (c: Context) => {
             const doRes = await stub.fetch(new Request('http://do/get?key=' + encodeURIComponent(uri)));
             if (doRes.ok) {
                 const data = await doRes.json() as { text: string, additional: string };
-                return c.json({ text: data.text, additional: data.additional });
+                return c.json({
+                    text: data.text,
+                    additional: data.additional,
+                    createdAt: recordObj.createdAt,
+                    visibility: visibility
+                });
             } else {
                 return c.json({
                     text: recordObj.text,
                     additional: '',
-                    debug: {
-                        reason: 'Content missing in DO',
-                        doId: doId.toString(),
-                        key: uri
-                    }
+                    message: "Content missing in DO",
+                    errorCode: 'ContentMissing',
+                    errorDescription: 'The content could not be retrieved from the authorized storage.',
+                    createdAt: recordObj.createdAt,
+                    visibility: visibility
                 });
             }
         } catch (e) {
@@ -159,25 +179,60 @@ export const handle = async (c: Context) => {
 
     // Previous password logic
     if (recordObj.visibility === 'password') {
-        if (!password) {
-            return c.json({ message: "A password is required because the visibility of this post is set to 'password'." }, 500);
-        }
-
         // Define a minimal interface for the Blob structure we expect
-        interface BlobWithRef {
-            ref: { toString: () => string };
+        const blob = recordObj.encryptBody as any;
+        let refLink = blob?.ref?.toString();
+
+        // Handle raw JSON IPLD link format
+        if (blob?.ref?.['$link']) {
+            refLink = blob.ref['$link'];
         }
 
-        const blob = recordObj.encryptBody as unknown as BlobWithRef;
-        const refLink = blob?.ref?.toString();
-        if (!refLink) {
-            return c.json({ message: 'Reference link is missing in the record.' }, 500);
+        if (!refLink || refLink === '[object Object]') {
+            // Fallback or specific error if needed, but primarily ensure we have a string
+            if (typeof blob?.ref === 'string') {
+                refLink = blob.ref;
+            }
         }
-        return await getDecrypt(c, pdsUrl, repo, refLink, password)
+
+        if (!refLink || refLink === '[object Object]') {
+            console.error(`[getPost] Invalid refLink extracted:`, blob?.ref);
+            return c.json({ message: 'Reference link is missing or invalid in the record.' }, 500);
+        }
+
+        if (!password) {
+            return c.json({
+                text: recordObj.text,
+                additional: '',
+                message: "A password is required because the visibility of this post is set to 'password'.",
+                errorCode: 'PasswordRequired',
+                errorDescription: 'Password is required to view this content.',
+                createdAt: recordObj.createdAt,
+                visibility: 'password',
+                encryptCid: refLink
+            });
+        }
+
+        try {
+            const result = await getDecrypt(pdsUrl, repo, refLink, password)
+            return c.json({
+                text: result.text,
+                additional: result.additional,
+                createdAt: recordObj.createdAt,
+                visibility: visibility
+            })
+        } catch (e: any) {
+            return c.json({ message: e.message || "Decrypt failed." }, 403);
+        }
     }
 
     // Fallback for public or other types?
-    return c.json({ text: recordObj.text, additional: recordObj.additional });
+    return c.json({
+        text: recordObj.text,
+        additional: recordObj.additional,
+        createdAt: recordObj.createdAt,
+        visibility: visibility
+    });
 
 }
 

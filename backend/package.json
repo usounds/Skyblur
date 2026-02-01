@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production --minify",
-    "gen-lex": "lex-cli generate -o ./src/lexicon/UkSkyblur.ts ../lexicon/uk/skyblur/*/*.json",
+    "gen-lex": "lex-cli generate",
     "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install"
   },
   "dependencies": {

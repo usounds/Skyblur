@@ -64,6 +64,11 @@ export const handle = async (c: Context) => {
         return c.json({ message: 'password is required.' }, 500);
     }
 
-    return await getDecrypt(c, pds, repo, cid, password)
+    try {
+        const result = await getDecrypt(pds, repo, cid, password)
+        return c.json(result)
+    } catch (e: any) {
+        return c.json({ message: e.message || "Decrypt failed." }, 403);
+    }
 
 }

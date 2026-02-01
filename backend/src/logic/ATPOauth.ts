@@ -193,7 +193,7 @@ class DurableObjectStore {
     }
 
     async delete(key: string): Promise<void> {
-        await this.getStub().fetch(`http://do/?key=${this.name}:${key}`, {
+        await this.getStub().fetch(`http://do/?key=${encodeURIComponent(this.name + ':' + key)}`, {
             method: 'DELETE'
         });
     }
@@ -308,7 +308,7 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
                         return await fn();
                     } finally {
                         // 処理が終わったら必ずロック解除
-                        await stub.fetch(`http://do/unlock?key=${encodeURIComponent(lockKey)} `, {
+                        await stub.fetch(`http://do/unlock?key=${encodeURIComponent(lockKey)}`, {
                             method: 'POST'
                         });
                     }
