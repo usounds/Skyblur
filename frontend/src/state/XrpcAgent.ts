@@ -24,6 +24,7 @@ type Action = {
   setIsSessionChecked: (isSessionChecked: boolean) => void;
   checkSession: () => Promise<{ authenticated: boolean; did: string; pds: string }>;
   fetchUserProf: () => Promise<void>;
+  logout: (mode: 'soft' | 'hard') => Promise<void>;
 };
 const host = typeof window !== 'undefined' ? new URL(window.location.origin).host : '';
 
@@ -141,6 +142,26 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       })();
 
       return profFetchPromise;
+    },
+    logout: async (mode: 'soft' | 'hard') => {
+      try {
+        const endpoint = mode === 'hard' ? '/oauth/logout' : '/oauth/soft-logout';
+        await fetch(`https://${apiEndpoint}${endpoint}`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error(`Logout (${mode}) error:`, error);
+      } finally {
+        set({
+          did: "",
+          userProf: null,
+          serviceUrl: "",
+          isSessionChecked: true,
+          scope: ""
+        });
+        window.localStorage.removeItem('oauth.did');
+      }
     }
   });
 });
