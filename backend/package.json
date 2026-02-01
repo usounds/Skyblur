@@ -24,6 +24,7 @@
     "@atcute/lex-cli": "^2.5.3",
     "@cloudflare/unenv-preset": "^2.12.0",
     "@cloudflare/workers-types": "^4.20260131.0",
+    "@types/node": "^25.1.0",
     "unenv": "2.0.0-rc.24",
     "wrangler": "^4.61.1"
   }

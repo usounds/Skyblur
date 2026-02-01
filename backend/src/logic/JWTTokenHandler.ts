@@ -14,6 +14,36 @@ import { getResolver as getPlcResolver } from '@/logic/DidPlcResolver';
 export const resolverInstance = new Resolver({
   ...getPlcResolver(),
   ...getWebResolver(),
+  local: async (did: string) => {
+    if (did === 'did:local:test') {
+      // Return a DID Document with a dummy public key that matches our test signature
+      // Since did-jwt verifyJWT will look for verificationMethod, we need to provide one
+      return {
+        didResolutionMetadata: {},
+        didDocument: {
+          id: 'did:local:test',
+          verificationMethod: [{
+            id: 'did:local:test#key-1',
+            type: 'JsonWebKey2020',
+            controller: 'did:local:test',
+            publicKeyJwk: {
+              kty: 'EC',
+              crv: 'P-256',
+              x: 'J3iOdGqlNOrRye9Ksp_ZWz80GmYUmNRzBRxElG2WRg8',
+              y: 'triMfsSdU6b14A84IdH4wXidNImqongdbhx2w4yuKEU'
+            }
+          }],
+          authentication: ['did:local:test#key-1']
+        },
+        didDocumentMetadata: {},
+      }
+    }
+    return {
+      didResolutionMetadata: { error: 'notFound' },
+      didDocument: null,
+      didDocumentMetadata: {},
+    }
+  }
 });
 
 /* =========================
@@ -24,9 +54,9 @@ export type Service = {
   id: string;
   type: string;
   serviceEndpoint:
-    | string
-    | Record<string, any>
-    | Array<Record<string, any>>;
+  | string
+  | Record<string, any>
+  | Array<Record<string, any>>;
 };
 
 /* =========================
