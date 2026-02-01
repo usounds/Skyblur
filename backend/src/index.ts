@@ -448,7 +448,7 @@ app.get('/oauth/callback', async (c) => {
       httpOnly: true,
       secure: isSecure,
       sameSite: 'Lax',
-      maxAge: 30 * 24 * 60 * 60,
+      maxAge: 180 * 24 * 60 * 60,
       domain: domain,
     });
 
@@ -648,6 +648,24 @@ app.post('/oauth/logout', async (c) => {
   const isSecure = origin.startsWith('https');
 
   // oauth_did クッキーを削除
+  setCookie(c, 'oauth_did', '', {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 0,
+    domain: domain,
+  });
+
+  return c.json({ success: true });
+});
+
+app.post('/oauth/soft-logout', async (c) => {
+  const domain = c.env.APPVIEW_HOST ? `.${c.env.APPVIEW_HOST.split('.').slice(-2).join('.')}` : undefined;
+  const origin = getRequestOrigin(c.req.raw, c.env);
+  const isSecure = origin.startsWith('https');
+
+  // oauth_did クッキーを削除のみ行う
   setCookie(c, 'oauth_did', '', {
     httpOnly: true,
     secure: isSecure,
