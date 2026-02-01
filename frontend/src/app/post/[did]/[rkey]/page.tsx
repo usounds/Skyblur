@@ -10,19 +10,27 @@ export async function generateMetadata({ params }: { params: Promise<{ did: stri
   let description = "伏せた投稿を参照 / Refer to the unblurred text.";
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
     const apiAgent = new Client({
       handler: simpleFetchHandler({
         service: 'https://public.api.bsky.app',
+        fetch: (input, init) => fetch(input, { ...init, signal: controller.signal }),
       }),
     });
 
-    const response = await apiAgent.get('app.bsky.actor.getProfile', {
-      params: { actor: decodedDid as any },
-    });
+    try {
+      const response = await apiAgent.get('app.bsky.actor.getProfile', {
+        params: { actor: decodedDid as any },
+      });
 
-    if (response.ok) {
-      const handle = response.data.handle;
-      description = `@${handle}さんの伏せた投稿を参照する`;
+      if (response.ok) {
+        const handle = response.data.handle;
+        description = `@${handle}さんの伏せた投稿を参照する`;
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   } catch (error) {
     console.error("Failed to fetch profile for metadata:", error);
