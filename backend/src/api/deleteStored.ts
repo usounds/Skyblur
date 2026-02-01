@@ -18,9 +18,9 @@ app.post('/', async (c) => {
             return c.json({ success: false, error: 'Not authenticated' }, 401);
         }
 
-        // Verify the requester is the author
-        if (!uri.startsWith(`at://${requesterDid}/`)) {
-            return c.json({ success: false, error: 'Unauthorized' }, 403);
+        // Verify the requester is the author and the collection is correct
+        if (!uri.startsWith(`at://${requesterDid}/uk.skyblur.post/`)) {
+            return c.json({ success: false, error: 'Unauthorized or invalid collection' }, 403);
         }
 
         const doId = c.env.SKYBLUR_DO_RESTRICTED.idFromName(requesterDid);

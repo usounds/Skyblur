@@ -21,11 +21,11 @@ export const handle = async (c: Context) => {
         return c.json({ success: false, message: 'Authentication required' }, 401);
     }
 
-    // Check if URI matches requester DID (basic check)
-    // uri: at://did:plc:xxx/app.bsky.feed.post/xxx
-    if (!uri.includes(requesterDid)) {
-        console.warn('[store] URI mismatch');
-        return c.json({ success: false, message: 'URI does not match authenticated user' }, 403);
+    // Check if URI matches requester DID and collection (strict check)
+    // uri: at://did:plc:xxx/uk.skyblur.post/xxx
+    if (!uri.startsWith(`at://${requesterDid}/uk.skyblur.post/`)) {
+        console.warn('[store] URI mismatch or invalid collection');
+        return c.json({ success: false, message: 'URI does not match authenticated user or invalid collection' }, 403);
     }
 
     try {
