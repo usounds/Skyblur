@@ -4,7 +4,7 @@
     "defs": {
         "main": {
             "type": "procedure",
-            "description": "Stores a restricted post in the Skyblur AppView.",
+            "description": "Stores a restricted post in the Skyblur AppView. Auth required.",
             "input": {
                 "encoding": "application/json",
                 "schema": {
@@ -27,7 +27,8 @@
                         },
                         "uri": {
                             "type": "string",
-                            "format": "at-uri"
+                            "format": "at-uri",
+                            "description": "The URI must include the logged-in user's DID in the format at://did..."
                         },
                         "visibility": {
                             "type": "string",

@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "procedure",
-      "description": "Get Skyblur post. If the specified post is password-protected, you can retrieve the unlocked content by providing the password.",
+      "description": "Get Skyblur post. If the specified post is password-protected, you can retrieve the unlocked content by providing the password. Auth required for followers, following and mutual.",
       "input": {
         "encoding": "application/json",
         "schema": {

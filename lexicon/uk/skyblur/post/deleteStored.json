@@ -4,7 +4,7 @@
     "defs": {
         "main": {
             "type": "procedure",
-            "description": "Delete stored restricted post content from Skyblur AppView",
+            "description": "Delete stored restricted post content from Skyblur AppView. Auth required.",
             "input": {
                 "encoding": "application/json",
                 "schema": {
@@ -15,7 +15,7 @@
                     "properties": {
                         "uri": {
                             "type": "string",
-                            "description": "AT URI of the post to delete"
+                            "description": "AT URI of the post to delete. The URI must include the logged-in user's DID in the format at://did..."
                         }
                     }
                 }
