@@ -313,7 +313,7 @@ export const PostPage = () => {
                                                 <div className="overflow-hidden break-words">
                                                     {isMasked ? (
                                                         <div
-                                                            className="font-bold text-lg"
+                                                            className="text-lg"
                                                         >
                                                             {postText}
                                                         </div>
