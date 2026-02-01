@@ -2,6 +2,9 @@ import { UkSkyblurPost, UkSkyblurPostGetPost } from '@/lexicon/UkSkyblur'
 import { getDecrypt } from '@/logic/CryptHandler'
 import { fetchServiceEndpoint, verifyJWT } from '@/logic/JWTTokenHandler'
 import { Context } from 'hono'
+import { Client, simpleFetchHandler } from '@atcute/client'
+import type { } from '@atcute/bluesky'
+import { type ActorIdentifier } from '@atcute/lexicons'
 
 import { getAuthenticatedDid } from '@/logic/AuthUtils'
 
@@ -12,7 +15,7 @@ export const handle = async (c: Context) => {
 
     let { uri, password } = await c.req.json() as UkSkyblurPostGetPost.Input
     uri = decodeURIComponent(uri) as any;
-    console.log(`[getPost] Requested URI: ${uri}, Requester: ${requesterDid}`);
+
 
     // 必須パラメータのチェック
     if (!uri) {
@@ -67,84 +70,62 @@ export const handle = async (c: Context) => {
 
     // Visibility checks
     const visibility = recordObj.visibility as string;
-    console.log(`[getPost] Visibility: ${visibility}, Requester: ${requesterDid}, Repo: ${repo}`);
+
 
     if (['followers', 'following', 'mutual'].includes(visibility)) {
         if (!requesterDid) {
-            console.log('[getPost] No requesterDid -> Returning masked.');
+
             return c.json({
                 text: recordObj.text,
                 additional: '',
-                debug: {
-                    reason: 'No requesterDid',
-                    visibility
-                }
+                message: `Login required. Visibility: ${visibility}`
             });
         }
 
         let isAuthorized = false;
 
         if (requesterDid === repo) {
-            console.log('[getPost] Author access -> Authorized.');
+
             isAuthorized = true;
         } else {
-            console.log('[getPost] Checking relationship...');
             // Check relationship
             try {
-
-                // Using the user's token to fetch relationships
-                // We need to construct a request to the AppView (bsky.social or explicit host)
-                const appViewHost = c.env.APPVIEW_HOST || 'api.bsky.app'; // Default to public AppView if not set
-                const serviceUrl = `https://${appViewHost}`;
-
-                // We need to use `agent` or raw fetch.
-                // Using raw fetch for `app.bsky.graph.getRelationships`
-                const relParam = `actor=${requesterDid}&others=${repo}`;
-                const relUrl = `${serviceUrl}/xrpc/app.bsky.graph.getRelationships?${relParam}`;
-
-                const relRes = await fetch(relUrl, {
+                const client = new Client({ handler: simpleFetchHandler({ service: 'https://public.api.bsky.app' }) });
+                const { data } = await client.get('app.bsky.graph.getRelationships', {
+                    params: {
+                        actor: requesterDid as ActorIdentifier,
+                        others: [repo as ActorIdentifier],
+                    },
                     headers: {
-                        'Authorization': authorization
+                        Authorization: authorization
                     }
                 });
 
-                if (relRes.ok) {
-                    const relData = await relRes.json() as any;
-                    // relationships structure: { actor: did, relationships: [ { did: target, following: uri, followedBy: uri } ] }
-                    const rel = relData.relationships?.[0];
-                    if (rel) {
-                        const isFollowing = !!rel.following; // Requester follows Author
-                        const isFollowedBy = !!rel.followedBy; // Author follows Requester
+                // relationships structure: { actor: did, relationships: [ { did: target, following: uri, followedBy: uri } ] }
+                const rel = (data as any).relationships?.[0];
+                if (rel) {
+                    const isFollowing = !!rel.following; // Requester follows Author
+                    const isFollowedBy = !!rel.followedBy; // Author follows Requester
 
-                        if (visibility === 'followers') {
-                            isAuthorized = isFollowing || requesterDid === repo;
-                        } else if (visibility === 'following') {
-                            isAuthorized = isFollowedBy || requesterDid === repo;
-                        } else if (visibility === 'mutual') {
-                            isAuthorized = (isFollowing && isFollowedBy) || requesterDid === repo;
-                        }
+                    if (visibility === 'followers') {
+                        isAuthorized = isFollowing || requesterDid === repo;
+                    } else if (visibility === 'following') {
+                        isAuthorized = isFollowedBy || requesterDid === repo;
+                    } else if (visibility === 'mutual') {
+                        isAuthorized = (isFollowing && isFollowedBy) || requesterDid === repo;
                     }
-                } else {
-                    console.error("Failed to fetch relationships", await relRes.text());
-                    // Fallback: access denied
                 }
-
             } catch (e) {
                 console.error("Error checking relationships", e);
             }
         }
 
         if (!isAuthorized) {
-            console.log(`[getPost] NOT Authorized. Visibility: ${visibility}, Requester: ${requesterDid}, Repo: ${repo}`);
+
             return c.json({
                 text: recordObj.text,
                 additional: '',
-                debug: {
-                    reason: 'Not authorized',
-                    requesterDid,
-                    repo,
-                    visibility
-                }
+                message: `Not authorized. Requester: ${requesterDid}, Repo: ${repo}, Visibility: ${visibility}`
             });
         }
 

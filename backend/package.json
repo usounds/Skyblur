@@ -21,6 +21,7 @@
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
+    "@atcute/bluesky": "^3.2.16",
     "@atcute/lex-cli": "^2.5.3",
     "@cloudflare/unenv-preset": "^2.12.0",
     "@cloudflare/workers-types": "^4.20260131.0",

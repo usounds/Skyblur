@@ -42,6 +42,9 @@ importers:
         specifier: ^2.0.32
         version: 2.0.32
     devDependencies:
+      '@atcute/bluesky':
+        specifier: ^3.2.16
+        version: 3.2.16
       '@atcute/lex-cli':
         specifier: ^2.5.3
         version: 2.5.3
@@ -65,6 +68,9 @@ packages:
 
   '@atcute/atproto@3.1.10':
     resolution: {integrity: sha512-+GKZpOc0PJcdWMQEkTfg/rSNDAAHxmAUGBl60g2az15etqJn5WaUPNGFE2sB7hKpwi5Ue2h/L0OacINcE/JDDQ==}
+
+  '@atcute/bluesky@3.2.16':
+    resolution: {integrity: sha512-phFAJNE+SCkIbCcgzjFxntS2KpGvzkLw0JA9qKIXlueF4wNreEt/D5HjnB5eRR9pV1/kcD94II9f7ZAwarf0lQ==}
 
   '@atcute/car@5.1.0':
     resolution: {integrity: sha512-W9axHVrwIkZJaeN/VQ1LyyU3b95wHBjQnrREouxygvmvWd1lmjFvF8Si8b0AG0VkWJ6h7h6qhOeUATynBzBFIg==}
@@ -731,6 +737,11 @@ snapshots:
 
   '@atcute/atproto@3.1.10':
     dependencies:
+      '@atcute/lexicons': 1.2.7
+
+  '@atcute/bluesky@3.2.16':
+    dependencies:
+      '@atcute/atproto': 3.1.10
       '@atcute/lexicons': 1.2.7
 
   '@atcute/car@5.1.0':
