@@ -58,7 +58,7 @@
     "react-dom": "^19.2.4",
     "react-spinners": "^0.17.0",
     "sst": "^3.17.38",
-    "zustand": "^5.0.10"
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
