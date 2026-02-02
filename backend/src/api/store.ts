@@ -1,18 +1,23 @@
-import { UkSkyblurPostStore } from '../lexicon/UkSkyblur'
+import { UkSkyblurPostStore } from '../lexicon/index'
 import { Context } from 'hono'
 import { getAuthenticatedDid } from '../logic/AuthUtils'
+import { safeParse } from '@atcute/lexicons'
 
 export const handle = async (c: Context) => {
     console.log('[store] Request received');
-    const input = await c.req.json() as UkSkyblurPostStore.Input
+    const body = await c.req.json();
+
+    const result = safeParse(UkSkyblurPostStore.mainSchema.input.schema, body);
+
+    if (!result.ok) {
+        console.warn('[store] Validation failed', result.issues);
+        return c.json({ success: false, message: `Validation failed: ${result.message}` }, 400);
+    }
+
+    const input = result.value;
 
     const { text, additional, visibility, uri } = input
     console.log(`[store] URI: ${uri}, Vis: ${visibility}`);
-
-    if (!text || !uri || !visibility) {
-        console.warn('[store] Missing fields');
-        return c.json({ success: false, message: 'Missing required fields' }, 400);
-    }
 
     const requesterDid = await getAuthenticatedDid(c);
     console.log(`[store] Requester: ${requesterDid}`);

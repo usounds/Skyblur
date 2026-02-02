@@ -5,7 +5,9 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production --minify",
     "gen-lex": "lex-cli generate",
-    "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install"
+    "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@atcute/atproto": "^3.1.10",
@@ -26,7 +28,10 @@
     "@cloudflare/unenv-preset": "^2.12.0",
     "@cloudflare/workers-types": "^4.20260131.0",
     "@types/node": "^25.1.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "unenv": "2.0.0-rc.24",
+    "vitest": "^4.0.18",
     "wrangler": "^4.61.1"
   }
 }
