@@ -13,7 +13,7 @@ import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState, useRef } from "react";
-import { Lock, LockOpen, LogIn, X, Globe, Users, UserPlus, UserCheck } from 'lucide-react';
+import { Lock, LockOpen, LogIn, X, Globe, Users, UserCheck, Handshake } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import Loading from './Loading';
 
@@ -409,14 +409,14 @@ export const PostList: React.FC<PostListProps> = ({
                                     if (item.blur?.visibility === VISIBILITY_FOLLOWING) {
                                         return (
                                             <Tooltip label={locale.CreatePost_VisibilityFollowing} withArrow position="right">
-                                                <UserPlus size={14} />
+                                                <UserCheck size={14} />
                                             </Tooltip>
                                         );
                                     }
                                     if (item.blur?.visibility === VISIBILITY_MUTUAL) {
                                         return (
                                             <Tooltip label={locale.CreatePost_VisibilityMutual} withArrow position="right">
-                                                <UserCheck size={14} />
+                                                <Handshake size={14} />
                                             </Tooltip>
                                         );
                                     }
