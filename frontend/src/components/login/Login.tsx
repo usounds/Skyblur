@@ -4,11 +4,16 @@ import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import {
     Anchor,
     Autocomplete,
+    Avatar,
     Button,
     Container,
+    Group,
     Paper,
-    Title
+    Text,
+    Title,
+    ComboboxItem
 } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { X } from 'lucide-react';
 import { useEffect, useState } from "react";
@@ -23,7 +28,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         }
         return '';
     });
-    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestions, setSuggestions] = useState<(ComboboxItem & { avatar?: string })[]>([]);
     const { localeData: locale } = useLocale();
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
@@ -147,8 +152,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     }
 
 
-    const handleInput = async (event: React.FormEvent<HTMLInputElement>) => {
-        const val = event.currentTarget.value;
+    const handleInput = useDebouncedCallback(async (val: string) => {
         if (!val) {
             setSuggestions([]);
             return;
@@ -163,12 +167,16 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             });
 
             if (res.ok) {
-                setSuggestions(res.data.actors.map((a) => a.handle));
+                setSuggestions(res.data.actors.map((a) => ({
+                    value: a.handle,
+                    label: a.handle,
+                    avatar: a.avatar
+                })));
             }
         } catch (err) {
-            console.error("searchActorsTypeahead error", err);
+            // console.error("searchActorsTypeahead error", err);
         }
-    };
+    }, 300);
 
 
     const loginForm = (
@@ -185,7 +193,13 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 spellCheck={false}
                 value={handle}
                 data={suggestions}
-                onInput={handleInput}
+                renderOption={({ option }: { option: any }) => (
+                    <Group gap="sm">
+                        <Avatar src={option.avatar} size={24} radius="xl" />
+                        <Text size="sm">{option.value}</Text>
+                    </Group>
+                )}
+                onInput={(event) => handleInput(event.currentTarget.value)}
                 onChange={(value) => {
                     setHandle(value);
                     setSuggestions([]);
