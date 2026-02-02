@@ -29,7 +29,10 @@
       ]
     },
     "types": [
-      "@atcute/bluesky"
+      "@atcute/bluesky",
+      "node",
+      "react",
+      "react-dom"
     ]
   },
   "include": [
