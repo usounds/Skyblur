@@ -172,6 +172,11 @@ const messages = {
     Post_Restricted_NotAuthorized_Followers: "この投稿を表示する権限がありません（フォロワー限定）。",
     Post_Restricted_NotAuthorized_Following: "この投稿を表示する権限がありません（フォロー中限定）。",
     Post_Restricted_NotAuthorized_Mutual: "この投稿を表示する権限がありません（相互フォロー限定）。",
+    Home_CheckingSession: "セッションを確認しています...",
+    Home_CheckSession_Title: "セッション確認",
+    Home_CheckSession_Message: "セッションを確認しています...",
+    Home_CheckSession_Success_Title: "確認完了",
+    Home_CheckSession_Success_Message: "完了",
 }
 
 export default messages;

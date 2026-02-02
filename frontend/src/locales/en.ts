@@ -172,6 +172,11 @@ const messages = {
     Post_Restricted_NotAuthorized_Followers: "You do not have permission to view this post (Followers only).",
     Post_Restricted_NotAuthorized_Following: "You do not have permission to view this post (Following only).",
     Post_Restricted_NotAuthorized_Mutual: "You do not have permission to view this post (Mutuals only).",
+    Home_CheckingSession: "Checking session...",
+    Home_CheckSession_Title: "Checking Session",
+    Home_CheckSession_Message: "Verifying your session...",
+    Home_CheckSession_Success_Title: "Session Checked",
+    Home_CheckSession_Success_Message: "Done",
 }
 
 

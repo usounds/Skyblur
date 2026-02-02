@@ -107,7 +107,10 @@ export function HomeContent() {
 
             <div className="flex justify-center mt-10 mb-12" style={{ minHeight: '64px' }}>
                 {!isSessionChecked ? (
-                    <Loader color="blue" type="dots" />
+                    <div className="flex flex-col items-center gap-2">
+                        <Loader color="blue" type="dots" />
+                        <Text size="sm" c="dimmed">{locale.Home_CheckingSession}</Text>
+                    </div>
                 ) : (
                     <Button
                         variant="outline" size="md" radius="lg"

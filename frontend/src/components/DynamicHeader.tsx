@@ -4,7 +4,7 @@ import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { notifications } from '@mantine/notifications';
-import { X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
@@ -23,7 +23,17 @@ const DynamicHeader = () => {
 
     // セッションを確認
     const syncSession = async () => {
+      const id = notifications.show({
+        loading: true,
+        title: locale.Home_CheckSession_Title,
+        message: locale.Home_CheckSession_Message,
+        autoClose: false,
+        withCloseButton: false,
+      });
+
       await useXrpcAgentStore.getState().checkSession();
+
+      notifications.hide(id);
     };
     syncSession();
   }, []);
