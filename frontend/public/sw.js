@@ -13,5 +13,5 @@ self.addEventListener('fetch', (event) => {
     // Just pass the request through. 
     // This satisfies the PWA requirement "Has a registered service worker with a fetch event handler"
     // without risking cache failures.
-    event.respondWith(fetch(event.request));
+    return;
 });
