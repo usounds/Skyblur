@@ -90,7 +90,14 @@ export interface Env {
   OAUTH_PRIVATE_KEY_JWK?: string;
   DATA_ENCRYPTION_KEY?: string;
   API_HOST?: string;
+  SKYBLUR_BACKUP: R2Bucket;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  CLOUDFLARE_API_TOKEN?: string;
 }
+
+import { handleBackup } from "@/scheduled/backup";
+
+
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -808,5 +815,19 @@ app.get('/', (c) => {
   return c.json(returnDocument)
 })
 
+app.get('/admin/backup-now', async (c) => {
+  // 簡易的な認証（本来はAdminガードが必要）または開発用
+  try {
+    await handleBackup({ cron: "manual", type: "scheduled", scheduledTime: Date.now() } as any, c.env, c.executionCtx);
+    return c.json({ success: true, message: "Backup triggered successfully" });
+  } catch (e: any) {
+    return c.json({ success: false, error: String(e) }, 500);
+  }
+});
 
-export default app
+
+
+export default {
+  fetch: app.fetch,
+  scheduled: handleBackup
+}

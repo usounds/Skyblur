@@ -42,4 +42,27 @@ describe('RestrictedPostDO', () => {
         await doInstance.fetch(req);
         expect(state.storage.delete).toHaveBeenCalledWith('del');
     });
+
+    it('should handle dump request', async () => {
+        const storage = new Map([
+            ['key1', { text: 'one' }],
+            ['key2', { text: 'two' }]
+        ]);
+        const state: any = {
+            storage: {
+                list: vi.fn(async () => storage),
+                get: vi.fn((key) => storage.get(key)),
+            }
+        };
+        const doInstance = new RestrictedPostDO(state, {} as any);
+
+        const req = new Request('http://do/dump', { method: 'GET' });
+        const res = await doInstance.fetch(req);
+        const data = await res.json();
+
+        expect(data).toEqual({
+            key1: { text: 'one' },
+            key2: { text: 'two' }
+        });
+    });
 });

@@ -75,7 +75,24 @@
       "observability": {
         "enabled": true,
         "head_sampling_rate": 0.3
+      },
+      "r2_buckets": [
+        {
+          "binding": "SKYBLUR_BACKUP",
+          "bucket_name": "skyblur-backup"
+        }
+      ],
+      "triggers": {
+        "crons": [
+          "0 0 * * *"
+        ]
       }
     }
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "SKYBLUR_BACKUP",
+      "bucket_name": "skyblur-backup"
+    }
+  ]
 }
