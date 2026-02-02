@@ -109,8 +109,16 @@ export const handle = async (c: Context) => {
                 // relationships structure: { actor: did, relationships: [ { did: target, following: uri, followedBy: uri } ] }
                 const rel = (data as any).relationships?.[0];
                 if (rel) {
-                    const isFollowing = !!rel.following; // Requester follows Author
-                    const isFollowedBy = !!rel.followedBy; // Author follows Requester
+                    // app.bsky.graph.getRelationships returns relationships from the perspective of the 'actor' (requester)
+                    // regarding the 'others' (repo/author).
+
+                    // rel.following: If the actor follows this user, this is the AT-URI of the follow record.
+                    // => Requester follows Author (閲覧者が投稿者をフォローしている = Authorのフォロワーである)
+                    const isFollowing = !!rel.following;
+
+                    // rel.followedBy: If the user follows the actor, this is the AT-URI of the follow record.
+                    // => Author follows Requester (投稿者が閲覧者をフォローしている = Authorのフォロイーである)
+                    const isFollowedBy = !!rel.followedBy;
 
                     if (visibility === 'followers') {
                         isAuthorized = isFollowing || requesterDid === repo;
