@@ -27,6 +27,12 @@ export function ConsoleContent() {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     const handleEdit = async (input: PostListItem) => {
+        // Only fetch if not already fetched/decrypted
+        if (input.isDecrypt) {
+            setPrevBlur(input);
+            setMode("create")
+            return;
+        }
         // Restricted content pre-fetch
         if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(input.blur.visibility || '')) {
             notifications.show({

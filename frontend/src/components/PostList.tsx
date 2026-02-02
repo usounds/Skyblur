@@ -193,7 +193,8 @@ export const PostList: React.FC<PostListProps> = ({
                                 ? {
                                     ...currentItem,
                                     blur: { ...currentItem.blur, text: data.text, additional: data.additional },
-                                    isDetailDisplay: true
+                                    isDetailDisplay: true,
+                                    isDecrypt: true
                                 }
                                 : currentItem
                         );
