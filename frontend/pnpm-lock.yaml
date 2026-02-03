@@ -18,8 +18,8 @@ importers:
         specifier: ^3.1.10
         version: 3.1.10
       '@atcute/bluesky':
-        specifier: ^3.2.16
-        version: 3.2.16
+        specifier: ^3.2.17
+        version: 3.2.17
       '@atcute/client':
         specifier: ^4.2.1
         version: 4.2.1
@@ -88,8 +88,8 @@ importers:
         specifier: ^2.5.3
         version: 2.5.3
       '@aws-sdk/client-lambda':
-        specifier: ^3.980.0
-        version: 3.980.0
+        specifier: ^3.981.0
+        version: 3.981.0
       '@eslint/eslintrc':
         specifier: ^3.3.3
         version: 3.3.3
@@ -209,8 +209,8 @@ packages:
   '@atcute/atproto@3.1.10':
     resolution: {integrity: sha512-+GKZpOc0PJcdWMQEkTfg/rSNDAAHxmAUGBl60g2az15etqJn5WaUPNGFE2sB7hKpwi5Ue2h/L0OacINcE/JDDQ==}
 
-  '@atcute/bluesky@3.2.16':
-    resolution: {integrity: sha512-phFAJNE+SCkIbCcgzjFxntS2KpGvzkLw0JA9qKIXlueF4wNreEt/D5HjnB5eRR9pV1/kcD94II9f7ZAwarf0lQ==}
+  '@atcute/bluesky@3.2.17':
+    resolution: {integrity: sha512-Li+RsPkcRNC6AnNlqOGnlmAcjSwBdXIKFubJL1nwACDngKNXG4ooGL5cvzeekdDEfHmtFhS/tyZNaUx9QXYEUw==}
 
   '@atcute/car@5.1.0':
     resolution: {integrity: sha512-W9axHVrwIkZJaeN/VQ1LyyU3b95wHBjQnrREouxygvmvWd1lmjFvF8Si8b0AG0VkWJ6h7h6qhOeUATynBzBFIg==}
@@ -333,8 +333,8 @@ packages:
     resolution: {integrity: sha512-xSlYgrvonTatk09zjN5wJwIhSOS6Mjf4/ccP/Sws/t12BNH7AFIl9jJXfxIS5FYfhvCfFDzoZsdr/3XrdBpxEA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-lambda@3.980.0':
-    resolution: {integrity: sha512-25aY83+yNAOnuXg9KzVpFlruehrejR6doto0c14Y8K5hbZjbLNInXtYmSqqm6D5a+132/tgB1BuNx2TRrOkb5g==}
+  '@aws-sdk/client-lambda@3.981.0':
+    resolution: {integrity: sha512-zLQpFFdKaXyARxpCuGcfax5ZpAguPo/G2uVCBJjDAycT7FU+spTPttV5dI49GQIo5pvU8yn+EaCVBJl89mZy1g==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-s3@3.971.0':
@@ -617,6 +617,10 @@ packages:
 
   '@aws-sdk/util-endpoints@3.980.0':
     resolution: {integrity: sha512-AjKBNEc+rjOZQE1HwcD9aCELqg1GmUj1rtICKuY8cgwB73xJ4U/kNyqKKpN2k9emGqlfDY2D8itIp/vDc6OKpw==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/util-endpoints@3.981.0':
+    resolution: {integrity: sha512-a8nXh/H3/4j+sxhZk+N3acSDlgwTVSZbX9i55dx41gI1H+geuonuRG+Shv3GZsCb46vzc08RK2qC78ypO8uRlg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/util-locate-window@3.965.2':
@@ -4491,7 +4495,7 @@ snapshots:
     dependencies:
       '@atcute/lexicons': 1.2.7
 
-  '@atcute/bluesky@3.2.16':
+  '@atcute/bluesky@3.2.17':
     dependencies:
       '@atcute/atproto': 3.1.10
       '@atcute/lexicons': 1.2.7
@@ -4795,7 +4799,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-lambda@3.980.0':
+  '@aws-sdk/client-lambda@3.981.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -4807,7 +4811,7 @@ snapshots:
       '@aws-sdk/middleware-user-agent': 3.972.5
       '@aws-sdk/region-config-resolver': 3.972.3
       '@aws-sdk/types': 3.973.1
-      '@aws-sdk/util-endpoints': 3.980.0
+      '@aws-sdk/util-endpoints': 3.981.0
       '@aws-sdk/util-user-agent-browser': 3.972.3
       '@aws-sdk/util-user-agent-node': 3.972.3
       '@smithy/config-resolver': 4.4.6
@@ -5844,6 +5848,14 @@ snapshots:
       '@smithy/util-endpoints': 3.2.8
       tslib: 2.8.1
 
+  '@aws-sdk/util-endpoints@3.981.0':
+    dependencies:
+      '@aws-sdk/types': 3.973.1
+      '@smithy/types': 4.12.0
+      '@smithy/url-parser': 4.2.8
+      '@smithy/util-endpoints': 3.2.8
+      tslib: 2.8.1
+
   '@aws-sdk/util-locate-window@3.965.2':
     dependencies:
       tslib: 2.8.1
@@ -6442,7 +6454,7 @@ snapshots:
       '@ast-grep/napi': 0.40.5
       '@aws-sdk/client-cloudfront': 3.398.0
       '@aws-sdk/client-dynamodb': 3.971.0
-      '@aws-sdk/client-lambda': 3.980.0
+      '@aws-sdk/client-lambda': 3.981.0
       '@aws-sdk/client-s3': 3.971.0
       '@aws-sdk/client-sqs': 3.971.0
       '@node-minify/core': 8.0.6
