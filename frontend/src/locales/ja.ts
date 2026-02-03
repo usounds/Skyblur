@@ -177,6 +177,7 @@ const messages = {
     Home_CheckSession_Message: "セッションを確認しています...",
     Home_CheckSession_Success_Title: "確認完了",
     Home_CheckSession_Success_Message: "完了",
+
 }
 
 export default messages;

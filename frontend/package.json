@@ -56,6 +56,7 @@
     "react": "^19.2.4",
     "react-content-loader": "^7.1.2",
     "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
     "react-spinners": "^0.17.0",
     "sst": "^3.17.38",
     "zustand": "^5.0.11"
@@ -76,6 +77,7 @@
     "postcss": "^8.5.6",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
+    "raw-loader": "^4.0.2",
     "tailwindcss": "^4.1.18",
     "tw-colors": "^3.3.2",
     "typescript": "^5.9.3"
