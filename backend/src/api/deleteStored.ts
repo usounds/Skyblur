@@ -23,11 +23,16 @@ app.post('/', async (c) => {
             return c.json({ success: false, error: 'Unauthorized or invalid collection' }, 403);
         }
 
+        const rkey = uri.split('/').pop();
+        if (!rkey) {
+            return c.json({ success: false, error: 'Invalid URI' }, 400);
+        }
+
         const doId = c.env.SKYBLUR_DO_RESTRICTED.idFromName(requesterDid);
         const doStub = c.env.SKYBLUR_DO_RESTRICTED.get(doId);
 
         const doUrl = new URL('http://do');
-        doUrl.searchParams.set('key', uri);
+        doUrl.searchParams.set('key', rkey);
 
         await doStub.fetch(doUrl.toString(), {
             method: 'DELETE',

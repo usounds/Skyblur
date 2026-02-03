@@ -48,4 +48,31 @@ describe('encrypt API', () => {
         await handle(c);
         expect(c.json).toHaveBeenCalledWith(expect.anything(), 401);
     });
+
+    it('should return 500 if body is missing', async () => {
+        const c: any = {
+            req: { json: vi.fn().mockResolvedValue({ password: 'p' }) },
+            json: vi.fn()
+        };
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith({ message: 'body is required.' }, 500);
+    });
+
+    it('should return 500 if password is missing', async () => {
+        const c: any = {
+            req: { json: vi.fn().mockResolvedValue({ body: 's' }) },
+            json: vi.fn()
+        };
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith({ message: 'password is required.' }, 500);
+    });
+
+    it('should handle exceptions', async () => {
+        const c: any = {
+            req: { json: vi.fn().mockImplementation(() => Promise.reject(new Error('fail'))) },
+            json: vi.fn()
+        };
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Unexpected error') }), 500);
+    });
 });

@@ -43,10 +43,15 @@ export const handle = async (c: Context) => {
 
         const stub = doNamespace.get(doId);
 
-        const val = { text, additional };
+        const rkey = uri.split('/').pop();
+        if (!rkey) {
+            return c.json({ success: false, message: 'Invalid URI, rkey missing' }, 400);
+        }
 
-        console.log(`[store] Sending PUT to DO... Key=${uri}`);
-        const res = await stub.fetch(new Request('http://do/store?key=' + encodeURIComponent(uri), {
+        const val = { text, additional, visibility, did: requesterDid };
+
+        console.log(`[store] Sending PUT to DO... Key=${rkey}`);
+        const res = await stub.fetch(new Request('http://do/store?key=' + rkey, {
             method: 'PUT',
             body: JSON.stringify(val),
             headers: { 'Content-Type': 'application/json' }

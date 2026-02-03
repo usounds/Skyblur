@@ -50,4 +50,33 @@ describe('resolveHandle API', () => {
         await handle(c);
         expect(c.json).toHaveBeenCalledWith({ error: 'Invalid DID' }, 400);
     });
+    it('should return 502 if domain is unreachable', async () => {
+        const c: any = {
+            req: { url: 'https://api.example.com/resolve?handle=down.com' },
+            json: vi.fn(),
+        };
+        global.fetch = vi.fn().mockResolvedValue({ ok: false });
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith({ error: 'Domain is unreachable' }, 502);
+    });
+
+    it('should return 500 on exception', async () => {
+        const c: any = {
+            req: { url: 'https://api.example.com/resolve?handle=err.com' },
+            json: vi.fn(),
+        };
+        global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith({ error: 'Network error' }, 500);
+    });
+
+    it('should return 500 on unknown exception', async () => {
+        const c: any = {
+            req: { url: 'https://api.example.com/resolve?handle=unknown.com' },
+            json: vi.fn(),
+        };
+        global.fetch = vi.fn().mockRejectedValue('unknown');
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith({ error: 'Unknown error' }, 500);
+    });
 });

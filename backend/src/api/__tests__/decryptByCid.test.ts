@@ -166,4 +166,57 @@ describe('decryptByCid API', () => {
         await handle(c);
         expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('password is required') }), 500);
     });
+
+    it('should handle exception during PDS resolution gracefully', async () => {
+        const c = createCtx({
+            repo: 'did:plc:123',
+            cid: 'bafy...',
+            password: 'pass'
+        });
+
+        // Mock DO Fetch to throw
+        mockDOFetch.mockRejectedValue(new Error('DO Error'));
+        global.fetch = vi.fn().mockResolvedValue({ ok: false });
+
+        await handle(c);
+
+        // Should fall through and fail because PDS is not resolved
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('pds is required') }), 500);
+    });
+
+    it('should return 403 if decryption fails', async () => {
+        const c = createCtx({
+            pds: 'https://pds',
+            repo: 'did',
+            cid: 'cid',
+            password: 'pass'
+        });
+
+        // @ts-ignore
+        CryptHandler.getDecrypt.mockRejectedValue(new Error('Decrypt error'));
+
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith({ message: 'Decrypt error' }, 403);
+    });
+
+    it('should skip cache if DO stub is missing', async () => {
+        const c = createCtx({
+            repo: 'did:plc:123',
+            cid: 'bafy...',
+            password: 'pass'
+        });
+
+        // Mock DO namespace missing
+        c.env.SKYBLUR_DO = null;
+
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ service: [] })
+        });
+
+        await handle(c);
+
+        expect(global.fetch).toHaveBeenCalled();
+        // Since DO is null, it shouldn't try to get stub
+    });
 });

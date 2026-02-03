@@ -4,15 +4,16 @@ import { getAuthenticatedDid } from '@/logic/AuthUtils'
 import { Context } from 'hono'
 
 export const handle = async (c: Context) => {
-    const { body, password } = await c.req.json() as UkSkyblurPostEncrypt.Input
-    if (!body) {
-        return c.json({ message: 'body is required.' }, 500);
-    }
-    if (!password) {
-        return c.json({ message: 'password is required.' }, 500);
-    }
-
     try {
+        const { body, password } = await c.req.json() as UkSkyblurPostEncrypt.Input
+
+        if (!body) {
+            return c.json({ message: 'body is required.' }, 500);
+        }
+        if (!password) {
+            return c.json({ message: 'password is required.' }, 500);
+        }
+
         const requesterDid = await getAuthenticatedDid(c);
 
         if (!requesterDid) {

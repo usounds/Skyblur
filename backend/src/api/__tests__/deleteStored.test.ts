@@ -52,4 +52,38 @@ describe('deleteStored API', () => {
 
         expect((res as Response).status).toBe(403);
     });
+
+    it('should fail if URI is missing', async () => {
+        const req = new Request('http://localhost/', { method: 'POST', body: JSON.stringify({}) });
+        const res = await handle({ req: { raw: req }, env: {} } as any);
+        expect((res as Response).status).toBe(400);
+    });
+
+    it('should fail if not authenticated', async () => {
+        // @ts-ignore
+        AuthUtils.getAuthenticatedDid.mockResolvedValue(null);
+        const req = new Request('http://localhost/', {
+            method: 'POST',
+            body: JSON.stringify({ uri: 'at://did/coll/rkey' })
+        });
+        const res = await handle({ req: { raw: req }, env: {} } as any);
+        expect((res as Response).status).toBe(401);
+    });
+
+    it('should fail if URI is invalid (no rkey)', async () => {
+        // @ts-ignore
+        AuthUtils.getAuthenticatedDid.mockResolvedValue('did:user');
+        const req = new Request('http://localhost/', {
+            method: 'POST',
+            body: JSON.stringify({ uri: 'at://did:user/uk.skyblur.post/' }) // trailing slash, empty rkey
+        });
+        const res = await handle({ req: { raw: req }, env: {} } as any);
+        expect((res as Response).status).toBe(400);
+    });
+
+    it('should handle exceptions', async () => {
+        const req = new Request('http://localhost/', { method: 'POST', body: 'invalid-json' });
+        const res = await handle({ req: { raw: req }, env: {} } as any);
+        expect((res as Response).status).toBe(500);
+    });
 });

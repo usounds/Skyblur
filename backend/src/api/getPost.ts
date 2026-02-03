@@ -159,14 +159,14 @@ export const handle = async (c: Context) => {
             const doId = doNamespace.idFromName(repo);
             const stub = doNamespace.get(doId);
 
-            const doRes = await stub.fetch(new Request('http://do/get?key=' + encodeURIComponent(uri)));
+            const doRes = await stub.fetch(new Request('http://do/get?key=' + rkey));
             if (doRes.ok) {
-                const data = await doRes.json() as { text: string, additional: string };
+                const data = await doRes.json() as { text: string, additional: string, visibility?: string };
                 return c.json({
                     text: data.text,
                     additional: data.additional,
                     createdAt: recordObj.createdAt,
-                    visibility: visibility
+                    visibility: data.visibility || visibility
                 });
             } else {
                 return c.json({

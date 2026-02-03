@@ -96,33 +96,12 @@ export async function handleBackup(event: ScheduledEvent, env: Env, ctx: Executi
                 const dumpRes = await stub.fetch("http://do/dump");
 
                 if (dumpRes.ok) {
-                    const dumpData = await dumpRes.json();
+                    const dumpData = await dumpRes.json() as { did: string | null, posts: any[] };
 
-                    // Identify the user DID if possible. 
-                    // RestrictedPostDO is sharded by name = DID.
-                    // But here we obtained ID from list. idFromString(id) gives us access, but we don't know the 'name' (DID) used to create it if it was created with idFromName.
-                    // Actually, if created with idFromName, the ID is derived.
-                    // If we can't extract DID from ID easily (we can't), we verify if the dump contains identifying info OR just store by DO ID.
-                    // Storing by DO ID is safer for backup. 
-                    // Wait, implementation plan said "users.keys" from KV gave us DID. 
-                    // Now we have raw IDs.
-                    // We can try to guess DID if it's stored inside the DO data?
-                    // RestrictedPostDO stores { text, additional } keyed by URI? 
-                    // URI: at://<DID>/...
-                    // Key is the URI. So we can extract DID from the first key found in dumpData.
+                    // Use stored DID for filename if available, otherwise Object ID
+                    const filename = dumpData.did ? `${dumpData.did}.json` : `${obj.id}.json`;
 
-                    let did = obj.id; // Default to Object ID
-                    const keys = Object.keys(dumpData as any);
-                    if (keys.length > 0) {
-                        const firstKey = keys[0];
-                        // at://did:plc:xxx/collection/rkey
-                        const match = firstKey.match(/^at:\/\/(did:[^/]+)\//);
-                        if (match) {
-                            did = match[1];
-                        }
-                    }
-
-                    await env.SKYBLUR_BACKUP.put(`restricted_posts/${backupTimestamp}/${did}.json`, JSON.stringify(dumpData));
+                    await env.SKYBLUR_BACKUP.put(`restricted_posts/${backupTimestamp}/${filename}`, JSON.stringify(dumpData));
                 }
             } catch (err) {
                 console.error(`Failed to backup object ${obj.id}:`, err);
