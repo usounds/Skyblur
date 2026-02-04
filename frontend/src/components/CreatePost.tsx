@@ -527,7 +527,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 notifications.show({
                     id: 'post-process',
                     title: locale.Menu_Post,
-                    message: locale.CreatePost_EncryptInProgress,
+                    message: '(1/3) ' + locale.CreatePost_EncryptInProgress,
                     loading: true,
                     autoClose: false
                 });
@@ -561,7 +561,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     notifications.update({
                         id: 'post-process',
                         title: locale.Menu_Post,
-                        message: locale.CreatePost_BlobUploadInProgress,
+                        message: '(2/3) ' + locale.CreatePost_BlobUploadInProgress,
                         loading: true,
                         autoClose: false
                     });
@@ -621,7 +621,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 notifications.show({
                     id: 'post-process',
                     title: locale.Menu_Post,
-                    message: "Storing restricted content...",
+                    message: "(1/2) Storing restricted content...",
                     loading: true,
                     autoClose: false
                 });
@@ -682,16 +682,19 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 });
             }
 
-            let buttonName = ''
 
-            if (isEncrypt) buttonName = '(3/3)' + locale.CreatePost_PostInProgress
-            else buttonName = locale.CreatePost_PostInProgress
+            let progressPrefix = '';
+            if (isEncrypt) {
+                progressPrefix = '(3/3) ';
+            } else if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility)) {
+                progressPrefix = '(2/2) ';
+            }
 
             notifications.clean()
             notifications.show({
                 id: 'post-process',
                 title: locale.Menu_Post,
-                message: buttonName,
+                message: progressPrefix + locale.CreatePost_PostInProgress,
                 loading: true,
                 autoClose: false
             });
@@ -1135,7 +1138,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             </div>
                         )}
 
-                        <div className="flex justify-between items-center gap-4 mb-2 mt-6 px-4">
+                        <div className="flex flex-wrap justify-between items-center gap-2 mb-2 mt-6 px-4">
                             {onBack ? (
                                 <Button
                                     variant="default"
@@ -1157,11 +1160,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                         loading={isLoading}
                                         leftSection={<Save />}
                                     >
-                                        {isLoading &&
-                                            <span className="animate-spin inline-block size-4 mr-2 border-[3px] border-current border-t-transparent text-gray-700 rounded-full" role="status" aria-label="loading">
-                                                <span className="sr-only">Loading...</span>
-                                            </span>
-                                        }
                                         {buttonName}
                                     </Button>
                                 )}
