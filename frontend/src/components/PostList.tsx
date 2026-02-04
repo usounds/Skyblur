@@ -21,14 +21,12 @@ type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
     agent: Client;
     did: string;
-    pds: string | null;
 };
 
 export const PostList: React.FC<PostListProps> = ({
     handleEdit,
     agent,
-    did,
-    pds
+    did
 }) => {
     const [cursor, setCursor] = useState("");
     const [deleteList, setDeleteList] = useState<PostListItem[]>([]);

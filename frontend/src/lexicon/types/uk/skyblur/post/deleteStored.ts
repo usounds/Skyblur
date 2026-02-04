@@ -8,7 +8,7 @@ const _mainSchema = /*#__PURE__*/ v.procedure("uk.skyblur.post.deleteStored", {
     type: "lex",
     schema: /*#__PURE__*/ v.object({
       /**
-       * AT URI of the post to delete
+       * AT URI of the post to delete. The URI must include the logged-in user's DID in the format at://did...
        */
       uri: /*#__PURE__*/ v.string(),
     }),

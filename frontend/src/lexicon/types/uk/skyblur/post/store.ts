@@ -25,6 +25,9 @@ const _mainSchema = /*#__PURE__*/ v.procedure("uk.skyblur.post.store", {
         /*#__PURE__*/ v.stringLength(0, 3000),
         /*#__PURE__*/ v.stringGraphemes(0, 300),
       ]),
+      /**
+       * The URI must include the logged-in user's DID in the format at://did...
+       */
       uri: /*#__PURE__*/ v.resourceUriString(),
       visibility: /*#__PURE__*/ v.literalEnum([
         "followers",

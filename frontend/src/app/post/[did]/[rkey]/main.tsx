@@ -5,7 +5,7 @@ import PostLoading, { AvatarLoading, PostBodyLoading } from "@/components/PostLo
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
-import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBluesky";
+import { getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
@@ -41,7 +41,7 @@ export const PostPage = () => {
     const [encryptCid, setEncryptCid] = useState('')
     const [isDecrypt, setIsDecrypt] = useState<boolean>(false)
     const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
-    const [pdsUrl, setPdsUrl] = useState("");
+
     const [isMounted, setIsMounted] = useState(false);
     const loginDid = useXrpcAgentStore((state) => state.did);
     const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
@@ -68,10 +68,6 @@ export const PostPage = () => {
             // Ensure we have PDS URL
             let repo = Array.isArray(did) ? did[0] : did;
             repo = repo.replace(/%3A/g, ':');
-
-            // Fetch PDS URL (needed for decryption later if password protected)
-            let pdsUrlFetched = await fetchServiceEndpointWithCache(repo, false);
-            setPdsUrl(pdsUrlFetched || '');
 
             // Unify fetch: user uk.skyblur.post.getPost directly
             // This handles both public and restricted content in one go
@@ -163,20 +159,6 @@ export const PostPage = () => {
                     }
                 }
 
-                // Fetch User Profile for Avatar
-                try {
-                    const userProfileResponse = await apiAgent.get('app.bsky.actor.getProfile', {
-                        params: { actor: repo as ActorIdentifier },
-                    });
-                    if (userProfileResponse.ok) {
-                        setUserProf(userProfileResponse.data);
-                    }
-                    await getPreferenceProcess(repo, new Client({ handler: simpleFetchHandler({ service: pdsUrlFetched ?? '' }) }));
-
-                } catch (e) {
-                    console.warn("Failed to fetch profile", e);
-                }
-
             } else {
                 setErrorMessage('Get Post Failed.');
             }
@@ -188,7 +170,36 @@ export const PostPage = () => {
             setIsLoading(false);
             setIsRestrictedFetchDone(true);
         }
-    }
+    };
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!did) return;
+            // Ensure we have PDS URL (if needed for other things, but here just for repo ID)
+            let repo = Array.isArray(did) ? did[0] : did;
+            repo = repo.replace(/%3A/g, ':');
+
+            try {
+                const profilePromise = apiAgent.get('app.bsky.actor.getProfile', {
+                    params: { actor: repo as ActorIdentifier },
+                });
+                const preferencePromise = getPreferenceProcess(repo);
+
+                const [userProfileResponse, _] = await Promise.all([profilePromise, preferencePromise]);
+
+                if (userProfileResponse.ok) {
+                    setUserProf(userProfileResponse.data);
+                }
+
+            } catch (e) {
+                console.warn("Failed to fetch profile", e);
+            }
+        };
+
+        if (did) {
+            fetchProfile();
+        }
+    }, [did]);
 
     useEffect(() => {
         setIsMounted(true);
@@ -200,9 +211,9 @@ export const PostPage = () => {
 
 
 
-    async function getPreferenceProcess(repo: string, pdsAgent: Client) {
+    async function getPreferenceProcess(repo: string) {
         try {
-            const preference = await getPreference(pdsAgent, repo)
+            const preference = await getPreference(repo)
             if (preference?.myPage.isUseMyPage) setIsMyPage(true)
         } catch (e) {
             console.log(e)
@@ -224,27 +235,6 @@ export const PostPage = () => {
 
         // Use Unified getPostData with password
         await getPostData(encryptKey);
-    }
-
-    async function getPostResponse(repo: string, rkey: string, pdsAgent: Client) {
-        try {
-            return await pdsAgent.get('com.atproto.repo.getRecord', {
-                params: {
-                    repo: repo as ActorIdentifier,
-                    collection: SKYBLUR_POST_COLLECTION,
-                    rkey: rkey,
-                },
-            });
-        } catch (e) {
-            console.log(e)
-            return await pdsAgent.get('com.atproto.repo.getRecord', {
-                params: {
-                    repo: repo as ActorIdentifier,
-                    collection: SKYBLUR_POST_COLLECTION,
-                    rkey: rkey,
-                },
-            });
-        }
     }
 
 
@@ -269,7 +259,7 @@ export const PostPage = () => {
 
             <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2">
                 <div className="mx-auto rounded-lg">
-                    {isLoading || !userProf ? (
+                    {!userProf ? (
                         <div className="mb-2 mx-2">
                             <AvatarLoading />
                         </div>

@@ -204,7 +204,7 @@ export function ConsoleContent() {
                             </div>
 
                             {isSessionChecked && did && (
-                                <PostList handleEdit={handleEdit} agent={apiProxyAgent} did={did} pds={serviceUrl} />
+                                <PostList handleEdit={handleEdit} agent={apiProxyAgent} did={did} />
                             )}
                         </div>
                     )}

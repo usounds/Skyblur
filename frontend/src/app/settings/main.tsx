@@ -50,7 +50,7 @@ export default function Settings() {
     setIsLoading(true)
     const fetchData = async () => {
       try {
-        const value = await getPreference(agent, did)
+        const value = await getPreference(did)
         if (isAborted) return;
 
         if (value === null) {

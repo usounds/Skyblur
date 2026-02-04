@@ -2,7 +2,7 @@
 import { Avatar } from "@/components/Avatar";
 import Loading from "@/components/Loading";
 import { PostList } from "@/components/PostList";
-import { fetchServiceEndpointWithCache, getPreference } from "@/logic/HandleBluesky";
+import { getPreference } from "@/logic/HandleBluesky";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { AppBskyActorDefs } from '@atcute/bluesky';
@@ -24,7 +24,7 @@ export const ProfilePage = () => {
     const [agent, setAgent] = useState<Client | null>(null)
     const [repo, setRepo] = useState<string>('')
     const [isMyPage, setIsMyPage] = useState<boolean>(false)
-    const [pdsUrl, setPdsUrl] = useState<string>('')
+
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -35,48 +35,31 @@ export const ProfilePage = () => {
                 try {
                     let repoLocal = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
                     repoLocal = repoLocal.replace(/%3A/g, ':');
-                    let pdsUrl = await fetchServiceEndpointWithCache(repoLocal, false)
 
-                    let pdsAgent = new Client({
-                        handler: simpleFetchHandler({
-                            service: pdsUrl ?? '',
-                        }),
-                    })
-
-                    setPdsUrl(pdsUrl || '')
+                    // Removed manual PDS resolution
                     setRepo(repoLocal)
                     setIsLoading(true);
                     setErrorMessage('')
 
-                    const userProfileResponse = await apiAgent.get('app.bsky.actor.getProfile', {
+                    // Fetch user profile from AppView (apiAgent) AND preference in parallel
+                    const profilePromise = apiAgent.get('app.bsky.actor.getProfile', {
                         params: { actor: repoLocal as ActorIdentifier },
                     })
+                    const preferencePromise = getPostResponse(repoLocal, apiAgent)
+
+                    const [userProfileResponse, _] = await Promise.all([profilePromise, preferencePromise])
+
 
                     if (!userProfileResponse.ok) {
-                        setErrorMessage('Get Profile Failed.s');
-                        setIsLoading(false); // ローディング状態を終了
+                        setErrorMessage('Get Profile Failed.');
+                        setIsLoading(false);
                         return
                     }
 
-                    try {
-                        getPostResponse(repoLocal, pdsAgent)
-                    } catch (e) {
-                        console.error(e)
-                        pdsUrl = await fetchServiceEndpointWithCache(repo, true)
-
-                        pdsAgent = new Client({
-                            handler: simpleFetchHandler({
-                                service: pdsUrl ?? '',
-                            }),
-                        })
-
-                        getPostResponse(repoLocal, pdsAgent)
-
-                    }
 
                     // userProfileのデータをセット
                     setUserProf(userProfileResponse.data);
-                    setIsLoading(false); // ローディング状態を終了
+                    setIsLoading(false);
                 } catch (err) {
                     setErrorMessage(err + '');
                 } finally {
@@ -90,27 +73,26 @@ export const ProfilePage = () => {
     }, [did]); // did または rkey が変更された場合に再実行
 
 
-    async function getPostResponse(repo: string, pdsAgent: Client) {
+    async function getPostResponse(repo: string, agent: Client) {
         try {
-            const value = await getPreference(pdsAgent, repo,)
+            const value = await getPreference(repo)
 
             if (!value) return
             if (value.myPage.isUseMyPage) {
                 setMyPageDescription(value.myPage.description || '')
                 setIsMyPage(value.myPage.isUseMyPage)
-                setAgent(pdsAgent)
+                // Use apiAgent as the agent for PostList too
+                setAgent(agent)
                 return
             }
 
         } catch (e) {
-            console.error('エラーだよ' + e)
+            console.error('Error fetching preference: ' + e)
             throw e
-
         }
 
-        console.error('エラーだよ')
+        console.error('Error or MyPage not enabled')
         setErrorMessage(locale.Profile_NotPublish);
-
     }
 
     if (!isMounted) {
@@ -147,7 +129,7 @@ export const ProfilePage = () => {
                             <>
                                 {agent &&
                                     <div className="mx-auto max-w-screen-sm">
-                                        <PostList agent={agent} handleEdit={null} did={repo} pds={pdsUrl} />
+                                        <PostList agent={agent} handleEdit={null} did={repo} />
                                     </div>
                                 }
                             </>
