@@ -23,7 +23,9 @@ const DynamicHeader = () => {
 
     // セッションを確認
     const syncSession = async () => {
-      const id = notifications.show({
+      const id = 'session-check';
+      notifications.show({
+        id,
         loading: true,
         title: locale.Home_CheckSession_Title,
         message: locale.Home_CheckSession_Message,
