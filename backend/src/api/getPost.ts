@@ -3,7 +3,7 @@ import { getDecrypt } from '@/logic/CryptHandler'
 import { fetchServiceEndpoint, verifyJWT } from '@/logic/JWTTokenHandler'
 import { Context } from 'hono'
 import { Client, simpleFetchHandler } from '@atcute/client'
-import type { } from '@atcute/bluesky'
+import type { AppBskyGraphGetRelationships } from '@atcute/bluesky'
 import { type ActorIdentifier } from '@atcute/lexicons'
 
 import { getAuthenticatedDid } from '@/logic/AuthUtils'
@@ -107,8 +107,8 @@ export const handle = async (c: Context) => {
                 });
 
                 // relationships structure: { actor: did, relationships: [ { did: target, following: uri, followedBy: uri } ] }
-                const rel = (data as any).relationships?.[0];
-                if (rel) {
+                const rel = (data as AppBskyGraphGetRelationships.$output).relationships?.[0];
+                if (rel && rel.$type === 'app.bsky.graph.defs#relationship') {
                     // app.bsky.graph.getRelationships returns relationships from the perspective of the 'actor' (requester)
                     // regarding the 'others' (repo/author).
 
