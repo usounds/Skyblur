@@ -18,7 +18,7 @@
     ],
     "overrides": {
       "hono": "^4.11.7",
-      "@modelcontextprotocol/sdk": "^1.25.3",
+      "@modelcontextprotocol/sdk": "^1.26.0",
       "fast-xml-parser": "^5.3.4",
       "zod": "^4.3.6"
     }
@@ -63,12 +63,12 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
-    "@aws-sdk/client-lambda": "^3.981.0",
+    "@aws-sdk/client-lambda": "^3.983.0",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/dompurify": "^3.2.0",
     "@types/node": "^25.2.0",
-    "@types/react": "^19.2.10",
+    "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "autoprefixer": "^10.4.24",
