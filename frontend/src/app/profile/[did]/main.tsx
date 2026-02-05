@@ -77,15 +77,44 @@ export const ProfilePage = () => {
         try {
             const value = await getPreference(repo)
 
-            if (!value) return
-            if (value.myPage.isUseMyPage) {
-                setMyPageDescription(value.myPage.description || '')
-                setIsMyPage(value.myPage.isUseMyPage)
-                // Use apiAgent as the agent for PostList too
-                setAgent(agent)
+            if (!value) {
+                console.error('Preference not found')
+                setErrorMessage(locale.Profile_NotPublish);
+                return
+            }
+            setMyPageDescription(value.myPage.description || '')
+            setIsMyPage(value.myPage.isUseMyPage)
+
+            // Use Slingshot to resolve PDS
+            const slingshotAgent = new Client({
+                handler: simpleFetchHandler({
+                    service: 'https://slingshot.microcosm.blue',
+                }),
+            });
+
+            const res = await (slingshotAgent as any).get('blue.microcosm.identity.resolveMiniDoc', {
+                params: { identifier: repo }
+            })
+
+            if (!res.ok) {
+                console.error('Failed to resolve PDS via Slingshot')
+                setErrorMessage(locale.Profile_NotPublish);
                 return
             }
 
+            const pdsUrl = (res.data as any).pds;
+            if (!pdsUrl) {
+                console.error('PDS URL not found in Slingshot response')
+                setErrorMessage(locale.Profile_NotPublish);
+                return
+            }
+
+            // Create agent connected to the user's PDS
+            const pdsAgent = new Client({
+                handler: simpleFetchHandler({ service: pdsUrl })
+            });
+            setAgent(pdsAgent)
+            return
         } catch (e) {
             console.error('Error fetching preference: ' + e)
             throw e
