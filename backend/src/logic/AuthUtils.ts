@@ -26,6 +26,13 @@ export async function signDid(did: string, secret: string): Promise<string> {
     return `${did}.${b64}`;
 }
 
+import { JWTPayload } from 'did-jwt'
+
+interface SkyblurJwtPayload extends JWTPayload {
+    iss: string
+    lxm?: string
+}
+
 export const getAuthenticatedDid = async (c: Context): Promise<string | null> => {
     const authorization = c.req.header('Authorization') || ''
     const rawDid = getCookie(c, 'oauth_did')
@@ -36,11 +43,10 @@ export const getAuthenticatedDid = async (c: Context): Promise<string | null> =>
     if (authorization) {
         // JWT検証
         try {
-            const veriry = await verifyJWT(authorization, audience);
-            if (veriry.verified) {
-                const did = (veriry.payload as any).iss || (veriry as any).issuer || (veriry as any).did || (veriry.payload as any).sub || '';
-                return did;
-            }
+            const verifiedJwt = await verifyJWT(authorization, audience);
+            // verifyJWT throws if invalid, so if we get here, it is verified.
+            const payload = verifiedJwt.payload as SkyblurJwtPayload;
+            return payload.iss || payload.sub || '';
         } catch (e) {
             // silent fail
         }
