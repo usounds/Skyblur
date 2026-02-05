@@ -22,7 +22,6 @@ This Site uses the following external services, which results in communication w
 - Authentication information is encrypted and stored on this server.
 - Public, Password, and Login-required posts are stored in the PDS.
 - For Followers-only, Following-only, and Mutual-only posts, the blurred text is stored in the PDS, and the original text is stored on our proprietary server.
-  - Backups are retained daily for 30 days, but the developer bears no responsibility for any data loss due to unforeseen circumstances. If this is not acceptable, please do not use the Followers-only, Following-only, or Mutual-only features.
 
 ## Attribution of Copyright
 Copyright for all content posted on this Site by users belongs to the poster themselves. This Site only displays users' posts.
@@ -41,7 +40,12 @@ If this Site confirms that a user has engaged in prohibited acts, the service ma
 - Even if the visibility scope is set to "Require login to view," login is required on this Site, but it is not guaranteed on other services.
 - As this service is operated by an individual, the service may be suspended suddenly. Additionally, while we will consider addressing bugs and other issues as much as possible, we do not promise to do so.
 - The terms of use of each PDS apply to information stored in the PDS, and these Terms of Use apply to information stored on our proprietary server. Additionally, Bluesky's Terms of Service apply to Bluesky's features.
-- Follower, following, and mutual follow statuses use the API provided by Bluesky. Therefore, immediately after following/unfollowing, the status update may be delayed.
+## About Followers-only, Following-only, and Mutual-only Visibility Features
+- The determination of follower, following, and mutual follow statuses uses the API provided by Bluesky. These APIs may not reflect changes immediately. Therefore, immediately after following/unfollowing, the status update may be delayed.
+- Unblurred text for these posts is stored on our proprietary server, while obscured text is stored in the PDS.
+  - Backups are retained daily for 30 days, but the developer bears no responsibility for any data loss due to unforeseen circumstances. If this is not acceptable, please do not use these features.
+- For these features, if a discrepancy occurs between the data on the PDS and the data stored on this Site, this Site will prioritize the data stored on this Site for rendering. For other visibility scopes, the PDS content is considered correct.
+- If similar features are implemented in the AT Protocol or PDS in the future, the specifications of these features may change significantly, and past data or settings may not be transferable.
 
 ## Revision History
 - 2026/02/04 Added clauses regarding the addition of Followers-only, Following-only, and Mutual-only visibility features.
