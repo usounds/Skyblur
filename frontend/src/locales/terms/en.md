@@ -41,6 +41,7 @@ If this Site confirms that a user has engaged in prohibited acts, the service ma
 - Even if the visibility scope is set to "Require login to view," login is required on this Site, but it is not guaranteed on other services.
 - As this service is operated by an individual, the service may be suspended suddenly. Additionally, while we will consider addressing bugs and other issues as much as possible, we do not promise to do so.
 - The terms of use of each PDS apply to information stored in the PDS, and these Terms of Use apply to information stored on our proprietary server. Additionally, Bluesky's Terms of Service apply to Bluesky's features.
+- Follower, following, and mutual follow statuses use the API provided by Bluesky. Therefore, immediately after following/unfollowing, the status update may be delayed.
 
 ## Revision History
 - 2026/02/04 Added clauses regarding the addition of Followers-only, Following-only, and Mutual-only visibility features.
