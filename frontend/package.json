@@ -20,7 +20,9 @@
       "hono": "^4.11.7",
       "@modelcontextprotocol/sdk": "^1.26.0",
       "fast-xml-parser": "^5.3.4",
-      "zod": "^4.3.6"
+      "zod": "^4.3.6",
+      "@aws-sdk/client-dynamodb": "3.972.0",
+      "@aws-sdk/dynamodb-codec": "3.972.0"
     }
   },
   "scripts": {
@@ -47,7 +49,7 @@
     "@mantine/core": "^8.3.14",
     "@mantine/hooks": "^8.3.14",
     "@mantine/notifications": "^8.3.14",
-    "@opennextjs/aws": "^3.9.14",
+    "@opennextjs/aws": "^3.9.15",
     "dompurify": "^3.3.1",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
@@ -63,14 +65,15 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
-    "@aws-sdk/client-lambda": "^3.983.0",
+    "@aws-sdk/client-lambda": "^3.984.0",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/dompurify": "^3.2.0",
-    "@types/node": "^25.2.0",
+    "@types/node": "^25.2.1",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "autoprefixer": "^10.4.24",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",
