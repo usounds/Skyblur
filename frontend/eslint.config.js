@@ -1,14 +1,14 @@
-import { FlatCompat } from '@eslint/eslintrc';
-
-const compat = new FlatCompat({
-  baseDirectory: process.cwd(),
-});
+import coreWebVitals from 'eslint-config-next/core-web-vitals';
 
 export default [
-  ...compat.extends('next/core-web-vitals', 'plugin:@typescript-eslint/recommended'),
+  ...coreWebVitals,
   {
+    files: ['**/*.ts', '**/*.tsx'],
     rules: {
       '@typescript-eslint/no-require-imports': 'error',
     },
   },
+  {
+    ignores: ['.sst/**', '.open-next/**']
+  }
 ];

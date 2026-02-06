@@ -147,7 +147,7 @@ describe('getPost API', () => {
 
         // Mock Relationship: Requester follows Author
         mockClientGet.mockResolvedValue({
-            data: { relationships: [{ following: 'at://link', followedBy: null }] }
+            data: { relationships: [{ $type: 'app.bsky.graph.defs#relationship', following: 'at://link', followedBy: null }] }
         });
 
         // Mock DO
@@ -162,7 +162,7 @@ describe('getPost API', () => {
 
         // Mock Relationship: None
         mockClientGet.mockResolvedValue({
-            data: { relationships: [{ following: null, followedBy: null }] }
+            data: { relationships: [{ $type: 'app.bsky.graph.defs#relationship', following: null, followedBy: null }] }
         });
 
         await handle(c);
@@ -182,7 +182,7 @@ describe('getPost API', () => {
 
         // Mock Relationship: Author follows Requester
         mockClientGet.mockResolvedValue({
-            data: { relationships: [{ following: null, followedBy: 'at://link' }] }
+            data: { relationships: [{ $type: 'app.bsky.graph.defs#relationship', following: null, followedBy: 'at://link' }] }
         });
 
         mockDOFetch.mockResolvedValue({ ok: true, json: async () => ({ text: 'OK', additional: '' }) });
@@ -200,7 +200,7 @@ describe('getPost API', () => {
 
         // Mock Relationship: Mutual
         mockClientGet.mockResolvedValue({
-            data: { relationships: [{ following: 'at://1', followedBy: 'at://2' }] }
+            data: { relationships: [{ $type: 'app.bsky.graph.defs#relationship', following: 'at://1', followedBy: 'at://2' }] }
         });
 
         mockDOFetch.mockResolvedValue({ ok: true, json: async () => ({ text: 'Mutual OK', additional: '' }) });
