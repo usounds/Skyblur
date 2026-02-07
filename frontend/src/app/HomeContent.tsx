@@ -105,9 +105,9 @@ export function HomeContent() {
                 {locale.Home_WelcomeDescription}
             </Text>
 
-            <div className="flex justify-center mt-10 mb-12" style={{ minHeight: '64px' }}>
+            <div className="flex justify-center items-center mt-10 mb-12" style={{ minHeight: '64px' }}>
                 {!isSessionChecked ? (
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center justify-center gap-2 h-16">
                         <Loader color="blue" type="dots" />
                         <Text size="sm" c="dimmed">{locale.Home_CheckingSession}</Text>
                     </div>
