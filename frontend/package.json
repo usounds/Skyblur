@@ -27,7 +27,7 @@
   },
   "scripts": {
     "dev": "next dev -p 4500",
-    "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install",
+    "update": "pnpm dlx npm-check-updates -u && pnpm install",
     "gen-lex": "lex-cli generate",
     "build": "next build",
     "start": "next start",
@@ -65,7 +65,7 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
-    "@aws-sdk/client-lambda": "^3.984.0",
+    "@aws-sdk/client-lambda": "^3.985.0",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/dompurify": "^3.2.0",
@@ -75,7 +75,7 @@
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "autoprefixer": "^10.4.24",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.6",
     "postcss-preset-mantine": "^1.18.0",
