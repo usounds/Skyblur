@@ -70,6 +70,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
     const [changeModeOpened, { open: openChangeMode, close: closeChangeMode }] = useDisclosure(false);
     const [restorePostData, { open: openRestorePostData, close: closeRestorePostData }] = useDisclosure(false);
+    const [confirmBackOpened, { open: openConfirmBack, close: closeConfirmBack }] = useDisclosure(false);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -921,6 +922,38 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     </Group>
                 </Modal>
 
+                <Modal
+                    opened={confirmBackOpened}
+                    onClose={() => {
+                        closeConfirmBack();
+                    }}
+                    title={locale.CreatePost_ConfirmBackTitle}
+                    centered
+                >
+                    <Text>{locale.CreatePost_ConfirmBackDescription}</Text>
+                    <Group mt="md" style={{ justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="default"
+                            color="gray"
+                            onClick={() => {
+                                closeConfirmBack();
+                            }}
+                        >
+                            {locale.DeleteList_CancelButton}
+                        </Button>
+                        <Button
+                            variant="filled"
+                            color="red"
+                            onClick={() => {
+                                closeConfirmBack();
+                                if (onBack) onBack();
+                            }}
+                        >
+                            {locale.Menu_Back}
+                        </Button>
+                    </Group>
+                </Modal>
+
                 {(!appUrl) &&
                     <>
 
@@ -1144,7 +1177,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     variant="default"
                                     color="gray"
                                     leftSection={<ArrowLeft />}
-                                    onClick={onBack}
+                                    onClick={prevBlur ? openConfirmBack : onBack}
                                 >
                                     {locale.Menu_Back}
                                 </Button>

@@ -112,6 +112,8 @@ const messages = {
     CreatePost_ChangeSimpleMode: "モード切り替え",
     CreatePost_ChangeSimpleModeDescription: "モードを切り替えますか？切り替えると、現在の入力内容は破棄されます",
     CreatePost_OK: "切り替え",
+    CreatePost_ConfirmBackTitle: "確認",
+    CreatePost_ConfirmBackDescription: "編集中の内容は保存されません。本当に戻りますか？",
     CreatePost_NotBracketInSimpleMode: "シンプルモードでは[]を使用できません",
     DeleteList_ChooseDeleteItem: "投稿一覧",
     DeleteList_NoListItem: "投稿がありません",

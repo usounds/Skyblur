@@ -112,6 +112,8 @@ const messages = {
     CreatePost_ChangeSimpleMode: "Change Mode",
     CreatePost_ChangeSimpleModeDescription: "Do you want to switch modes? Switching will discard your current input.",
     CreatePost_OK: "Change",
+    CreatePost_ConfirmBackTitle: "Confirm",
+    CreatePost_ConfirmBackDescription: "Your changes will not be saved. Are you sure you want to go back?",
     CreatePost_NotBracketInSimpleMode: "You cannot use [] in Simple Mode",
     DeleteList_ChooseDeleteItem: "Post List",
     DeleteList_NoListItem: "No posts available.",
