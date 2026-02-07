@@ -1138,7 +1138,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             </div>
                         )}
 
-                        <div className="flex flex-wrap justify-between items-center gap-2 mb-2 mt-6 px-4">
+                        <div className="flex flex-col-reverse sm:flex-row items-center sm:justify-between gap-4 sm:gap-2 mb-2 mt-6 px-4 w-full">
                             {onBack ? (
                                 <Button
                                     variant="default"
@@ -1148,7 +1148,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 >
                                     {locale.Menu_Back}
                                 </Button>
-                            ) : <div />}
+                            ) : <div className="hidden sm:block" />}
                             {!warning && (
                                 (isReply && replyPost) || !isReply
                             ) && (
