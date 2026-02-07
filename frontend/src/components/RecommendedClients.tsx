@@ -1,8 +1,14 @@
-import { useLocale } from "@/state/Locale";
+import en from "@/locales/en";
+import ja from "@/locales/ja";
+import type { Locales } from "@/state/Locale";
 import { Text, Anchor, Box } from "@mantine/core";
 
-export const RecommendedClients = () => {
-    const { localeData: locale } = useLocale();
+interface RecommendedClientsProps {
+    initialLocale: Locales;
+}
+
+export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) => {
+    const locale = initialLocale === 'en' ? en : ja;
 
     return (
         <Box className="mt-20 sm:mt-12 mx-4 text-center">
