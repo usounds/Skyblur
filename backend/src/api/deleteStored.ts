@@ -34,9 +34,14 @@ app.post('/', async (c) => {
         const doUrl = new URL('http://do');
         doUrl.searchParams.set('key', rkey);
 
-        await doStub.fetch(doUrl.toString(), {
+        const doRes = await doStub.fetch(doUrl.toString(), {
             method: 'DELETE',
         });
+
+        if (!doRes.ok) {
+            console.error('[deleteStored] DO returned error:', await doRes.text());
+            return c.json({ success: false, error: 'Failed to delete from storage' }, 500);
+        }
 
         return c.json({ success: true });
     } catch (e) {

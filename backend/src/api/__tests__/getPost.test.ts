@@ -92,13 +92,13 @@ describe('getPost API', () => {
         const c = createCtx({});
         await handle(c);
         // Based on previous revert
-        expect(c.json).toHaveBeenCalledWith({ message: 'Invalid uri format"' }, 500);
+        expect(c.json).toHaveBeenCalledWith({ message: 'Invalid uri format' }, 400);
     });
 
     it('should return error if collection is invalid', async () => {
         const c = createCtx({ uri: 'at://did:repo/com.example.post/123' });
         await handle(c);
-        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Collection should be') }), 500);
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Collection should be') }), 400);
     });
 
     it('should handle PDS fetch error', async () => {

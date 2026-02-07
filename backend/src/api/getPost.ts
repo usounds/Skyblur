@@ -13,21 +13,21 @@ export const handle = async (c: Context) => {
     // Auth logic via Utils
     const requesterDid = await getAuthenticatedDid(c) || '';
 
-    let { uri, password } = await c.req.json() as UkSkyblurPostGetPost.Input
-    uri = decodeURIComponent(uri) as any;
+    const { uri, password } = await c.req.json() as UkSkyblurPostGetPost.Input
+    const decodedUri = decodeURIComponent(uri);
 
 
     // 必須パラメータのチェック
-    if (!uri) {
-        return c.json({ message: 'uri is required.' }, 500);
+    if (!decodedUri) {
+        return c.json({ message: 'uri is required.' }, 400);
     }
 
     // `at://` を削除して `/` で分割
-    const cleanedUri = uri.replace("at://", "");
+    const cleanedUri = decodedUri.replace("at://", "");
     const parts = cleanedUri.split("/");
 
     if (parts.length < 3) {
-        return c.json({ message: 'Invalid uri format"' }, 500);
+        return c.json({ message: 'Invalid uri format' }, 400);
     }
 
     const repo = decodeURIComponent(parts[0]);
@@ -35,8 +35,7 @@ export const handle = async (c: Context) => {
     const rkey = parts[2];
 
     if (collection !== 'uk.skyblur.post') {
-        return c.json({ message: 'Collection should be \'uk.skyblur.post\'.' }, 500);
-
+        return c.json({ message: 'Collection should be \'uk.skyblur.post\'.' }, 400);
     }
 
     let pdsUrl: string
