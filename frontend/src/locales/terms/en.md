@@ -17,6 +17,7 @@ This Site uses the following external services, which results in communication w
 - [DID PLC Directory](https://plc.directory/)
 - [Bluesky API](https://public.api.bsky.app/)
 - [constellation](https://constellation.microcosm.blue/)
+- [Slingshot](https://slingshot.microcosm.blue/)
 
 ## About Data Retention Location per Visibility Scope
 - Authentication information is encrypted and stored on this server.

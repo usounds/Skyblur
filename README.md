@@ -3,5 +3,5 @@ This is the source code for [Skyblur](https://skyblur.uk/), a tool that allows c
 
 ## Special Thanks
 
-fig, developer of [constellation](https://constellation.microcosm.blue/).<br />
-Skyblur retrieves Like, Repost, and Intent reactions from constellation.
+fig, developer of [constellation](https://constellation.microcosm.blue/) and [Slingshot](https://slingshot.microcosm.blue/).<br />
+Skyblur retrieves Like, Repost, and Intent reactions from constellation. Skyblur uses Slingshot for API proxy.

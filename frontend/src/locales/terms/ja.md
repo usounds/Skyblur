@@ -17,6 +17,7 @@ Skyblur（以下，「本サイト」といいます。）は、本サイト上�
 - [DID PLC Directory](https://plc.directory/)
 - [Bluesky API](https://public.api.bsky.app/)
 - [constellation](https://constellation.microcosm.blue/)
+- [Slingshot](https://slingshot.microcosm.blue/)
 
 ## 公開範囲ごとのデータが保持される場所について
 - 認証情報は本サーバー上に暗号化され保存されます
