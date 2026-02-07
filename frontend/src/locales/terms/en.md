@@ -42,13 +42,14 @@ If this Site confirms that a user has engaged in prohibited acts, the service ma
 - The terms of use of each PDS apply to information stored in the PDS, and these Terms of Use apply to information stored on our proprietary server. Additionally, Bluesky's Terms of Service apply to Bluesky's features.
 ## About Followers-only, Following-only, and Mutual-only Visibility Features
 - The determination of follower, following, and mutual follow statuses uses the API provided by Bluesky. These APIs may not reflect changes immediately. Therefore, immediately after following/unfollowing, the status update may be delayed.
+- Post content for followers-only, following-only, and mutual-only visibility may be reflected with a delay on this Site and third-party clients that support this feature.
 - Unblurred text for these posts is stored on our proprietary server, while obscured text is stored in the PDS.
   - Backups are retained daily for 30 days, but the developer bears no responsibility for any data loss due to unforeseen circumstances. If this is not acceptable, please do not use these features.
 - For these features, if a discrepancy occurs between the data on the PDS and the data stored on this Site, this Site will prioritize the data stored on this Site for rendering. For other visibility scopes, the PDS content is considered correct.
 - If similar features are implemented in the AT Protocol or PDS in the future, the specifications of these features may change significantly, and past data or settings may not be transferable.
 
 ## Revision History
-- 2026/02/04 Added clauses regarding the addition of Followers-only, Following-only, and Mutual-only visibility features.
+- 2026/02/07 Added clauses regarding the addition of Followers-only, Following-only, and Mutual-only visibility features.
 - 2026/01/10 Added a note that "Require login to view" is effective only on this Site.
 - 2025/09/13 Clarified copyright and responsibility in the Terms of Use, and prohibited use as a chat tool.
 - 2025/08/21 Added information about external services.
