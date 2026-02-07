@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ did: stri
     if (error.name === 'AbortError') {
       console.warn("Failed to fetch profile for metadata: Timed out");
     } else {
-      console.error("Failed to fetch profile for metadata:", error);
+      console.warn("Failed to fetch profile for metadata:", error);
     }
   }
 
