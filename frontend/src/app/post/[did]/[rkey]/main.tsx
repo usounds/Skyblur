@@ -23,8 +23,11 @@ import { BlueskyIcon } from '@/components/Icons';
 
 export const PostPage = () => {
     const params = useParams();
-    const did = Array.isArray(params?.did) ? params?.did[0] : params?.did;
-    const rkey = Array.isArray(params?.rkey) ? params?.rkey[0] : params?.rkey;
+    const rawDid = Array.isArray(params?.did) ? params?.did[0] : params?.did;
+    const rawRkey = Array.isArray(params?.rkey) ? params?.rkey[0] : params?.rkey;
+    const did = decodeURIComponent(rawDid || '');
+    const rkey = decodeURIComponent(rawRkey || '');
+
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [isMyPage, setIsMyPage] = useState<boolean>(false)
     const [postText, setPostText] = useState<string>('')
@@ -52,6 +55,7 @@ export const PostPage = () => {
     const [isRestrictedFetching, setIsRestrictedFetching] = useState<boolean>(false);
 
     const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
+    const bskyPostAtUri = 'at://' + did + "/app.bsky.feed.post/" + rkey
 
 
 
@@ -66,7 +70,7 @@ export const PostPage = () => {
 
         try {
             // Ensure we have PDS URL
-            let repo = Array.isArray(did) ? did[0] : did;
+            let repo = did;
             repo = repo.replace(/%3A/g, ':');
 
             // Unify fetch: user uk.skyblur.post.getPost directly
@@ -100,9 +104,9 @@ export const PostPage = () => {
                 if (data.visibility) setVisibility(data.visibility);
 
                 // Construct Bluesky URL (Approximate)
-                const convertedUri = aturi.replace('at://did:', 'https://bsky.app/profile/did:').replace('/app.bsky.feed.post/', '/post/');
+                const convertedUri = `https://bsky.app/profile/${did}/post/${rkey}`;
                 setBskyUrl(convertedUri);
-                setPostAtUri(aturi);
+                setPostAtUri(bskyPostAtUri);
 
                 // Handle Content
                 if (!data.errorCode) {
