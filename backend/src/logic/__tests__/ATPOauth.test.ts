@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { restoreSession, getOAuthClient, getRequestOrigin } from '../ATPOauth';
+import { restoreSession, getOAuthClient, getRequestOrigin, retryFetch } from '../ATPOauth';
 import { OAuthClient } from '@atcute/oauth-node-client';
 
 vi.mock('@atcute/oauth-node-client', async () => {
@@ -11,6 +11,8 @@ vi.mock('@atcute/oauth-node-client', async () => {
             this.stores = args.stores;
             this.restore = vi.fn();
             this.requestLock = vi.fn();
+            // Mock actorResolver structure that is created inside getOAuthClient
+            this.actorResolver = args.actorResolver;
             return this;
         }),
     };
@@ -300,6 +302,67 @@ describe('ATPOauth', () => {
                 const callArgs = mockFetchInstance.mock.calls[0][1];
                 expect(callArgs.cache).toBeUndefined();
 
+            } finally {
+                global.fetch = originalFetch;
+            }
+        });
+    });
+
+    describe('retryFetch', () => {
+        it('should retry on network error and eventually succeed', async () => {
+            const mockFetch = vi.fn()
+                .mockRejectedValueOnce(new Error('Network Error 1'))
+                .mockRejectedValueOnce(new Error('Network Error 2'))
+                .mockResolvedValue({ ok: true });
+
+            // Mock global fetch
+            const originalFetch = global.fetch;
+            global.fetch = mockFetch;
+
+            // Speed up retry wait
+            const realSetTimeout = global.setTimeout;
+            // @ts-ignore
+            global.setTimeout = (fn: any) => fn();
+
+            try {
+                const res = await retryFetch('http://example.com');
+                expect(res.ok).toBe(true);
+                expect(mockFetch).toHaveBeenCalledTimes(3);
+            } finally {
+                global.fetch = originalFetch;
+                global.setTimeout = realSetTimeout;
+            }
+        });
+
+        it('should give up after max retries', async () => {
+            const mockFetch = vi.fn().mockRejectedValue(new Error('Persistent Error'));
+
+            const originalFetch = global.fetch;
+            global.fetch = mockFetch;
+
+            const realSetTimeout = global.setTimeout;
+            // @ts-ignore
+            global.setTimeout = (fn: any) => fn();
+
+            try {
+                await expect(retryFetch('http://example.com')).rejects.toThrow('Persistent Error');
+                expect(mockFetch).toHaveBeenCalledTimes(3); // MAX_RETRIES
+            } finally {
+                global.fetch = originalFetch;
+                global.setTimeout = realSetTimeout;
+            }
+        });
+
+        it('should not retry on 404', async () => {
+            const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+
+            const originalFetch = global.fetch;
+            global.fetch = mockFetch;
+
+            try {
+                const res = await retryFetch('http://example.com');
+                expect(res.status).toBe(404);
+                expect(mockFetch).toHaveBeenCalledTimes(1);
             } finally {
                 global.fetch = originalFetch;
             }

@@ -234,6 +234,52 @@ export function getRequestOrigin(request: Request, env: Env) {
     return `${proto}://${host}`;
 }
 
+
+// Cloudflare Workersのfetchはリトライがないため、自前でリトライを実装する。
+// WellKnownHandleResolverはHTTPリクエストを行うため、一時的なエラーで失敗することがある。
+// Export for testing
+export const retryFetch: typeof fetch = async (input, init) => {
+    const MAX_RETRIES = 3;
+    const BASE_DELAY = 1000;
+
+    // init.redirect = 'error' の場合は 'manual' にする (safeFetch相当の処理)
+    const nextInit = { ...init } as any;
+    if (nextInit.redirect === 'error') {
+        nextInit.redirect = 'manual';
+    }
+    if (nextInit.cache && nextInit.cache !== 'default') {
+        delete nextInit.cache;
+    }
+
+    const doFetch = () => fetch(input, nextInit);
+
+    for (let i = 0; i < MAX_RETRIES; i++) {
+        try {
+            const res = await doFetch();
+
+            // 500以上のエラーはサーバー側の問題の可能性があるためリトライ対象
+            // 429 Too Many Requests もリトライ対象
+            if (res.ok || (res.status < 500 && res.status !== 429)) {
+                return res;
+            }
+
+            // 最後の試行だった場合はそのまま返す
+            if (i === MAX_RETRIES - 1) return res;
+
+        } catch (e) {
+            // 最後の試行で失敗した場合はエラーを投げる
+            if (i === MAX_RETRIES - 1) throw e;
+            console.warn(`[ATPOauth] Fetch failed, retrying (${i + 1}/${MAX_RETRIES})...`, e);
+        }
+
+        // バックオフ (1s, 2s, 3s...)
+        const delay = BASE_DELAY * (i + 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    throw new Error('Fetch failed after retries');
+};
+
 export async function getOAuthClient(env: Env, apiOrigin: string) {
     // effectiveOrigin はこの API サーバー自身のオリジン（Client ID のベース）
     const effectiveOrigin = apiOrigin;
@@ -335,7 +381,7 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
                         dohUrl: 'https://cloudflare-dns.com/dns-query',
                         fetch: safeFetch,
                     }),
-                    http: new WellKnownHandleResolver({ fetch: safeFetch }),
+                    http: new WellKnownHandleResolver({ fetch: retryFetch }),
                 },
             }),
             didDocumentResolver: new CompositeDidDocumentResolver({
