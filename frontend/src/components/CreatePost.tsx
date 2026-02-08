@@ -14,12 +14,12 @@ import '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import * as TID from '@atcute/tid';
-import { Button, Card, Center, Chip, Group, Modal, Select, SegmentedControl, Switch, Text, TextInput, SimpleGrid } from '@mantine/core';
+import { Button, Card, Center, Chip, Group, Modal, Select, SegmentedControl, Switch, Text, TextInput, SimpleGrid, Alert } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { ArrowLeft, Check, Globe, Lock, LogIn, Users, UserPlus, UserCheck, X, Save, Handshake } from 'lucide-react';
+import { ArrowLeft, Check, Globe, Lock, LogIn, Users, UserPlus, UserCheck, X, Save, Handshake, Info } from 'lucide-react';
 import { useEffect, useState, ChangeEvent } from "react";
 import { BlueskyIcon } from './Icons';
 
@@ -1127,6 +1127,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 {visibility === VISIBILITY_FOLLOWING && locale.CreatePost_VisibilityFollowingDescription}
                                 {visibility === VISIBILITY_MUTUAL && locale.CreatePost_VisibilityMutualDescription}
                             </div>
+
+
+                            {[VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility) && (
+                                <div className="mt-4">
+                                    <Alert
+                                        variant="light"
+                                        color="blue"
+                                        title={locale.CreatePost_VisibilityDetailedInfoTitle}
+                                        icon={<Info size={16} />}
+                                    >
+                                        <div style={{ whiteSpace: 'pre-wrap' }}>
+                                            {locale.CreatePost_VisibilityDetailedInfoBody}
+                                        </div>
+                                    </Alert>
+                                </div>
+                            )}
 
 
                             {isEncrypt &&

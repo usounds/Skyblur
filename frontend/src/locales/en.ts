@@ -179,6 +179,8 @@ const messages = {
     Home_CheckSession_Message: "Verifying your session...",
     Home_CheckSession_Success_Title: "Session Checked",
     Home_CheckSession_Success_Message: "Done",
+    CreatePost_VisibilityDetailedInfoTitle: "About Visibility Scope",
+    CreatePost_VisibilityDetailedInfoBody: "- Post Content: Only the blurred parts are visible to specified users (unblurred parts are public).\n- Additional Info: The entire content is visible only to specified users.\n\nPlease use them according to the importance and purpose of your information!",
 
 }
 

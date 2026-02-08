@@ -179,6 +179,8 @@ const messages = {
     Home_CheckSession_Message: "セッションを確認しています...",
     Home_CheckSession_Success_Title: "確認完了",
     Home_CheckSession_Success_Message: "完了",
+    CreatePost_VisibilityDetailedInfoTitle: "公開範囲の詳細について",
+    CreatePost_VisibilityDetailedInfoBody: "・本文：伏せ字にした箇所のみ、指定ユーザーだけが閲覧可能です（伏せていない箇所は全員に公開されます）。\n・補足：入力内容のすべてが、指定されたユーザーのみ閲覧可能です。\n\n情報の重要度や用途に合わせて使い分けてみてください！",
 
 }
 
