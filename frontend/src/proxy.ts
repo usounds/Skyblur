@@ -9,6 +9,19 @@ export function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
+    // x-nextjs-router-state ヘッダーが大きすぎる場合は削除（エラー回避）
+    const headers = new Headers(request.headers);
+    const routerState = headers.get('x-nextjs-router-state');
+    if (routerState && routerState.length > 5120) {
+        console.warn(`[Proxy] usage of x-nextjs-router-state detected with size ${routerState.length}. Stripping header.`);
+        headers.delete('x-nextjs-router-state');
+        return NextResponse.next({
+            request: {
+                headers: headers,
+            },
+        });
+    }
+
     // 1. クッキーから言語を取得
     const langCookie = request.cookies.get('lang')?.value;
 
