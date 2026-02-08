@@ -47,6 +47,8 @@ const messages = {
     Login_CannotUseWhiteSpace: "Handles cannot contain whitespace (spaces, line breaks, or tabs).",
     Login_CannotUseUnderscore: "Bluesky handles do not contain underscores. Please check your input.",
     Login_InvalidCharacter: "Bluesky handles can only contain letters, numbers, hyphens, and dots. Please check your input.",
+    Login_HandleCannotEndWithDot: "Handles cannot end with a dot.",
+    Login_HandleCannotHaveConsecutiveDots: "Handles cannot contain consecutive dots.",
     Login_CreateAccount: "Create Account",
     CreatePost_Fixed: "[Read full text]",
     CreatePost_Post: "Post content",

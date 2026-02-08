@@ -91,6 +91,28 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return;
         }
 
+        if (handle.endsWith('.')) {
+            notifications.show({
+                title: 'Error',
+                message: locale.Login_HandleCannotEndWithDot,
+                color: 'red',
+                icon: <X />
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        if (handle.includes('..')) {
+            notifications.show({
+                title: 'Error',
+                message: locale.Login_HandleCannotHaveConsecutiveDots,
+                color: 'red',
+                icon: <X />
+            });
+            setIsLoading(false);
+            return;
+        }
+
         if (!handle.includes('.')) {
             notifications.show({
                 title: 'Error',
