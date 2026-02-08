@@ -38,24 +38,8 @@ export const handle = async (c: Context) => {
         return c.json({ message: 'Collection should be \'uk.skyblur.post\'.' }, 400);
     }
 
-    let pdsUrl: string
 
-    try {
-        const endpoint = await fetchServiceEndpoint(repo);
-        if (typeof endpoint === 'string') {
-            pdsUrl = endpoint;
-        } else if (Array.isArray(endpoint) && typeof endpoint[0] === 'string') {
-            pdsUrl = endpoint[0];
-        } else {
-            console.error(`[getPost] Invalid PDS endpoint format: ${JSON.stringify(endpoint)}`);
-            throw new Error('Invalid PDS endpoint format');
-        }
-
-        if (!pdsUrl) throw new Error('Failed to get PDS URL')
-    } catch (e) {
-        console.error(`[getPost] PDS Fetch Error: ${e}`);
-        return c.json({ message: `Cannot detect did[${repo}]'s pds.` }, 500);
-    }
+    const pdsUrl = 'https://slingshot.microcosm.blue';
 
     const url = new URL(`${pdsUrl}/xrpc/com.atproto.repo.getRecord`);
     url.searchParams.append('repo', repo);
@@ -234,6 +218,24 @@ export const handle = async (c: Context) => {
         }
 
         try {
+            let pdsUrl: string
+            try {
+                const endpoint = await fetchServiceEndpoint(repo);
+                if (typeof endpoint === 'string') {
+                    pdsUrl = endpoint;
+                } else if (Array.isArray(endpoint) && typeof endpoint[0] === 'string') {
+                    pdsUrl = endpoint[0];
+                } else {
+                    console.error(`[getPost] Invalid PDS endpoint format: ${JSON.stringify(endpoint)}`);
+                    throw new Error('Invalid PDS endpoint format');
+                }
+
+                if (!pdsUrl) throw new Error('Failed to get PDS URL')
+            } catch (e) {
+                console.error(`[getPost] PDS Fetch Error: ${e}`);
+                return c.json({ message: `Cannot detect did[${repo}]'s pds.` }, 500);
+            }
+
             const result = await getDecrypt(pdsUrl, repo, refLink, password)
             return c.json({
                 text: result.text,
