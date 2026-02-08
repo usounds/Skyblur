@@ -10,6 +10,7 @@ const messages = {
     Home_Landing002Descrtption: "[秘密だよ]の箇所は伏せて表示されます。埋め込みをタップするとSkyblurで続きが読めます。日本語の場合は○○○○で伏せます。",
     Home_Landing003Title: "Skyblurは原文で表示",
     Home_Landing003Descrtption: "[秘密だよ]の箇所の原文が表示されます。投稿を削除したいときもSkyblurから。",
+    Home_HeroDemoBlurDescription: "[]で囲むと伏せ字になります。",
     Menu_CreatePost: "新規の投稿",
     Menu_Post: "投稿",
     Menu_Logout: "ログアウト",

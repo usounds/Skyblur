@@ -10,6 +10,7 @@ const messages = {
     Home_Landing002Descrtption: "The parts enclosed with [secret] will be blurred as ******. Tap the embed to read the unblurred text on Skyblur.",
     Home_Landing003Title: "Skyblur shows the unblurred text",
     Home_Landing003Descrtption: "The unblurred text will be displayed. If you want to delete a post, you can it from Skyblur.",
+    Home_HeroDemoBlurDescription: "Wrap text in [] to blur it.",
     Menu_CreatePost: "Create a post",
     Menu_Post: "Post",
     Menu_Logout: "Logout",

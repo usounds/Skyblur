@@ -56,7 +56,7 @@ export function StartButton() {
                 </div>
             ) : (
                 <Button
-                    variant="outline" size="md" radius="lg"
+                    variant="filled" size="md" radius="lg"
                     onClick={handleStart}
                     loading={isLoading}
                     leftSection={<Sparkles size={24} />}

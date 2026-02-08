@@ -50,6 +50,7 @@ export async function generateMetadata() {
   const title = locale.Common_Title;
 
   return {
+    metadataBase: new URL('https://skyblur.uk'),
     title: title,
     description: locale.Common_Description,
     openGraph: {
@@ -58,11 +59,13 @@ export async function generateMetadata() {
       siteName: "Skyblur",
       locale: lang === 'ja' ? 'ja_JP' : 'en_US',
       type: 'website',
+      images: ['/ogp.png'],
     },
     twitter: {
       card: 'summary_large_image',
       title: title,
       description: description,
+      images: ['/ogp.png'],
     },
   };
 }
