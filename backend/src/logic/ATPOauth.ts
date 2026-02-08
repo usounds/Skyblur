@@ -269,7 +269,7 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
     };
 
     // Cloudflare Workers では redirect: 'error' や cache: 'no-cache' が使えないためラップする
-    const safeFetch: typeof fetch = (input, init) => {
+    const safeFetch: typeof fetch = async (input, init) => {
         const nextInit = { ...init } as any;
         if (nextInit.redirect === 'error') {
             nextInit.redirect = 'manual';
@@ -277,7 +277,17 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
         if (nextInit.cache && nextInit.cache !== 'default') {
             delete nextInit.cache;
         }
-        return fetch(input, nextInit);
+
+        try {
+            const res = await fetch(input, nextInit);
+            if (!res.ok) {
+                console.warn(`[OAuth] safeFetch failed: ${input.toString()} ${res.status} ${res.statusText}`);
+            }
+            return res;
+        } catch (e) {
+            console.error(`[OAuth] safeFetch error: ${input.toString()}`, e);
+            throw e;
+        }
     };
 
     const client = new OAuthClient({
