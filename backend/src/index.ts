@@ -638,11 +638,10 @@ app.post('/oauth/logout', async (c) => {
           const origin = getRequestOrigin(c.req.raw, c.env);
           const oauth = await getOAuthClient(c.env, origin);
 
-          // OAuth セッションを取り消す
-          await oauth.revoke(did as any);
 
           // OAuth セッションを取り消す
           await oauth.revoke(did as any);
+
 
         } catch (err) {
           console.error('OAuth revoke error:', err);
