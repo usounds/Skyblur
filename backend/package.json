@@ -13,7 +13,6 @@
     "@atcute/atproto": "^3.1.10",
     "@atcute/client": "^4.2.1",
     "@atcute/identity-resolver": "^1.2.2",
-    "@atcute/identity-resolver-node": "^1.0.3",
     "@atcute/lexicons": "^1.2.7",
     "@atcute/oauth-crypto": "^0.1.0",
     "@atcute/oauth-node-client": "^1.1.0",

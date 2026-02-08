@@ -5,8 +5,8 @@ import {
     PlcDidDocumentResolver,
     WebDidDocumentResolver,
     WellKnownHandleResolver,
+    DohJsonHandleResolver,
 } from '@atcute/identity-resolver';
-import { NodeDnsHandleResolver } from '@atcute/identity-resolver-node';
 import { OAuthClient, type OAuthSession, type ClientAssertionPrivateJwk } from '@atcute/oauth-node-client';
 import type { Env, OAuthStoreDO } from '../index';
 
@@ -277,17 +277,7 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
         if (nextInit.cache && nextInit.cache !== 'default') {
             delete nextInit.cache;
         }
-
-        try {
-            const res = await fetch(input, nextInit);
-            if (!res.ok) {
-                console.warn(`[OAuth] safeFetch failed: ${input.toString()} ${res.status} ${res.statusText}`);
-            }
-            return res;
-        } catch (e) {
-            console.error(`[OAuth] safeFetch error: ${input.toString()}`, e);
-            throw e;
-        }
+        return fetch(input, nextInit);
     };
 
     const client = new OAuthClient({
@@ -341,7 +331,10 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
         actorResolver: new LocalActorResolver({
             handleResolver: new CompositeHandleResolver({
                 methods: {
-                    dns: new NodeDnsHandleResolver(),
+                    dns: new DohJsonHandleResolver({
+                        dohUrl: 'https://cloudflare-dns.com/dns-query',
+                        fetch: safeFetch,
+                    }),
                     http: new WellKnownHandleResolver({ fetch: safeFetch }),
                 },
             }),
