@@ -42,14 +42,27 @@ export const handle = async (c: Context) => {
 
     try {
         const endpoint = await fetchServiceEndpoint(repo);
-        pdsUrl = Array.isArray(endpoint) ? endpoint[0] : endpoint;
+        if (typeof endpoint === 'string') {
+            pdsUrl = endpoint;
+        } else if (Array.isArray(endpoint) && typeof endpoint[0] === 'string') {
+            pdsUrl = endpoint[0];
+        } else {
+            console.error(`[getPost] Invalid PDS endpoint format: ${JSON.stringify(endpoint)}`);
+            throw new Error('Invalid PDS endpoint format');
+        }
+
         if (!pdsUrl) throw new Error('Failed to get PDS URL')
     } catch (e) {
         console.error(`[getPost] PDS Fetch Error: ${e}`);
         return c.json({ message: `Cannot detect did[${repo}]'s pds.` }, 500);
     }
 
-    const recortUrl = `${pdsUrl}/xrpc/com.atproto.repo.getRecord?repo=${repo}&collection=uk.skyblur.post&rkey=${rkey}`
+    const url = new URL(`${pdsUrl}/xrpc/com.atproto.repo.getRecord`);
+    url.searchParams.append('repo', repo);
+    url.searchParams.append('collection', 'uk.skyblur.post');
+    url.searchParams.append('rkey', rkey);
+
+    const recortUrl = url.toString();
 
     let recordObj
 
@@ -57,7 +70,7 @@ export const handle = async (c: Context) => {
         const result = await fetch(recortUrl)
         if (!result.ok) {
             const errText = await result.text();
-            console.error(`[getPost] getRecord failed: ${result.status} ${errText}`);
+            console.error(`[getPost] getRecord failed: ${result.status} ${errText} URL: ${recortUrl}`);
             throw new Error('Failed to get record')
         }
         const jsonResult = await result.json() as { value: unknown };
