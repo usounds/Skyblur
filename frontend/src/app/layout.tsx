@@ -47,9 +47,7 @@ export async function generateMetadata() {
     ? `${ja.Common_OGDescription} / ${en.Common_OGDescription}`
     : locale.Common_OGDescription;
 
-  const title = isHybridFallback
-    ? `${ja.Common_Title} / ${en.Common_Title}`
-    : locale.Common_Title;
+  const title = locale.Common_Title;
 
   return {
     title: title,
