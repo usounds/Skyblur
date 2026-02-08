@@ -11,7 +11,8 @@ import { OAuthClient, type OAuthSession, type ClientAssertionPrivateJwk } from '
 import type { Env, OAuthStoreDO } from '../index';
 
 const oauthClients = new Map<string, OAuthClient>();
-const sessionCache = new Map<string, { session: OAuthSession, expiresAt: number }>();
+// sessionCache removed
+
 
 export const scopeList = [
     "atproto",
@@ -205,9 +206,8 @@ class DurableObjectStore {
 /**
  * キャッシュからセッションを削除する
  */
-export function clearSessionCache(did: string) {
-    sessionCache.delete(did);
-}
+// clearSessionCache removed
+
 
 /**
  * リクエストからオリジンを取得する
@@ -352,36 +352,21 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
 }
 
 /**
- * キャッシュを利用してセッションを復元する。
+ * セッションを復元する。
+ * Cloudflare Workers では Isolate 間でメモリが共有されないため、
+ * インメモリキャッシュは使用せず常に Durable Object (Storage) から取得する。
  */
 export async function restoreSession(oauth: OAuthClient, did: string): Promise<OAuthSession> {
-    const now = Date.now();
-    const cached = sessionCache.get(did);
-
-    if (cached && cached.expiresAt > now) {
-        return cached.session;
-    }
-
     try {
         const session = await oauth.restore(did as any);
-
-        sessionCache.set(did, {
-            session,
-            expiresAt: now + 30 * 60 * 1000, // 30分キャッシュ
-        });
-
         return session;
     } catch (error: any) {
         console.error(`[OAuth] Failed to restore session for DID: ${did}`, error);
         if (error instanceof Error) {
             console.error(error.stack);
         }
-        // ログアウト後のセッション復元エラーは静かに処理
-        if (error?.name === 'TokenRefreshError' || error?.message?.includes('session was deleted')) {
-            // セッションが削除されている場合はキャッシュもクリア
-            sessionCache.delete(did);
-        }
         // エラーを再スロー（呼び出し元で処理）
+        // TokenRefreshError などは呼び出し元でハンドリングされる
         throw error;
     }
 }

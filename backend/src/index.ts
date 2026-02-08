@@ -219,16 +219,15 @@ async function withSession(
 ): Promise<Response> {
   const origin = getRequestOrigin(c.req.raw, c.env);
   const oauth = await getOAuthClient(c.env, origin);
-  const { restoreSession, clearSessionCache } = await import('@/logic/ATPOauth');
+  const { restoreSession } = await import('@/logic/ATPOauth');
 
   try {
     const session = await restoreSession(oauth, did);
     return await callback(session);
   } catch (e: any) {
-    // リフレッシュエラー時は、ローカルキャッシュをクリアして最大1回リトライする
+    // リフレッシュエラー時は、最大1回リトライする
     if (e?.name === 'TokenRefreshError' || e?.message?.includes('session was deleted')) {
       console.warn(`[OAuth] TokenRefreshError for ${did}, retrying...`);
-      clearSessionCache(did);
 
       // 競合状態を避けるためにランダムな待機時間を設ける (500ms - 1500ms)
       await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
@@ -428,9 +427,8 @@ app.get('/oauth/callback', async (c) => {
   try {
     const { session } = await client.callback(url.searchParams);
 
-    // ログイン成功時にキャッシュをクリアして、確実に新しいセッションが使われるようにする
-    const { clearSessionCache } = await import('@/logic/ATPOauth');
-    clearSessionCache(session.did);
+    // ログイン成功
+
 
     const secret = c.env.OAUTH_PRIVATE_KEY_JWK;
     if (!secret) {
@@ -643,9 +641,9 @@ app.post('/oauth/logout', async (c) => {
           // OAuth セッションを取り消す
           await oauth.revoke(did as any);
 
-          // セッションキャッシュをクリア
-          const { clearSessionCache } = await import('@/logic/ATPOauth');
-          clearSessionCache(did);
+          // OAuth セッションを取り消す
+          await oauth.revoke(did as any);
+
         } catch (err) {
           console.error('OAuth revoke error:', err);
           // エラーでも続行してクッキーは削除する
@@ -679,8 +677,7 @@ app.post('/oauth/soft-logout', async (c) => {
     if (lastDotIndex !== -1) {
       const did = rawDid.substring(0, lastDotIndex);
       // キャッシュをクリア（署名検証はスキップしても良いが、念のため形式チェック程度にDID抽出）
-      const { clearSessionCache } = await import('@/logic/ATPOauth');
-      clearSessionCache(did);
+
     }
   }
 

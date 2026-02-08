@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { restoreSession, getOAuthClient, clearSessionCache, getRequestOrigin } from '../ATPOauth';
+import { restoreSession, getOAuthClient, getRequestOrigin } from '../ATPOauth';
 import { OAuthClient } from '@atcute/oauth-node-client';
 
 vi.mock('@atcute/oauth-node-client', async () => {
@@ -251,24 +251,6 @@ describe('ATPOauth', () => {
 
             expect(oauthClientMock.restore).toHaveBeenCalledWith(did);
             expect(session).toEqual(mockSession);
-        });
-
-        it('should return cached session if available', async () => {
-            const mockSession = { did: 'did:cached:123' };
-            const oauthClientMock = {
-                restore: vi.fn().mockResolvedValue(mockSession)
-            };
-            const did = 'did:cached:' + Date.now();
-
-            // First call - cache it
-            await restoreSession(oauthClientMock as any, did);
-
-            // Second call - should use cache
-            oauthClientMock.restore.mockClear();
-            const session2 = await restoreSession(oauthClientMock as any, did);
-
-            expect(oauthClientMock.restore).not.toHaveBeenCalled();
-            expect(session2).toEqual(mockSession);
         });
 
         it('should handle TokenRefreshError', async () => {
