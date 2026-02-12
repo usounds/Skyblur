@@ -12,6 +12,7 @@ const messages = {
     Home_Landing003Descrtption: "[秘密だよ]の箇所の原文が表示されます。投稿を削除したいときもSkyblurから。",
     Home_HeroDemoBlurDescription: "[]で囲むと伏せ字になります。",
     Menu_CreatePost: "新規の投稿",
+    CreatePost_AgeRestrictionWarning: "18歳未満に不適切な内容を含む場合は、必ず『全体』以外の公開設定を使用してください。",
     Menu_Post: "投稿",
     Menu_Logout: "ログアウト",
     Menu_LogoutProgress: "ログアウト中です",

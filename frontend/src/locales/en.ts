@@ -12,6 +12,7 @@ const messages = {
     Home_Landing003Descrtption: "The unblurred text will be displayed. If you want to delete a post, you can it from Skyblur.",
     Home_HeroDemoBlurDescription: "Wrap text in [] to blur it.",
     Menu_CreatePost: "Create a post",
+    CreatePost_AgeRestrictionWarning: "If your post contains content inappropriate for users under 18, please ensure you use a setting other than 'Public'.",
     Menu_Post: "Post",
     Menu_Logout: "Logout",
     Menu_LogoutProgress: "Logout is in progress",

@@ -1144,6 +1144,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 </div>
                             )}
 
+                            {visibility === VISIBILITY_PUBLIC && (
+                                <div className="mt-4">
+                                    <Alert variant="light" color="blue" title="Info" icon={<Info size={16} />}>
+                                        {locale.CreatePost_AgeRestrictionWarning}
+                                    </Alert>
+                                </div>
+                            )}
+
 
                             {isEncrypt &&
                                 <div className=''>

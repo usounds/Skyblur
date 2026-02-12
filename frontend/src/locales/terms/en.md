@@ -30,6 +30,8 @@ Copyright for all content posted on this Site by users belongs to the poster the
 ## Responsibility
 Users bear all legal responsibility for their posts, and in the event of any issues, users shall resolve them at their own expense and responsibility.
 
+This service may contain content intended for users aged 18 and older. By logging into this service, users are considered to be 18 years of age or older. The operator assumes no responsibility for any damages or trouble resulting from use by persons under 18 years of age who have falsified their age.
+
 ## Prohibited Actions
 If this Site confirms that a user has engaged in prohibited acts, the service may suspend the user's use, such as by disabling login, stopping new posts, or hiding posts.
 - Infringing on the rights of third parties.
@@ -50,6 +52,7 @@ If this Site confirms that a user has engaged in prohibited acts, the service ma
 - If similar features are implemented in the AT Protocol or PDS in the future, the specifications of these features may change significantly, and past data or settings may not be transferable.
 
 ## Revision History
+- 2026/02/10 Added disclaimer regarding age restrictions.
 - 2026/02/07 Added clauses regarding the addition of Followers-only, Following-only, and Mutual-only visibility features.
 - 2026/01/10 Added a note that "Require login to view" is effective only on this Site.
 - 2025/09/13 Clarified copyright and responsibility in the Terms of Use, and prohibited use as a chat tool.
