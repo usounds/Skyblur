@@ -53,7 +53,7 @@
     "dompurify": "^3.3.1",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
-    "lucide-react": "^0.563.0",
+    "lucide-react": "^0.564.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-content-loader": "^7.1.2",
@@ -65,7 +65,7 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
-    "@aws-sdk/client-lambda": "^3.988.0",
+    "@aws-sdk/client-lambda": "^3.989.0",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^25.2.3",
