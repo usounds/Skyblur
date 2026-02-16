@@ -65,12 +65,15 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const setTempVisibility = useTempPostStore((state) => state.setVisibility);
     const [isEncrypt, setIsEncrypt] = useState<boolean>(prevBlur?.blur.visibility === VISIBILITY_PASSWORD);
     const encryptKey = useTempPostStore((state) => state.encryptKey) || '';
+    const tempLimitConsecutive = useTempPostStore((state) => state.limitConsecutive);
+    const setTempLimitConsecutive = useTempPostStore((state) => state.setLimitConsecutive);
     const [threadGate, setThreadGate] = useState<string[]>([THREADGATE_QUOTE_ALLOW]);
     const setEncryptKey = useTempPostStore((state) => state.setEncryptKey);
     const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
     const [changeModeOpened, { open: openChangeMode, close: closeChangeMode }] = useDisclosure(false);
     const [restorePostData, { open: openRestorePostData, close: closeRestorePostData }] = useDisclosure(false);
     const [confirmBackOpened, { open: openConfirmBack, close: closeConfirmBack }] = useDisclosure(false);
+    const [isLimitConsecutiveOmmit, setIsLimitConsecutiveOmmit] = useState<boolean>(false);
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -133,7 +136,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     }
 
-    const setPostText = (text: string, simpleMode: boolean) => {
+    const setPostText = (text: string, simpleMode: boolean, limitConsecutive?: boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
         let postTextLocal = text
@@ -157,9 +160,14 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
 
         // 正規表現で [] に囲まれた部分を ○ に置換
+        const limit = limitConsecutive ?? isLimitConsecutiveOmmit;
         const blurredText = postTextLocal.replace(/\[(.*?)\]/gs, (_, match) => {
             // マッチした文字列内の改行を維持しつつ ommitChar で置換
-            return match.replace(/./g, locale.CreatePost_OmmitChar);
+            let replaced = match.replace(/./g, locale.CreatePost_OmmitChar);
+            if (limit && replaced.length > 5) {
+                replaced = locale.CreatePost_OmmitChar.repeat(5);
+            }
+            return replaced;
         });
 
 
@@ -811,16 +819,22 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setTempSimpleMode(false)
         setTempReply('')
         setEncryptKey('')
+        setTempSimpleMode(false)
+        setTempReply('')
+        setEncryptKey('')
         setTempVisibility(VISIBILITY_PUBLIC)
+        setTempLimitConsecutive(false)
     };
 
     const handleTempApply = async () => {
         console.log('tempText:' + tempText)
-        setPostText(tempText, tempSimpleMode);
+        setPostText(tempText, tempSimpleMode, tempLimitConsecutive);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
         setVisibilityState(tempVisibility ?? VISIBILITY_PUBLIC)
         setIsEncrypt(tempVisibility === VISIBILITY_PASSWORD)
+        setIsLimitConsecutiveOmmit(tempLimitConsecutive || false)
+
         if (tempReply && agent && tempReply.includes(did)) {
             const result = await agent.get("app.bsky.feed.getPosts", {
                 params: {
@@ -985,6 +999,20 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             isEnableBrackets={!simpleMode}
                             error={warning}
                         />
+                        {!prevBlur &&
+                            <div className="flex items-center mt-2">
+                                <Switch
+                                    checked={isLimitConsecutiveOmmit}
+                                    onChange={(event) => {
+                                        const checked = event.currentTarget.checked;
+                                        setIsLimitConsecutiveOmmit(checked);
+                                        if (!prevBlur) setTempLimitConsecutive(checked);
+                                        setPostText(postText, simpleMode, checked);
+                                    }}
+                                    label={locale.CreatePost_LimitConsecutiveOmmit}
+                                />
+                            </div>
+                        }
                         <div className="flex justify-center gap-4 mb-8">
                             {isIncludeFullBranket &&
                                 <Button color="primary" size="large" className="text-white text-base font-normal mt-2" onClick={convertFullWidthToHalfWidthBrackets} disabled={isLoading}>
@@ -1007,6 +1035,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     max={10000}
                                     isEnableBrackets={false}
                                 />
+
                             </>
                         }
 

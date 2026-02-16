@@ -60,12 +60,12 @@
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
     "react-spinners": "^0.17.0",
-    "sst": "^3.17.38",
+    "sst": "^3.17.40",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
-    "@aws-sdk/client-lambda": "^3.989.0",
+    "@aws-sdk/client-lambda": "^3.990.0",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^25.2.3",
