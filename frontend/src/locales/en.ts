@@ -184,7 +184,7 @@ const messages = {
     Home_CheckSession_Success_Message: "Done",
     CreatePost_VisibilityDetailedInfoTitle: "About Visibility Scope",
     CreatePost_VisibilityDetailedInfoBody: "- Post Content: Only the blurred parts are visible to specified users (unblurred parts are public).\n- Additional Info: The entire content is visible only to specified users.\n\nPlease use them according to the importance and purpose of your information!",
-    CreatePost_LimitConsecutiveOmmit: "Omit consecutive *",
+    CreatePost_LimitConsecutiveOmmit: "Omit consecutive * (Bluesky only)",
 
 }
 

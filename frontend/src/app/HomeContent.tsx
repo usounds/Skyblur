@@ -66,30 +66,42 @@ export function HomeContent({ initialLocale }: HomeContentProps) {
 
     return (
         <Container className={classes.wrapper}>
-            <Title className={classes.title}>
-                {locale.Home_WelcomeTitle}
-            </Title>
+            <div className={classes.fadeIn} style={{ animationDelay: '0s' }}>
+                <Title className={classes.title}>
+                    {locale.Home_WelcomeTitle}
+                </Title>
+            </div>
 
-            <Text size="sm" className={classes.description}>
-                {locale.Home_WelcomeDescription}
-            </Text>
+            <div className={classes.fadeIn} style={{ animationDelay: '0.1s' }}>
+                <Text size="sm" className={classes.description}>
+                    {locale.Home_WelcomeDescription}
+                </Text>
+            </div>
 
-            <ResponsiveHeroDemo />
+            <div className={classes.fadeIn} style={{ animationDelay: '0.2s' }}>
+                <ResponsiveHeroDemo />
+            </div>
 
-            <StartButton />
+            <div className={classes.fadeIn} style={{ animationDelay: '0.3s' }}>
+                <StartButton />
+            </div>
 
-            <SimpleGrid
-                mt={60}
-                cols={{ base: 1, sm: 2, md: 3 }}
-                spacing={{ base: 'xl', md: 50 }}
-                verticalSpacing={{ base: 'xl', md: 50 }}
-            >
-                {features}
-            </SimpleGrid>
+            <div className={classes.fadeIn} style={{ animationDelay: '0.4s' }}>
+                <SimpleGrid
+                    mt={60}
+                    cols={{ base: 1, sm: 2, md: 3 }}
+                    spacing={{ base: 'xl', md: 50 }}
+                    verticalSpacing={{ base: 'xl', md: 50 }}
+                >
+                    {features}
+                </SimpleGrid>
+            </div>
 
             <div className="h-8 sm:h-4" />
 
-            <RecommendedClients initialLocale={initialLocale} />
+            <div className={classes.fadeIn} style={{ animationDelay: '0.5s' }}>
+                <RecommendedClients initialLocale={initialLocale} />
+            </div>
         </Container>
     );
 }

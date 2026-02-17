@@ -22,6 +22,7 @@ import { franc } from 'franc';
 import { ArrowLeft, Check, Globe, Lock, LogIn, Users, UserPlus, UserCheck, X, Save, Handshake, Info } from 'lucide-react';
 import { useEffect, useState, ChangeEvent } from "react";
 import { BlueskyIcon } from './Icons';
+import classes from './CreatePost.module.css';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iso6393to1 = require('iso-639-3-to-1');
@@ -855,7 +856,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     return (
         <>
-            <div className="m-3">
+            <div className={`m-3 ${classes.fadeIn}`}>
 
                 <Modal
                     opened={restorePostData}

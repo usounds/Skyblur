@@ -1,0 +1,64 @@
+/* PostList – Glass card + hover lift only */
+
+.postCard {
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: light-dark(rgba(255, 255, 255, 0.7),
+            rgba(37, 38, 43, 0.6));
+    border: 1px solid light-dark(var(--mantine-color-gray-2),
+            var(--mantine-color-dark-4));
+    backdrop-filter: blur(8px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.postCard:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        light-dark(0 8px 25px rgba(0, 0, 0, 0.08),
+            0 8px 25px rgba(0, 0, 0, 0.3));
+    border-color: light-dark(var(--mantine-color-blue-3),
+            var(--mantine-color-blue-7));
+}
+
+.postCard:active {
+    transform: translateY(0px);
+    transition: transform 0.1s ease;
+}
+
+/* Staggered fade-in for each Timeline item */
+.postItem {
+    animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Slide-down when detail is revealed */
+.detailSection {
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        max-height: 500px;
+        transform: translateY(0);
+    }
+}

@@ -16,6 +16,7 @@ import { useEffect, useState, useRef } from "react";
 import { Lock, LockOpen, LogIn, X, Globe, Users, UserCheck, Handshake } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import Loading from './Loading';
+import classes from './PostList.module.css';
 
 type PostListProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -381,6 +382,8 @@ export const PostList: React.FC<PostListProps> = ({
                     {deleteList.map((item, index) => (
                         <Timeline.Item
                             key={index}
+                            className={classes.postItem}
+                            style={{ animationDelay: `${Math.min(index * 60, 600)}ms` }}
                             bullet={
                                 (() => {
                                     if (item.blur?.visibility === VISIBILITY_PASSWORD) {
@@ -426,122 +429,121 @@ export const PostList: React.FC<PostListProps> = ({
                                 })()
                             }
                         >
-                            {/* 本文 */}
-                            <Box onClick={() => handleDisplay(item)}>
-                                {([VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any) && !loginDid && !handleEdit) ? (
-                                    <div className="p-2 text-sm text-gray-500 italic">
-                                        {locale.PostList_NeedLoginMessage}
-                                    </div>
-                                ) : (
-                                    <>
-                                        {item.isDetailDisplay ? (
-                                            <>
+                            {/* Glass card wrapping content */}
+                            <div className={classes.postCard}>
+                                {/* 本文 */}
+                                <Box onClick={() => handleDisplay(item)}>
+                                    {([VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any) && !loginDid && !handleEdit) ? (
+                                        <div className="p-2 text-sm text-gray-500 italic">
+                                            {locale.PostList_NeedLoginMessage}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {item.isDetailDisplay ? (
+                                                <div className={classes.detailSection}>
+                                                    <PostTextWithBold
+                                                        postText={item.blur.text}
+                                                        isValidateBrackets
+                                                        isMask={null}
+                                                    />
+                                                    {item.blur.additional && (
+                                                        <Box>
+                                                            <Divider my="xs" />
+                                                            <PostTextWithBold
+                                                                postText={item.blur.additional}
+                                                                isValidateBrackets={false}
+                                                                isMask={null}
+                                                            />
+                                                        </Box>
+                                                    )}
+                                                </div>
+                                            ) : handleEdit ? (
                                                 <PostTextWithBold
                                                     postText={item.blur.text}
                                                     isValidateBrackets
                                                     isMask={null}
                                                 />
-                                                {item.blur.additional && (
-                                                    <Box>
-                                                        <Divider my="xs" />
-                                                        <PostTextWithBold
-                                                            postText={item.blur.additional}
-                                                            isValidateBrackets={false}
-                                                            isMask={null}
-                                                        />
-                                                    </Box>
-                                                )}
-                                            </>
-                                        ) : handleEdit ? (
-                                            <PostTextWithBold
-                                                postText={item.blur.text}
-                                                isValidateBrackets
-                                                isMask={null}
-                                            />
-                                        ) : (
-                                            <PostTextWithBold
-                                                postText={item.blur.text}
-                                                isValidateBrackets
-                                                isMask={locale.CreatePost_OmmitChar}
+                                            ) : (
+                                                <PostTextWithBold
+                                                    postText={item.blur.text}
+                                                    isValidateBrackets
+                                                    isMask={locale.CreatePost_OmmitChar}
+                                                />
+                                            )}
+                                        </>
+                                    )}
+                                </Box>
+
+                                {/* 下部アイコン行 */}
+                                <Group justify="space-between" align="flex-end" mt="xs">
+                                    <Group gap="xs">
+                                        <Text size="sm" c="gray">
+                                            {formatDateToLocale(item.blur.createdAt)}
+                                        </Text>
+                                        {item.isDetailDisplay && (
+                                            <Box ml="md">
+                                                <Reaction
+                                                    atUriPost={item.blur.uri}
+                                                    atUriBlur={item.blurATUri}
+                                                />
+                                            </Box>
+                                        )}
+                                    </Group>
+
+                                    <Group gap="sm" ml='sm'>
+                                        {handleEdit && (
+                                            <DropdownMenu
+                                                post={item}
+                                                handleEdit={handleEdit}
+                                                agent={agent}
+                                                did={did}
+                                                setDeleteList={setDeleteList}
                                             />
                                         )}
+                                        {!handleEdit && (
+                                            <ActionIcon
+                                                variant="subtle"
+                                                component="a"
+                                                href={item.postURL}
+                                                target="_blank"
+                                                c="gray"
+                                            >
+                                                <BlueskyIcon size={22} />
+                                            </ActionIcon>
+                                        )}
+                                    </Group>
+                                </Group>
+
+                                {/* 暗号化されている場合の入力欄 */}
+                                {item.blur?.visibility === VISIBILITY_PASSWORD && !item.isDecrypt && (
+                                    <>
+                                        <Text size="sm" c="dimmed" mt="xs">
+                                            {locale.DeleteList_EncryptDescription}
+                                        </Text>
+                                        <Group justify="center" gap="sm" mt="xs">
+                                            <Input
+                                                value={item.encryptKey ?? ""}
+                                                size="xs"
+                                                styles={{
+                                                    input: {
+                                                        fontSize: 16,
+                                                    },
+                                                }}
+                                                onChange={(e) => setEncryptKey(e.target.value, item)}
+                                            />
+                                            <Button
+                                                color="blue"
+                                                size="xs"
+                                                onClick={() => handleDecrypt(item)}
+                                                loading={isDecrypting}
+                                                loaderProps={{ type: 'dots' }}
+                                            >
+                                                {locale.DeleteList_DecryptButton}
+                                            </Button>
+                                        </Group>
                                     </>
                                 )}
-                            </Box>
-
-                            {/* 下部アイコン行 */}
-                            <Group justify="space-between" align="flex-end">
-                                <Group gap="xs">
-                                    <Text size="sm" c="gray">
-                                        {formatDateToLocale(item.blur.createdAt)}
-                                    </Text>
-                                    {item.isDetailDisplay && (
-                                        <Box ml="md">
-                                            <Reaction
-                                                atUriPost={item.blur.uri}
-                                                atUriBlur={item.blurATUri}
-                                            />
-                                        </Box>
-                                    )}
-                                </Group>
-
-                                <Group gap="sm" ml='sm'>
-                                    {handleEdit && (
-                                        <DropdownMenu
-                                            post={item}
-                                            handleEdit={handleEdit}
-                                            agent={agent}
-                                            did={did}
-                                            setDeleteList={setDeleteList}
-                                        />
-                                    )}
-                                    {!handleEdit && (
-                                        <ActionIcon
-                                            variant="subtle"
-                                            component="a"
-                                            href={item.postURL}
-                                            target="_blank"
-                                            c="gray"
-                                        >
-                                            {/* アイコンSVGは元のまま流用 */}
-                                            <BlueskyIcon size={22} />
-
-                                        </ActionIcon>
-                                    )}
-                                </Group>
-                            </Group>
-
-
-                            {/* 暗号化されている場合の入力欄 */}
-                            {item.blur?.visibility === VISIBILITY_PASSWORD && !item.isDecrypt && (
-                                <>
-                                    <Text size="sm" c="dimmed" mt="xs">
-                                        {locale.DeleteList_EncryptDescription}
-                                    </Text>
-                                    <Group justify="center" gap="sm" mt="xs">
-                                        <Input
-                                            value={item.encryptKey ?? ""}
-                                            size="xs"
-                                            styles={{
-                                                input: {
-                                                    fontSize: 16,
-                                                },
-                                            }}
-                                            onChange={(e) => setEncryptKey(e.target.value, item)}
-                                        />
-                                        <Button
-                                            color="blue"
-                                            size="xs"
-                                            onClick={() => handleDecrypt(item)}
-                                            loading={isDecrypting}
-                                            loaderProps={{ type: 'dots' }}
-                                        >
-                                            {locale.DeleteList_DecryptButton}
-                                        </Button>
-                                    </Group>
-                                </>
-                            )}
-
+                            </div>
                         </Timeline.Item>
                     ))}
                 </Timeline>

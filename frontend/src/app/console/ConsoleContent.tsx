@@ -193,11 +193,11 @@ export function ConsoleContent() {
                         <CreatePostForm setMode={setMode} prevBlur={prevBlur} onBack={() => setMode("menu")} />
                     ) : (
                         <div className="mx-auto max-w-screen-sm flex flex-col">
-                            <div className="my-4 text-center">
+                            <div className="my-4 text-center" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both' }}>
                                 {locale.Menu_LoginMessage.replace("{2}", (new Date().getHours() < 5 || new Date().getHours() >= 18) ? locale.Greeting_Night : (new Date().getHours() < 11) ? locale.Greeting_Morning : locale.Greeting_Day).replace("{1}", userProf?.displayName || 'No Name')}
                             </div>
 
-                            <div className="flex justify-center gap-4 mb-8">
+                            <div className="flex justify-center gap-4 mb-8" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' }}>
                                 <Button leftSection={<Pencil size={14} />} variant="filled" onClick={() => handleNew()}>
                                     {locale.Menu_CreatePost}
                                 </Button>
