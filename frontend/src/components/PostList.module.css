@@ -13,17 +13,8 @@
 }
 
 .postCard:hover {
-    transform: translateY(-2px);
-    box-shadow:
-        light-dark(0 8px 25px rgba(0, 0, 0, 0.08),
-            0 8px 25px rgba(0, 0, 0, 0.3));
     border-color: light-dark(var(--mantine-color-blue-3),
             var(--mantine-color-blue-7));
-}
-
-.postCard:active {
-    transform: translateY(0px);
-    transition: transform 0.1s ease;
 }
 
 /* Staggered fade-in for each Timeline item */

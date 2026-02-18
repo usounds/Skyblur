@@ -143,7 +143,7 @@ export const ProfilePage = () => {
                 <div className="mx-auto max-w-screen-sm md:mt-6 mt-3 mx-2">
                     <div className="mx-auto rounded-lg">
                         {userProf &&
-                            <div className="mb-2 mx-2">
+                            <div className="mb-2 mx-2" style={{ animation: 'fadeIn 0.6s ease both' }}>
                                 <Avatar userProf={userProf} href={isMyPage ? `https://${window.location.hostname}/profile/${userProf.did}` : `https://bsky.app/profile/${userProf.did}`} target={isMyPage ? `` : `_blank`} />
                             </div>
                         }
