@@ -17,9 +17,6 @@ importers:
       '@atcute/identity-resolver':
         specifier: ^1.2.2
         version: 1.2.2(@atcute/identity@1.1.3)
-      '@atcute/identity-resolver-node':
-        specifier: ^1.0.3
-        version: 1.0.3(@atcute/identity-resolver@1.2.2(@atcute/identity@1.1.3))(@atcute/identity@1.1.3)
       '@atcute/lexicons':
         specifier: ^1.2.7
         version: 1.2.7
@@ -36,8 +33,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       hono:
-        specifier: ^4.11.7
-        version: 4.11.7
+        specifier: ^4.11.10
+        version: 4.11.10
       web-did-resolver:
         specifier: ^2.0.32
         version: 2.0.32
@@ -95,12 +92,6 @@ packages:
 
   '@atcute/crypto@2.3.0':
     resolution: {integrity: sha512-w5pkJKCjbNMQu+F4JRHbR3ROQyhi1wbn+GSC6WDQamcYHkZmEZk1/eoI354bIQOOfkEM6aFLv718iskrkon4GQ==}
-
-  '@atcute/identity-resolver-node@1.0.3':
-    resolution: {integrity: sha512-RPH5M4ZRayKRcGnJWUOPVhN5WSYURXXZxKzgVT9lj/WZCH6ij2Vg3P3Eva7GGs0SG1ytnX1XVBTMoIk8nF/SLQ==}
-    peerDependencies:
-      '@atcute/identity': ^1.0.0
-      '@atcute/identity-resolver': ^1.0.0
 
   '@atcute/identity-resolver@1.2.2':
     resolution: {integrity: sha512-eUh/UH4bFvuXS0X7epYCeJC/kj4rbBXfSRumLEH4smMVwNOgTo7cL/0Srty+P/qVPoZEyXdfEbS0PHJyzoXmHw==}
@@ -860,8 +851,8 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
-  hono@4.11.7:
-    resolution: {integrity: sha512-l7qMiNee7t82bH3SeyUCt9UF15EVmaBvsppY2zQtrbIhl/yzBTny+YUxsVjSjQ6gaqaeVtZmGocom8TzBlA4Yw==}
+  hono@4.11.10:
+    resolution: {integrity: sha512-kyWP5PAiMooEvGrA9jcD3IXF7ATu8+o7B3KCbPXid5se52NPqnOpM/r9qeW2heMnOekF4kqR1fXJqCYeCLKrZg==}
     engines: {node: '>=16.9.0'}
 
   html-escaper@2.0.2:
@@ -1197,12 +1188,6 @@ snapshots:
       '@atcute/multibase': 1.1.6
       '@atcute/uint8array': 1.0.6
       '@noble/secp256k1': 3.0.0
-
-  '@atcute/identity-resolver-node@1.0.3(@atcute/identity-resolver@1.2.2(@atcute/identity@1.1.3))(@atcute/identity@1.1.3)':
-    dependencies:
-      '@atcute/identity': 1.1.3
-      '@atcute/identity-resolver': 1.2.2(@atcute/identity@1.1.3)
-      '@atcute/lexicons': 1.2.7
 
   '@atcute/identity-resolver@1.2.2(@atcute/identity@1.1.3)':
     dependencies:
@@ -1847,7 +1832,7 @@ snapshots:
 
   has-flag@4.0.0: {}
 
-  hono@4.11.7: {}
+  hono@4.11.10: {}
 
   html-escaper@2.0.2: {}
 
