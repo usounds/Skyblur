@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@atcute/atproto": "^3.1.10",
-    "@atcute/bluesky": "^3.2.18",
+    "@atcute/bluesky": "^3.2.19",
     "@atcute/client": "^4.2.1",
     "@atcute/identity-resolver": "^1.2.2",
     "@atcute/identity-resolver-node": "^1.0.3",
@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
-    "@aws-sdk/client-lambda": "^3.994.0",
+    "@aws-sdk/client-lambda": "^3.995.0",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/node": "^25.3.0",
@@ -76,7 +76,7 @@
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
     "autoprefixer": "^10.4.24",
-    "eslint": "^9.39.2",
+    "eslint": "^9.39.3",
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.6",
     "postcss-preset-mantine": "^1.18.0",
