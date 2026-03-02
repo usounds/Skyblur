@@ -61,8 +61,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       lucide-react:
-        specifier: ^0.575.0
-        version: 0.575.0(react@19.2.4)
+        specifier: ^0.576.0
+        version: 0.576.0(react@19.2.4)
       next:
         specifier: ^16.1.6
         version: 16.1.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -82,8 +82,8 @@ importers:
         specifier: ^0.17.0
         version: 0.17.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       sst:
-        specifier: ^4.1.3
-        version: 4.1.3
+        specifier: ^4.1.4
+        version: 4.1.4
       zustand:
         specifier: ^5.0.11
         version: 5.0.11(@types/react@19.2.14)(react@19.2.4)
@@ -887,8 +887,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@img/colour@1.0.0':
-    resolution: {integrity: sha512-A5P/LfWGFSl6nsckYtjw9da+19jB8hkJ6ACTGcDfEJ0aE+l2n2El7dsVM7UVHZQ9s2lmYMWlrS21YLy2IR1LUw==}
+  '@img/colour@1.1.0':
+    resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
     engines: {node: '>=18'}
 
   '@img/sharp-darwin-arm64@0.34.5':
@@ -2277,8 +2277,8 @@ packages:
     resolution: {integrity: sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==}
     hasBin: true
 
-  flatted@3.3.3:
-    resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
+  flatted@3.3.4:
+    resolution: {integrity: sha512-3+mMldrTAPdta5kjX2G2J7iX4zxtnwpdA8Tr2ZSjkyPSanvbZAcy6flmtnXbEybHrDcU9641lxrMfFuUxVz9vA==}
 
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
@@ -2747,8 +2747,8 @@ packages:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
 
-  lucide-react@0.575.0:
-    resolution: {integrity: sha512-VuXgKZrk0uiDlWjGGXmKV6MSk9Yy4l10qgVvzGn2AWBx1Ylt0iBexKOAoA6I7JO3m+M9oeovJd3yYENfkUbOeg==}
+  lucide-react@0.576.0:
+    resolution: {integrity: sha512-koNxU14BXrxUfZQ9cUaP0ES1uyPZKYDjk31FQZB6dQ/x+tXk979sVAn9ppZ/pVeJJyOxVM8j1E+8QEuSc02Vug==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -3361,48 +3361,48 @@ packages:
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
 
-  sst-darwin-arm64@4.1.3:
-    resolution: {integrity: sha512-ZGbMtVHWMJH3/+VFXXO1jAueWAib8EPExgTtoxZN6WEUz+5mvfOd+jz0dq6qL0F9QAyc9P/RZw+CnWdEvUNrmg==}
+  sst-darwin-arm64@4.1.4:
+    resolution: {integrity: sha512-c8DlI+ngxVjIqiDGuLmP2kx2roD+jYL41IIIdY9JURh9Ja1uQIFHVci19c7MwVBXI61kuDnqLiB89mc2iY1ycg==}
     cpu: [arm64]
     os: [darwin]
 
-  sst-darwin-x64@4.1.3:
-    resolution: {integrity: sha512-X8Ea7ao82Pjqqr0v46mb1XMKTXfWcIaPQDLqwksjjll15M1xCXJTefN9YRSpHl+4Zd5g7JtF1AV4FgM48cF8gA==}
+  sst-darwin-x64@4.1.4:
+    resolution: {integrity: sha512-jm05hj9W7Gy4SdB56N0buLBBpng+IZfeyvqYxzWTTV44rdAXpMJmRpqfHkclwNW0xWJtNURPpUP0rrXmMnLoVg==}
     cpu: [x64]
     os: [darwin]
 
-  sst-linux-arm64@4.1.3:
-    resolution: {integrity: sha512-dDGqPJwB3RQ4VM5fn8Yzd9rJqRscYm0ueDoiPd/zTec+NfsziIR7duqBlrxS18q5OX6dmWeOxJqbhxvSseHMwQ==}
+  sst-linux-arm64@4.1.4:
+    resolution: {integrity: sha512-5FSKRkavP/By7T6AteutvOTlApWQSE49eZSBRxQ8wki45PTcoxkCtmLfzXdBmrJLxFUz3Zf9Wt0Vvh0Lk9GLKQ==}
     cpu: [arm64]
     os: [linux]
 
-  sst-linux-x64@4.1.3:
-    resolution: {integrity: sha512-i9LjiU5fsJ2iY9tB/vBCaD4MYAog/zmyIG5ApKe4kHIMVKzg/uSpuPON+A/AsJVKlsoDJzjM3sFjjfrH4GoHiA==}
+  sst-linux-x64@4.1.4:
+    resolution: {integrity: sha512-lc2DVY5bjYxJwJVAUmswfGJnWfzo9dslQe+VpMycpH4g+ZgtEFJHNFu8TeM2T5tvCAaAkpiQ8sE8l0mEDhmGfg==}
     cpu: [x64]
     os: [linux]
 
-  sst-linux-x86@4.1.3:
-    resolution: {integrity: sha512-z6AXpFB0WXlGvd+1C+g/3H2O11huWT/Mt/ANyd/OXUYxMtmfkIuJrBpcirXYErJOAPjMfXuBS3X7iqYAhkMpHA==}
+  sst-linux-x86@4.1.4:
+    resolution: {integrity: sha512-qTicUYjwBw/QFpsWze9EsBnMfr8BEFMz4PvqxFaIMCBLGiJ47XWb7HPKOkjjPsaixfjGy9HjYnlK2PUxyjNcYQ==}
     cpu: [x86]
     os: [linux]
 
-  sst-win32-arm64@4.1.3:
-    resolution: {integrity: sha512-DyBTtJ+vB0qDGtx2MVtqXDZOTegoCLZ3TX6AYZUZJZTSdvxJq1oYPX5sdhLB/c2UETQSxIBfoUDnTzJHwIyXDQ==}
+  sst-win32-arm64@4.1.4:
+    resolution: {integrity: sha512-bV7ka+0vZK6ezbYqza7M1xZC9FFqsQkyOp+3X+4JpBvxOp/FtKdqJyFf9/tGY5dFRiwFdmV3xIVDJmTL2T42LA==}
     cpu: [arm64]
     os: [win32]
 
-  sst-win32-x64@4.1.3:
-    resolution: {integrity: sha512-dR9XXjWpH7GzMapdk3JEz0qtHuaEHkgItAqWGGI6YTdSi7wx51/l3F3g76hBfzK+vtmwYkp/ZT4WVXXQ5DKwAQ==}
+  sst-win32-x64@4.1.4:
+    resolution: {integrity: sha512-nbfQdoVRZrc9GxnTe7j09NJzDTmTBOSj+5IFAliSzIVlK/vBD41SKLbGfhxIGz13SGIFsMDAVV93/hij7m9HWQ==}
     cpu: [x64]
     os: [win32]
 
-  sst-win32-x86@4.1.3:
-    resolution: {integrity: sha512-M1q0L+7313M4WazuWQpHcK1tnA2TObanvKSQqOm5Knn8y2+2v4OZNpNcyKp/zBRlystyu8P0kcCQFsCU0zKK/A==}
+  sst-win32-x86@4.1.4:
+    resolution: {integrity: sha512-hbNgsTrBQsDgOjUVN0mBmHC59PNZrpo2ItHpnEPqTVTubbKhFluCv6PcNPHqVa64iv7vnmWw5Cn/s6JyhkYBdg==}
     cpu: [x86]
     os: [win32]
 
-  sst@4.1.3:
-    resolution: {integrity: sha512-CFfGsWnYC1HNFIoZWlfe8tcffmRQmFoDuMySfZF8doDEpoT0tSzO5TdMCHxmbMoBZ8/ZySpiDbp9KMvBEa2smg==}
+  sst@4.1.4:
+    resolution: {integrity: sha512-rNCWR/1WXQVdqeZJHwJOqeEvfI5pDcHX1GI30I5AD28SeSH7FYM3X8WMz43tMX42RtCzV5CpX5HpVE2C5DMKpA==}
     hasBin: true
 
   stable-hash@0.0.5:
@@ -5223,7 +5223,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@img/colour@1.0.0':
+  '@img/colour@1.1.0':
     optional: true
 
   '@img/sharp-darwin-arm64@0.34.5':
@@ -6874,12 +6874,12 @@ snapshots:
 
   flat-cache@4.0.1:
     dependencies:
-      flatted: 3.3.3
+      flatted: 3.3.4
       keyv: 4.5.4
 
   flat@5.0.2: {}
 
-  flatted@3.3.3: {}
+  flatted@3.3.4: {}
 
   for-each@0.3.5:
     dependencies:
@@ -7330,7 +7330,7 @@ snapshots:
     dependencies:
       yallist: 4.0.0
 
-  lucide-react@0.575.0(react@19.2.4):
+  lucide-react@0.576.0(react@19.2.4):
     dependencies:
       react: 19.2.4
 
@@ -8084,7 +8084,7 @@ snapshots:
 
   sharp@0.34.5:
     dependencies:
-      '@img/colour': 1.0.0
+      '@img/colour': 1.1.0
       detect-libc: 2.1.2
       semver: 7.7.4
     optionalDependencies:
@@ -8163,44 +8163,44 @@ snapshots:
 
   space-separated-tokens@2.0.2: {}
 
-  sst-darwin-arm64@4.1.3:
+  sst-darwin-arm64@4.1.4:
     optional: true
 
-  sst-darwin-x64@4.1.3:
+  sst-darwin-x64@4.1.4:
     optional: true
 
-  sst-linux-arm64@4.1.3:
+  sst-linux-arm64@4.1.4:
     optional: true
 
-  sst-linux-x64@4.1.3:
+  sst-linux-x64@4.1.4:
     optional: true
 
-  sst-linux-x86@4.1.3:
+  sst-linux-x86@4.1.4:
     optional: true
 
-  sst-win32-arm64@4.1.3:
+  sst-win32-arm64@4.1.4:
     optional: true
 
-  sst-win32-x64@4.1.3:
+  sst-win32-x64@4.1.4:
     optional: true
 
-  sst-win32-x86@4.1.3:
+  sst-win32-x86@4.1.4:
     optional: true
 
-  sst@4.1.3:
+  sst@4.1.4:
     dependencies:
       aws4fetch: 1.0.18
       jose: 5.2.3
       openid-client: 5.6.4
     optionalDependencies:
-      sst-darwin-arm64: 4.1.3
-      sst-darwin-x64: 4.1.3
-      sst-linux-arm64: 4.1.3
-      sst-linux-x64: 4.1.3
-      sst-linux-x86: 4.1.3
-      sst-win32-arm64: 4.1.3
-      sst-win32-x64: 4.1.3
-      sst-win32-x86: 4.1.3
+      sst-darwin-arm64: 4.1.4
+      sst-darwin-x64: 4.1.4
+      sst-linux-arm64: 4.1.4
+      sst-linux-x64: 4.1.4
+      sst-linux-x86: 4.1.4
+      sst-win32-arm64: 4.1.4
+      sst-win32-x64: 4.1.4
+      sst-win32-x86: 4.1.4
 
   stable-hash@0.0.5: {}
 
