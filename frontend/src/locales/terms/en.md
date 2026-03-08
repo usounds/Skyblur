@@ -49,7 +49,15 @@ If this Site confirms that a user has engaged in prohibited acts, the service ma
 - For these features, if a discrepancy occurs between the data on the PDS and the data stored on this Site, this Site will prioritize the data stored on this Site for rendering. For other visibility scopes, the PDS content is considered correct.
 - If similar features are implemented in the AT Protocol or PDS in the future, the specifications of these features may change significantly, and past data or settings may not be transferable.
 
+## Prohibition of Moderation Evasion
+This service cannot be used for the purpose of evading moderation or usage restrictions on other services.
+
+Additionally, some or all of the data posted through this service is stored on Personal Data Servers (PDS), which are part of decentralized networks such as Bluesky. The Terms of Service for the PDS provided by Bluesky, currently utilized by a large number of users, are identical to the Terms of Service for its official application (bsky.app). Consequently, posting content on this service that is prohibited by bsky.app (e.g., inappropriate content) may be considered a violation of the PDS Terms of Service.
+
+In the unlikely event that your posts lead to allegations of these Terms of Service violations, or cause disadvantages such as account suspension or restriction, the developers and operators of this service shall bear no responsibility whatsoever. Please be fully aware of this in advance and use the service in compliance with the terms of each linked service.
+
 ## Revision History
+- 2026/03/03 Added a clause regarding the prohibition of moderation evasion.
 - 2026/02/23 Specified that the OAuth credentials and private posts are stored in Cloudflare.
 - 2026/02/07 Added clauses regarding the addition of Followers-only, Following-only, and Mutual-only visibility features.
 - 2026/01/10 Added a note that "Require login to view" is effective only on this Site.
