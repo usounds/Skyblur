@@ -7,6 +7,7 @@ import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { Button, LoadingOverlay, Switch, Textarea, TextInput } from '@mantine/core';
+import { memo } from 'react';
 import { notifications } from '@mantine/notifications';
 import Image from "next/image";
 import Link from 'next/link';
@@ -15,7 +16,10 @@ import { useEffect, useState } from "react";
 import { Check, Save } from 'lucide-react';
 import { ArrowLeft } from 'lucide-react';
 
-export default function Settings() {
+const MemoizedSettings = memo(Settings);
+export default MemoizedSettings;
+
+function Settings() {
   const agent = useXrpcAgentStore((state) => state.agent);
   const userProf = useXrpcAgentStore((state) => state.userProf);
   const did = useXrpcAgentStore((state) => state.did);
