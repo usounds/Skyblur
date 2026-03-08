@@ -550,7 +550,9 @@ app.get('/oauth/session', async (c) => {
             }
 
             if (!didDoc && did.startsWith('did:plc:')) {
-              const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
+              const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`, {
+                signal: AbortSignal.timeout(10000)
+              });
               if (res.ok) {
                 didDoc = await res.json();
                 c.executionCtx.waitUntil(

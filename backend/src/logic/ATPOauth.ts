@@ -251,10 +251,24 @@ export const retryFetch: typeof fetch = async (input, init) => {
         delete nextInit.cache;
     }
 
+    // タイムアウト設定 (1回のリクエストにつき最大10秒)
+    if (!nextInit.signal) {
+        nextInit.signal = AbortSignal.timeout(10000);
+    }
+
+    const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
+    const isGetOrHead = !nextInit.method || nextInit.method.toUpperCase() === 'GET' || nextInit.method.toUpperCase() === 'HEAD';
+
+    // Bodyがある場合、複数回リクエストすると "Cannot reconstruct a Request with a used body" が出るため
+    // 安全にリトライできる手段が限られる。
+    // 今回は簡単のため、GET/HEAD 以外で body がある場合はリトライしない（Cloudflare Workersの制限回避）
+    const actualMaxRetries = (isGetOrHead || !nextInit.body) ? MAX_RETRIES : 1;
+
     const doFetch = () => fetch(input, nextInit);
 
-    for (let i = 0; i < MAX_RETRIES; i++) {
+    for (let i = 0; i < actualMaxRetries; i++) {
         try {
+            // console.log(`[retryFetch] Fetching: ${url}`);
             const res = await doFetch();
 
             // 500以上のエラーはサーバー側の問題の可能性があるためリトライ対象
@@ -266,10 +280,16 @@ export const retryFetch: typeof fetch = async (input, init) => {
             // 最後の試行だった場合はそのまま返す
             if (i === MAX_RETRIES - 1) return res;
 
-        } catch (e) {
+        } catch (e: any) {
             // 最後の試行で失敗した場合はエラーを投げる
             if (i === MAX_RETRIES - 1) throw e;
-            console.warn(`[ATPOauth] Fetch failed, retrying (${i + 1}/${MAX_RETRIES})...`, e);
+
+            // Cloudflare間ループバックによる内部エラーやAbortErrorの警告はノイズになるため抑制
+            const errMsg = String(e?.message || e);
+            const errName = String(e?.name || '');
+            if (!errMsg.includes('internal error') && !errMsg.includes('AbortError') && errName !== 'AbortError') {
+                console.warn(`[ATPOauth] Fetch failed for ${url}, retrying (${i + 1}/${actualMaxRetries})...`, e);
+            }
         }
 
         // バックオフ (1s, 2s, 3s...)
@@ -277,7 +297,7 @@ export const retryFetch: typeof fetch = async (input, init) => {
         await new Promise(resolve => setTimeout(resolve, delay));
     }
 
-    throw new Error('Fetch failed after retries');
+    throw new Error(`Fetch failed after retries for ${typeof input === 'string' ? input : 'Request'}`);
 };
 
 export async function getOAuthClient(env: Env, apiOrigin: string) {
@@ -315,15 +335,29 @@ export async function getOAuthClient(env: Env, apiOrigin: string) {
     };
 
     // Cloudflare Workers では redirect: 'error' や cache: 'no-cache' が使えないためラップする
+    // retryFetch 内で回避処理を行っているため、ここでは単にインターセプト後に retryFetch へ委譲する
     const safeFetch: typeof fetch = async (input, init) => {
-        const nextInit = { ...init } as any;
-        if (nextInit.redirect === 'error') {
-            nextInit.redirect = 'manual';
+        const url = (typeof input === 'string') ? input : (input instanceof Request ? input.url : input.toString());
+        // 自サーバーへの client-metadata.json 取得リクエストをインターセプトして直接返す
+        if (url.includes('/oauth/client-metadata.json')) {
+            return new Response(JSON.stringify({
+                client_id: clientId,
+                client_name: 'Skyblur',
+                client_uri: effectiveOrigin,
+                redirect_uris: [`${effectiveOrigin}/oauth/callback`],
+                jwks_uri: jwksUri,
+                scope: scopeList,
+                grant_types: ['authorization_code', 'refresh_token'],
+                response_types: ['code'],
+                token_endpoint_auth_method: 'private_key_jwt',
+                token_endpoint_auth_signing_alg: 'ES256',
+                dpop_bound_access_tokens: true,
+            }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
-        if (nextInit.cache && nextInit.cache !== 'default') {
-            delete nextInit.cache;
-        }
-        return fetch(input, nextInit);
+
+        return retryFetch(input, init);
     };
 
     const client = new OAuthClient({
