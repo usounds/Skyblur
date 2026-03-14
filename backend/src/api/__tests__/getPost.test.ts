@@ -102,9 +102,19 @@ describe('getPost API', () => {
     });
 
     it('should handle PDS fetch error', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                value: {
+                    text: 'enc',
+                    visibility: 'password',
+                    encryptBody: { ref: 'cid123' }
+                }
+            })
+        });
         // @ts-ignore
         JWTTokenHandler.fetchServiceEndpoint.mockRejectedValue(new Error('PDS fail'));
-        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123', password: 'any' });
 
         await handle(c);
         expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Cannot detect did') }), 500);
