@@ -24,7 +24,8 @@
       "@aws-sdk/client-dynamodb": "3.972.0",
       "@aws-sdk/dynamodb-codec": "3.972.0",
       "minimatch": "^10.2.1",
-      "ajv": "^8.18.0"
+      "ajv": "^8.18.0",
+      "@atcute/time-ms": "1.2.3"
     }
   },
   "scripts": {
@@ -42,7 +43,7 @@
   },
   "dependencies": {
     "@atcute/atproto": "^3.1.10",
-    "@atcute/bluesky": "^3.2.20",
+    "@atcute/bluesky": "^3.3.0",
     "@atcute/client": "^4.2.1",
     "@atcute/identity-resolver": "^1.2.2",
     "@atcute/identity-resolver-node": "^1.0.3",
@@ -52,7 +53,7 @@
     "@mantine/hooks": "^8.3.16",
     "@mantine/notifications": "^8.3.16",
     "@opennextjs/aws": "^3.9.16",
-    "dompurify": "^3.3.2",
+    "dompurify": "^3.3.3",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
     "lucide-react": "^0.577.0",
@@ -62,19 +63,19 @@
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
     "react-spinners": "^0.17.0",
-    "sst": "^4.2.2",
+    "sst": "^4.2.7",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@atcute/lex-cli": "^2.5.3",
-    "@aws-sdk/client-lambda": "^3.1004.0",
+    "@aws-sdk/client-lambda": "^3.1009.0",
     "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/postcss": "^4.2.1",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
     "autoprefixer": "^10.4.27",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.1.6",
