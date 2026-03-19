@@ -66,7 +66,7 @@ export const PostList: React.FC<PostListProps> = ({
                 return;
             }
 
-            if (result.data.records.length === 0) {
+            if (result.data.records.length === 0 || !result.data.cursor) {
                 setIsLast(true)
             }
 
