@@ -1,12 +1,15 @@
 "use client";
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { AtPassport } from '@atpassport/client/core';
+import { AtPassportIcon, AtPassportUI } from '@atpassport/client/ui';
 import {
     Anchor,
     Autocomplete,
     Avatar,
     Button,
     Container,
+    Divider,
     Group,
     Paper,
     Text,
@@ -29,10 +32,17 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         return '';
     });
     const [suggestions, setSuggestions] = useState<(ComboboxItem & { avatar?: string })[]>([]);
-    const { localeData: locale } = useLocale();
+    const { localeData: locale, locale: lang } = useLocale();
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    const isDev = typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost'));
+    const apiHost = isDev ? 'devapi.skyblur.uk' : 'api.skyblur.uk';
+    const getRedirectUrl = () => {
+        const currentPath = window.location.pathname;
+        return currentPath === '/' ? `${window.location.origin}/console` : window.location.href;
+    };
 
     // loginError パラメータがある場合、エラーメッセージを表示
     useEffect(() => {
@@ -146,16 +156,8 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             // バックエンドのログインAPIへリダイレクト
             window.localStorage.setItem('oauth.handle', handle);
 
-            let apiEndpoint = 'api.skyblur.uk';
-            if (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')) {
-                apiEndpoint = 'devapi.skyblur.uk';
-            }
-
-
-            // ホームページからログインした場合は /console へリダイレクト
-            const currentPath = window.location.pathname;
-            const redirectUrl = currentPath === '/' ? `${window.location.origin}/console` : window.location.href;
-            const loginUrl = `https://${apiEndpoint}/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
+            const redirectUrl = getRedirectUrl();
+            const loginUrl = `https://${apiHost}/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
             window.location.assign(loginUrl);
 
             // リダイレクトまで待機
@@ -171,6 +173,25 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             });
             setIsLoading(false);
         }
+    }
+
+    const handleAtPassportLogin = async () => {
+        const passportHost = isDev ? 'https://dev.atpassport.net' : 'https://atpassport.net';
+
+        const passport = new AtPassport({
+            baseUrl: passportHost,
+            callbackUrl: `https://${apiHost}/oauth/login`,
+            lang: lang
+        });
+
+        const { url: atPassportUrl } = passport.generateAuthUrl({
+            redirect_uri: getRedirectUrl()
+        });
+
+        setIsLoading(true);
+        window.location.assign(atPassportUrl);
+        // リダイレクトまで待機
+        await new Promise(() => { });
     }
 
 
@@ -204,6 +225,16 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     const loginForm = (
         <>
             {!isModal && <Title order={2} size="h3" mb="md" ta="center">{locale.Login_Login}</Title>}
+
+            <Button fullWidth radius="md" onClick={handleAtPassportLogin} leftSection={<AtPassportIcon size={24} />}>
+                {AtPassportUI[lang].title}
+            </Button>
+            <Text size="xs" c="dimmed" ta="left" mt={4} px={4}>
+                {AtPassportUI[lang].description}
+            </Text>
+
+            <Divider label={locale.Login_Or} labelPosition="center" my="xl" />
+
             <Autocomplete
                 label={locale.Login_HandleCaption}
                 placeholder="alice.bsky.social"
@@ -235,6 +266,11 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 }
                 }
             />
+
+            <Button fullWidth mt="md" radius="md" onClick={handleSignIn} loading={isLoading} loaderProps={{ type: 'dots' }} leftSection={<BlueskyIcon size={20} />}>
+                {locale.Login_Login}
+            </Button>
+
             <LanguageSelect />
             <Anchor
                 href={`https://${typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')) ? 'devapi.skyblur.uk' : 'api.skyblur.uk'}/oauth/login?redirect_uri=${typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname === '/' ? `${window.location.origin}/console` : window.location.href) : ''}`}
@@ -245,9 +281,6 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             >
                 {locale.Login_CreateAccount}
             </Anchor>
-            <Button fullWidth mt="md" radius="md" onClick={handleSignIn} loading={isLoading} loaderProps={{ type: 'dots' }} leftSection={<BlueskyIcon size={20} />}>
-                {locale.Login_Login}
-            </Button>
         </>
     );
 

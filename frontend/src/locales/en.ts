@@ -36,6 +36,7 @@ const messages = {
     Login_Redirect: "Redirecting to {1}",
     Login_RedirectFailed: "Failed to redirect to the authorization page.",
     Login_Login: "Login",
+    Login_Or: "or",
     Login_TapToLinkProfile: "Tap here to check if your account is displayed.",
     Login_NotDomain: 'Please include ".bsky.social", like "alice.bsky.social".',
     Login_WithAt: "Please do not include the \"@\" in the handle.",

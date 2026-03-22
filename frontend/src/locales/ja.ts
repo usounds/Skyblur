@@ -36,6 +36,7 @@ const messages = {
     Login_Redirect: "{1}に遷移します",
     Login_RedirectFailed: "認可ページへの遷移に失敗しました",
     Login_Login: "ログイン",
+    Login_Or: "または",
     Login_TapToLinkProfile: "ここをタップして、あなたのアカウントが表示されるか確認してください。",
     Login_NotDomain: "alice.bsky.socialのように「.bsky.social」を付与してください",
     Login_WithAt: "ハンドルに@は不要です",
