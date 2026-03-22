@@ -19,7 +19,8 @@
     "overrides": {
       "hono": "^4.11.7",
       "@modelcontextprotocol/sdk": "^1.26.0",
-      "fast-xml-parser": "^5.3.6",
+      "fast-xml-parser": "^5.5.7",
+      "flatted": "^3.4.2",
       "zod": "^4.3.6",
       "@aws-sdk/client-dynamodb": "3.972.0",
       "@aws-sdk/dynamodb-codec": "3.972.0",
@@ -49,6 +50,7 @@
     "@atcute/identity-resolver-node": "^1.0.3",
     "@atcute/lexicons": "^1.2.9",
     "@atcute/tid": "^1.1.2",
+    "@atpassport/client": "^0.1.10",
     "@mantine/core": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
     "@mantine/notifications": "^8.3.18",

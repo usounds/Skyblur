@@ -32,5 +32,10 @@
     "unenv": "2.0.0-rc.24",
     "vitest": "^4.1.0",
     "wrangler": "^4.75.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "flatted": "^3.4.2"
+    }
   }
 }
