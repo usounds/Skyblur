@@ -18,20 +18,20 @@
     "@atcute/oauth-node-client": "^1.1.0",
     "did-jwt": "^8.0.18",
     "did-resolver": "^4.1.0",
-    "hono": "^4.12.8",
+    "hono": "^4.12.9",
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
     "@atcute/bluesky": "^3.3.0",
     "@atcute/lex-cli": "^2.5.3",
-    "@cloudflare/unenv-preset": "^2.15.0",
+    "@cloudflare/unenv-preset": "^2.16.0",
     "@cloudflare/workers-types": "^4.20260317.1",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^4.1.0",
     "@vitest/ui": "^4.1.0",
     "unenv": "2.0.0-rc.24",
     "vitest": "^4.1.0",
-    "wrangler": "^4.75.0"
+    "wrangler": "^4.76.0"
   },
   "pnpm": {
     "overrides": {
