@@ -8,19 +8,26 @@ import {
     Autocomplete,
     Avatar,
     Button,
-    Container,
     Divider,
     Group,
+    Checkbox,
+    Stack,
+    Box,
+    UnstyledButton,
+    Collapse,
+    Center,
     Paper,
     Text,
     Title,
-    ComboboxItem
+    ComboboxItem,
+    Container
 } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { X } from 'lucide-react';
 import { useEffect, useState } from "react";
-import LanguageSelect from "../LanguageSelect";
+
+
 
 import { BlueskyIcon } from '../Icons';
 
@@ -36,6 +43,13 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [agreed, setAgreed] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('login.agreed') === 'true';
+        }
+        return false;
+    });
+    const [showHandleLogin, setShowHandleLogin] = useState<boolean>(false);
 
     const isDev = typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost'));
     const apiHost = isDev ? 'devapi.skyblur.uk' : 'api.skyblur.uk';
@@ -54,6 +68,11 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             setErrorMessage(null);
         }
     }, [locale.Login_InvalidHandle]);
+
+    // 同意状態を localStorage に保存
+    useEffect(() => {
+        localStorage.setItem('login.agreed', agreed.toString());
+    }, [agreed]);
 
     const handleSignIn = async () => {
         setIsLoading(true)
@@ -176,6 +195,14 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     }
 
     const handleAtPassportLogin = async () => {
+        if (!agreed) {
+            notifications.show({
+                title: 'Error',
+                message: locale.Login_AgreeToTerms,
+                color: 'red',
+            });
+            return;
+        }
         const passportHost = isDev ? 'https://dev.atpassport.net' : 'https://atpassport.net';
 
         const passport = new AtPassport({
@@ -223,65 +250,135 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
 
     const loginForm = (
-        <>
-            {!isModal && <Title order={2} size="h3" mb="md" ta="center">{locale.Login_Login}</Title>}
+        <Stack gap="md">
+            <Box ta="center" >
+                <Title order={2} mb={0} >
+                    Skyblur
+                </Title>
+                <Text size="sm" c="dimmed" mt={4}>
+                    {locale.Login_SubTitle}
+                </Text>
+            </Box>
 
-            <Button fullWidth radius="md" onClick={handleAtPassportLogin} leftSection={<AtPassportIcon size={24} />}>
-                {AtPassportUI[lang].title}
-            </Button>
-            <Text size="xs" c="dimmed" ta="left" mt={4} px={4}>
-                {AtPassportUI[lang].description}
-            </Text>
-
-            <Divider label={locale.Login_Or} labelPosition="center" my="xl" />
-
-            <Autocomplete
-                label={locale.Login_HandleCaption}
-                placeholder="alice.bsky.social"
-                required
-                radius="md"
-                autoCapitalize={"none"}
-                autoCorrect={"off"}
-                autoComplete={"off"}
-                spellCheck={false}
-                value={handle}
-                data={suggestions}
-                renderOption={({ option }: { option: any }) => (
-                    <Group gap="sm">
-                        <Avatar src={option.avatar} size={24} radius="xl" />
-                        <Text size="sm">{option.value}</Text>
-                    </Group>
-                )}
-                onInput={(event) => handleInput(event.currentTarget.value)}
-                onChange={(value) => {
-                    setHandle(value);
-                    setSuggestions([]);
-                    setErrorMessage(null); // 入力時にエラーをクリア
-                }}
-                error={errorMessage}
-                styles={{
-                    input: {
-                        fontSize: 16,
-                    },
-                }
+            <Checkbox
+                checked={agreed}
+                onChange={(event) => setAgreed(event.currentTarget.checked)}
+                label={
+                    <Text size="sm">
+                        {locale.Login_AgreeToTerms}{' '}
+                        <Anchor href="/termofuse" target="_blank" >
+                            {locale.Menu_TermOfUse}
+                        </Anchor>
+                    </Text>
                 }
             />
 
-            <Button fullWidth mt="md" radius="md" onClick={handleSignIn} loading={isLoading} loaderProps={{ type: 'dots' }} leftSection={<BlueskyIcon size={20} />}>
-                {locale.Login_Login}
-            </Button>
+            {!showHandleLogin ? (
+                <Stack gap="md">
+                    <Box>
+                        <Button
+                            fullWidth
+                            size="md"
+                            radius="lg"
+                            onClick={handleAtPassportLogin}
+                            disabled={isLoading || !agreed}
+                            loading={isLoading}
+                            loaderProps={{ type: 'dots' }}
+                            leftSection={<AtPassportIcon size={24} />}
+                            color="blue"
+                        >
+                            {AtPassportUI[lang]?.title}
+                        </Button>
+                        <Text size="xs" c="dimmed" ta="left" mt={8} px={4} lh={1.4}>
+                            {AtPassportUI[lang]?.description}
+                        </Text>
+                    </Box>
 
-            <LanguageSelect />
-            <Anchor
-                href={`https://${typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')) ? 'devapi.skyblur.uk' : 'api.skyblur.uk'}/oauth/login?redirect_uri=${typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname === '/' ? `${window.location.origin}/console` : window.location.href) : ''}`}
-                size="sm"
-                mt="md"
-                ta="center"
-                display="block"
-            >
-                {locale.Login_CreateAccount}
-            </Anchor>
-        </>
+                    <Divider label={locale.Login_Or} labelPosition="center" />
+
+                    <Box>
+                        <Button
+                            variant="outline"
+                            fullWidth
+                            size="md"
+                            radius="lg"
+                            onClick={() => setShowHandleLogin(true)}
+                            disabled={!agreed}
+                        >
+                            {locale.Login_LoginWithHandle}
+                        </Button>
+                    </Box>
+                </Stack>
+            ) : (
+                <Stack gap="md">
+                    <Autocomplete
+                        label={locale.Login_HandleCaption}
+                        placeholder="alice.bsky.social"
+                        required
+                        radius="md"
+                        autoCapitalize={"none"}
+                        autoCorrect={"off"}
+                        autoComplete={"off"}
+                        spellCheck={false}
+                        value={handle}
+                        data={suggestions}
+                        renderOption={({ option }: { option: any }) => (
+                            <Group gap="sm">
+                                <Avatar src={option.avatar} size={24} radius="xl" />
+                                <Text size="sm">{option.value}</Text>
+                            </Group>
+                        )}
+                        onInput={(event) => handleInput(event.currentTarget.value)}
+                        onChange={(value) => {
+                            setHandle(value);
+                            setSuggestions([]);
+                            setErrorMessage(null);
+                        }}
+                        error={errorMessage}
+                        styles={{
+                            input: {
+                                fontSize: 16,
+                            },
+                        }}
+                    />
+
+                    <Button
+                        fullWidth
+                        mt="md"
+                        radius="lg"
+                        size="md"
+                        onClick={handleSignIn}
+                        disabled={isLoading || !agreed}
+                        loading={isLoading}
+                        loaderProps={{ type: 'dots' }}
+                        leftSection={<BlueskyIcon size={20} />}
+                    >
+                        {locale.Login_Login}
+                    </Button>
+
+                    <Center mt="xs">
+                        <UnstyledButton onClick={() => setShowHandleLogin(false)}>
+                            <Text size="xs" c="dimmed" td="underline">
+                                {locale.Menu_Back}
+                            </Text>
+                        </UnstyledButton>
+                    </Center>
+                </Stack>
+            )}
+
+            <Box ta="center">
+
+
+                <Anchor
+                    href={`https://${apiHost}/oauth/login?prompt=create&redirect_uri=${encodeURIComponent(getRedirectUrl())}`}
+                    size="sm"
+                    mt="xs"
+                    display="block"
+                >
+                    {locale.Login_CreateAccount}
+                </Anchor>
+            </Box>
+        </Stack>
     );
 
     if (isModal) {

@@ -42,8 +42,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2
       '@atpassport/client':
-        specifier: ^0.1.10
-        version: 0.1.10(react@19.2.4)
+        specifier: ^0.1.23
+        version: 0.1.23(react@19.2.4)
       '@mantine/core':
         specifier: ^8.3.18
         version: 8.3.18(@mantine/hooks@8.3.18(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -290,8 +290,8 @@ packages:
   '@atcute/varint@2.0.0':
     resolution: {integrity: sha512-CEY/oVK/nVpL4e5y3sdenLETDL6/Xu5xsE/0TupK+f0Yv8jcD60t2gD8SHROWSvUwYLdkjczLCSA7YrtnjCzWw==}
 
-  '@atpassport/client@0.1.10':
-    resolution: {integrity: sha512-/HW07/3GvPYF+8A3o2P0zL+mlGbcGRD7eR2tuF2agHiF5mjcAEwL4zllYebRA24fnP+tpCrvFmW9JTIBBwMpaA==}
+  '@atpassport/client@0.1.23':
+    resolution: {integrity: sha512-/iYuYz2ebRiO6wV2VycCQfDrsErVN7AnEkGXK9/gyAjxX6HM5go9F2VxcXms4lyo6+HhcpzuPxD8lALYNEZM8A==}
     peerDependencies:
       react: '>=18.0.0'
     peerDependenciesMeta:
@@ -4011,7 +4011,7 @@ snapshots:
 
   '@atcute/varint@2.0.0': {}
 
-  '@atpassport/client@0.1.10(react@19.2.4)':
+  '@atpassport/client@0.1.23(react@19.2.4)':
     optionalDependencies:
       react: 19.2.4
 

@@ -328,6 +328,7 @@ app.get('/oauth/login', async (c) => {
     const { url } = await client.authorize({
       target: authorizeTarget,
       state: { timestamp: Date.now() },
+      prompt: c.req.query('prompt'),
     });
 
     // 許可されたオリジンの一覧（ドメイン検証用）
