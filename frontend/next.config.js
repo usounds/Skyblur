@@ -16,6 +16,7 @@ const nextConfig = {
       },
     ],
   },
+  allowedDevOrigins: ['dev.skyblur.uk'],
 };
 
 export default nextConfig;
