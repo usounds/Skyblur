@@ -13,9 +13,6 @@ import {
     Checkbox,
     Stack,
     Box,
-    UnstyledButton,
-    Collapse,
-    Center,
     Paper,
     Text,
     Title,
@@ -25,7 +22,7 @@ import {
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { X } from 'lucide-react';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 
 
@@ -40,7 +37,10 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     });
     const [suggestions, setSuggestions] = useState<(ComboboxItem & { avatar?: string })[]>([]);
     const { localeData: locale, locale: lang } = useLocale();
-    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [isHandleLoading, setIsHandleLoading] = useState<boolean>(false);
+    const [isPassportLoading, setIsPassportLoading] = useState<boolean>(false);
+    const isAnyLoading = isHandleLoading || isPassportLoading;
+
     const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [agreed, setAgreed] = useState<boolean>(() => {
@@ -49,7 +49,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         }
         return false;
     });
-    const [showHandleLogin, setShowHandleLogin] = useState<boolean>(false);
+
 
     const isDev = typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost'));
     const apiHost = isDev ? 'devapi.skyblur.uk' : 'api.skyblur.uk';
@@ -74,8 +74,30 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         localStorage.setItem('login.agreed', agreed.toString());
     }, [agreed]);
 
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // モーダル表示時などに確実にフォーカスを当てる
+    useEffect(() => {
+        let retryCount = 0;
+        const tryFocus = () => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+                // 拡張機能が認識しやすいようにクリックイベントなどもシミュレート
+                inputRef.current.click();
+
+                // フォーカスが当たっていない場合は数回リトライする（Chrome対策）
+                if (document.activeElement !== inputRef.current && retryCount < 10) {
+                    retryCount++;
+                    setTimeout(tryFocus, 100);
+                }
+            }
+        };
+        const timer = setTimeout(tryFocus, 250);
+        return () => clearTimeout(timer);
+    }, []);
+
     const handleSignIn = async () => {
-        setIsLoading(true)
+        setIsHandleLoading(true)
         if (!handle) {
             notifications.show({
                 title: 'Error',
@@ -83,7 +105,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false)
+            setIsHandleLoading(false)
             return
         }
 
@@ -94,7 +116,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false);
+            setIsHandleLoading(false);
             return;
         }
 
@@ -105,7 +127,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false);
+            setIsHandleLoading(false);
             return;
         }
 
@@ -116,7 +138,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false);
+            setIsHandleLoading(false);
             return;
         }
 
@@ -127,7 +149,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false);
+            setIsHandleLoading(false);
             return;
         }
 
@@ -138,7 +160,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false);
+            setIsHandleLoading(false);
             return;
         }
 
@@ -149,7 +171,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false)
+            setIsHandleLoading(false)
             return
         }
         if (handle.startsWith('@')) {
@@ -159,7 +181,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false)
+            setIsHandleLoading(false)
             return
         }
 
@@ -190,7 +212,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 color: 'red',
                 icon: <X />
             });
-            setIsLoading(false);
+            setIsHandleLoading(false);
         }
     }
 
@@ -215,7 +237,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             redirect_uri: getRedirectUrl()
         });
 
-        setIsLoading(true);
+        setIsPassportLoading(true);
         window.location.assign(atPassportUrl);
         // リダイレクトまで待機
         await new Promise(() => { });
@@ -251,8 +273,8 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
     const loginForm = (
         <Stack gap="md">
-            <Box ta="center" >
-                <Title order={2} mb={0} >
+            <Box ta="center">
+                <Title order={2} mb={0}>
                     Skyblur
                 </Title>
                 <Text size="sm" c="dimmed" mt={4}>
@@ -266,109 +288,88 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 label={
                     <Text size="sm">
                         {locale.Login_AgreeToTerms}{' '}
-                        <Anchor href="/termofuse" target="_blank" >
+                        <Anchor href="/termofuse" target="_blank">
                             {locale.Menu_TermOfUse}
                         </Anchor>
                     </Text>
                 }
             />
 
-            {!showHandleLogin ? (
-                <Stack gap="md">
-                    <Box>
-                        <Button
-                            fullWidth
-                            size="md"
-                            radius="lg"
-                            onClick={handleAtPassportLogin}
-                            disabled={isLoading || !agreed}
-                            loading={isLoading}
-                            loaderProps={{ type: 'dots' }}
-                            leftSection={<AtPassportIcon size={24} />}
-                            color="blue"
-                        >
-                            {AtPassportUI[lang]?.title}
-                        </Button>
-                        <Text size="xs" c="dimmed" ta="left" mt={8} px={4} lh={1.4}>
-                            {AtPassportUI[lang]?.description}
-                        </Text>
-                    </Box>
+            <Stack gap="xs">
+                <Autocomplete
+                    ref={inputRef}
+                    label={locale.Login_HandleCaption}
+                    placeholder="alice.bsky.social"
+                    required
+                    id="handle"
+                    name="handle"
+                    type="text"
+                    data-autofocus
+                    autoFocus
+                    radius="md"
+                    autoCapitalize={"none"}
+                    autoCorrect={"off"}
+                    autoComplete={"off"}
+                    spellCheck={false}
+                    value={handle}
+                    data={suggestions}
+                    renderOption={({ option }: { option: any }) => (
+                        <Group gap="sm">
+                            <Avatar src={option.avatar} size={24} radius="xl" />
+                            <Text size="sm">{option.value}</Text>
+                        </Group>
+                    )}
+                    onInput={(event) => handleInput(event.currentTarget.value)}
+                    onChange={(value) => {
+                        setHandle(value);
+                        setSuggestions([]);
+                        setErrorMessage(null);
+                    }}
+                    error={errorMessage}
+                    styles={{
+                        input: {
+                            fontSize: 16,
+                        },
+                    }}
+                />
 
-                    <Divider label={locale.Login_Or} labelPosition="center" />
+                <Button
+                    fullWidth
+                    mt="md"
+                    radius="lg"
+                    size="md"
+                    onClick={handleSignIn}
+                    disabled={isAnyLoading || !agreed || !handle}
+                    loading={isHandleLoading}
+                    loaderProps={{ type: 'dots' }}
+                    leftSection={<BlueskyIcon size={20} />}
+                >
+                    {locale.Login_Login}
+                </Button>
+            </Stack>
 
-                    <Box>
-                        <Button
-                            variant="outline"
-                            fullWidth
-                            size="md"
-                            radius="lg"
-                            onClick={() => setShowHandleLogin(true)}
-                            disabled={!agreed}
-                        >
-                            {locale.Login_LoginWithHandle}
-                        </Button>
-                    </Box>
-                </Stack>
-            ) : (
-                <Stack gap="md">
-                    <Autocomplete
-                        label={locale.Login_HandleCaption}
-                        placeholder="alice.bsky.social"
-                        required
-                        radius="md"
-                        autoCapitalize={"none"}
-                        autoCorrect={"off"}
-                        autoComplete={"off"}
-                        spellCheck={false}
-                        value={handle}
-                        data={suggestions}
-                        renderOption={({ option }: { option: any }) => (
-                            <Group gap="sm">
-                                <Avatar src={option.avatar} size={24} radius="xl" />
-                                <Text size="sm">{option.value}</Text>
-                            </Group>
-                        )}
-                        onInput={(event) => handleInput(event.currentTarget.value)}
-                        onChange={(value) => {
-                            setHandle(value);
-                            setSuggestions([]);
-                            setErrorMessage(null);
-                        }}
-                        error={errorMessage}
-                        styles={{
-                            input: {
-                                fontSize: 16,
-                            },
-                        }}
-                    />
+            <Divider label={locale.Login_Or} labelPosition="center" />
 
-                    <Button
-                        fullWidth
-                        mt="md"
-                        radius="lg"
-                        size="md"
-                        onClick={handleSignIn}
-                        disabled={isLoading || !agreed}
-                        loading={isLoading}
-                        loaderProps={{ type: 'dots' }}
-                        leftSection={<BlueskyIcon size={20} />}
-                    >
-                        {locale.Login_Login}
-                    </Button>
-
-                    <Center mt="xs">
-                        <UnstyledButton onClick={() => setShowHandleLogin(false)}>
-                            <Text size="xs" c="dimmed" td="underline">
-                                {locale.Menu_Back}
-                            </Text>
-                        </UnstyledButton>
-                    </Center>
-                </Stack>
-            )}
+            <Box>
+                <Button
+                    fullWidth
+                    size="md"
+                    radius="lg"
+                    variant="outline"
+                    onClick={handleAtPassportLogin}
+                    disabled={isAnyLoading || !agreed}
+                    loading={isPassportLoading}
+                    loaderProps={{ type: 'dots' }}
+                    leftSection={<AtPassportIcon size={24} />}
+                >
+                    {AtPassportUI[lang]?.title}
+                </Button>
+                <Text size="xs" c="dimmed" ta="left" mt={8} px={4} lh={1.4}>
+                    {AtPassportUI[lang]?.description}
+                </Text>
+            </Box>
 
             <Box ta="center">
-
-
                 <Anchor
                     href={`https://${apiHost}/oauth/login?prompt=create&redirect_uri=${encodeURIComponent(getRedirectUrl())}`}
                     size="sm"
