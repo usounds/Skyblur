@@ -24,7 +24,7 @@ export default $config({
           ? {
             name: "preview.skyblur.uk",
             dns: false,
-            cert: "arn:aws:acm:us-east-1:036820509199:certificate/ee0b076b-692f-4e28-9c05-733cc33d9792"
+            cert: "arn:aws:acm:us-east-1:036820509199:certificate/36d7dea2-2bdf-4fd8-b756-069d23b00a94"
           }
           : undefined,
       regions: ["ap-northeast-1"],
