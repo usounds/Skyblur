@@ -58,6 +58,22 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         return currentPath === '/' ? `${window.location.origin}/console` : window.location.href;
     };
 
+    // ブラウザバック（bfcache）などで戻った際にローディング状態を確実にリセットする
+    useEffect(() => {
+        const handlePageShow = (event: PageTransitionEvent) => {
+            setIsHandleLoading(false);
+            setIsPassportLoading(false);
+            notifications.clean();
+        };
+
+        setIsHandleLoading(false);
+        setIsPassportLoading(false);
+        notifications.clean();
+
+        window.addEventListener('pageshow', handlePageShow);
+        return () => window.removeEventListener('pageshow', handlePageShow);
+    }, []);
+
     // loginError パラメータがある場合、エラーメッセージを表示
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
