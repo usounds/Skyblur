@@ -312,7 +312,6 @@ describe('ATPOauth', () => {
         it('should retry on network error and eventually succeed', async () => {
             const mockFetch = vi.fn()
                 .mockRejectedValueOnce(new Error('Network Error 1'))
-                .mockRejectedValueOnce(new Error('Network Error 2'))
                 .mockResolvedValue({ ok: true });
 
             // Mock global fetch
@@ -327,7 +326,7 @@ describe('ATPOauth', () => {
             try {
                 const res = await retryFetch('http://example.com');
                 expect(res.ok).toBe(true);
-                expect(mockFetch).toHaveBeenCalledTimes(3);
+                expect(mockFetch).toHaveBeenCalledTimes(2);
             } finally {
                 global.fetch = originalFetch;
                 global.setTimeout = realSetTimeout;
@@ -346,7 +345,7 @@ describe('ATPOauth', () => {
 
             try {
                 await expect(retryFetch('http://example.com')).rejects.toThrow('Persistent Error');
-                expect(mockFetch).toHaveBeenCalledTimes(3); // MAX_RETRIES
+                expect(mockFetch).toHaveBeenCalledTimes(2); // MAX_RETRIES
             } finally {
                 global.fetch = originalFetch;
                 global.setTimeout = realSetTimeout;

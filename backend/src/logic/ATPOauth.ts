@@ -239,7 +239,7 @@ export function getRequestOrigin(request: Request, env: Env) {
 // WellKnownHandleResolverはHTTPリクエストを行うため、一時的なエラーで失敗することがある。
 // Export for testing
 export const retryFetch: typeof fetch = async (input, init) => {
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 2;
     const BASE_DELAY = 1000;
 
     // init.redirect = 'error' の場合は 'manual' にする (safeFetch相当の処理)
@@ -251,9 +251,9 @@ export const retryFetch: typeof fetch = async (input, init) => {
         delete nextInit.cache;
     }
 
-    // タイムアウト設定 (1回のリクエストにつき最大10秒)
+    // タイムアウト設定 (1回のリクエストにつき最大5秒)
     if (!nextInit.signal) {
-        nextInit.signal = AbortSignal.timeout(10000);
+        nextInit.signal = AbortSignal.timeout(5000);
     }
 
     const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
