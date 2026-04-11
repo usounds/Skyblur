@@ -37,8 +37,8 @@ export class OAuthStoreDO extends DurableObject {
     if (url.pathname === "/lock") {
       const now = Date.now();
       const currentLock = this.locks.get(key);
-      // 60秒以上経っていたら強制解除 (Deadlock防止)
-      if (currentLock && now - currentLock < 60000) {
+      // 20秒以上経っていたら強制解除 (Deadlock防止)
+      if (currentLock && now - currentLock < 20000) {
         return new Response("Locked", { status: 423 });
       }
       this.locks.set(key, now);
@@ -579,10 +579,11 @@ app.get('/oauth/session', async (c) => {
         try {
           const profileRes = await (client as any).get('app.bsky.actor.getProfile', {
             params: { actor: session.did },
+            signal: AbortSignal.timeout(3000)
           });
           if (profileRes.ok) userProf = profileRes.data;
         } catch (err) {
-          console.error('Failed to fetch profile during session check:', err);
+          console.error('Failed to fetch profile during session check (timed out or error):', err);
         }
 
         const scope = await session.getTokenInfo();
