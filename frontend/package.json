@@ -51,7 +51,7 @@
     "@atcute/identity-resolver-node": "^1.0.3",
     "@atcute/lexicons": "^1.3.0",
     "@atcute/tid": "^1.1.2",
-    "@atpassport/client": "^0.1.28",
+    "@atpassport/client": "^0.1.29",
     "@mantine/core": "^9.0.1",
     "@mantine/hooks": "^9.0.1",
     "@mantine/notifications": "^9.0.1",
@@ -70,7 +70,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@atcute/lex-cli": "^2.7.0",
+    "@atcute/lex-cli": "^2.8.0",
     "@aws-sdk/client-lambda": "^3.1029.0",
     "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/postcss": "^4.2.2",

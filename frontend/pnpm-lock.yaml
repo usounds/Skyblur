@@ -43,8 +43,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2
       '@atpassport/client':
-        specifier: ^0.1.28
-        version: 0.1.28(react@19.2.5)
+        specifier: ^0.1.29
+        version: 0.1.29(react@19.2.5)
       '@mantine/core':
         specifier: ^9.0.1
         version: 9.0.1(@mantine/hooks@9.0.1(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -95,8 +95,8 @@ importers:
         version: 5.0.12(@types/react@19.2.14)(react@19.2.5)
     devDependencies:
       '@atcute/lex-cli':
-        specifier: ^2.7.0
-        version: 2.7.0
+        specifier: ^2.8.0
+        version: 2.8.0
       '@aws-sdk/client-lambda':
         specifier: ^3.1029.0
         version: 3.1029.0
@@ -248,8 +248,8 @@ packages:
   '@atcute/identity@1.1.4':
     resolution: {integrity: sha512-RCw1IqflfuSYCxK5m0lZCm0UnvIzcUnuhngiBhJEJb9a9Mc2SEf1xP3H8N5r8pvEH1LoAYd6/zrvCNU+uy9esw==}
 
-  '@atcute/lex-cli@2.7.0':
-    resolution: {integrity: sha512-U/M2+KGYtxe5pXleDgGsmrByMg0i7QpNJQRsoP4zPp1sEtPeLK6+7I0axJA2wkRiw+426B9IuPygVcS2FHLaDQ==}
+  '@atcute/lex-cli@2.8.0':
+    resolution: {integrity: sha512-eNPO0hhGhrCXQ7vEgVhqAaSHSsT3me1Jcc99rHaPgne1xP7fBfprf+E02M6BUqwrBz95YpnyuLPmVKNEk1jLwA==}
     hasBin: true
 
   '@atcute/lexicon-doc@2.2.0':
@@ -291,8 +291,8 @@ packages:
   '@atcute/varint@2.0.0':
     resolution: {integrity: sha512-CEY/oVK/nVpL4e5y3sdenLETDL6/Xu5xsE/0TupK+f0Yv8jcD60t2gD8SHROWSvUwYLdkjczLCSA7YrtnjCzWw==}
 
-  '@atpassport/client@0.1.28':
-    resolution: {integrity: sha512-mjmtexjbextd8TzfooQWc4LZ4ODns9nXUVMc7fTujBTX09IUDu6aUl9FqAwOOJNnRDwIMtoUGkw+/4Vlo9w6og==}
+  '@atpassport/client@0.1.29':
+    resolution: {integrity: sha512-odqXT3y8IpFQ4SHd+qWlnEOeS97SgmSW8SHSC4qC/CzFDH/NaJDYZxNW/aHMLbSSPIuIEc3hP1CA80STw8qpPQ==}
     peerDependencies:
       react: '>=18.0.0'
     peerDependenciesMeta:
@@ -1143,8 +1143,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@noble/secp256k1@3.0.0':
-    resolution: {integrity: sha512-NJBaR352KyIvj3t6sgT/+7xrNyF9Xk9QlLSIqUGVUYlsnDTAUqY8LOmwpcgEx4AMJXRITQ5XEVHD+mMaPfr3mg==}
+  '@noble/secp256k1@3.1.0':
+    resolution: {integrity: sha512-+F7iS7tUMaNGXcc9X3PjmjvuQnXEuSjCRNzVVA2xAcKXgCaP0dHYz4SFyt4FKNHef7sOP//xihowcySSS7PK9g==}
 
   '@node-minify/core@8.0.6':
     resolution: {integrity: sha512-/vxN46ieWDLU67CmgbArEvOb41zlYFOkOtr9QW9CnTrBLuTyGgkyNWC2y5+khvRw3Br58p2B5ZVSx/PxCTru6g==}
@@ -1806,8 +1806,8 @@ packages:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
 
-  baseline-browser-mapping@2.10.17:
-    resolution: {integrity: sha512-HdrkN8eVG2CXxeifv/VdJ4A4RSra1DTW8dc/hdxzhGHN8QePs6gKaWM9pHPcpCoxYZJuOZ8drHmbdpLHjCYjLA==}
+  baseline-browser-mapping@2.10.18:
+    resolution: {integrity: sha512-VSnGQAOLtP5mib/DPyg2/t+Tlv65NTBz83BJBJvmLVHHuKJVaDOBvJJykiT5TR++em5nfAySPccDZDa4oSrn8A==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -3819,7 +3819,7 @@ snapshots:
     dependencies:
       '@atcute/multibase': 1.2.0
       '@atcute/uint8array': 1.1.1
-      '@noble/secp256k1': 3.0.0
+      '@noble/secp256k1': 3.1.0
 
   '@atcute/identity-resolver-node@1.0.3(@atcute/identity-resolver@1.2.2(@atcute/identity@1.1.4))(@atcute/identity@1.1.4)':
     dependencies:
@@ -3839,7 +3839,7 @@ snapshots:
       '@atcute/lexicons': 1.3.0
       '@badrap/valita': 0.4.6
 
-  '@atcute/lex-cli@2.7.0':
+  '@atcute/lex-cli@2.8.0':
     dependencies:
       '@atcute/identity': 1.1.4
       '@atcute/identity-resolver': 1.2.2(@atcute/identity@1.1.4)
@@ -3919,7 +3919,7 @@ snapshots:
 
   '@atcute/varint@2.0.0': {}
 
-  '@atpassport/client@0.1.28(react@19.2.5)':
+  '@atpassport/client@0.1.29(react@19.2.5)':
     optionalDependencies:
       react: 19.2.5
 
@@ -5407,7 +5407,7 @@ snapshots:
   '@next/swc-win32-x64-msvc@16.2.3':
     optional: true
 
-  '@noble/secp256k1@3.0.0': {}
+  '@noble/secp256k1@3.1.0': {}
 
   '@node-minify/core@8.0.6':
     dependencies:
@@ -6206,7 +6206,7 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  baseline-browser-mapping@2.10.17: {}
+  baseline-browser-mapping@2.10.18: {}
 
   body-parser@2.2.2:
     dependencies:
@@ -6234,7 +6234,7 @@ snapshots:
 
   browserslist@4.28.2:
     dependencies:
-      baseline-browser-mapping: 2.10.17
+      baseline-browser-mapping: 2.10.18
       caniuse-lite: 1.0.30001787
       electron-to-chromium: 1.5.335
       node-releases: 2.0.37
@@ -7604,7 +7604,7 @@ snapshots:
     dependencies:
       '@next/env': 16.2.3
       '@swc/helpers': 0.5.15
-      baseline-browser-mapping: 2.10.17
+      baseline-browser-mapping: 2.10.18
       caniuse-lite: 1.0.30001787
       postcss: 8.4.31
       react: 19.2.5
