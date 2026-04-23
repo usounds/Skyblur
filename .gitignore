@@ -48,3 +48,4 @@ create_app.json
 .dev.vars
 
 .sst
+.pnpm-store/

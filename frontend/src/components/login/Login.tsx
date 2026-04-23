@@ -241,7 +241,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             });
             return;
         }
-        const passportHost = isDev ? 'https://dev.atpassport.net' : 'https://atpassport.net';
+        const passportHost = isDev ? 'https://preview.atpassport.net' : 'https://atpassport.net';
 
         const passport = new AtPassport({
             baseUrl: passportHost,
