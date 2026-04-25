@@ -53,9 +53,9 @@ export const getAuthenticatedDid = async (c: Context): Promise<string | null> =>
     }
 
     if (rawDid) {
-        const parts = rawDid.split('.');
-        if (parts.length === 2) {
-            const [did] = parts;
+        const lastDotIndex = rawDid.lastIndexOf('.');
+        if (lastDotIndex !== -1) {
+            const did = rawDid.substring(0, lastDotIndex);
             const expectedSigned = await signDid(did, secret);
             if (rawDid === expectedSigned) {
                 return did;
