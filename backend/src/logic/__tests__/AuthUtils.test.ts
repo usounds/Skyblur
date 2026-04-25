@@ -100,6 +100,30 @@ describe('AuthUtils', () => {
             expect(did).toBe(storedDid);
         });
 
+        it('should return DID from cookie for did:web identifiers that include dots', async () => {
+            const secret = 'secret-key';
+            const storedDid = 'did:web:app.example.com';
+            const signedDid = await signDid(storedDid, secret);
+
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: {
+                        headers: new Headers({
+                            'Cookie': `oauth_did=${signedDid}`
+                        })
+                    }
+                },
+                env: {
+                    OAUTH_PRIVATE_KEY_JWK: secret,
+                    APPVIEW_HOST: 'app.example.com'
+                }
+            };
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBe(storedDid);
+        });
+
         it('should return null if cookie has invalid format', async () => {
             const c: any = {
                 req: {
