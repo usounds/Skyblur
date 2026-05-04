@@ -1,31 +1,45 @@
-import { Hono, type Context } from 'hono';
+import { type Context } from 'hono';
 import { Env } from '@/index';
 import { getAuthenticatedDid } from '@/logic/AuthUtils';
 
-const app = new Hono<{ Bindings: Env }>();
+function jsonResponse(c: Context<{ Bindings: Env }>, body: unknown, status = 200) {
+    if (typeof c.json === 'function') {
+        return c.json(body, status as never);
+    }
 
-app.post('/', async (c) => {
+    return Response.json(body, { status });
+}
+
+async function readJsonBody(c: Context<{ Bindings: Env }>) {
+    if (typeof c.req.json === 'function') {
+        return c.req.json();
+    }
+
+    return c.req.raw.json();
+}
+
+export const handle = async (c: Context<{ Bindings: Env }>) => {
     try {
-        const body = await c.req.json();
+        const body = await readJsonBody(c);
         const uri = body.uri;
 
         if (!uri) {
-            return c.json({ success: false, error: 'Missing uri' }, 400);
+            return jsonResponse(c, { success: false, error: 'Missing uri' }, 400);
         }
 
         const requesterDid = await getAuthenticatedDid(c);
         if (!requesterDid) {
-            return c.json({ success: false, error: 'Not authenticated' }, 401);
+            return jsonResponse(c, { success: false, error: 'Not authenticated' }, 401);
         }
 
         // Verify the requester is the author and the collection is correct
         if (!uri.startsWith(`at://${requesterDid}/uk.skyblur.post/`)) {
-            return c.json({ success: false, error: 'Unauthorized or invalid collection' }, 403);
+            return jsonResponse(c, { success: false, error: 'Unauthorized or invalid collection' }, 403);
         }
 
         const rkey = uri.split('/').pop();
         if (!rkey) {
-            return c.json({ success: false, error: 'Invalid URI' }, 400);
+            return jsonResponse(c, { success: false, error: 'Invalid URI' }, 400);
         }
 
         const doId = c.env.SKYBLUR_DO_RESTRICTED.idFromName(requesterDid);
@@ -40,16 +54,12 @@ app.post('/', async (c) => {
 
         if (!doRes.ok) {
             console.error('[deleteStored] DO returned error:', await doRes.text());
-            return c.json({ success: false, error: 'Failed to delete from storage' }, 500);
+            return jsonResponse(c, { success: false, error: 'Failed to delete from storage' }, 500);
         }
 
-        return c.json({ success: true });
+        return jsonResponse(c, { success: true });
     } catch (e) {
         console.error('Error in deleteStored:', e);
-        return c.json({ success: false, error: String(e) }, 500);
+        return jsonResponse(c, { success: false, error: String(e) }, 500);
     }
-});
-
-export const handle = async (c: Context<{ Bindings: Env }>) => {
-    return app.fetch(c.req.raw, c.env);
 };
