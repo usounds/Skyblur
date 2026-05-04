@@ -626,8 +626,91 @@ test("/post shows restricted login-required detail content to logged-out visitor
   await page.goto(`/post/${encodeURIComponent(mockDid)}/e2erestricted`);
 
   await expect(page.getByText("E2E Tester")).toBeVisible();
-  await expect(page.getByText("Please log in to view this post.")).toBeVisible();
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
   await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
+});
+
+test("/post refetches restricted detail after the session resolves authenticated", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    authenticated: false,
+    postDetailVariant: "authRequired",
+    postDetailVisibility: "followers",
+  });
+
+  let resolveSession = () => {};
+  let sessionRequests = 0;
+  await page.unroute("**/api/oauth/session");
+  await page.route("**/api/oauth/session", async (route) => {
+    sessionRequests += 1;
+    await new Promise<void>((resolve) => {
+      resolveSession = resolve;
+    });
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: {
+        "Cache-Control": "no-store",
+        Vary: "Cookie",
+      },
+      body: JSON.stringify({
+        authenticated: true,
+        did: mockDid,
+        pds: "https://e2e-pds.skyblur.test",
+        userProf: {
+          did: mockDid,
+          handle: mockHandle,
+          displayName: "E2E Tester",
+        },
+        scope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
+      }),
+    });
+  });
+
+  let getPostRequests = 0;
+  await page.route("**/xrpc/uk.skyblur.post.getPost", async (route) => {
+    getPostRequests += 1;
+    if (getPostRequests === 1) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          text: "*****",
+          additional: "",
+          errorCode: "AuthRequired",
+          visibility: "followers",
+          createdAt: "2026-05-04T03:22:34.000Z",
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        text: "Authenticated restricted post detail text",
+        additional: "Authenticated restricted post detail additional",
+        visibility: "followers",
+        createdAt: "2026-05-04T03:22:34.000Z",
+      }),
+    });
+  });
+
+  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2erefetch`);
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
+  expect(getPostRequests).toBe(1);
+
+  resolveSession();
+
+  await expect(page.getByText("Authenticated restricted post detail text")).toBeVisible();
+  await expect(page.getByText("Authenticated restricted post detail additional")).toBeVisible();
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
+  expect(sessionRequests).toBeGreaterThanOrEqual(1);
+  expect(getPostRequests).toBe(2);
 });
 
 test("/post shows each logged-out restricted visibility message", async ({

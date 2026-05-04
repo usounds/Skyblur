@@ -17,7 +17,7 @@ import { Button, Divider, Group, Input } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from 'lucide-react';
 import { BlueskyIcon } from '@/components/Icons';
 
@@ -55,6 +55,8 @@ export const PostPage = () => {
     const [debugStatus, setDebugStatus] = useState<string>('Idle');
     const [isRestrictedFetchDone, setIsRestrictedFetchDone] = useState<boolean>(false);
     const [isRestrictedFetching, setIsRestrictedFetching] = useState<boolean>(false);
+    const postFetchRequestIdRef = useRef(0);
+    const authenticatedRefetchKeyRef = useRef('');
 
     const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
     const bskyPostAtUri = 'at://' + did + "/app.bsky.feed.post/" + rkey
@@ -65,10 +67,13 @@ export const PostPage = () => {
         /* istanbul ignore next -- The route cannot render without both dynamic segments. */
         if (!did || !rkey) return;
 
+        const requestId = postFetchRequestIdRef.current + 1;
+        postFetchRequestIdRef.current = requestId;
         console.log(`[PostPage] getPostData called for ${aturi}, pass=${!!passwordArg}`);
         if (!passwordArg) {
             setIsLoading(true);
             setErrorMessage('');
+            setIsRestrictedFetchDone(false);
         }
 
         try {
@@ -88,6 +93,7 @@ export const PostPage = () => {
             });
 
             console.log("[PostPage] getPost response:", res.status);
+            if (postFetchRequestIdRef.current !== requestId) return;
 
             if (res.ok && res.data) {
                 const data = res.data as {
@@ -171,11 +177,14 @@ export const PostPage = () => {
             }
 
         } catch (e) {
+            if (postFetchRequestIdRef.current !== requestId) return;
             console.error("Failed to fetch post", e);
             setErrorMessage(String(e));
         } finally {
-            setIsLoading(false);
-            setIsRestrictedFetchDone(true);
+            if (postFetchRequestIdRef.current === requestId) {
+                setIsLoading(false);
+                setIsRestrictedFetchDone(true);
+            }
         }
     };
 
@@ -212,9 +221,20 @@ export const PostPage = () => {
 
     useEffect(() => {
         setIsMounted(true);
-        if (did && rkey && isSessionChecked) {
+        if (did && rkey) {
             getPostData();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [did, rkey]);
+
+    useEffect(() => {
+        if (!did || !rkey || !isSessionChecked || !loginDid) return;
+
+        const refetchKey = `${did}/${rkey}/${loginDid}`;
+        if (authenticatedRefetchKeyRef.current === refetchKey) return;
+        authenticatedRefetchKeyRef.current = refetchKey;
+
+        getPostData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, rkey, isSessionChecked, loginDid]);
 
@@ -258,7 +278,7 @@ export const PostPage = () => {
     const isRestrictedTarget = isRestrictedVisibility || (isMaskedText && !visibility);
 
     const isMasked = isMaskedText;
-    const shouldShowLoading = !isSessionChecked || isLoading || (isRestrictedTarget && loginDid && !isRestrictedFetchDone);
+    const shouldShowLoading = isLoading || (isRestrictedTarget && loginDid && !isRestrictedFetchDone);
     console.log(`PostPage Render: postText='${postText}', isMasked=${isMasked}, shouldShowLoading=${shouldShowLoading}, loginDid=${!!loginDid}, isSessionChecked=${isSessionChecked}`);
 
     return (
