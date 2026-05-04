@@ -2,7 +2,7 @@
 import { Avatar } from "@/components/Avatar";
 import Loading from "@/components/Loading";
 import { PostList } from "@/components/PostList";
-import { getPreference } from "@/logic/HandleBluesky";
+import { getPreference, resolvePdsEndpoint } from "@/logic/HandleBluesky";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { AppBskyActorDefs } from '@atcute/bluesky';
@@ -85,26 +85,9 @@ export const ProfilePage = () => {
             setMyPageDescription(value.myPage.description || '')
             setIsMyPage(value.myPage.isUseMyPage)
 
-            // Use Slingshot to resolve PDS
-            const slingshotAgent = new Client({
-                handler: simpleFetchHandler({
-                    service: 'https://slingshot.microcosm.blue',
-                }),
-            });
-
-            const res = await (slingshotAgent as any).get('blue.microcosm.identity.resolveMiniDoc', {
-                params: { identifier: repo }
-            })
-
-            if (!res.ok) {
-                console.error('Failed to resolve PDS via Slingshot')
-                setErrorMessage(locale.Profile_NotPublish);
-                return
-            }
-
-            const pdsUrl = (res.data as any).pds;
+            const pdsUrl = await resolvePdsEndpoint(repo);
             if (!pdsUrl) {
-                console.error('PDS URL not found in Slingshot response')
+                console.error('PDS URL not found')
                 setErrorMessage(locale.Profile_NotPublish);
                 return
             }

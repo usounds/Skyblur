@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 describe("requestOAuthLock", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    vi.spyOn(Math, "random").mockReturnValue(0);
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("USE_AWS_REAL_DB", "false");
     vi.stubEnv("OAUTH_STORE_TABLE_NAME", "");
@@ -52,6 +54,7 @@ describe("requestOAuthLock", () => {
     expect(secondSettled).toBe(false);
 
     await vi.advanceTimersByTimeAsync(2_000);
+    await flushPromises();
     await expect(second).resolves.toBe("second");
 
     releaseFirst("first");

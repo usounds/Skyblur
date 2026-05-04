@@ -4,6 +4,7 @@ const messages = {
     Common_Title: "Skyblur",
     Common_Description: "伏字を使った投稿ができます",
     Common_OGDescription: "ATProtocolに対応した、Blueskyに伏せ字の投稿ができるアプリケーションです。",
+    Common_SystemError: "システムエラーです。時間をおいて再度お試しください。",
     Home_Landing001Title: "Skyblurから投稿",
     Home_Landing001Descrtption: "伏せたい投稿はSkyblurから投稿してください！伏せたいところを[秘密だよ]でくくります。Skyblurから投稿すると、Blueskyに自動で投稿されます",
     Home_Landing002Title: "Blueskyは○○○○で表示",

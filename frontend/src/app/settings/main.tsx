@@ -5,11 +5,10 @@ import { getPreference } from "@/logic/HandleBluesky";
 import { compressImage } from "@/logic/ImageCompression";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
+import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import { Button, LoadingOverlay, Switch, Textarea, TextInput } from '@mantine/core';
 import { memo } from 'react';
 import { notifications } from '@mantine/notifications';
-import Image from "next/image";
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
@@ -19,14 +18,32 @@ import { ArrowLeft } from 'lucide-react';
 const MemoizedSettings = memo(Settings);
 export default MemoizedSettings;
 
+type CustomFeedSnapshot = {
+  enabled: boolean;
+  displayName: string;
+  description: string;
+  avatar: unknown;
+  avatarCid: string | null;
+};
+
+type MyPageSnapshot = {
+  enabled: boolean;
+  description: string;
+};
+
 function Settings() {
   const agent = useXrpcAgentStore((state) => state.agent);
   const userProf = useXrpcAgentStore((state) => state.userProf);
   const did = useXrpcAgentStore((state) => state.did);
+  const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isUseMyPage, setIsUseMyPage] = useState<boolean>(false)
   const [preferenceMode, setPreferenceMode] = useState<"create" | "update">('create')
   const [myPageDescription, setMyPageDescription] = useState<string>('')
+  const [initialMyPage, setInitialMyPage] = useState<MyPageSnapshot>({
+    enabled: false,
+    description: '',
+  })
   const [isCustomFeed, setIsCustomFeed] = useState<boolean>(false)
   const [originallyHasCustomFeed, setOriginallyHasCustomFeed] = useState<boolean>(false)
   const [isSave, setIsSave] = useState<boolean>(false)
@@ -36,6 +53,13 @@ function Settings() {
   const [feedUpdateMessage, setFeedUpdateMessage] = useState<string>('')
   const [feedAvatarImg, setFeedAvatarImg] = useState('')
   const [feedAvatar, setFeedAvatar] = useState<File>()
+  const [initialCustomFeed, setInitialCustomFeed] = useState<CustomFeedSnapshot>({
+    enabled: false,
+    displayName: '',
+    description: '',
+    avatar: null,
+    avatarCid: null,
+  })
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
@@ -46,7 +70,7 @@ function Settings() {
       router.push(`/`)
       return
     }
-    if (!agent) return;
+    if (!agent || !serviceUrl) return;
 
     let isAborted = false;
 
@@ -54,36 +78,59 @@ function Settings() {
     setIsLoading(true)
     const fetchData = async () => {
       try {
-        const value = await getPreference(did)
+        const value = await getPreference(did, serviceUrl)
         if (isAborted) return;
 
         if (value === null) {
           setPreferenceMode('create')
+          setIsUseMyPage(false)
+          setMyPageDescription('')
+          setInitialMyPage({
+            enabled: false,
+            description: '',
+          })
           // 早期リターンせず、カスタムフィードの読み込みは続行
         } else {
           setPreferenceMode('update')
-          if (value.myPage.isUseMyPage) setIsUseMyPage(true)
-          setMyPageDescription(value.myPage.description || '')
+          const isUseMyPageValue = Boolean(value.myPage.isUseMyPage);
+          const myPageDescriptionValue = value.myPage.description || '';
+          setIsUseMyPage(isUseMyPageValue)
+          setMyPageDescription(myPageDescriptionValue)
+          setInitialMyPage({
+            enabled: isUseMyPageValue,
+            description: myPageDescriptionValue,
+          })
         }
 
-        const feedATUri = 'at://' + did + '/app.bsky.feed.generator/skyblurCustomFeed'
-        const result = await agent.get('app.bsky.feed.getFeedGenerator', {
-          params: {
-            feed: feedATUri as ResourceUri,
-          },
-        });
+        const feedRecord = await getFeedGeneratorRecord(serviceUrl, did);
 
         if (isAborted) return;
 
-        if (!result.ok) {
-          setFeedName(locale.Pref_CustomFeedDefaltName?.replace('{1}', userProf?.displayName || '').slice(0, 24) || '')
+        if (!feedRecord) {
+          const defaultFeedName = locale.Pref_CustomFeedDefaltName?.replace('{1}', userProf?.displayName || '').slice(0, 24) || '';
+          setFeedName(defaultFeedName)
           setFeedDescription('')
+          setInitialCustomFeed({
+            enabled: false,
+            displayName: defaultFeedName,
+            description: '',
+            avatar: null,
+            avatarCid: null,
+          })
         } else {
-          setFeedName(result.data.view.displayName)
-          setFeedDescription(result.data.view.description || '')
-          setFeedAvatarImg(result.data.view.avatar || '')
+          const avatarCid = getBlobCid(feedRecord.avatar);
+          setFeedName(feedRecord.displayName || '')
+          setFeedDescription(feedRecord.description || '')
+          setFeedAvatarImg(getFeedAvatarUrl(serviceUrl, did, feedRecord.avatar) || '')
           setIsCustomFeed(true)
           setOriginallyHasCustomFeed(true)
+          setInitialCustomFeed({
+            enabled: true,
+            displayName: feedRecord.displayName || '',
+            description: feedRecord.description || '',
+            avatar: feedRecord.avatar || null,
+            avatarCid,
+          })
         }
 
       } catch (e) {
@@ -99,7 +146,7 @@ function Settings() {
       isAborted = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [did, agent, isSessionChecked]);
+  }, [did, agent, serviceUrl, isSessionChecked]);
 
 
   const changeFeedAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +174,7 @@ function Settings() {
 
   const getPreferenceWrite = (param: boolean) => {
     if (!did) return null;
+    if (!hasMyPageChanged()) return null;
 
     return {
       $type: `com.atproto.repo.applyWrites#${preferenceMode}` as const,
@@ -142,10 +190,92 @@ function Settings() {
     };
   };
 
+  const getFeedGeneratorRecord = async (pdsUrl: string, repo: string) => {
+    const recordUrl = new URL('/xrpc/com.atproto.repo.getRecord', pdsUrl);
+    recordUrl.searchParams.set('repo', repo);
+    recordUrl.searchParams.set('collection', 'app.bsky.feed.generator');
+    recordUrl.searchParams.set('rkey', 'skyblurCustomFeed');
+
+    const res = await fetch(recordUrl, {
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return data.value as {
+      displayName?: string;
+      description?: string;
+      avatar?: unknown;
+    };
+  };
+
+  const getBlobCid = (blob: unknown) => {
+    const ref = (blob as { ref?: { $link?: unknown } })?.ref;
+    return typeof ref?.$link === 'string' ? ref.$link : null;
+  };
+
+  const getFeedAvatarUrl = (pdsUrl: string, repo: string, avatar: unknown) => {
+    const cid = getBlobCid(avatar);
+    if (!cid) return null;
+
+    const blobUrl = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl);
+    blobUrl.searchParams.set('did', repo);
+    blobUrl.searchParams.set('cid', cid);
+    return blobUrl.toString();
+  };
+
+  const getCidFromAvatarUrl = (avatarUrl: string) => {
+    const url = new URL(avatarUrl);
+    const cid = url.searchParams.get('cid');
+    if (cid) return cid;
+
+    const pathname = url.pathname;
+    const lastSegment = pathname.split('/').filter(Boolean).at(-1);
+    return lastSegment?.split('@')[0] || null;
+  };
+
+  const fetchBlobFromPds = async (pdsUrl: string, didValue: string, cid: string) => {
+    const blobUrl = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl);
+    blobUrl.searchParams.set('did', didValue);
+    blobUrl.searchParams.set('cid', cid);
+
+    const res = await fetch(blobUrl, {
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to get blob: ${res.status}`);
+    }
+
+    return res.blob();
+  };
+
+  const hasCustomFeedChanged = () => {
+    if (isCustomFeed !== initialCustomFeed.enabled) return true;
+    if (!isCustomFeed) return false;
+    if (feedName !== initialCustomFeed.displayName) return true;
+    if (feedDescription !== initialCustomFeed.description) return true;
+    if (feedAvatar) return true;
+
+    const currentAvatarCid = feedAvatarImg ? getCidFromAvatarUrl(feedAvatarImg) : null;
+    return currentAvatarCid !== initialCustomFeed.avatarCid;
+  };
+
+  const hasMyPageChanged = () => {
+    return isUseMyPage !== initialMyPage.enabled || myPageDescription !== initialMyPage.description;
+  };
+
+  const hasSettingsChanged = () => {
+    return hasMyPageChanged() || hasCustomFeedChanged();
+  };
 
   const getFeedRecord = async () => {
-    if (!agent || !did) return null;
-    let avatarRef: Blob | null = null;
+    if (!agent || !did || !serviceUrl) return null;
+    let avatarRef: unknown = null;
 
     let encoding: string = ''
 
@@ -178,39 +308,31 @@ function Settings() {
         avatarRef = blobRes.data.blob as unknown as Blob;
 
       } else if (feedAvatarImg) {
-        // feedAvatarImgからCIDと拡張子を取得
-        let parts = feedAvatarImg.split('/');
-        parts = parts[7].split('@');
-
-        const didValue = did as `did:${string}:${string}`;
-
-        // BlobをGET
-        const ret = await agent.get('com.atproto.sync.getBlob', {
-          params: {
-            did: didValue,
-            cid: parts[0],
-          },
-          as: 'blob',
-        });
-
-        if (!ret.ok) {
-          throw new Error('Failed to get blob');
+        const cid = getCidFromAvatarUrl(feedAvatarImg);
+        if (!cid) {
+          throw new Error('Failed to parse avatar CID');
         }
 
-        const fileUint = new Uint8Array(await ret.data.arrayBuffer());
+        if (cid === initialCustomFeed.avatarCid && initialCustomFeed.avatar) {
+          avatarRef = initialCustomFeed.avatar;
+        } else {
+          const didValue = did as `did:${string}:${string}`;
+          const blob = await fetchBlobFromPds(serviceUrl, didValue, cid);
+          const fileUint = new Uint8Array(await blob.arrayBuffer());
 
-        const blobRes = await agent.post('com.atproto.repo.uploadBlob', {
-          input: fileUint,
-          encoding,
-          headers: { 'Content-Type': 'application/octet-stream' },
-        });
+          const blobRes = await agent.post('com.atproto.repo.uploadBlob', {
+            input: fileUint,
+            encoding: blob.type || 'image/jpeg',
+            headers: { 'Content-Type': 'application/octet-stream' },
+          });
 
-        if (!blobRes.ok) {
-          setFeedUpdateMessage('error');
-          return
+          if (!blobRes.ok) {
+            setFeedUpdateMessage('error');
+            return
+          }
+
+          avatarRef = blobRes.data.blob as unknown as Blob;
         }
-
-        avatarRef = blobRes.data.blob as unknown as Blob;
       }
 
       return {
@@ -229,6 +351,7 @@ function Settings() {
 
   const getCustomFeedWrite = async (param: boolean) => {
     if (!did) return null;
+    if (!hasCustomFeedChanged()) return null;
 
     if (param) {
       const record = await getFeedRecord();
@@ -257,6 +380,7 @@ function Settings() {
 
   const handleSave = async () => {
     if (!agent || !did) return
+    if (!hasSettingsChanged()) return
     setFeedUpdateMessage("")
     setIsSave(true)
 
@@ -384,7 +508,8 @@ function Settings() {
                     <div className="block text-m mt-1">{locale.Pref_CustomFeedAvatar}</div>
                     {feedAvatarImg &&
                       <p>
-                        <Image src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
                       </p>
                     }
                     <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm sm:text-base" onChange={changeFeedAvatar} />
@@ -412,6 +537,7 @@ function Settings() {
                     <Button
                       onClick={handleSave}
                       loading={isSave}
+                      disabled={isLoading || !hasSettingsChanged()}
                       loaderProps={{ type: 'dots' }}
                       leftSection={<Save />}
                     >

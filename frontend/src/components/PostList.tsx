@@ -301,6 +301,10 @@ export const PostList: React.FC<PostListProps> = ({
                 encryptBody?.$link ||
                 '';
 
+            if (!cid) {
+                throw new Error('CID is missing.');
+            }
+
             const decryptByCidBody: any = {
                 repo: validRepo,
                 cid,
@@ -345,11 +349,10 @@ export const PostList: React.FC<PostListProps> = ({
                         icon: <X />
                     });
                 } else {
-                    const data = await response.json() as { message: string }
                     notifications.clean()
                     notifications.show({
                         title: 'Error',
-                        message: data.message,
+                        message: locale.Common_SystemError,
                         color: 'red',
                         icon: <X />
                     });

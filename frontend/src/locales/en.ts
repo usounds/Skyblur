@@ -4,6 +4,7 @@ const messages = {
     Common_Title: "Skyblur",
     Common_Description: "You can post with blur",
     Common_OGDescription: "An AT Protocol compatible application for posting spoiler content on Bluesky.",
+    Common_SystemError: "System error. Please try again later.",
     Home_Landing001Title: "Post contents from Skyblur",
     Home_Landing001Descrtption: "If you want to post with blur, please post from Skyblur. Enclose the parts you want to blur with [secret]. When posted from Skyblur, it will automatically be posted to Bluesky.",
     Home_Landing002Title: "Bluesky shows the blurred text",

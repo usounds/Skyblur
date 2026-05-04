@@ -130,6 +130,35 @@ function upstreamFetchFailedResponse(method: string, mode: string) {
   );
 }
 
+async function publicSkyblurErrorResponse(method: string, response: Response) {
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+  let errorBody: unknown = null;
+
+  if (isJson && response.status < 500) {
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = null;
+    }
+  }
+
+  return NextResponse.json(errorBody ?? {
+    error: "UpstreamSkyblurError",
+    message: "System error. Please try again later.",
+    upstreamStatus: response.status,
+  }, {
+    status: response.status,
+    headers: {
+      "Cache-Control": "no-store",
+      "x-skyblur-xrpc-mode": "public-skyblur",
+      "x-skyblur-xrpc-method": method,
+      "x-skyblur-upstream-status": String(response.status),
+      "x-skyblur-upstream-content-type": contentType || "unknown",
+    },
+  });
+}
+
 function sessionProxyResponse(method: string, response: any) {
   const authError = sanitizeHeaderValue(response.headers?.get?.("www-authenticate") ?? null);
   const xrpcError = getXrpcErrorName(response.data);
@@ -184,6 +213,10 @@ async function publicSkyblurResponse(request: Request, method: string) {
       return upstreamFetchFailedResponse(method, "public-skyblur");
     }
     throw error;
+  }
+
+  if (!response.ok) {
+    return publicSkyblurErrorResponse(method, response);
   }
 
   return new NextResponse(response.body, {
