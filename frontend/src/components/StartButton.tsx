@@ -19,6 +19,7 @@ export function StartButton() {
     const [isSessionRetryWaiting, setIsSessionRetryWaiting] = useState(false);
     const [sessionCheckSecondsLeft, setSessionCheckSecondsLeft] = useState(SESSION_CHECK_RETRY_SECONDS);
     const sessionCheckAttemptRef = useRef(0);
+    const initialSessionCheckStartedRef = useRef(false);
     const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,6 +80,9 @@ export function StartButton() {
     }, [clearSessionCheckTimers]);
 
     useEffect(() => {
+        if (initialSessionCheckStartedRef.current) return;
+        initialSessionCheckStartedRef.current = true;
+        if (useXrpcAgentStore.getState().isSessionChecked) return;
         runSessionCheck();
         return () => {
             sessionCheckAttemptRef.current += 1;
@@ -91,8 +95,9 @@ export function StartButton() {
 
         try {
             // セッションチェックが終わっていない場合はまずチェック
-            let currentDid = did;
-            if (!isSessionChecked) {
+            const currentSession = useXrpcAgentStore.getState();
+            let currentDid = currentSession.did;
+            if (!currentSession.isSessionChecked) {
                 const result = await runSessionCheck();
                 currentDid = result.did;
             }

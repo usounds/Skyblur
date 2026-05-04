@@ -22,6 +22,7 @@ loadBaseUrlFromDotenv();
 
 const e2ePort = process.env.E2E_PORT || "4501";
 const e2eBaseURL = process.env.E2E_BASE_URL || `http://localhost:${e2ePort}`;
+const e2eWebServerOutput = process.env.E2E_WEB_SERVER_LOGS === "true" ? "pipe" : "ignore";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -45,6 +46,8 @@ export default defineConfig({
         url: e2eBaseURL,
         reuseExistingServer: true,
         timeout: 120_000,
+        stdout: e2eWebServerOutput,
+        stderr: e2eWebServerOutput,
       },
   projects: [
     {

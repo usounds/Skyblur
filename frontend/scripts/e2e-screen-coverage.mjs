@@ -20,7 +20,7 @@ const screenScenarios = [
   },
   {
     id: "terms content",
-    evidence: ["gotoAndSkipIfUnavailable(termPage, \"/termofuse\")", "Privacy Policy & Terms of Service", "Prohibited Actions"],
+    evidence: ["gotoAndSkipIfUnavailable(page, \"/termofuse\")", "Privacy Policy & Terms of Service", "Prohibited Actions"],
   },
   {
     id: "not-found screen",

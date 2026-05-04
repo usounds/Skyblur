@@ -7,6 +7,7 @@ type IstanbulCoverage = Record<string, unknown>;
 
 const coverageEnabled = process.env.E2E_COVERAGE === "true";
 const coverageDir = path.join(process.cwd(), ".nyc_output", "e2e");
+const sessionRequestBudgetAnnotation = "session-request-budget";
 
 function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-|-$/g, "");
@@ -20,6 +21,15 @@ function writeCoverage(testId: string, index: number, coverage: IstanbulCoverage
     path.join(coverageDir, `${safeName(testId)}-${index}.json`),
     JSON.stringify(coverage),
   );
+}
+
+function sessionRequestBudget(testInfo: { annotations: { type: string; description?: string }[] }) {
+  const annotation = testInfo.annotations.findLast(({ type }) => type === sessionRequestBudgetAnnotation);
+  if (!annotation) return 1;
+  if (annotation.description === "off") return null;
+
+  const budget = Number(annotation.description);
+  return Number.isFinite(budget) ? budget : 1;
 }
 
 export const test = base.extend({
@@ -51,7 +61,45 @@ export const test = base.extend({
     await use(context);
   },
   page: async ({ page }, use, testInfo) => {
+    let currentSessionRequests = 0;
+    let maxSessionRequests = 0;
+    const sessionRequestUrls: string[] = [];
+    const maxSessionRequestUrls: string[] = [];
+
+    const finishSessionRequestSegment = () => {
+      if (currentSessionRequests > maxSessionRequests) {
+        maxSessionRequests = currentSessionRequests;
+        maxSessionRequestUrls.splice(0, maxSessionRequestUrls.length, ...sessionRequestUrls);
+      }
+      currentSessionRequests = 0;
+      sessionRequestUrls.length = 0;
+    };
+
+    page.on("framenavigated", (frame) => {
+      if (frame === page.mainFrame()) finishSessionRequestSegment();
+    });
+
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.pathname !== "/api/oauth/session") return;
+
+      currentSessionRequests += 1;
+      sessionRequestUrls.push(`${request.method()} ${url.pathname}${url.search}`);
+    });
+
     await use(page);
+    finishSessionRequestSegment();
+
+    const budget = sessionRequestBudget(testInfo);
+    if (budget !== null) {
+      expect(
+        maxSessionRequests,
+        [
+          `Expected /api/oauth/session to be called at most ${budget} time(s) per page segment.`,
+          ...maxSessionRequestUrls.map((url, index) => `  ${index + 1}. ${url}`),
+        ].join("\n"),
+      ).toBeLessThanOrEqual(budget);
+    }
 
     if (!coverageEnabled) return;
 

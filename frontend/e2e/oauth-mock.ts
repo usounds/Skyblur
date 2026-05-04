@@ -621,7 +621,8 @@ export async function useLoggedInOAuthMock(
 
       if (options.postDetailVariant === "password") {
         const body = JSON.parse(route.request().postData() || "{}");
-        if (body?.password || body?.input?.password) {
+        const password = body?.password || body?.input?.password || body?.params?.password;
+        if (password) {
           await route.fulfill({
             status: 200,
             contentType: "application/json",

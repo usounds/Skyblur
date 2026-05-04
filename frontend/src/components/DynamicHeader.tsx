@@ -6,7 +6,7 @@ import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { notifications } from '@mantine/notifications';
 import { Check, X } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from "react";
 
 const DynamicHeader = () => {
@@ -14,6 +14,7 @@ const DynamicHeader = () => {
   const did = useXrpcAgentStore(state => state.did);
   const userProf = useXrpcAgentStore((state) => state.userProf);
   const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const loginError = searchParams.get('loginError');
   const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
@@ -30,6 +31,7 @@ const DynamicHeader = () => {
     const syncSession = async () => {
       if (sessionSyncStartedRef.current) return;
       sessionSyncStartedRef.current = true;
+      if (pathname === '/') return;
       if (useXrpcAgentStore.getState().isSessionChecked) return;
 
       const id = 'session-check';
@@ -55,7 +57,7 @@ const DynamicHeader = () => {
       }
     };
     syncSession();
-  }, [checkSessionMessage, checkSessionTitle, checkSessionTimeoutMessage, checkSessionTimeoutTitle]);
+  }, [checkSessionMessage, checkSessionTitle, checkSessionTimeoutMessage, checkSessionTimeoutTitle, pathname]);
 
 
   useEffect(() => {

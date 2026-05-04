@@ -38,7 +38,9 @@ interface HomeContentProps {
 
 export function HomeContent({ initialLocale }: HomeContentProps) {
     // サーバーから渡された言語で初期描画
-    const locale = initialLocale === 'en' ? en : ja;
+    const storeLocale = useLocaleStore(state => state.locale);
+    const storeLocaleData = useLocaleStore(state => state.localeData);
+    const locale = storeLocale === initialLocale ? (initialLocale === 'en' ? en : ja) : storeLocaleData;
     const setLocale = useLocaleStore(state => state.setLocale);
 
     // Zustandストアを同期（クライアント側で他のコンポーネントが使えるように）

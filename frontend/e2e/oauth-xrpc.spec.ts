@@ -140,152 +140,168 @@ test("OAuth metadata points to the Next.js API OAuth routes", async ({ request, 
   expect(metadata.dpop_bound_access_tokens).toBe(true);
 });
 
-test("public app pages render core unauthenticated content", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
+test.describe("home start session flows", () => {
+  test.describe.configure({ mode: "serial" });
 
-  await gotoAndSkipIfUnavailable(page, "/");
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("link", { name: "Skyblur" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Term of Use" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
-  await expect(page.getByText("Skyblur is a content warning and spoilers protection tool")).toBeVisible();
-  await expect(page.getByText("Post contents from Skyblur")).toBeVisible();
-  await expect(page.getByText("Bluesky shows the blurred text")).toBeVisible();
-  await expect(page.getByText("Skyblur shows the unblurred text")).toBeVisible();
-  await expect(page.getByText("These recommended clients offer a seamless viewing experience")).toBeVisible();
+  test("public app pages render core unauthenticated content", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
 
-  const termPage = await context.newPage();
-  await gotoAndSkipIfUnavailable(termPage, "/termofuse");
-  await expect(termPage).toHaveURL(/\/termofuse$/);
-  await expect(termPage.getByRole("heading", { name: "Privacy Policy & Terms of Service" })).toBeVisible();
-  await expect(termPage.getByText("Collection and Use of Personal Information")).toBeVisible();
-  await expect(termPage.getByText("Provision of Data to Third Parties")).toBeVisible();
-  await expect(termPage.getByText("Prohibited Actions")).toBeVisible();
-  await expect(termPage.getByText("Operator Information")).toBeVisible();
-  await termPage.close();
+    await gotoAndSkipIfUnavailable(page, "/");
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("link", { name: "Skyblur" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Term of Use" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
+    await expect(page.getByText("Skyblur is a content warning and spoilers protection tool")).toBeVisible();
+    await expect(page.getByText("Post contents from Skyblur")).toBeVisible();
+    await expect(page.getByText("Bluesky shows the blurred text")).toBeVisible();
+    await expect(page.getByText("Skyblur shows the unblurred text")).toBeVisible();
+    await expect(page.getByText("These recommended clients offer a seamless viewing experience")).toBeVisible();
 
-  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
-  await page.getByRole("button", { name: "Start" }).click();
-  await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Handle" })).toBeVisible();
-  await expect(page.getByText("Agree to the contents")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Login", exact: true })).toBeDisabled();
-});
-
-test("home start button opens the console for logged-in users", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await useLoggedInOAuthMock(page, context, baseURL);
-
-  await gotoAndSkipIfUnavailable(page, "/");
-  await page.getByRole("button", { name: "Start" }).click();
-
-  await expect(page).toHaveURL(/\/console$/);
-  await expect(page.getByText(/E2E Tester/)).toBeVisible();
-});
-
-test("home start session check shows a timed retry button after timeout", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await useEnglishLocale(context, baseURL);
-
-  let sessionRequests = 0;
-  await page.route("**/api/oauth/session", async (route) => {
-    sessionRequests += 1;
-
-    if (sessionRequests === 1) {
-      await new Promise(() => {});
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: {
-        "Cache-Control": "no-store",
-        Vary: "Cookie",
-      },
-      body: JSON.stringify({
-        authenticated: false,
-      }),
-    });
+    await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+    await page.getByRole("button", { name: "Start" }).click();
+    await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Handle" })).toBeVisible();
+    await expect(page.getByText("Agree to the contents")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Login", exact: true })).toBeDisabled();
   });
 
-  await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
-  await gotoAndSkipIfUnavailable(page, "/");
+  test("term of use page renders public content", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
 
-  await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
-  await page.clock.runFor(10_000);
-  await expect(page.getByText("Checking session... retry available in 20s")).toBeVisible();
-  await page.clock.runFor(20_000);
+    await gotoAndSkipIfUnavailable(page, "/termofuse");
+    await expect(page).toHaveURL(/\/termofuse$/);
+    await expect(page.getByRole("heading", { name: "Privacy Policy & Terms of Service" })).toBeVisible();
+    await expect(page.getByText("Collection and Use of Personal Information")).toBeVisible();
+    await expect(page.getByText("Provision of Data to Third Parties")).toBeVisible();
+    await expect(page.getByText("Prohibited Actions")).toBeVisible();
+    await expect(page.getByText("Operator Information")).toBeVisible();
+  });
 
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
-  await page.getByRole("button", { name: "Retry" }).click();
+  test("home start button opens the console for logged-in users", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL);
 
-  await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
-  expect(sessionRequests).toBe(2);
-});
+    await gotoAndSkipIfUnavailable(page, "/");
+    await page.getByRole("button", { name: "Start" }).click();
 
-test("home start session retry opens the console when the session recovers", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await useEnglishLocale(context, baseURL);
+    await expect(page).toHaveURL(/\/console$/);
+    await expect(page.getByText(/E2E Tester/)).toBeVisible();
+  });
 
-  let sessionRequests = 0;
-  let recoveredSessionRequestNumber = 0;
-  await page.route("**/api/oauth/session", async (route) => {
-    sessionRequests += 1;
+  test("home start session check shows a timed retry button after timeout", async ({
+    page,
+    context,
+    baseURL,
+  }, testInfo) => {
+    testInfo.annotations.push({ type: "session-request-budget", description: "2" });
+    await useEnglishLocale(context, baseURL);
 
-    if (sessionRequests === 1) {
-      await new Promise(() => {});
-      return;
-    }
+    let sessionRequests = 0;
+    let retrySessionRequestNumber = 0;
+    await page.route("**/api/oauth/session", async (route) => {
+      sessionRequests += 1;
 
-    if (recoveredSessionRequestNumber === 0) {
-      recoveredSessionRequestNumber = sessionRequests;
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: {
-        "Cache-Control": "no-store",
-        Vary: "Cookie",
-      },
-      body: JSON.stringify({
-        authenticated: true,
-        did: mockDid,
-        pds: "https://e2e-pds.skyblur.test",
-        userProf: {
-          did: mockDid,
-          handle: mockHandle,
-          displayName: "E2E Tester",
-          description: "Recovered session user",
+      if (sessionRequests === 1) {
+        await new Promise(() => {});
+        return;
+      }
+
+      if (retrySessionRequestNumber === 0) {
+        retrySessionRequestNumber = sessionRequests;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "Cache-Control": "no-store",
+          Vary: "Cookie",
         },
-      }),
+        body: JSON.stringify({
+          authenticated: false,
+        }),
+      });
     });
+
+    await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
+    await gotoAndSkipIfUnavailable(page, "/");
+
+    await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
+    await page.clock.runFor(10_000);
+    await expect(page.getByText("Checking session... retry available in 20s")).toBeVisible();
+    await page.clock.runFor(20_000);
+
+    await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+    await page.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
+    expect(retrySessionRequestNumber).toBe(2);
   });
 
-  await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
-  await gotoAndSkipIfUnavailable(page, "/");
+  test("home start session retry opens the console when the session recovers", async ({
+    page,
+    context,
+    baseURL,
+  }, testInfo) => {
+    testInfo.annotations.push({ type: "session-request-budget", description: "2" });
+    await useEnglishLocale(context, baseURL);
 
-  await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
-  await page.clock.runFor(30_000);
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
-  await page.getByRole("button", { name: "Retry" }).click();
+    let sessionRequests = 0;
+    let recoveredSessionRequestNumber = 0;
+    await page.route("**/api/oauth/session", async (route) => {
+      sessionRequests += 1;
 
-  await expect(page).toHaveURL(/\/console$/);
-  await expect(page.getByText(/E2E Tester/)).toBeVisible();
-  expect(recoveredSessionRequestNumber).toBe(2);
+      if (sessionRequests === 1) {
+        await new Promise(() => {});
+        return;
+      }
+
+      if (recoveredSessionRequestNumber === 0) {
+        recoveredSessionRequestNumber = sessionRequests;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "Cache-Control": "no-store",
+          Vary: "Cookie",
+        },
+        body: JSON.stringify({
+          authenticated: true,
+          did: mockDid,
+          pds: "https://e2e-pds.skyblur.test",
+          userProf: {
+            did: mockDid,
+            handle: mockHandle,
+            displayName: "E2E Tester",
+            description: "Recovered session user",
+          },
+        }),
+      });
+    });
+
+    await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
+    await gotoAndSkipIfUnavailable(page, "/");
+
+    await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
+    await page.clock.runFor(30_000);
+    await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+    await page.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page).toHaveURL(/\/console$/);
+    await expect(page.getByText(/E2E Tester/)).toBeVisible();
+    expect(recoveredSessionRequestNumber).toBe(2);
+  });
 });
 
 test("header controls toggle theme and language from the rendered UI", async ({
@@ -296,7 +312,8 @@ test("header controls toggle theme and language from the rendered UI", async ({
   await useEnglishLocale(context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/");
-  await expect(page.getByText("Welcome to Skyblur")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
 
   const headerButtons = page.getByRole("button", { name: "Toggle color scheme" });
   await expect(headerButtons).toHaveCount(2);
@@ -470,43 +487,24 @@ test("/console shows the login form when there is no OAuth session", async ({
   await expect(page.getByRole("link", { name: "Create Account" })).toBeVisible();
 });
 
-test("/console validates login form input before redirecting", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await openConsoleLoginForm(page, context, baseURL);
-
-  await page.getByLabel("Agree to the contents").check();
-  await expectLoginValidationMessage(
+for (const [handle, message] of [
+  ["@alice.bsky.social", 'Please do not include the "@" in the handle.'],
+  ["bad_handle", "Bluesky handles do not contain underscores"],
+  ["bad handle", "Handles cannot contain whitespace"],
+  ["bad!handle", "Bluesky handles can only contain letters, numbers, hyphens, and dots. Please check your input."],
+  ["alice.", "Handles cannot end with a dot."],
+  ["alice..bsky.social", "Handles cannot contain consecutive dots."],
+] as const) {
+  test(`/console validates login handle ${handle}`, async ({
     page,
-    "@alice.bsky.social",
-    'Please do not include the "@" in the handle.',
-  );
-  await expectLoginValidationMessage(
-    page,
-    "bad_handle",
-    "Bluesky handles do not contain underscores",
-  );
-  await expectLoginValidationMessage(
-    page,
-    "bad handle",
-    "Handles cannot contain whitespace",
-  );
-  await expectLoginValidationMessage(
-    page,
-    "bad!handle",
-    "Bluesky handles can only contain letters, numbers, hyphens, and dots. Please check your input.",
-  );
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByLabel("Agree to the contents").check();
-  await expectLoginValidationMessage(page, "alice.", "Handles cannot end with a dot.");
-  await expectLoginValidationMessage(
-    page,
-    "alice..bsky.social",
-    "Handles cannot contain consecutive dots.",
-  );
-});
+    context,
+    baseURL,
+  }) => {
+    await openConsoleLoginForm(page, context, baseURL);
+    await page.getByLabel("Agree to the contents").check();
+    await expectLoginValidationMessage(page, handle, message);
+  });
+}
 
 test("/console login form shows callback errors and clears typeahead input", async ({
   page,
@@ -754,31 +752,29 @@ test("/post refetches restricted detail after the session resolves authenticated
   expect(getPostRequests).toBe(2);
 });
 
-test("/post shows each logged-out restricted visibility message", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const cases = [
-    {
-      visibility: "login" as const,
-      message: "この投稿を参照するにはログインが必要です。",
-    },
-    {
-      visibility: "followers" as const,
-      message: "この投稿はフォロワー限定です。参照するにはログインが必要です。",
-    },
-    {
-      visibility: "following" as const,
-      message: "この投稿はフォロー中限定です。参照するにはログインが必要です。",
-    },
-    {
-      visibility: "mutual" as const,
-      message: "この投稿は相互フォロー限定です。参照するにはログインが必要です。",
-    },
-  ];
-
-  for (const { visibility, message } of cases) {
+for (const { visibility, message } of [
+  {
+    visibility: "login" as const,
+    message: "この投稿を参照するにはログインが必要です。",
+  },
+  {
+    visibility: "followers" as const,
+    message: "この投稿はフォロワー限定です。参照するにはログインが必要です。",
+  },
+  {
+    visibility: "following" as const,
+    message: "この投稿はフォロー中限定です。参照するにはログインが必要です。",
+  },
+  {
+    visibility: "mutual" as const,
+    message: "この投稿は相互フォロー限定です。参照するにはログインが必要です。",
+  },
+]) {
+  test(`/post shows logged-out ${visibility} restricted visibility message`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     await useLoggedInOAuthMock(page, context, baseURL, {
       authenticated: false,
       postDetailVariant: "authRequired",
@@ -788,8 +784,8 @@ test("/post shows each logged-out restricted visibility message", async ({
     await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2e-${visibility}`);
     await expect(page.getByText(message)).toBeVisible();
     await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
-  }
-});
+  });
+}
 
 test("/post links to Bluesky profile when My Page preferences are not published", async ({
   page,
@@ -810,27 +806,25 @@ test("/post links to Bluesky profile when My Page preferences are not published"
   await expect(page.getByRole("button", { name: "Go to MyPage" })).toHaveCount(0);
 });
 
-test("/post renders restricted detail denial messages for logged-in visitors", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const cases = [
-    ["NotFollower", "You do not have permission to view this post (Followers only)."],
-    ["NotFollowing", "You do not have permission to view this post (Following only)."],
-    ["NotMutual", "You do not have permission to view this post (Mutuals only)."],
-    ["AuthRequired", "Please log in to view this post."],
-    ["ContentMissing", "Content not found."],
-    ["Other", "You do not have permission to view this post."],
-  ] as const;
-
-  for (const [restrictedErrorCode, message] of cases) {
+for (const [restrictedErrorCode, message] of [
+  ["NotFollower", "You do not have permission to view this post (Followers only)."],
+  ["NotFollowing", "You do not have permission to view this post (Following only)."],
+  ["NotMutual", "You do not have permission to view this post (Mutuals only)."],
+  ["AuthRequired", "Please log in to view this post."],
+  ["ContentMissing", "Content not found."],
+  ["Other", "You do not have permission to view this post."],
+] as const) {
+  test(`/post renders ${restrictedErrorCode} denial message for logged-in visitors`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     await useLoggedInOAuthMock(page, context, baseURL, { restrictedErrorCode });
     await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erestricted-${restrictedErrorCode}`);
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText(message)).toBeVisible();
-  }
-});
+  });
+}
 
 test("/post renders a fetch failure message when detail loading fails", async ({
   page,
@@ -1269,64 +1263,48 @@ test("/console post list fetches restricted post details", async ({
   await expect(page.getByText("Fetched restricted E2E additional")).toBeVisible();
 });
 
-test("/console post list renders restricted authorization errors", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await useLoggedInOAuthMock(page, context, baseURL, {
-    postVariant: "restricted",
-    restrictedErrorCode: "NotFollowing",
+for (const [restrictedErrorCode, message] of [
+  ["NotFollowing", "You do not have permission to view this post (Following only)."],
+  ["ContentMissing", "Content not found."],
+] as const) {
+  test(`/console post list renders ${restrictedErrorCode} restricted authorization error`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, {
+      postVariant: "restricted",
+      restrictedErrorCode,
+    });
+
+    await gotoAndSkipIfUnavailable(page, "/console");
+    await expect(page.getByText("*****")).toBeVisible();
+    await page.getByText("*****").click();
+    await expect(page.getByText(message)).toBeVisible();
   });
+}
 
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await expect(page.getByText("*****")).toBeVisible();
-  await page.getByText("*****").click();
-  await expect(page.getByText("You do not have permission to view this post (Following only).")).toBeVisible();
+for (const [restrictedErrorCode, message] of [
+  ["NotFollower", "You do not have permission to view this post (Followers only)."],
+  ["NotMutual", "You do not have permission to view this post (Mutuals only)."],
+  ["Other", "You do not have permission to view this post."],
+] as const) {
+  test(`/console post list renders ${restrictedErrorCode} restricted denial message`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, {
+      postVariant: "restricted",
+      restrictedErrorCode,
+    });
 
-  await useLoggedInOAuthMock(page, context, baseURL, {
-    postVariant: "restricted",
-    restrictedErrorCode: "ContentMissing",
+    await gotoAndSkipIfUnavailable(page, "/console");
+    await expect(page.getByText("*****")).toBeVisible();
+    await page.getByText("*****").click();
+    await expect(page.getByText(message)).toBeVisible();
   });
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await expect(page.getByText("*****")).toBeVisible();
-  await page.getByText("*****").click();
-  await expect(page.getByText("Content not found.")).toBeVisible();
-});
-
-test("/console post list renders all restricted denial messages", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await useLoggedInOAuthMock(page, context, baseURL, {
-    postVariant: "restricted",
-    restrictedErrorCode: "NotFollower",
-  });
-
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await expect(page.getByText("*****")).toBeVisible();
-  await page.getByText("*****").click();
-  await expect(page.getByText("You do not have permission to view this post (Followers only).")).toBeVisible();
-
-  await useLoggedInOAuthMock(page, context, baseURL, {
-    postVariant: "restricted",
-    restrictedErrorCode: "NotMutual",
-  });
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await expect(page.getByText("*****")).toBeVisible();
-  await page.getByText("*****").click();
-  await expect(page.getByText("You do not have permission to view this post (Mutuals only).")).toBeVisible();
-
-  await useLoggedInOAuthMock(page, context, baseURL, {
-    postVariant: "restricted",
-    restrictedErrorCode: "Other",
-  });
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await expect(page.getByText("*****")).toBeVisible();
-  await page.getByText("*****").click();
-  await expect(page.getByText("You do not have permission to view this post.")).toBeVisible();
-});
+}
 
 test("/console post list shows a restricted fetch failure", async ({
   page,
@@ -1383,20 +1361,18 @@ test("/console restricted edit keeps the original post when prefetch returns non
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("*****");
 });
 
-test("/console restricted edit renders every denial message in the edit flow", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const cases = [
-    ["NotFollower", "You do not have permission to view this post (Followers only)."],
-    ["NotFollowing", "You do not have permission to view this post (Following only)."],
-    ["AuthRequired", "Please log in to view this post."],
-    ["ContentMissing", "Content not found."],
-    ["Other", "You do not have permission to view this post."],
-  ] as const;
-
-  for (const [restrictedErrorCode, message] of cases) {
+for (const [restrictedErrorCode, message] of [
+  ["NotFollower", "You do not have permission to view this post (Followers only)."],
+  ["NotFollowing", "You do not have permission to view this post (Following only)."],
+  ["AuthRequired", "Please log in to view this post."],
+  ["ContentMissing", "Content not found."],
+  ["Other", "You do not have permission to view this post."],
+] as const) {
+  test(`/console restricted edit renders ${restrictedErrorCode} denial message`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     await useLoggedInOAuthMock(page, context, baseURL, {
       postVariant: "restricted",
       restrictedErrorCode,
@@ -1410,8 +1386,8 @@ test("/console restricted edit renders every denial message in the edit flow", a
     await expect(page.getByText(message)).toBeVisible();
     await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
     await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("*****");
-  }
-});
+  });
+}
 
 test("/console prefetches restricted post details before editing", async ({
   page,
@@ -1651,27 +1627,23 @@ test("/console post list appends the next page when scrolled to the end", async 
   await expect(page.getByText("Visible E2E")).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await expect(page.getByText("Next page E2E")).toBeVisible();
+  await expect(page.getByText("Next page E2E secret console").first()).toBeVisible();
 });
 
-test("/console post list renders following and mutual visibility rows", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "following" });
+for (const postVariant of ["following", "mutual"] as const) {
+  test(`/console post list renders ${postVariant} visibility row`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, { postVariant });
 
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await expect(page.getByText("*****")).toBeVisible();
-  await page.getByText("*****").click();
-  await expect(page.getByText("Fetched restricted E2E text")).toBeVisible();
-
-  await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "mutual" });
-  await gotoAndSkipIfUnavailable(page, "/console");
-  await expect(page.getByText("*****")).toBeVisible();
-  await page.getByText("*****").click();
-  await expect(page.getByText("Fetched restricted E2E text")).toBeVisible();
-});
+    await gotoAndSkipIfUnavailable(page, "/console");
+    await expect(page.getByText("*****")).toBeVisible();
+    await page.getByText("*****").click();
+    await expect(page.getByText("Fetched restricted E2E text")).toBeVisible();
+  });
+}
 
 test("/profile hides restricted post content from logged-out visitors", async ({
   page,
@@ -1690,18 +1662,16 @@ test("/profile hides restricted post content from logged-out visitors", async ({
   await expect(page.getByText("*****")).toHaveCount(0);
 });
 
-test("/profile hides every logged-out restricted visibility row", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const cases = [
-    { variant: "login" as const, hiddenText: "Login-only E2E" },
-    { variant: "following" as const, hiddenText: "*****" },
-    { variant: "mutual" as const, hiddenText: "*****" },
-  ];
-
-  for (const { variant, hiddenText } of cases) {
+for (const { variant, hiddenText } of [
+  { variant: "login" as const, hiddenText: "Login-only E2E" },
+  { variant: "following" as const, hiddenText: "*****" },
+  { variant: "mutual" as const, hiddenText: "*****" },
+]) {
+  test(`/profile hides logged-out ${variant} restricted visibility row`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     await useLoggedInOAuthMock(page, context, baseURL, {
       authenticated: false,
       postVariant: variant,
@@ -1712,8 +1682,8 @@ test("/profile hides every logged-out restricted visibility row", async ({
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText("Login to view")).toBeVisible();
     await expect(page.getByText(hiddenText)).toHaveCount(0);
-  }
-});
+  });
+}
 
 test("/profile renders the profile avatar image when one is available", async ({
   page,
@@ -2035,7 +2005,7 @@ test("header account menu can soft logout from the console", async ({
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Logout from this device/ }).click();
 
-  await expect(page.getByText("Welcome to Skyblur")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
 });
 
 test("header account menu can hard logout from settings", async ({
@@ -2052,7 +2022,7 @@ test("header account menu can hard logout from settings", async ({
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Invalidate session and logout/ }).click();
 
-  await expect(page.getByText("Welcome to Skyblur")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
 });
 
 test("header account menu can logout from home without leaving the page", async ({

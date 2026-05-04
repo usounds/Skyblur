@@ -22,6 +22,12 @@ type SessionCheckResult = {
   timedOut?: boolean;
 };
 
+type XrpcAgentCache = {
+  sessionCheckPromise: Promise<SessionCheckResult> | null;
+  lastSessionResult: SessionCheckResult | null;
+  profFetchPromise: Promise<void> | null;
+};
+
 type Action = {
   setUserProf: (userProf: AppBskyActorDefs.ProfileViewDetailed | null) => void;
   setDid: (did: string) => void;
@@ -35,9 +41,28 @@ type Action = {
 };
 const host = typeof window !== 'undefined' ? new URL(window.location.origin).host : '';
 const xrpcService = typeof window !== 'undefined' ? window.location.origin : '';
-let sessionCheckPromise: Promise<SessionCheckResult> | null = null;
-let lastSessionResult: SessionCheckResult | null = null;
-let profFetchPromise: Promise<void> | null = null;
+const moduleCache: XrpcAgentCache = {
+  sessionCheckPromise: null,
+  lastSessionResult: null,
+  profFetchPromise: null,
+};
+
+declare global {
+  interface Window {
+    __skyblurXrpcAgentCache?: XrpcAgentCache;
+  }
+}
+
+function getXrpcAgentCache() {
+  if (typeof window === 'undefined') return moduleCache;
+
+  window.__skyblurXrpcAgentCache ??= {
+    sessionCheckPromise: null,
+    lastSessionResult: null,
+    profFetchPromise: null,
+  };
+  return window.__skyblurXrpcAgentCache;
+}
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
   const controller = new AbortController();
@@ -92,17 +117,29 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     setServiceUrl: (serviceUrl) => set({ serviceUrl }),
     setIsLoginModalOpened: (isLoginModalOpened) => set({ isLoginModalOpened }),
     setIsSessionChecked: (isSessionChecked) => {
-      if (!isSessionChecked) lastSessionResult = null;
+      if (!isSessionChecked) getXrpcAgentCache().lastSessionResult = null;
       set({ isSessionChecked });
     },
     checkSession: async () => {
       if (get().isSessionChecked) {
         return { authenticated: !!get().did, did: get().did, pds: get().serviceUrl };
       }
-      if (lastSessionResult && !lastSessionResult.timedOut) return lastSessionResult;
-      if (sessionCheckPromise) return sessionCheckPromise;
+      const cache = getXrpcAgentCache();
+      if (cache.lastSessionResult && !cache.lastSessionResult.timedOut) {
+        if (cache.lastSessionResult.authenticated) {
+          set({
+            did: cache.lastSessionResult.did,
+            serviceUrl: cache.lastSessionResult.pds,
+            isSessionChecked: true,
+          });
+        } else {
+          set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "" });
+        }
+        return cache.lastSessionResult;
+      }
+      if (cache.sessionCheckPromise) return cache.sessionCheckPromise;
 
-      sessionCheckPromise = (async () => {
+      cache.sessionCheckPromise = (async () => {
         try {
           const res = await fetchWithTimeout('/api/oauth/session', {
             credentials: 'include'
@@ -121,14 +158,14 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             } else {
               set({ isSessionChecked: true });
             }
-            lastSessionResult = { authenticated: true, did: data.did, pds: pdsUrl };
-            return lastSessionResult;
+            cache.lastSessionResult = { authenticated: true, did: data.did, pds: pdsUrl };
+            return cache.lastSessionResult;
           } else {
             if (get().did !== "" || get().isSessionChecked !== true) {
               set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "" });
             }
-            lastSessionResult = { authenticated: false, did: "", pds: "" };
-            return lastSessionResult;
+            cache.lastSessionResult = { authenticated: false, did: "", pds: "" };
+            return cache.lastSessionResult;
           }
         } catch (e) {
           if (!isAbortError(e)) {
@@ -136,14 +173,14 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
           }
           set({ isSessionChecked: !isAbortError(e) });
           const result = { authenticated: false, did: "", pds: "", timedOut: isAbortError(e) };
-          if (!result.timedOut) lastSessionResult = result;
+          if (!result.timedOut) cache.lastSessionResult = result;
           return result;
         } finally {
-          sessionCheckPromise = null;
+          cache.sessionCheckPromise = null;
         }
       })();
 
-      return sessionCheckPromise;
+      return cache.sessionCheckPromise;
     },
     fetchUserProf: async () => {
       const { did, publicAgent, userProf, setUserProf, isSessionChecked } = get();
@@ -152,9 +189,10 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       // 取得済み、かつ同じ DID ならスキップ
       if (userProf && userProf.did === did) return;
 
-      if (profFetchPromise) return profFetchPromise;
+      const cache = getXrpcAgentCache();
+      if (cache.profFetchPromise) return cache.profFetchPromise;
 
-      profFetchPromise = (async () => {
+      cache.profFetchPromise = (async () => {
         try {
           console.log(`Fetching profile for ${did}...`);
           const res = await publicAgent.get('app.bsky.actor.getProfile', { params: { actor: did as any } });
@@ -164,11 +202,11 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         } catch (e) {
           console.error('Failed to fetch user profile:', e);
         } finally {
-          profFetchPromise = null;
+          cache.profFetchPromise = null;
         }
       })();
 
-      return profFetchPromise;
+      return cache.profFetchPromise;
     },
     logout: async (mode: 'soft' | 'hard') => {
       try {
@@ -180,7 +218,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       } catch (error) {
         console.error(`Logout (${mode}) error:`, error);
       } finally {
-        lastSessionResult = null;
+        getXrpcAgentCache().lastSessionResult = null;
         set({
           did: "",
           userProf: null,
