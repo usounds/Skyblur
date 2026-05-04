@@ -27,11 +27,11 @@
     "@cloudflare/unenv-preset": "^2.16.0",
     "@cloudflare/workers-types": "^4.20260412.1",
     "@types/node": "^25.6.0",
-    "@vitest/coverage-v8": "^4.1.4",
-    "@vitest/ui": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/ui": "^4.1.5",
     "unenv": "2.0.0-rc.24",
-    "vite": "^8.0.8",
-    "vitest": "^4.1.4",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5",
     "wrangler": "^4.81.1"
   },
   "pnpm": {
