@@ -6,6 +6,10 @@ function isLocalHost(host: string) {
   return /^localhost(?::\d+)?$/.test(host) || /^127\.0\.0\.1(?::\d+)?$/.test(host);
 }
 
+function isSkyblurHost(host: string) {
+  return host === "skyblur.uk" || host.endsWith(".skyblur.uk");
+}
+
 function normalizeConfiguredOrigin(value: string) {
   const url = new URL(value);
   if (url.pathname !== "/" || url.search || url.hash) {
@@ -19,14 +23,17 @@ function getConfiguredOrigin() {
   return baseUrl ? normalizeConfiguredOrigin(baseUrl) : null;
 }
 
-function getRequestHost(request: Request) {
+function getRequestHostFromHeaders(request: Request) {
   const url = new URL(request.url);
-  const host = normalizeHost(
+  return normalizeHost(
     request.headers.get("x-forwarded-host") ||
       request.headers.get("host") ||
       url.host,
   );
+}
 
+function getRequestHost(request: Request) {
+  const host = getRequestHostFromHeaders(request);
   if (isLocalHost(host)) {
     return host;
   }
@@ -36,14 +43,20 @@ function getRequestHost(request: Request) {
 
 export function getRequestOrigin(request: Request) {
   const configuredOrigin = getConfiguredOrigin();
-  if (configuredOrigin) return configuredOrigin;
+  const actualHost = getRequestHostFromHeaders(request);
+  const actualProto = new URL(request.url).protocol.replace(":", "") || "http";
 
-  const url = new URL(request.url);
+  if (configuredOrigin) {
+    const configuredHost = normalizeHost(new URL(configuredOrigin).host);
+    if (configuredHost === actualHost || !isSkyblurHost(actualHost)) {
+      return configuredOrigin;
+    }
+    return `${actualProto}://${actualHost}`;
+  }
+
   const host = getRequestHost(request);
 
-  const proto = url.protocol.replace(":", "") || "http";
-
-  return `${proto}://${host}`;
+  return `${actualProto}://${host}`;
 }
 
 export function getAppOriginFromRequest(request: Request) {
@@ -52,9 +65,12 @@ export function getAppOriginFromRequest(request: Request) {
 
 export function getCookieDomain(request: Request) {
   const configuredOrigin = getConfiguredOrigin();
-  const host = configuredOrigin
+  const actualHost = getRequestHostFromHeaders(request);
+  const host = configuredOrigin && !isSkyblurHost(actualHost)
     ? new URL(configuredOrigin).host
-    : getRequestHost(request);
+    : isSkyblurHost(actualHost)
+      ? actualHost
+      : getRequestHost(request);
 
   if (isLocalHost(host)) {
     return undefined;

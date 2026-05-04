@@ -11,6 +11,11 @@ export default $config({
   },
   async run() {
     const stage = $app.stage;
+    const baseUrl = stage === "production"
+      ? "https://skyblur.uk"
+      : stage === "preview"
+        ? "https://preview.skyblur.uk"
+        : "https://dev.skyblur.uk";
 
     const oauthStore = new sst.aws.Dynamo("OAuthStore", {
       fields: {
@@ -23,6 +28,7 @@ export default $config({
     new sst.aws.Nextjs("Skyblur", {
       link: [oauthStore],
       environment: {
+        NEXT_PUBLIC_BASE_URL: baseUrl,
         OAUTH_STORE_TABLE_NAME: oauthStore.name,
       },
       domain: stage === "production"

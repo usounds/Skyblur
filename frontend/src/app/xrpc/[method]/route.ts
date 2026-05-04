@@ -19,12 +19,21 @@ const optionalSessionSkyblurMethods = new Set([
   "uk.skyblur.post.getPost",
 ]);
 
+function getActualRequestHost(request: Request) {
+  const url = new URL(request.url);
+  return (
+    request.headers.get("x-forwarded-host") ||
+    request.headers.get("host") ||
+    url.host
+  ).trim().toLowerCase();
+}
+
 function getSkyblurApiOrigin(request: Request) {
   if (process.env.SKYBLUR_API_ORIGIN) {
     return process.env.SKYBLUR_API_ORIGIN.replace(/\/+$/, "");
   }
 
-  const host = new URL(getRequestOrigin(request)).host;
+  const host = getActualRequestHost(request);
 
   if (host.includes("localhost") || host.includes("127.0.0.1")) {
     return "http://localhost:8787";
@@ -38,7 +47,7 @@ function getSkyblurApiOrigin(request: Request) {
 }
 
 function getSkyblurProxyDid(request: Request) {
-  const host = new URL(getRequestOrigin(request)).host;
+  const host = getActualRequestHost(request);
   return `did:web:${host}`;
 }
 
