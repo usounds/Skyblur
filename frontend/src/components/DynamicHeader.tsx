@@ -33,9 +33,17 @@ const DynamicHeader = () => {
         withCloseButton: false,
       });
 
-      await useXrpcAgentStore.getState().checkSession();
+      const result = await useXrpcAgentStore.getState().checkSession();
 
       notifications.hide(id);
+      if (result.timedOut) {
+        notifications.show({
+          title: locale.Home_CheckSession_Timeout_Title,
+          message: locale.Home_CheckSession_Timeout_Message,
+          color: 'yellow',
+          icon: <X size={18} />,
+        });
+      }
     };
     syncSession();
   }, []);

@@ -15,6 +15,13 @@ type State = {
   scope: string;
 };
 
+type SessionCheckResult = {
+  authenticated: boolean;
+  did: string;
+  pds: string;
+  timedOut?: boolean;
+};
+
 type Action = {
   setUserProf: (userProf: AppBskyActorDefs.ProfileViewDetailed | null) => void;
   setDid: (did: string) => void;
@@ -22,13 +29,13 @@ type Action = {
   setServiceUrl: (setServiceUrl: string) => void;
   setIsLoginModalOpened: (isLoginModalOpened: boolean) => void;
   setIsSessionChecked: (isSessionChecked: boolean) => void;
-  checkSession: () => Promise<{ authenticated: boolean; did: string; pds: string }>;
+  checkSession: () => Promise<SessionCheckResult>;
   fetchUserProf: () => Promise<void>;
   logout: (mode: 'soft' | 'hard') => Promise<void>;
 };
 const host = typeof window !== 'undefined' ? new URL(window.location.origin).host : '';
 const xrpcService = typeof window !== 'undefined' ? window.location.origin : '';
-let sessionCheckPromise: Promise<{ authenticated: boolean; did: string; pds: string }> | null = null;
+let sessionCheckPromise: Promise<SessionCheckResult> | null = null;
 let profFetchPromise: Promise<void> | null = null;
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
@@ -40,6 +47,10 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, tim
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }
 
 export const useXrpcAgentStore = create<State & Action>((set, get) => {
@@ -90,7 +101,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         try {
           const res = await fetchWithTimeout('/api/oauth/session', {
             credentials: 'include'
-          }, 4_000);
+          }, 6_000);
           const data = await res.json() as any;
           if (data.authenticated) {
             const pdsUrl = data.pds || 'https://bsky.social';
@@ -113,9 +124,11 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             return { authenticated: false, did: "", pds: "" };
           }
         } catch (e) {
-          console.error('Session check failed:', e);
+          if (!isAbortError(e)) {
+            console.error('Session check failed:', e);
+          }
           set({ isSessionChecked: true });
-          return { authenticated: false, did: "", pds: "" };
+          return { authenticated: false, did: "", pds: "", timedOut: isAbortError(e) };
         } finally {
           sessionCheckPromise = null;
         }

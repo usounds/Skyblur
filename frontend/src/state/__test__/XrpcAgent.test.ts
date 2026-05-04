@@ -33,9 +33,9 @@ describe("useXrpcAgentStore.checkSession", () => {
 
     const session = useXrpcAgentStore.getState().checkSession();
 
-    await vi.advanceTimersByTimeAsync(4_000);
+    await vi.advanceTimersByTimeAsync(6_000);
 
-    await expect(session).resolves.toEqual({ authenticated: false, did: "", pds: "" });
+    await expect(session).resolves.toEqual({ authenticated: false, did: "", pds: "", timedOut: true });
     expect(useXrpcAgentStore.getState().isSessionChecked).toBe(true);
     expect(useXrpcAgentStore.getState().did).toBe("");
   });

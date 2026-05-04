@@ -631,7 +631,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 notifications.show({
                     id: 'post-process',
                     title: locale.Menu_Post,
-                    message: "(1/2) Storing restricted content...",
+                    message: locale.CreatePost_StoreRestrictedInProgress,
                     loading: true,
                     autoClose: false
                 });
@@ -667,7 +667,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     notifications.clean()
                     notifications.show({
                         title: 'Error',
-                        message: "Failed to store restricted content.",
+                        message: locale.CreatePost_StoreRestrictedFailed,
                         color: 'red',
                         icon: <X />
                     });
