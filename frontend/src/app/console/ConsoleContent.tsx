@@ -45,6 +45,7 @@ export function ConsoleContent() {
             });
 
             try {
+                /* istanbul ignore next -- Restricted edit controls are only reachable after an authenticated proxy agent exists. */
                 if (!apiProxyAgent) throw new Error("No agent");
                 const res = await apiProxyAgent.post('uk.skyblur.post.getPost', {
                     input: {

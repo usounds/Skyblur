@@ -23,7 +23,9 @@ import { BlueskyIcon } from '@/components/Icons';
 
 export const PostPage = () => {
     const params = useParams();
+    /* istanbul ignore next -- Next.js single dynamic segments are strings in this route. */
     const rawDid = Array.isArray(params?.did) ? params?.did[0] : params?.did;
+    /* istanbul ignore next -- Next.js single dynamic segments are strings in this route. */
     const rawRkey = Array.isArray(params?.rkey) ? params?.rkey[0] : params?.rkey;
     const did = decodeURIComponent(rawDid || '');
     const rkey = decodeURIComponent(rawRkey || '');
@@ -60,6 +62,7 @@ export const PostPage = () => {
 
 
     const getPostData = async (passwordArg?: string) => {
+        /* istanbul ignore next -- The route cannot render without both dynamic segments. */
         if (!did || !rkey) return;
 
         console.log(`[PostPage] getPostData called for ${aturi}, pass=${!!passwordArg}`);
@@ -178,8 +181,10 @@ export const PostPage = () => {
 
     useEffect(() => {
         const fetchProfile = async () => {
+            /* istanbul ignore next -- The route cannot render without the did segment. */
             if (!did) return;
             // Ensure we have PDS URL (if needed for other things, but here just for repo ID)
+            /* istanbul ignore next -- did is a normalized string for this route. */
             let repo = Array.isArray(did) ? did[0] : did;
             repo = repo.replace(/%3A/g, ':');
 

@@ -129,19 +129,25 @@ type OAuthMockOptions = {
   noCustomFeed?: boolean;
   customFeedAvatar?: boolean;
   listRecordsHasNextPage?: boolean;
+  listRecordsStatus?: 200 | 500;
+  listRecordsAbort?: boolean;
   replySearchHasNextPage?: boolean;
   replySearchEmpty?: boolean;
   postVariant?: "public" | "password" | "restricted" | "following" | "mutual" | "login" | "empty";
   postDetailVariant?: "public" | "password" | "authRequired" | "error";
+  postDetailVisibility?: "login" | "followers" | "following" | "mutual";
   decryptStatus?: 200 | 403 | 500;
   encryptStatus?: 200 | 500;
   storeStatus?: 200 | 500;
+  getPostStatus?: 200 | 500;
   uploadBlobStatus?: 200 | 500;
   applyWritesStatus?: 200 | 500;
   constellationIntentStatus?: 200 | 500;
   constellationAllStatus?: 200 | 500;
   restrictedErrorCode?: "NotFollower" | "NotFollowing" | "NotMutual" | "AuthRequired" | "ContentMissing" | "Other";
   profileAvatar?: string;
+  profileDisplayName?: string;
+  profileStatus?: 200 | 500;
 };
 
 export async function useLoggedInOAuthMock(
@@ -164,6 +170,7 @@ export async function useLoggedInOAuthMock(
   const userProfile = {
     ...mockProfile,
     avatar: options.profileAvatar ?? mockProfile.avatar,
+    displayName: options.profileDisplayName ?? mockProfile.displayName,
   };
   await context.addCookies([
     {
@@ -279,6 +286,20 @@ export async function useLoggedInOAuthMock(
     const method = decodeURIComponent(url.pathname.split("/xrpc/")[1] || "");
 
     if (method === "com.atproto.repo.listRecords") {
+      if (options.listRecordsAbort) {
+        await route.abort("failed");
+        return;
+      }
+
+      if (options.listRecordsStatus === 500) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "ListRecordsFailed" }),
+        });
+        return;
+      }
+
       if (options.listRecordsHasNextPage && url.searchParams.get("cursor") === "next-page") {
         await route.fulfill({
           status: 200,
@@ -352,6 +373,15 @@ export async function useLoggedInOAuthMock(
     }
 
     if (method === "app.bsky.actor.getProfile") {
+      if (options.profileStatus === 500) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "ProfileFailed" }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -542,6 +572,15 @@ export async function useLoggedInOAuthMock(
     }
 
     if (method === "uk.skyblur.post.getPost") {
+      if (options.getPostStatus === 500) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "GetPostFailed" }),
+        });
+        return;
+      }
+
       if (options.postDetailVariant === "error") {
         await route.fulfill({
           status: 500,
@@ -560,7 +599,7 @@ export async function useLoggedInOAuthMock(
             additional: "",
             errorCode: "AuthRequired",
             createdAt: "2026-05-04T03:32:34.000Z",
-            visibility: "followers",
+            visibility: options.postDetailVisibility || "followers",
           }),
         });
         return;

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 export default function ServiceWorkerRegister() {
     useEffect(() => {
+        /* istanbul ignore next -- Playwright exposes serviceWorker; the false branch is browser capability fallback. */
         if ("serviceWorker" in navigator) {
             // 既存のService Workerを解除してから再登録（キャッシュクリアのため）
             navigator.serviceWorker.getRegistrations().then((registrations) => {

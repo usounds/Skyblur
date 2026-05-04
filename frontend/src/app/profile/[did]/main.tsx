@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 
 export const ProfilePage = () => {
     const params = useParams<{ did: string }>();
+    /* istanbul ignore next -- Next.js single dynamic segments are present strings in this route. */
     const did = params?.did ?? ''
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [errorMessage, setErrorMessage] = useState<string>('')
@@ -33,6 +34,7 @@ export const ProfilePage = () => {
             const fetchRecord = async () => {
 
                 try {
+                    /* istanbul ignore next -- Next.js single dynamic segments are strings in this route. */
                     let repoLocal = Array.isArray(did) ? did[0] : did; // 配列なら最初の要素を使う
                     repoLocal = repoLocal.replace(/%3A/g, ':');
 

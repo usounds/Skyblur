@@ -101,7 +101,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         try {
           const res = await fetchWithTimeout('/api/oauth/session', {
             credentials: 'include'
-          }, 6_000);
+          }, 10_000);
           const data = await res.json() as any;
           if (data.authenticated) {
             const pdsUrl = data.pds || 'https://bsky.social';

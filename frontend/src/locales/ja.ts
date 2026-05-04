@@ -184,6 +184,8 @@ const messages = {
     Post_Restricted_NotAuthorized_Following: "この投稿を表示する権限がありません（フォロー中限定）。",
     Post_Restricted_NotAuthorized_Mutual: "この投稿を表示する権限がありません（相互フォロー限定）。",
     Home_CheckingSession: "セッションを確認しています...",
+    Home_CheckingSessionWithTimer: "セッションを確認しています... {1}秒後にリトライできます",
+    Landing_StartRetryButton: "リトライ",
     Home_CheckSession_Title: "セッション確認",
     Home_CheckSession_Message: "セッションを確認しています...",
     Home_CheckSession_Success_Title: "確認完了",

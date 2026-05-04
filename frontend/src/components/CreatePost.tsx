@@ -1208,10 +1208,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     onChange={setThreadGate}
                                 >
                                     <Group gap="xs" mt="sm">
-                                        <Chip value={THREADGATE_MENTION} size="sm" variant="outline">{locale.CreatePost_ThreadGateMention}</Chip>
-                                        <Chip value={THREADGATE_FOLLOWING} size="sm" variant="outline">{locale.CreatePost_ThreadGateFollowing}</Chip>
-                                        <Chip value={THREADGATE_FOLLOWERS} size="sm" variant="outline">{locale.CreatePost_ThreadGateFollowers}</Chip>
-                                        <Chip value={THREADGATE_QUOTE_ALLOW} size="sm" variant="outline">{locale.CreatePost_ThreadGateQuoteAllow}</Chip>
+                                        <Chip value={THREADGATE_MENTION} size="sm" variant="outline" wrapperProps={{ 'data-testid': 'threadgate-mention' }}>{locale.CreatePost_ThreadGateMention}</Chip>
+                                        <Chip value={THREADGATE_FOLLOWING} size="sm" variant="outline" wrapperProps={{ 'data-testid': 'threadgate-following' }}>{locale.CreatePost_ThreadGateFollowing}</Chip>
+                                        <Chip value={THREADGATE_FOLLOWERS} size="sm" variant="outline" wrapperProps={{ 'data-testid': 'threadgate-followers' }}>{locale.CreatePost_ThreadGateFollowers}</Chip>
+                                        <Chip value={THREADGATE_QUOTE_ALLOW} size="sm" variant="outline" wrapperProps={{ 'data-testid': 'threadgate-quote' }}>{locale.CreatePost_ThreadGateQuoteAllow}</Chip>
                                     </Group>
                                 </Chip.Group>
                             </div>

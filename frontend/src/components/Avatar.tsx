@@ -17,7 +17,7 @@ export const Avatar: React.FC<AvatarProp> = ({
 }) => {
     return (
 
-        <Link className="flex items-center gap-x-2 mb-3" href={href||''} target={target||''}>
+        <Link className="flex items-center gap-x-2 mb-3" href={href} target={target}>
             {userProf.avatar ? (
                 <Image
                     className="object-cover w-10 h-10 rounded-full"
@@ -39,4 +39,3 @@ export const Avatar: React.FC<AvatarProp> = ({
         </Link>
     );
 };
-

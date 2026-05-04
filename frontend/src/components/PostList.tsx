@@ -44,6 +44,7 @@ export const PostList: React.FC<PostListProps> = ({
     const observerTarget = useRef<HTMLDivElement>(null);
 
     const getPosts = async (currentCursor: string, isInitial: boolean = false) => {
+        /* istanbul ignore next -- PostList is only rendered once agent and did are available. */
         if (!agent || !did) {
             return;
         }
@@ -159,6 +160,7 @@ export const PostList: React.FC<PostListProps> = ({
         const isRestricted = [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any) || (item.blur?.visibility as any) === 'UNKNOWN' || (/^([○◯]+)$/.test(item.blur?.text?.trim() || '') && !item.blur?.visibility);
 
         if (!item.isDetailDisplay && isRestricted) {
+            /* istanbul ignore next -- Restricted reveal is only available after an authenticated proxy agent exists. */
             if (!apiProxyAgent) {
                 return;
             }

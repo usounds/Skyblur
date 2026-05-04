@@ -157,6 +157,99 @@ test("home start button opens the console for logged-in users", async ({
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 });
 
+test("home start session check shows a timed retry button after timeout", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useEnglishLocale(context, baseURL);
+
+  let sessionRequests = 0;
+  await page.route("**/api/oauth/session", async (route) => {
+    sessionRequests += 1;
+
+    if (sessionRequests === 1) {
+      await new Promise(() => {});
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: {
+        "Cache-Control": "no-store",
+        Vary: "Cookie",
+      },
+      body: JSON.stringify({
+        authenticated: false,
+      }),
+    });
+  });
+
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
+  await page.goto("/");
+
+  await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
+  await page.clock.runFor(10_000);
+  await expect(page.getByText("Checking session... retry available in 20s")).toBeVisible();
+  await page.clock.runFor(20_000);
+
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await page.getByRole("button", { name: "Retry" }).click();
+
+  await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
+  expect(sessionRequests).toBe(2);
+});
+
+test("home start session retry opens the console when the session recovers", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useEnglishLocale(context, baseURL);
+
+  let sessionRequests = 0;
+  await page.route("**/api/oauth/session", async (route) => {
+    sessionRequests += 1;
+
+    if (sessionRequests === 1) {
+      await new Promise(() => {});
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: {
+        "Cache-Control": "no-store",
+        Vary: "Cookie",
+      },
+      body: JSON.stringify({
+        authenticated: true,
+        did: mockDid,
+        pds: "https://e2e-pds.skyblur.test",
+        userProf: {
+          did: mockDid,
+          handle: mockHandle,
+          displayName: "E2E Tester",
+          description: "Recovered session user",
+        },
+      }),
+    });
+  });
+
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
+  await page.goto("/");
+
+  await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
+  await page.clock.runFor(30_000);
+  await page.getByRole("button", { name: "Retry" }).click();
+
+  await expect(page).toHaveURL(/\/console$/);
+  await expect(page.getByText(/E2E Tester/)).toBeVisible();
+  expect(sessionRequests).toBe(2);
+});
+
 test("header controls toggle theme and language from the rendered UI", async ({
   page,
   context,
@@ -172,9 +265,13 @@ test("header controls toggle theme and language from the rendered UI", async ({
 
   await headerButtons.first().click();
   await expect(page.getByRole("heading", { name: "Skyblurへようこそ" })).toBeVisible();
+  await headerButtons.first().click();
+  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
 
   await headerButtons.nth(1).click();
   await expect(page.locator("html")).toHaveAttribute("data-mantine-color-scheme", "dark");
+  await headerButtons.nth(1).click();
+  await expect(page.locator("html")).toHaveAttribute("data-mantine-color-scheme", "light");
 });
 
 test("not found screen renders a clear 404 message", async ({ page }) => {
@@ -356,7 +453,7 @@ test("/console validates login form input before redirecting", async ({
   await expectLoginValidationMessage(
     page,
     "bad!handle",
-    "Bluesky handles can only contain letters, numbers, hyphens, and dots",
+    "Bluesky handles can only contain letters, numbers, hyphens, and dots. Please check your input.",
   );
   await expectLoginValidationMessage(page, "alice.", "Handles cannot end with a dot.");
   await expectLoginValidationMessage(
@@ -368,6 +465,11 @@ test("/console validates login form input before redirecting", async ({
     page,
     "alice",
     'Please include ".bsky.social", like "alice.bsky.social".',
+  );
+  await expectLoginValidationMessage(
+    page,
+    "@alice.bsky.social",
+    'Please do not include the "@" in the handle.',
   );
 });
 
@@ -434,6 +536,19 @@ test("/profile renders the private profile message when preferences are unpublis
   await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
 
   await expect(page.getByText("E2E Tester")).toBeVisible();
+  await expect(page.getByText("The profile page is private.")).toBeVisible();
+  await expect(page.getByText("Post List")).toHaveCount(0);
+});
+
+test("/profile renders the private profile message when profile loading fails", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { profileStatus: 500 });
+
+  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+
   await expect(page.getByText("The profile page is private.")).toBeVisible();
   await expect(page.getByText("Post List")).toHaveCount(0);
 });
@@ -515,6 +630,62 @@ test("/post shows restricted login-required detail content to logged-out visitor
   await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
 });
 
+test("/post shows each logged-out restricted visibility message", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const cases = [
+    {
+      visibility: "login" as const,
+      message: "この投稿を参照するにはログインが必要です。",
+    },
+    {
+      visibility: "followers" as const,
+      message: "この投稿はフォロワー限定です。参照するにはログインが必要です。",
+    },
+    {
+      visibility: "following" as const,
+      message: "この投稿はフォロー中限定です。参照するにはログインが必要です。",
+    },
+    {
+      visibility: "mutual" as const,
+      message: "この投稿は相互フォロー限定です。参照するにはログインが必要です。",
+    },
+  ];
+
+  for (const { visibility, message } of cases) {
+    await useLoggedInOAuthMock(page, context, baseURL, {
+      authenticated: false,
+      postDetailVariant: "authRequired",
+      postDetailVisibility: visibility,
+    });
+
+    await page.goto(`/post/${encodeURIComponent(mockDid)}/e2e-${visibility}`);
+    await expect(page.getByText(message)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
+  }
+});
+
+test("/post links to Bluesky profile when My Page preferences are not published", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    noPreference: true,
+    postDetailVariant: "public",
+  });
+
+  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2epublic-no-mypage`);
+
+  const profileLink = page.getByRole("link", { name: /E2E Tester/ });
+  await expect(profileLink).toBeVisible();
+  await expect(profileLink).toHaveAttribute("href", `https://bsky.app/profile/${mockDid}`);
+  await expect(profileLink).toHaveAttribute("target", "_blank");
+  await expect(page.getByRole("button", { name: "Go to MyPage" })).toHaveCount(0);
+});
+
 test("/post renders restricted detail denial messages for logged-in visitors", async ({
   page,
   context,
@@ -583,7 +754,7 @@ test("/console create post form covers validation, reply, visibility, and submit
   await expect(page.getByText("Additional", { exact: true })).toBeVisible();
   await expect(page.getByText("Reply", { exact: true })).toBeVisible();
   await expect(page.getByText("Publish Settings")).toBeVisible();
-  await expect(page.getByText("Reply Control")).toBeVisible();
+  await expect(page.getByText("Reply Control", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Post now" })).toBeDisabled();
 
   const postInput = page.getByPlaceholder("Please enter the content.");
@@ -806,6 +977,50 @@ test("/console create post form shows apply write failure", async ({
   await expect(page.getByText(/Error:/)).toBeVisible();
 });
 
+test("/console create post form writes reply and quote controls from the screen", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  const applyWriteBodies: any[] = [];
+  await page.route("**/xrpc/com.atproto.repo.applyWrites", async (route) => {
+    applyWriteBodies.push(JSON.parse(route.request().postData() || "{}"));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({}),
+    });
+  });
+
+  await page.goto("/console");
+  await page.getByRole("button", { name: "Create a post" }).click();
+  await page.getByPlaceholder("Please enter the content.").fill("E2E reply controls [secret] #thread");
+  await expect(page.getByText("Reply Control", { exact: true })).toBeVisible();
+  await expect(page.getByText("Mentioned users")).toBeVisible();
+  await page.getByTestId("threadgate-mention").locator("label").click();
+  await page.getByTestId("threadgate-following").locator("label").click();
+  await page.getByTestId("threadgate-followers").locator("label").click();
+  await page.getByTestId("threadgate-quote").locator("label").click();
+  await expect(page.locator('input[value="mention"]')).toBeChecked();
+  await expect(page.locator('input[value="following"]')).toBeChecked();
+  await expect(page.locator('input[value="followers"]')).toBeChecked();
+  await expect(page.locator('input[value="quote"]')).not.toBeChecked();
+  await page.getByRole("button", { name: "Post now" }).click();
+
+  await expect(page.getByText("Post completed!")).toBeVisible();
+  const writes = applyWriteBodies.flatMap((body) => body.input?.writes || body.writes || []);
+  expect(writes.some((write) => write.collection === "app.bsky.feed.threadgate")).toBeTruthy();
+  expect(writes.some((write) => write.collection === "app.bsky.feed.postgate")).toBeTruthy();
+  const threadgate = writes.find((write) => write.collection === "app.bsky.feed.threadgate");
+  expect(threadgate.value.allow.map((rule: { $type: string }) => rule.$type)).toEqual([
+    "app.bsky.feed.threadgate#mentionRule",
+    "app.bsky.feed.threadgate#followingRule",
+    "app.bsky.feed.threadgate#followerRule",
+  ]);
+});
+
 test("/console post list supports reveal, reaction, edit, and delete actions", async ({
   page,
   context,
@@ -1018,6 +1233,25 @@ test("/console restricted edit reports authorization errors before opening the f
   await page.getByRole("menuitem", { name: "Edit" }).click();
 
   await expect(page.getByText("You do not have permission to view this post (Mutuals only).")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
+  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("*****");
+});
+
+test("/console restricted edit keeps the original post when prefetch returns non-ok", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    postVariant: "restricted",
+    getPostStatus: 500,
+  });
+
+  await page.goto("/console");
+  await expect(page.getByText("*****")).toBeVisible();
+  await page.locator("main svg").last().click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+
   await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("*****");
 });
@@ -1265,6 +1499,18 @@ test("/console post list shows an empty state when no posts are available", asyn
   await expect(page.getByText("Post List")).toHaveCount(0);
 });
 
+test("/console post list shows an empty state when list records fails", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { listRecordsStatus: 500 });
+
+  await page.goto("/console");
+  await expect(page.getByText("No posts available.")).toBeVisible();
+  await expect(page.getByText("Visible E2E")).toHaveCount(0);
+});
+
 test("/console post list appends the next page when scrolled to the end", async ({
   page,
   context,
@@ -1317,6 +1563,31 @@ test("/profile hides restricted post content from logged-out visitors", async ({
   await expect(page.getByText("*****")).toHaveCount(0);
 });
 
+test("/profile hides every logged-out restricted visibility row", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const cases = [
+    { variant: "login" as const, hiddenText: "Login-only E2E" },
+    { variant: "following" as const, hiddenText: "*****" },
+    { variant: "mutual" as const, hiddenText: "*****" },
+  ];
+
+  for (const { variant, hiddenText } of cases) {
+    await useLoggedInOAuthMock(page, context, baseURL, {
+      authenticated: false,
+      postVariant: variant,
+    });
+
+    await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+
+    await expect(page.getByText("E2E Tester")).toBeVisible();
+    await expect(page.getByText("Login to view")).toBeVisible();
+    await expect(page.getByText(hiddenText)).toHaveCount(0);
+  }
+});
+
 test("/profile renders the profile avatar image when one is available", async ({
   page,
   context,
@@ -1331,6 +1602,24 @@ test("/profile renders the profile avatar image when one is available", async ({
   await expect(page.getByAltText("E2E Tester")).toBeVisible();
   await expect(page.getByText("Existing E2E My Page description")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
+});
+
+test("/profile renders avatar and display-name fallbacks", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    noPreference: true,
+    profileAvatar: "https://cdn.bsky.app/img/avatar/plain/did:plc:e2emock/bafyavatar@jpeg",
+    profileDisplayName: "",
+  });
+
+  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+
+  await expect(page.getByAltText("No Avatar")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No Display Name" })).toBeVisible();
+  await expect(page.getByText(`@${mockHandle}`)).toBeVisible();
 });
 
 test("/console login form shows typeahead suggestions and redirects to atpassport", async ({
@@ -1397,6 +1686,24 @@ test("/settings renders and saves logged-in settings from mocked OAuth data", as
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 });
 
+test("/settings keeps save disabled until a visible setting changes", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await page.goto("/settings");
+  await expect(page.locator('input[value="E2E Custom Feed"]')).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+
+  await page.getByRole("textbox").nth(1).fill("E2E Custom Feed changed");
+  await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
+
+  await page.getByRole("textbox").nth(1).fill("E2E Custom Feed");
+  await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+});
+
 test("/settings creates preferences and validates custom feed avatar input", async ({
   page,
   context,
@@ -1435,6 +1742,45 @@ test("/settings creates preferences and validates custom feed avatar input", asy
     ]),
   });
   await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Save Completed!")).toBeVisible();
+  await expect(page).toHaveURL(/\/console$/);
+});
+
+test("/settings saves only My Page preferences when custom feed is unchanged", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    noPreference: true,
+    noCustomFeed: true,
+  });
+
+  await page.goto("/settings");
+  await expect(page.getByText("My Page", { exact: true })).toBeVisible();
+  await page.getByLabel("Publish").first().check();
+  await page.locator("textarea").first().fill("My Page only E2E settings");
+  await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText("Save Completed!")).toBeVisible();
+  await expect(page).toHaveURL(/\/console$/);
+});
+
+test("/settings updates custom feed metadata without changing the avatar", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await page.goto("/settings");
+  await expect(page.locator('input[value="E2E Custom Feed"]')).toBeVisible();
+  await page.getByRole("textbox").nth(1).fill("Metadata Only Feed");
+  await page.getByRole("textbox").nth(2).fill("Metadata only custom feed update");
+  await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
+  await page.getByRole("button", { name: "Save" }).click();
+
   await expect(page.getByText("Save Completed!")).toBeVisible();
   await expect(page).toHaveURL(/\/console$/);
 });
@@ -1502,6 +1848,26 @@ test("/settings reports avatar upload failures from the settings screen", async 
   await expect(page).toHaveURL(/\/settings$/);
 });
 
+test("/settings reports apply write failures while saving settings", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+  await page.route("**/xrpc/com.atproto.repo.applyWrites", async (route) => {
+    await route.abort("failed");
+  });
+
+  await page.goto("/settings");
+  const myPageDescription = page.locator("textarea").first();
+  await expect(myPageDescription).toHaveValue("Existing E2E My Page description");
+  await myPageDescription.fill("Settings failure branch");
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText(/Error:/)).toBeVisible();
+  await expect(page).toHaveURL(/\/settings$/);
+});
+
 test("header account menu exposes logged-in settings and logout actions", async ({
   page,
   context,
@@ -1560,4 +1926,22 @@ test("header account menu can hard logout from settings", async ({
   await page.getByRole("button", { name: /Invalidate session and logout/ }).click();
 
   await expect(page.getByText("Welcome to Skyblur")).toBeVisible();
+});
+
+test("header account menu can logout from home without leaving the page", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
+  await page.getByLabel("Account menu").click();
+  await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();
+  await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
+  await page.getByRole("button", { name: /Logout from this device/ }).click();
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
 });
