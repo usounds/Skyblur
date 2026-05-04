@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/frontend/test-results/
+/frontend/playwright-report/
+.playwright-mcp/
 
 # next.js
 /.next/
@@ -49,3 +52,4 @@ create_app.json
 
 .sst
 .pnpm-store/
+.serena/

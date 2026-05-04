@@ -117,7 +117,7 @@ describe('getPost API', () => {
         const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123', password: 'any' });
 
         await handle(c);
-        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Cannot detect did') }), 500);
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Cannot getRecord') }), 500);
     });
 
     it('should handle getRecord fetch error', async () => {

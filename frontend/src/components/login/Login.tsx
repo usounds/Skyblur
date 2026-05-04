@@ -52,7 +52,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
 
     const isDev = typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost'));
-    const apiHost = isDev ? 'devapi.skyblur.uk' : 'api.skyblur.uk';
+    const apiHost = typeof window !== 'undefined' ? window.location.origin : '';
     const getRedirectUrl = () => {
         const currentPath = window.location.pathname;
         return currentPath === '/' ? `${window.location.origin}/console` : window.location.href;
@@ -214,7 +214,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             window.localStorage.setItem('oauth.handle', handle);
 
             const redirectUrl = getRedirectUrl();
-            const loginUrl = `https://${apiHost}/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
+            const loginUrl = `${apiHost}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
             window.location.assign(loginUrl);
 
             // リダイレクトまで待機
@@ -245,7 +245,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
         const passport = new AtPassport({
             baseUrl: passportHost,
-            callbackUrl: `https://${apiHost}/oauth/login`,
+            callbackUrl: `${apiHost}/api/oauth/login`,
             lang: lang
         });
 
@@ -387,7 +387,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
             <Box ta="center">
                 <Anchor
-                    href={`https://${apiHost}/oauth/login?prompt=create&redirect_uri=${encodeURIComponent(getRedirectUrl())}`}
+                    href={`${apiHost}/api/oauth/login?prompt=create&redirect_uri=${encodeURIComponent(getRedirectUrl())}`}
                     size="sm"
                     mt="xs"
                     display="block"

@@ -46,6 +46,7 @@
     "production": {
       "vars": {
         "APPVIEW_HOST": "skyblur.uk",
+        "APPVIEW_PROXY_HOSTS": "preview.skyblur.uk",
         "API_HOST": "api.skyblur.uk"
       },
       "kv_namespaces": [

@@ -33,22 +33,31 @@ interface SkyblurJwtPayload extends JWTPayload {
     lxm?: string
 }
 
+function getAcceptedAudiences(): string[] {
+    return [
+        'did:web:preview.skyblur.uk',
+        'did:web:skyblur.uk',
+    ];
+}
+
 export const getAuthenticatedDid = async (c: Context): Promise<string | null> => {
     const authorization = c.req.header('Authorization') || ''
     const rawDid = getCookie(c, 'oauth_did')
     const secret = (c.env as any).OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
-    const origin = (c.env as any).APPVIEW_HOST
-    const audience = `did:web:${origin}`
 
     if (authorization) {
+        const audiences = getAcceptedAudiences();
+
         // JWT検証
-        try {
-            const verifiedJwt = await verifyJWT(authorization, audience);
-            // verifyJWT throws if invalid, so if we get here, it is verified.
-            const payload = verifiedJwt.payload as SkyblurJwtPayload;
-            return payload.iss || payload.sub || '';
-        } catch (e) {
-            // silent fail
+        for (const audience of audiences) {
+            try {
+                const verifiedJwt = await verifyJWT(authorization, audience);
+                // verifyJWT throws if invalid, so if we get here, it is verified.
+                const payload = verifiedJwt.payload as SkyblurJwtPayload;
+                return payload.iss || payload.sub || '';
+            } catch (e) {
+                console.warn(`[auth] JWT verification failed for audience ${audience}:`, e);
+            }
         }
     }
 

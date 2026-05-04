@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { signDid, getAuthenticatedDid } from '../AuthUtils';
 import * as JWTTokenHandler from '../JWTTokenHandler';
 
@@ -6,6 +6,10 @@ import * as JWTTokenHandler from '../JWTTokenHandler';
 vi.mock('../JWTTokenHandler');
 
 describe('AuthUtils', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+    });
+
     describe('signDid', () => {
         it('should sign a DID correctly', async () => {
             const did = 'did:example:123';
@@ -41,6 +45,83 @@ describe('AuthUtils', () => {
 
             const did = await getAuthenticatedDid(c);
             expect(did).toBe('did:example:auth');
+            expect(JWTTokenHandler.verifyJWT).toHaveBeenCalledWith(
+                'Bearer valid-token',
+                'did:web:preview.skyblur.uk'
+            );
+        });
+
+        it('should fall back to the production DID audience', async () => {
+            const c: any = {
+                req: {
+                    header: vi.fn().mockReturnValue('Bearer valid-token'),
+                    raw: {
+                        headers: new Headers()
+                    }
+                },
+                env: {
+                    APPVIEW_HOST: 'app.example.com'
+                }
+            };
+
+            // @ts-ignore
+            JWTTokenHandler.verifyJWT
+                .mockRejectedValueOnce(new Error('Invalid audience'))
+                .mockResolvedValueOnce({
+                    verified: true,
+                    payload: { iss: 'did:example:legacy' }
+                });
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBe('did:example:legacy');
+            expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
+                1,
+                'Bearer valid-token',
+                'did:web:preview.skyblur.uk'
+            );
+            expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
+                2,
+                'Bearer valid-token',
+                'did:web:skyblur.uk'
+            );
+        });
+
+        it('should only try preview and production DID audiences', async () => {
+            const c: any = {
+                req: {
+                    header: vi.fn().mockReturnValue('Bearer valid-token'),
+                    raw: {
+                        headers: new Headers()
+                    }
+                },
+                env: {
+                    APPVIEW_HOST: 'skyblur.uk',
+                    API_HOST: 'api.skyblur.uk',
+                    APPVIEW_PROXY_HOSTS: 'preview.skyblur.uk'
+                }
+            };
+
+            // @ts-ignore
+            JWTTokenHandler.verifyJWT
+                .mockRejectedValueOnce(new Error('Invalid audience'))
+                .mockResolvedValueOnce({
+                    verified: true,
+                    payload: { iss: 'did:example:preview' }
+                });
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBe('did:example:preview');
+            expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
+                1,
+                'Bearer valid-token',
+                'did:web:preview.skyblur.uk'
+            );
+            expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
+                2,
+                'Bearer valid-token',
+                'did:web:skyblur.uk'
+            );
+            expect(JWTTokenHandler.verifyJWT).toHaveBeenCalledTimes(2);
         });
 
         it('should handle JWT verification failure (silent fail)', async () => {

@@ -130,6 +130,15 @@ app.use('*', cors({
   allowHeaders: ['Content-Type', 'Authorization', 'DPoP', 'atproto-proxy', 'x-atproto-allow-proxy'],
 }))
 
+app.use('*', async (c, next) => {
+  await next();
+
+  const path = new URL(c.req.url).pathname;
+  if (path.startsWith('/api/') || path.startsWith('/xrpc/')) {
+    c.header('Cache-Control', 'no-store');
+  }
+})
+
 // --- CSRF Protection Middleware ---
 app.use('*', async (c, next) => {
   // GET, HEAD, OPTIONS は CSRF 保護不要
@@ -155,6 +164,13 @@ app.use('*', async (c, next) => {
 
   const origin = c.req.header('origin');
   const referer = c.req.header('referer');
+
+  // ATProto service proxy requests are server-to-server calls from the user's PDS.
+  // They can arrive without browser Origin/Referer headers, while browser POSTs
+  // to this Worker normally include at least one of them.
+  if (path.startsWith('/xrpc/') && !origin && !referer) {
+    return next();
+  }
 
   const allowedOrigins = [
     'https://dev.skyblur.uk',

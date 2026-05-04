@@ -1,12 +1,56 @@
 import { UkSkyblurPost, UkSkyblurPostGetPost } from '@/lexicon/UkSkyblur'
 import { getDecrypt } from '@/logic/CryptHandler'
-import { fetchServiceEndpoint, verifyJWT } from '@/logic/JWTTokenHandler'
+import { fetchServiceEndpoint } from '@/logic/JWTTokenHandler'
 import { Context } from 'hono'
 import { Client, simpleFetchHandler } from '@atcute/client'
 import type { AppBskyGraphGetRelationships } from '@atcute/bluesky'
 import { type ActorIdentifier } from '@atcute/lexicons'
 
 import { getAuthenticatedDid } from '@/logic/AuthUtils'
+
+function normalizeServiceEndpoint(endpoint: unknown): string | null {
+    if (typeof endpoint === 'string') {
+        return endpoint;
+    }
+
+    if (Array.isArray(endpoint) && typeof endpoint[0] === 'string') {
+        return endpoint[0];
+    }
+
+    return null;
+}
+
+async function getRecordFromEndpoint(endpoint: string, repo: string, rkey: string) {
+    const url = new URL(`${endpoint.replace(/\/+$/, '')}/xrpc/com.atproto.repo.getRecord`);
+    url.searchParams.append('repo', repo);
+    url.searchParams.append('collection', 'uk.skyblur.post');
+    url.searchParams.append('rkey', rkey);
+
+    const recordUrl = url.toString();
+    const result = await fetch(recordUrl, {
+        headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'SkyblurAPI/1.0',
+        },
+    });
+
+    if (!result.ok) {
+        const errText = await result.text();
+        console.error(`[getPost] getRecord failed: ${result.status} ${errText} URL: ${recordUrl}`);
+        throw new Error(`Failed to get record from ${recordUrl}`);
+    }
+
+    return await result.json() as { value: unknown };
+}
+
+async function getSkyblurRecord(repo: string, rkey: string) {
+    const pdsUrl = normalizeServiceEndpoint(await fetchServiceEndpoint(repo));
+    if (!pdsUrl) {
+        throw new Error(`Cannot detect did[${repo}]'s pds.`);
+    }
+
+    return await getRecordFromEndpoint(pdsUrl, repo, rkey);
+}
 
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
@@ -38,30 +82,14 @@ export const handle = async (c: Context) => {
         return c.json({ message: 'Collection should be \'uk.skyblur.post\'.' }, 400);
     }
 
-
-    const pdsUrl = 'https://slingshot.microcosm.blue';
-
-    const url = new URL(`${pdsUrl}/xrpc/com.atproto.repo.getRecord`);
-    url.searchParams.append('repo', repo);
-    url.searchParams.append('collection', 'uk.skyblur.post');
-    url.searchParams.append('rkey', rkey);
-
-    const recortUrl = url.toString();
-
     let recordObj
 
     try {
-        const result = await fetch(recortUrl)
-        if (!result.ok) {
-            const errText = await result.text();
-            console.error(`[getPost] getRecord failed: ${result.status} ${errText} URL: ${recortUrl}`);
-            throw new Error('Failed to get record')
-        }
-        const jsonResult = await result.json() as { value: unknown };
+        const jsonResult = await getSkyblurRecord(repo, rkey);
         recordObj = jsonResult.value as UkSkyblurPost.Record;
     } catch (e) {
         console.error(`[getPost] Record Fetch Error: ${e}`);
-        return c.json({ message: `Cannot getRecord[${recortUrl}]` }, 500);
+        return c.json({ message: `Cannot getRecord[${decodedUri}]` }, 500);
     }
 
     // Visibility checks
@@ -220,11 +248,9 @@ export const handle = async (c: Context) => {
         try {
             let pdsUrl: string
             try {
-                const endpoint = await fetchServiceEndpoint(repo);
-                if (typeof endpoint === 'string') {
+                const endpoint = normalizeServiceEndpoint(await fetchServiceEndpoint(repo));
+                if (endpoint) {
                     pdsUrl = endpoint;
-                } else if (Array.isArray(endpoint) && typeof endpoint[0] === 'string') {
-                    pdsUrl = endpoint[0];
                 } else {
                     console.error(`[getPost] Invalid PDS endpoint format: ${JSON.stringify(endpoint)}`);
                     throw new Error('Invalid PDS endpoint format');
@@ -257,4 +283,3 @@ export const handle = async (c: Context) => {
     });
 
 }
-

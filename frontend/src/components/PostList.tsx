@@ -289,22 +289,24 @@ export const PostList: React.FC<PostListProps> = ({
         });
 
         try {
-            const host = window.location.host;
-            let apiHost = 'api.skyblur.uk'
-            if (host.includes('dev.skyblur.uk') || host.includes('localhost')) {
-                apiHost = 'devapi.skyblur.uk'
-            }
-
             const repo = Array.isArray(did) ? did[0] : did || ''
             if (!repo.startsWith('did:')) return
             const validRepo = repo as `did:${string}:${string}`
 
+            const encryptBody = item.blur.encryptBody as any;
+            const cid =
+                encryptBody?.ref?.$link ||
+                encryptBody?.ref ||
+                encryptBody?.cid ||
+                encryptBody?.$link ||
+                '';
+
             const decryptByCidBody: any = {
                 repo: validRepo,
-                cid: (item.blur.encryptBody as any)?.ref.$link || '',
+                cid,
                 password: item.encryptKey,
             }
-            const response = await fetch(`https://${apiHost}/xrpc/uk.skyblur.post.decryptByCid`, {
+            const response = await fetch(`/xrpc/uk.skyblur.post.decryptByCid`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"

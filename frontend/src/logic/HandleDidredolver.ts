@@ -1,6 +1,7 @@
 
 import { isDid } from '@atcute/lexicons/syntax';
 import type { Did } from '@atcute/lexicons';
+import { resolveHandleAction } from './HandleResolverAction';
 
 export class ResolverError extends Error {
 	constructor(message: string) {
@@ -10,24 +11,12 @@ export class ResolverError extends Error {
 }
 
 export const resolveHandleViaHttp = async (handle: string): Promise<Did> => {
-	const host = new URL(origin).host;
-	let apiHost = 'api.skyblur.uk'
-	if (host?.endsWith('dev.skyblur.uk')) {
-		apiHost = 'devapi.skyblur.uk'
-	}
-	const res = await fetch(`https://${apiHost}/xrpc/uk.skyblur.admin.resolveHandle?handle=${encodeURIComponent(handle)}`);
-
-	if (!res.ok) {
-		throw new ResolverError(`domain is unreachable`);
+	const result = await resolveHandleAction(handle);
+	if (result.ok) {
+		return result.did;
 	}
 
-	const data = (await res.json()) as { did: string };
-
-	if (data.did && typeof data.did === "string") {
-		return data.did as Did;
-	}
-
-	throw new ResolverError(`failed to resolve ${handle}`);
+	throw new ResolverError(result.error || `failed to resolve ${handle}`);
 };
 
 

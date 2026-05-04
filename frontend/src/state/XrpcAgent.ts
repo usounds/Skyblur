@@ -27,28 +27,33 @@ type Action = {
   logout: (mode: 'soft' | 'hard') => Promise<void>;
 };
 const host = typeof window !== 'undefined' ? new URL(window.location.origin).host : '';
-
+const xrpcService = typeof window !== 'undefined' ? window.location.origin : '';
 let sessionCheckPromise: Promise<{ authenticated: boolean; did: string; pds: string }> | null = null;
 let profFetchPromise: Promise<void> | null = null;
 
-export const useXrpcAgentStore = create<State & Action>((set, get) => {
-  const apiEndpoint = typeof window !== 'undefined'
-    ? (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost')
-      ? 'devapi.skyblur.uk'
-      : 'api.skyblur.uk')
-    : '';
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export const useXrpcAgentStore = create<State & Action>((set, get) => {
   return ({
     agent: new Client({
       handler: simpleFetchHandler({
-        service: apiEndpoint ? `https://${apiEndpoint}` : '',
+        service: xrpcService,
         // @ts-ignore
         fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
       }),
     }),
     apiProxyAgent: new Client({
       handler: simpleFetchHandler({
-        service: apiEndpoint ? `https://${apiEndpoint}` : '',
+        service: xrpcService,
         // @ts-ignore
         fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
       }),
@@ -83,9 +88,9 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
 
       sessionCheckPromise = (async () => {
         try {
-          const res = await fetch(`https://${apiEndpoint}/oauth/session`, {
+          const res = await fetchWithTimeout('/api/oauth/session', {
             credentials: 'include'
-          });
+          }, 4_000);
           const data = await res.json() as any;
           if (data.authenticated) {
             const pdsUrl = data.pds || 'https://bsky.social';
@@ -119,7 +124,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       return sessionCheckPromise;
     },
     fetchUserProf: async () => {
-      const { did, apiProxyAgent, userProf, setUserProf, isSessionChecked } = get();
+      const { did, publicAgent, userProf, setUserProf, isSessionChecked } = get();
       if (!did || !isSessionChecked) return;
 
       // 取得済み、かつ同じ DID ならスキップ
@@ -130,7 +135,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       profFetchPromise = (async () => {
         try {
           console.log(`Fetching profile for ${did}...`);
-          const res = await apiProxyAgent.get('app.bsky.actor.getProfile', { params: { actor: did as any } });
+          const res = await publicAgent.get('app.bsky.actor.getProfile', { params: { actor: did as any } });
           if (res.ok) {
             setUserProf(res.data);
           }
@@ -145,8 +150,8 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     },
     logout: async (mode: 'soft' | 'hard') => {
       try {
-        const endpoint = mode === 'hard' ? '/oauth/logout' : '/oauth/soft-logout';
-        await fetch(`https://${apiEndpoint}${endpoint}`, {
+        const endpoint = mode === 'hard' ? '/api/oauth/logout' : '/api/oauth/soft-logout';
+        await fetch(endpoint, {
           method: 'POST',
           credentials: 'include'
         });

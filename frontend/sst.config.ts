@@ -13,7 +13,19 @@ export default $config({
   async run() {
     const stage = $app.stage;
 
+    const oauthStore = new sst.aws.Dynamo("OAuthStore", {
+      fields: {
+        pk: "string",
+      },
+      primaryIndex: { hashKey: "pk" },
+      ttl: "expiresAt",
+    });
+
     new sst.aws.Nextjs("Skyblur", {
+      link: [oauthStore],
+      environment: {
+        OAUTH_STORE_TABLE_NAME: oauthStore.name,
+      },
       domain: stage === "production"
         ? {
           name: "skyblur.uk",
