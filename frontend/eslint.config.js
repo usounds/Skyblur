@@ -1,6 +1,6 @@
 import coreWebVitals from 'eslint-config-next/core-web-vitals';
 
-export default [
+const eslintConfig = [
   ...coreWebVitals,
   {
     rules: {
@@ -21,6 +21,8 @@ export default [
     },
   },
   {
-    ignores: ['.sst/**', '.open-next/**', 'coverage/**']
+    ignores: ['.sst/**', '.open-next/**', 'coverage/**', 'sst-env.d.ts']
   }
 ];
+
+export default eslintConfig;

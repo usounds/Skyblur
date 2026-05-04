@@ -8,7 +8,7 @@ const threshold = 80;
 const screenScenarios = [
   {
     id: "home landing content",
-    evidence: ["page.goto(\"/\")", "Welcome to Skyblur", "Post contents from Skyblur"],
+    evidence: ["gotoAndSkipIfUnavailable(page, \"/\")", "Welcome to Skyblur", "Post contents from Skyblur"],
   },
   {
     id: "home start opens login modal",
@@ -20,15 +20,15 @@ const screenScenarios = [
   },
   {
     id: "terms content",
-    evidence: ["goto(\"/termofuse\")", "Privacy Policy & Terms of Service", "Prohibited Actions"],
+    evidence: ["gotoAndSkipIfUnavailable(termPage, \"/termofuse\")", "Privacy Policy & Terms of Service", "Prohibited Actions"],
   },
   {
     id: "not-found screen",
-    evidence: ["page.goto(\"/not-a-real-screen\")", "404 - Page Not Found"],
+    evidence: ["gotoAndSkipIfUnavailable(page, \"/not-a-real-screen\")", "404 - Page Not Found"],
   },
   {
     id: "console unauthenticated login form",
-    evidence: ["page.goto(\"/console\")", "Login with atproto account", "Create Account"],
+    evidence: ["gotoAndSkipIfUnavailable(page, \"/console\")", "Login with atproto account", "Create Account"],
   },
   {
     id: "console login validation errors",
@@ -44,7 +44,7 @@ const screenScenarios = [
   },
   {
     id: "settings unauthenticated redirect",
-    evidence: ["page.goto(\"/settings\")", "toHaveURL(/\\/$/)"],
+    evidence: ["gotoAndSkipIfUnavailable(page, \"/settings\")", "toHaveURL(/\\/$/)"],
   },
   {
     id: "console logged-in dashboard",

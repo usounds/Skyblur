@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getOAuthClient } from "@/logic/oauth/client";
 import { OAUTH_CALLBACK_COOKIE } from "@/logic/oauth/cookies";
 import { SESSION_TTL_SECONDS } from "@/logic/oauth/constants";
-import { getCookieDomain, getRequestOrigin } from "@/logic/oauth/origin";
+import { getRequestOrigin } from "@/logic/oauth/origin";
 
 function sanitizeRedirect(value: string | null, request: Request, origin: string) {
   const allowedHost = new URL(origin).host;
@@ -47,10 +47,9 @@ export async function GET(request: Request) {
     response.cookies.set(OAUTH_CALLBACK_COOKIE, redirectTo, {
       path: "/",
       httpOnly: true,
-      secure: origin.startsWith("https"),
+      secure: true,
       sameSite: "lax",
       maxAge: SESSION_TTL_SECONDS,
-      domain: getCookieDomain(request),
     });
     return response;
   } catch (error) {

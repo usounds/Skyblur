@@ -217,7 +217,7 @@ export const PostPage = () => {
         if (did) {
             fetchProfile();
         }
-    }, [did]);
+    }, [apiAgent, did]);
 
     useEffect(() => {
         setIsMounted(true);

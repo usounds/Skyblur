@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   getAppOriginFromRequest,
@@ -11,17 +11,29 @@ function request(url: string, headers?: HeadersInit) {
 }
 
 describe("OAuth origin helpers", () => {
-  it("uses forwarded host and protocol when present", () => {
-    const req = request("https://internal.example/api", {
-      "x-forwarded-host": "app.skyblur.example",
-      "x-forwarded-proto": "https",
-    });
+  const originalBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
-    expect(getRequestOrigin(req)).toBe("https://app.skyblur.example");
-    expect(getAppOriginFromRequest(req)).toBe("https://app.skyblur.example");
+  afterEach(() => {
+    if (originalBaseUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_BASE_URL;
+    } else {
+      process.env.NEXT_PUBLIC_BASE_URL = originalBaseUrl;
+    }
   });
 
-  it("uses the request URL protocol for localhost", () => {
+  it("uses the configured base URL as the request origin", () => {
+    process.env.NEXT_PUBLIC_BASE_URL = "https://skyblur.uk/";
+    const req = request("https://internal.example/api", {
+      "x-forwarded-host": "attacker.example",
+      host: "attacker.example",
+    });
+
+    expect(getRequestOrigin(req)).toBe("https://skyblur.uk");
+    expect(getAppOriginFromRequest(req)).toBe("https://skyblur.uk");
+  });
+
+  it("uses the request URL protocol for localhost when no base URL is configured", () => {
+    delete process.env.NEXT_PUBLIC_BASE_URL;
     const req = request("http://localhost:4500/api", {
       host: "localhost:4500",
       "x-forwarded-proto": "https",
@@ -31,19 +43,27 @@ describe("OAuth origin helpers", () => {
     expect(getCookieDomain(req)).toBeUndefined();
   });
 
-  it("uses the registrable root as the cookie domain", () => {
-    const req = request("https://api.skyblur.example/api", {
-      host: "app.skyblur.example",
-    });
+  it("uses the configured base URL host for legacy cookie domains", () => {
+    process.env.NEXT_PUBLIC_BASE_URL = "https://app.skyblur.uk";
+    const req = request("https://attacker.example/api");
 
-    expect(getCookieDomain(req)).toBe(".skyblur.example");
+    expect(getCookieDomain(req)).toBe(".skyblur.uk");
   });
 
-  it("does not set a cookie domain for single-label hosts", () => {
+  it("rejects non-localhost requests when no base URL is configured", () => {
+    delete process.env.NEXT_PUBLIC_BASE_URL;
     const req = request("https://intranet/api", {
       host: "intranet",
     });
 
-    expect(getCookieDomain(req)).toBeUndefined();
+    expect(() => getRequestOrigin(req)).toThrow("NEXT_PUBLIC_BASE_URL is required");
+    expect(() => getCookieDomain(req)).toThrow("NEXT_PUBLIC_BASE_URL is required");
+  });
+
+  it("rejects base URLs with path, query, or hash", () => {
+    process.env.NEXT_PUBLIC_BASE_URL = "https://skyblur.uk/console";
+    const req = request("https://skyblur.uk/api");
+
+    expect(() => getRequestOrigin(req)).toThrow("NEXT_PUBLIC_BASE_URL must be an origin");
   });
 });

@@ -12,7 +12,7 @@ import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Lock, LockOpen, LogIn, X, Globe, Users, UserCheck, Handshake } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import Loading from './Loading';
@@ -43,7 +43,7 @@ export const PostList: React.FC<PostListProps> = ({
     const isMounted = useRef(true);
     const observerTarget = useRef<HTMLDivElement>(null);
 
-    const getPosts = async (currentCursor: string, isInitial: boolean = false) => {
+    const getPosts = useCallback(async (currentCursor: string, isInitial: boolean = false) => {
         /* istanbul ignore next -- PostList is only rendered once agent and did are available. */
         if (!agent || !did) {
             return;
@@ -105,7 +105,7 @@ export const PostList: React.FC<PostListProps> = ({
                 setIsLoading(false);
             }
         }
-    };
+    }, [agent, did]);
 
     const isSessionChecked = useXrpcAgentStore(state => state.isSessionChecked);
 
@@ -122,7 +122,7 @@ export const PostList: React.FC<PostListProps> = ({
         return () => {
             isMounted.current = false;
         };
-    }, [did, agent, isSessionChecked]);
+    }, [did, agent, isSessionChecked, getPosts]);
 
     useEffect(() => {
         const target = observerTarget.current;
@@ -144,7 +144,7 @@ export const PostList: React.FC<PostListProps> = ({
                 observer.unobserve(target);
             }
         };
-    }, [cursor, isLoading, isLast]);
+    }, [cursor, isLoading, isLast, getPosts]);
 
     const handleDisplay = async (item: PostListItem) => {
         if (!item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD) {

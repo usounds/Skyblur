@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { getOAuthClient, isDeletedSessionError } from "@/logic/oauth/client";
 import { OAUTH_DID_COOKIE, verifySignedDid } from "@/logic/oauth/cookies";
-import { getCookieDomain, getRequestOrigin } from "@/logic/oauth/origin";
+import { getRequestOrigin } from "@/logic/oauth/origin";
 
 export async function POST(request: Request) {
   const origin = getRequestOrigin(request);
@@ -25,10 +25,9 @@ export async function POST(request: Request) {
   response.cookies.set(OAUTH_DID_COOKIE, "", {
     path: "/",
     httpOnly: true,
-    secure: origin.startsWith("https"),
+    secure: true,
     sameSite: "lax",
     maxAge: 0,
-    domain: getCookieDomain(request),
   });
   return response;
 }

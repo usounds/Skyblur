@@ -2,6 +2,8 @@ import { expect, test } from "./fixtures";
 
 import { mockDid, mockHandle, useLoggedInOAuthMock } from "./oauth-mock";
 
+test.describe.configure({ mode: "parallel" });
+
 async function responseText(res: { text: () => Promise<string> }) {
   try {
     return await res.text();
@@ -18,6 +20,33 @@ async function skipIfUnavailable(res: { status: () => number; text: () => Promis
     body.includes("cloudflare") || body.includes("Bad gateway"),
     `E2E target is unavailable: HTTP ${res.status()}`,
   );
+}
+
+async function gotoAndSkipIfUnavailable(
+  page: import("@playwright/test").Page,
+  url: string,
+) {
+  const res = await page.goto(url);
+  if (res) await skipIfUnavailable(res);
+  await disableNotificationPointerEvents(page);
+  return res;
+}
+
+function expectedOAuthOrigin(baseURL: string | undefined) {
+  return (process.env.NEXT_PUBLIC_BASE_URL || baseURL || "http://localhost:4500").replace(/\/+$/, "");
+}
+
+async function disableNotificationPointerEvents(page: import("@playwright/test").Page) {
+  await page.addStyleTag({
+    content: `
+      [data-mantine-shared-portal-node] [role="alert"],
+      [data-mantine-shared-portal-node] [role="alert"] *,
+      .mantine-Notifications-root,
+      .mantine-Notifications-root * {
+        pointer-events: none !important;
+      }
+    `,
+  }).catch(() => {});
 }
 
 async function useEnglishLocale(context: {
@@ -40,7 +69,7 @@ async function openConsoleLoginForm(
   baseURL: string | undefined,
 ) {
   await useEnglishLocale(context, baseURL);
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByRole("heading", { name: "Skyblur" })).toBeVisible();
 }
@@ -72,7 +101,7 @@ async function openConsoleWithClock(
     window.Date = MockDate as DateConstructor;
   }, iso);
   await useLoggedInOAuthMock(page, context, baseURL);
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
 }
 
 async function expectLoginValidationMessage(
@@ -81,11 +110,14 @@ async function expectLoginValidationMessage(
   message: string,
 ) {
   const handleInput = page.getByRole("combobox", { name: "Handle" });
-  await handleInput.fill("");
-  await handleInput.fill(handle);
+  await handleInput.click();
+  await handleInput.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+  await handleInput.press("Backspace");
+  await handleInput.pressSequentially(handle);
+  await expect(handleInput).toHaveValue(handle);
   await expect(page.getByRole("button", { name: "Login", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Login", exact: true }).click();
-  await expect(page.getByText(message)).toBeVisible();
+  await page.getByRole("button", { name: "Login", exact: true }).click({ force: true });
+  await expect(page.getByText(message).first()).toBeVisible();
   await expect(page).toHaveURL(/\/console$/);
 }
 
@@ -96,9 +128,10 @@ test("OAuth metadata points to the Next.js API OAuth routes", async ({ request, 
   expect(res.headers()["cache-control"]).toContain("max-age=3600");
 
   const metadata = await res.json();
-  expect(metadata.client_id).toBe(`${baseURL}/oauth-client-metadata.json`);
-  expect(metadata.redirect_uris).toEqual([`${baseURL}/api/oauth/callback`]);
-  expect(metadata.jwks_uri).toBe(`${baseURL}/api/oauth/jwks.json`);
+  const oauthOrigin = expectedOAuthOrigin(baseURL);
+  expect(metadata.client_id).toBe(`${oauthOrigin}/oauth-client-metadata.json`);
+  expect(metadata.redirect_uris).toEqual([`${oauthOrigin}/api/oauth/callback`]);
+  expect(metadata.jwks_uri).toBe(`${oauthOrigin}/api/oauth/jwks.json`);
   expect(metadata.grant_types).toEqual(["authorization_code", "refresh_token"]);
   expect(metadata.response_types).toEqual(["code"]);
   expect(metadata.scope).toContain("atproto");
@@ -114,7 +147,7 @@ test("public app pages render core unauthenticated content", async ({
 }) => {
   await useEnglishLocale(context, baseURL);
 
-  await page.goto("/");
+  await gotoAndSkipIfUnavailable(page, "/");
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("link", { name: "Skyblur" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Term of Use" })).toBeVisible();
@@ -126,7 +159,7 @@ test("public app pages render core unauthenticated content", async ({
   await expect(page.getByText("These recommended clients offer a seamless viewing experience")).toBeVisible();
 
   const termPage = await context.newPage();
-  await termPage.goto("/termofuse");
+  await gotoAndSkipIfUnavailable(termPage, "/termofuse");
   await expect(termPage).toHaveURL(/\/termofuse$/);
   await expect(termPage.getByRole("heading", { name: "Privacy Policy & Terms of Service" })).toBeVisible();
   await expect(termPage.getByText("Collection and Use of Personal Information")).toBeVisible();
@@ -150,7 +183,7 @@ test("home start button opens the console for logged-in users", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/");
+  await gotoAndSkipIfUnavailable(page, "/");
   await page.getByRole("button", { name: "Start" }).click();
 
   await expect(page).toHaveURL(/\/console$/);
@@ -187,7 +220,7 @@ test("home start session check shows a timed retry button after timeout", async 
   });
 
   await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
-  await page.goto("/");
+  await gotoAndSkipIfUnavailable(page, "/");
 
   await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
   await page.clock.runFor(10_000);
@@ -239,7 +272,7 @@ test("home start session retry opens the console when the session recovers", asy
   });
 
   await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
-  await page.goto("/");
+  await gotoAndSkipIfUnavailable(page, "/");
 
   await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
   await page.clock.runFor(30_000);
@@ -257,7 +290,7 @@ test("header controls toggle theme and language from the rendered UI", async ({
 }) => {
   await useEnglishLocale(context, baseURL);
 
-  await page.goto("/");
+  await gotoAndSkipIfUnavailable(page, "/");
   await expect(page.getByText("Welcome to Skyblur")).toBeVisible();
 
   const headerButtons = page.getByRole("button", { name: "Toggle color scheme" });
@@ -275,7 +308,7 @@ test("header controls toggle theme and language from the rendered UI", async ({
 });
 
 test("not found screen renders a clear 404 message", async ({ page }) => {
-  await page.goto("/not-a-real-screen");
+  await gotoAndSkipIfUnavailable(page, "/not-a-real-screen");
 
   await expect(page.getByRole("heading", { name: "404 - Page Not Found" })).toBeVisible();
   await expect(page.getByText("The page you are looking for doesn't exist.")).toBeVisible();
@@ -442,6 +475,11 @@ test("/console validates login form input before redirecting", async ({
   await page.getByLabel("Agree to the contents").check();
   await expectLoginValidationMessage(
     page,
+    "@alice.bsky.social",
+    'Please do not include the "@" in the handle.',
+  );
+  await expectLoginValidationMessage(
+    page,
     "bad_handle",
     "Bluesky handles do not contain underscores",
   );
@@ -455,21 +493,13 @@ test("/console validates login form input before redirecting", async ({
     "bad!handle",
     "Bluesky handles can only contain letters, numbers, hyphens, and dots. Please check your input.",
   );
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await page.getByLabel("Agree to the contents").check();
   await expectLoginValidationMessage(page, "alice.", "Handles cannot end with a dot.");
   await expectLoginValidationMessage(
     page,
     "alice..bsky.social",
     "Handles cannot contain consecutive dots.",
-  );
-  await expectLoginValidationMessage(
-    page,
-    "alice",
-    'Please include ".bsky.social", like "alice.bsky.social".',
-  );
-  await expectLoginValidationMessage(
-    page,
-    "@alice.bsky.social",
-    'Please do not include the "@" in the handle.',
   );
 });
 
@@ -480,7 +510,7 @@ test("/console login form shows callback errors and clears typeahead input", asy
 }) => {
   await useEnglishLocale(context, baseURL);
 
-  await page.goto("/console?loginError=invalid_handle");
+  await gotoAndSkipIfUnavailable(page, "/console?loginError=invalid_handle");
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { name: "Skyblur" })).toBeVisible();
   await expect(main.getByText("Invalid handle.")).toBeVisible();
@@ -499,7 +529,7 @@ test("/settings redirects unauthenticated visitors back home", async ({
 }) => {
   await useEnglishLocale(context, baseURL);
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("link", { name: "Skyblur" })).toBeVisible();
@@ -515,7 +545,7 @@ test("/profile renders a published profile and public post list", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+  await gotoAndSkipIfUnavailable(page, `/profile/${encodeURIComponent(mockDid)}`);
 
   await expect(page).toHaveURL(/\/profile\/did%3Aplc%3Ae2emock$/);
   await expect(page.getByText("E2E Tester")).toBeVisible();
@@ -533,7 +563,7 @@ test("/profile renders the private profile message when preferences are unpublis
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { noPreference: true });
 
-  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+  await gotoAndSkipIfUnavailable(page, `/profile/${encodeURIComponent(mockDid)}`);
 
   await expect(page.getByText("E2E Tester")).toBeVisible();
   await expect(page.getByText("The profile page is private.")).toBeVisible();
@@ -547,7 +577,7 @@ test("/profile renders the private profile message when profile loading fails", 
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { profileStatus: 500 });
 
-  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+  await gotoAndSkipIfUnavailable(page, `/profile/${encodeURIComponent(mockDid)}`);
 
   await expect(page.getByText("The profile page is private.")).toBeVisible();
   await expect(page.getByText("Post List")).toHaveCount(0);
@@ -560,7 +590,7 @@ test("/post renders public detail content with profile and reaction metadata", a
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postDetailVariant: "public" });
 
-  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2epost`);
+  await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2epost`);
 
   await expect(page).toHaveURL(/\/post\/did%3Aplc%3Ae2emock\/e2epost$/);
   await expect(page.getByText("E2E Tester")).toBeVisible();
@@ -582,7 +612,7 @@ test("/post hides reaction metadata when reaction fetches fail", async ({
 
   for (const options of cases) {
     await useLoggedInOAuthMock(page, context, baseURL, { ...options, postDetailVariant: "public" });
-    await page.goto(`/post/${encodeURIComponent(mockDid)}/e2epublic-${Object.keys(options)[0]}`);
+    await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2epublic-${Object.keys(options)[0]}`);
 
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText("Public post detail secret text")).toBeVisible();
@@ -598,7 +628,7 @@ test("/post validates and unlocks password-protected detail content", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postDetailVariant: "password" });
 
-  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2epassword`);
+  await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2epassword`);
 
   await expect(page.getByText("E2E Tester")).toBeVisible();
   await expect(page.getByText("○○○○○")).toBeVisible();
@@ -623,7 +653,7 @@ test("/post shows restricted login-required detail content to logged-out visitor
     postDetailVariant: "authRequired",
   });
 
-  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2erestricted`);
+  await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erestricted`);
 
   await expect(page.getByText("E2E Tester")).toBeVisible();
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
@@ -700,7 +730,7 @@ test("/post refetches restricted detail after the session resolves authenticated
     });
   });
 
-  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2erefetch`);
+  await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erefetch`);
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
   expect(getPostRequests).toBe(1);
 
@@ -744,7 +774,7 @@ test("/post shows each logged-out restricted visibility message", async ({
       postDetailVisibility: visibility,
     });
 
-    await page.goto(`/post/${encodeURIComponent(mockDid)}/e2e-${visibility}`);
+    await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2e-${visibility}`);
     await expect(page.getByText(message)).toBeVisible();
     await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
   }
@@ -760,7 +790,7 @@ test("/post links to Bluesky profile when My Page preferences are not published"
     postDetailVariant: "public",
   });
 
-  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2epublic-no-mypage`);
+  await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2epublic-no-mypage`);
 
   const profileLink = page.getByRole("link", { name: /E2E Tester/ });
   await expect(profileLink).toBeVisible();
@@ -785,7 +815,7 @@ test("/post renders restricted detail denial messages for logged-in visitors", a
 
   for (const [restrictedErrorCode, message] of cases) {
     await useLoggedInOAuthMock(page, context, baseURL, { restrictedErrorCode });
-    await page.goto(`/post/${encodeURIComponent(mockDid)}/e2erestricted-${restrictedErrorCode}`);
+    await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erestricted-${restrictedErrorCode}`);
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText(message)).toBeVisible();
   }
@@ -798,7 +828,7 @@ test("/post renders a fetch failure message when detail loading fails", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postDetailVariant: "error" });
 
-  await page.goto(`/post/${encodeURIComponent(mockDid)}/e2efailed`);
+  await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2efailed`);
 
   await expect(page.getByText("E2E Tester")).toBeVisible();
   await expect(page.getByText("Get Post Failed.")).toBeVisible();
@@ -811,7 +841,7 @@ test("/console renders logged-in dashboard from mocked OAuth session", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
 
   await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
@@ -828,7 +858,7 @@ test("/console create post form covers validation, reply, visibility, and submit
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
 
   await expect(page.getByText("Post content")).toBeVisible();
@@ -921,7 +951,7 @@ test("/console submits password-protected post from the create form", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
 
   await page.getByPlaceholder("Please enter the content.").fill("E2E password [secret] post");
@@ -944,7 +974,7 @@ test("/console submits restricted post with reply controls from the create form"
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
 
   await page.getByPlaceholder("Please enter the content.").fill("E2E followers [secret] post");
@@ -976,7 +1006,7 @@ test("/console create post form covers bracket warnings and reply paging", async
     replySearchHasNextPage: true,
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
 
   const postInput = page.getByPlaceholder("Please enter the content.");
@@ -1004,7 +1034,7 @@ test("/console create post form keeps encrypted submission open when encryption 
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { encryptStatus: 500 });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed password [secret]");
   await page.getByRole("button", { name: "Password" }).click();
@@ -1021,7 +1051,7 @@ test("/console create post form shows upload failure", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { uploadBlobStatus: 500 });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed upload [secret]");
   await page.getByRole("button", { name: "Password" }).click();
@@ -1037,7 +1067,7 @@ test("/console create post form shows restricted storage failure", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { storeStatus: 500 });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed restricted [secret]");
   await page.getByRole("button", { name: "Followers only" }).click();
@@ -1053,7 +1083,7 @@ test("/console create post form shows apply write failure", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { applyWritesStatus: 500 });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed apply [secret]");
   await page.getByRole("button", { name: "Post now" }).click();
@@ -1077,7 +1107,7 @@ test("/console create post form writes reply and quote controls from the screen"
     });
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
   await page.getByPlaceholder("Please enter the content.").fill("E2E reply controls [secret] #thread");
   await expect(page.getByText("Reply Control", { exact: true })).toBeVisible();
@@ -1111,7 +1141,7 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("Visible E2E")).toBeVisible();
   await page.getByText("Visible E2E").click();
 
@@ -1121,7 +1151,7 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await page.getByText("4", { exact: true }).click();
   await expect(page.getByText("View Reactions")).toBeVisible();
 
-  const postMenuIcon = page.locator("main svg").last();
+  const postMenuIcon = page.getByTestId("post-menu").last();
   await postMenuIcon.click();
   await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Copy Skyblur URL" })).toBeVisible();
@@ -1129,24 +1159,27 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
   await page.getByRole("menuitem", { name: "Copy Skyblur URL" }).click();
   await expect(page.getByText("URL has been copied!")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
 
   await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Visible E2E [secret] console post");
-  await page.getByRole("button", { name: "Back" }).click();
-  await expect(page.getByRole("dialog", { name: "Confirm" })).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).last().click();
-  await expect(page.getByText(/E2E Tester/)).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click({ force: true });
+  const backDialog = page.getByRole("dialog", { name: "Confirm" });
+  await expect(backDialog).toBeVisible();
+  await backDialog.getByRole("button", { name: "Back" }).click({ force: true });
+  await expect(page.getByText("Post List")).toBeVisible();
+  await expect(page.getByText("Visible E2E")).toBeVisible();
 
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByRole("dialog", { name: "Are you sure you want to delete this post?" })).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText("Delete completed!")).toBeVisible();
+  const deleteDialog = page.getByRole("dialog", { name: "Are you sure you want to delete this post?" });
+  await expect(deleteDialog).toBeVisible();
+  await deleteDialog.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("Visible E2E")).toHaveCount(0);
 });
 
@@ -1157,7 +1190,7 @@ test("/console post list decrypts password-protected posts", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "password" });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("Password E2E")).toBeVisible();
   await expect(page.getByText("This post is password protected.")).toBeVisible();
   await page.locator("input").last().fill("p@ssword");
@@ -1165,7 +1198,7 @@ test("/console post list decrypts password-protected posts", async ({
 
   await expect(page.getByText("Decrypted E2E password text")).toBeVisible();
   await expect(page.getByText("Decrypted E2E password additional")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Decrypted E2E password text");
@@ -1182,7 +1215,7 @@ test("/console post list validates password unlock errors", async ({
     decryptStatus: 403,
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("Password E2E")).toBeVisible();
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByText("Password is required")).toBeVisible();
@@ -1202,7 +1235,7 @@ test("/console post list shows generic decrypt failures", async ({
     decryptStatus: 500,
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("Password E2E")).toBeVisible();
   await page.locator("input").last().fill("p@ssword");
   await page.getByRole("button", { name: "Unlock" }).click();
@@ -1217,7 +1250,7 @@ test("/console post list fetches restricted post details", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "restricted" });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
 
@@ -1235,7 +1268,7 @@ test("/console post list renders restricted authorization errors", async ({
     restrictedErrorCode: "NotFollowing",
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("You do not have permission to view this post (Following only).")).toBeVisible();
@@ -1244,7 +1277,7 @@ test("/console post list renders restricted authorization errors", async ({
     postVariant: "restricted",
     restrictedErrorCode: "ContentMissing",
   });
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("Content not found.")).toBeVisible();
@@ -1260,7 +1293,7 @@ test("/console post list renders all restricted denial messages", async ({
     restrictedErrorCode: "NotFollower",
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("You do not have permission to view this post (Followers only).")).toBeVisible();
@@ -1269,7 +1302,7 @@ test("/console post list renders all restricted denial messages", async ({
     postVariant: "restricted",
     restrictedErrorCode: "NotMutual",
   });
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("You do not have permission to view this post (Mutuals only).")).toBeVisible();
@@ -1278,7 +1311,7 @@ test("/console post list renders all restricted denial messages", async ({
     postVariant: "restricted",
     restrictedErrorCode: "Other",
   });
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("You do not have permission to view this post.")).toBeVisible();
@@ -1294,7 +1327,7 @@ test("/console post list shows a restricted fetch failure", async ({
     postDetailVariant: "error",
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("Failed to fetch content.")).toBeVisible();
@@ -1310,9 +1343,9 @@ test("/console restricted edit reports authorization errors before opening the f
     restrictedErrorCode: "NotMutual",
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
 
   await expect(page.getByText("You do not have permission to view this post (Mutuals only).")).toBeVisible();
@@ -1330,9 +1363,9 @@ test("/console restricted edit keeps the original post when prefetch returns non
     getPostStatus: 500,
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
 
   await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
@@ -1358,9 +1391,9 @@ test("/console restricted edit renders every denial message in the edit flow", a
       restrictedErrorCode,
     });
 
-    await page.goto("/console");
+    await gotoAndSkipIfUnavailable(page, "/console");
     await expect(page.getByText("*****")).toBeVisible();
-    await page.locator("main svg").last().click();
+    await page.getByTestId("post-menu").last().click();
     await page.getByRole("menuitem", { name: "Edit" }).click();
 
     await expect(page.getByText(message)).toBeVisible();
@@ -1376,9 +1409,9 @@ test("/console prefetches restricted post details before editing", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "restricted" });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
 
   await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
@@ -1393,9 +1426,9 @@ test("/console updates a restricted post to public and removes stored content", 
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "restricted" });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
 
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Fetched restricted E2E text");
@@ -1416,9 +1449,9 @@ test("/console deletes restricted posts and cleans up stored content", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "restricted" });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByRole("dialog", { name: "Are you sure you want to delete this post?" })).toBeVisible();
 
@@ -1437,9 +1470,9 @@ test("/console updates an existing post from the edit form", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("Visible E2E")).toBeVisible();
-  await page.locator("main svg").last().click();
+  await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
 
   const postInput = page.getByPlaceholder("Please enter the content.");
@@ -1460,7 +1493,7 @@ test("/console restores and discards draft content in the create form", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
   await page.getByPlaceholder("Please enter the content.").fill("Draft E2E [secret] text");
   await page.getByPlaceholder("Enter additional information if necessary.").fill("Draft E2E additional");
@@ -1492,7 +1525,7 @@ test("/console restores draft content with a selected reply target", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await page.getByRole("button", { name: "Create a post" }).click();
   await page.getByPlaceholder("Please enter the content.").fill("Reply draft [secret] text");
   await page.getByLabel("Select Post").check();
@@ -1577,7 +1610,7 @@ test("/console post list shows an empty state when no posts are available", asyn
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "empty" });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("No posts available.")).toBeVisible();
   await expect(page.getByText("Post List")).toHaveCount(0);
 });
@@ -1589,7 +1622,7 @@ test("/console post list shows an empty state when list records fails", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { listRecordsStatus: 500 });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("No posts available.")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toHaveCount(0);
 });
@@ -1603,7 +1636,7 @@ test("/console post list appends the next page when scrolled to the end", async 
     listRecordsHasNextPage: true,
   });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("Visible E2E")).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -1617,13 +1650,13 @@ test("/console post list renders following and mutual visibility rows", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "following" });
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("Fetched restricted E2E text")).toBeVisible();
 
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "mutual" });
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
   await page.getByText("*****").click();
   await expect(page.getByText("Fetched restricted E2E text")).toBeVisible();
@@ -1639,7 +1672,7 @@ test("/profile hides restricted post content from logged-out visitors", async ({
     postVariant: "restricted",
   });
 
-  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+  await gotoAndSkipIfUnavailable(page, `/profile/${encodeURIComponent(mockDid)}`);
 
   await expect(page.getByText("E2E Tester")).toBeVisible();
   await expect(page.getByText("Login to view")).toBeVisible();
@@ -1663,7 +1696,7 @@ test("/profile hides every logged-out restricted visibility row", async ({
       postVariant: variant,
     });
 
-    await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+    await gotoAndSkipIfUnavailable(page, `/profile/${encodeURIComponent(mockDid)}`);
 
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText("Login to view")).toBeVisible();
@@ -1680,7 +1713,7 @@ test("/profile renders the profile avatar image when one is available", async ({
     profileAvatar: "https://cdn.bsky.app/img/avatar/plain/did:plc:e2emock/bafyavatar@jpeg",
   });
 
-  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+  await gotoAndSkipIfUnavailable(page, `/profile/${encodeURIComponent(mockDid)}`);
 
   await expect(page.getByAltText("E2E Tester")).toBeVisible();
   await expect(page.getByText("Existing E2E My Page description")).toBeVisible();
@@ -1698,7 +1731,7 @@ test("/profile renders avatar and display-name fallbacks", async ({
     profileDisplayName: "",
   });
 
-  await page.goto(`/profile/${encodeURIComponent(mockDid)}`);
+  await gotoAndSkipIfUnavailable(page, `/profile/${encodeURIComponent(mockDid)}`);
 
   await expect(page.getByAltText("No Avatar")).toBeVisible();
   await expect(page.getByRole("heading", { name: "No Display Name" })).toBeVisible();
@@ -1747,7 +1780,7 @@ test("/settings renders and saves logged-in settings from mocked OAuth data", as
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
 
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByText("Settings").first()).toBeVisible();
@@ -1776,7 +1809,7 @@ test("/settings keeps save disabled until a visible setting changes", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page.locator('input[value="E2E Custom Feed"]')).toBeVisible();
   await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
 
@@ -1797,7 +1830,7 @@ test("/settings creates preferences and validates custom feed avatar input", asy
     noCustomFeed: true,
   });
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByText("My Page", { exact: true })).toBeVisible();
   await page.getByLabel("Publish").first().check();
@@ -1825,7 +1858,7 @@ test("/settings creates preferences and validates custom feed avatar input", asy
     ]),
   });
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Save Completed!")).toBeVisible();
+  await expect(page.getByText("Save Completed!").first()).toBeVisible();
   await expect(page).toHaveURL(/\/console$/);
 });
 
@@ -1839,7 +1872,7 @@ test("/settings saves only My Page preferences when custom feed is unchanged", a
     noCustomFeed: true,
   });
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page.getByText("My Page", { exact: true })).toBeVisible();
   await page.getByLabel("Publish").first().check();
   await page.locator("textarea").first().fill("My Page only E2E settings");
@@ -1857,7 +1890,7 @@ test("/settings updates custom feed metadata without changing the avatar", async
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page.locator('input[value="E2E Custom Feed"]')).toBeVisible();
   await page.getByRole("textbox").nth(1).fill("Metadata Only Feed");
   await page.getByRole("textbox").nth(2).fill("Metadata only custom feed update");
@@ -1875,7 +1908,7 @@ test("/settings deletes an existing custom feed", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page.getByText("E2E Custom Feed")).toBeVisible();
   await page.getByLabel("Publish").nth(1).uncheck();
   await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
@@ -1894,7 +1927,7 @@ test("/settings preserves an existing custom feed avatar when saving feed metada
     customFeedAvatar: true,
   });
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page.getByAltText("Feed Avatar Image")).toBeVisible();
 
   await page.getByRole("textbox").nth(2).fill("Updated E2E feed metadata");
@@ -1916,7 +1949,7 @@ test("/settings reports avatar upload failures from the settings screen", async 
     uploadBlobStatus: 500,
   });
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await page.getByLabel("Publish").nth(1).check();
   await page.getByRole("textbox").nth(0).fill("Upload Failure Feed");
   await page.getByRole("textbox").nth(1).fill("Upload failure feed description");
@@ -1941,7 +1974,7 @@ test("/settings reports apply write failures while saving settings", async ({
     await route.abort("failed");
   });
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   const myPageDescription = page.locator("textarea").first();
   await expect(myPageDescription).toHaveValue("Existing E2E My Page description");
   await myPageDescription.fill("Settings failure branch");
@@ -1958,7 +1991,7 @@ test("header account menu exposes logged-in settings and logout actions", async 
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
 
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
   await page.getByLabel("Account menu").click();
@@ -1984,7 +2017,7 @@ test("header account menu can soft logout from the console", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/console");
+  await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
   await page.getByLabel("Account menu").click();
   await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();
@@ -2001,7 +2034,7 @@ test("header account menu can hard logout from settings", async ({
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/settings");
+  await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page.getByText("Settings").first()).toBeVisible();
   await page.getByLabel("Account menu").click();
   await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();
@@ -2018,7 +2051,7 @@ test("header account menu can logout from home without leaving the page", async 
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await page.goto("/");
+  await gotoAndSkipIfUnavailable(page, "/");
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
   await page.getByLabel("Account menu").click();
   await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();

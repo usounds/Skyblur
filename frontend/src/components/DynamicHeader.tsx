@@ -17,6 +17,10 @@ const DynamicHeader = () => {
   const searchParams = useSearchParams();
   const loginError = searchParams.get('loginError');
   const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
+  const checkSessionMessage = locale.Home_CheckSession_Message;
+  const checkSessionTitle = locale.Home_CheckSession_Title;
+  const checkSessionTimeoutMessage = locale.Home_CheckSession_Timeout_Message;
+  const checkSessionTimeoutTitle = locale.Home_CheckSession_Timeout_Title;
 
   useEffect(() => {
     setIsMounted(true);
@@ -27,8 +31,8 @@ const DynamicHeader = () => {
       notifications.show({
         id,
         loading: true,
-        title: locale.Home_CheckSession_Title,
-        message: locale.Home_CheckSession_Message,
+        title: checkSessionTitle,
+        message: checkSessionMessage,
         autoClose: false,
         withCloseButton: false,
       });
@@ -38,15 +42,15 @@ const DynamicHeader = () => {
       notifications.hide(id);
       if (result.timedOut) {
         notifications.show({
-          title: locale.Home_CheckSession_Timeout_Title,
-          message: locale.Home_CheckSession_Timeout_Message,
+          title: checkSessionTimeoutTitle,
+          message: checkSessionTimeoutMessage,
           color: 'yellow',
           icon: <X size={18} />,
         });
       }
     };
     syncSession();
-  }, []);
+  }, [checkSessionMessage, checkSessionTitle, checkSessionTimeoutMessage, checkSessionTimeoutTitle]);
 
 
   useEffect(() => {

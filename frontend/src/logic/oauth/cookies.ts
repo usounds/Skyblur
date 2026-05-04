@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const OAUTH_DID_COOKIE = "oauth_did";
-export const OAUTH_CALLBACK_COOKIE = "oauth_callback";
+export const OAUTH_DID_COOKIE = "__Host-oauth_did";
+export const OAUTH_CALLBACK_COOKIE = "__Host-oauth_callback";
 
 function getCookieSecret() {
   const secret = process.env.SESSION_SECRET || process.env.OAUTH_PRIVATE_KEY_JWK;

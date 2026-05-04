@@ -162,7 +162,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                 </Group>
             </Modal>
             <Menu.Target>
-                <Ellipsis size={24} />
+                <Ellipsis data-testid="post-menu" size={24} />
             </Menu.Target>
 
             <Menu.Dropdown>

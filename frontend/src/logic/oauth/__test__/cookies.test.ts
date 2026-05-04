@@ -26,6 +26,13 @@ describe("signed DID cookies", () => {
     expect(verifySignedDid(signed)).toBe(did);
   });
 
+  it("uses host-only cookie names for OAuth state", async () => {
+    const { OAUTH_CALLBACK_COOKIE, OAUTH_DID_COOKIE } = await import("../cookies");
+
+    expect(OAUTH_DID_COOKIE).toBe("__Host-oauth_did");
+    expect(OAUTH_CALLBACK_COOKIE).toBe("__Host-oauth_callback");
+  });
+
   it("rejects missing, malformed, and tampered values", async () => {
     const { signDid, verifySignedDid } = await import("../cookies");
     const signed = signDid("did:plc:abc");
