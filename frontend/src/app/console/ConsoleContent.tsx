@@ -124,8 +124,17 @@ export function ConsoleContent() {
         setMode("create")
     };
 
+    const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
+
     // セッションの確認（マウント時）
     useEffect(() => {
+        const currentState = useXrpcAgentStore.getState();
+
+        if (isSessionChecked || currentState.isSessionChecked) {
+            setIsAuthenticated(!!currentState.did);
+            return;
+        }
+
         // 既に DID と ServiceURL がある場合は再チェックしない（HomeContentなどで取得済みの場合）
         if (did && serviceUrl) {
             setIsAuthenticated(true);
@@ -138,7 +147,7 @@ export function ConsoleContent() {
         };
 
         checkSession();
-    }, [did, serviceUrl]);
+    }, [did, isSessionChecked, serviceUrl]);
 
     // ログアウト等で DID がクリアされた場合、認証状態も未認証に戻す
     useEffect(() => {
@@ -148,7 +157,6 @@ export function ConsoleContent() {
     }, [did, isAuthenticated]);
 
     const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
-    const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
     const fetchUserProf = useXrpcAgentStore((state) => state.fetchUserProf);
 
     // プロフィールフェッチは DynamicHeader 側で行うため、ここでは行わない

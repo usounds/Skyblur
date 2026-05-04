@@ -36,6 +36,7 @@ type Action = {
 const host = typeof window !== 'undefined' ? new URL(window.location.origin).host : '';
 const xrpcService = typeof window !== 'undefined' ? window.location.origin : '';
 let sessionCheckPromise: Promise<SessionCheckResult> | null = null;
+let lastSessionResult: SessionCheckResult | null = null;
 let profFetchPromise: Promise<void> | null = null;
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
@@ -90,11 +91,15 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     setBlueskyLoginMessage: (blueskyLoginMessage) => set({ blueskyLoginMessage }),
     setServiceUrl: (serviceUrl) => set({ serviceUrl }),
     setIsLoginModalOpened: (isLoginModalOpened) => set({ isLoginModalOpened }),
-    setIsSessionChecked: (isSessionChecked) => set({ isSessionChecked }),
+    setIsSessionChecked: (isSessionChecked) => {
+      if (!isSessionChecked) lastSessionResult = null;
+      set({ isSessionChecked });
+    },
     checkSession: async () => {
       if (get().isSessionChecked) {
         return { authenticated: !!get().did, did: get().did, pds: get().serviceUrl };
       }
+      if (lastSessionResult && !lastSessionResult.timedOut) return lastSessionResult;
       if (sessionCheckPromise) return sessionCheckPromise;
 
       sessionCheckPromise = (async () => {
@@ -116,19 +121,23 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             } else {
               set({ isSessionChecked: true });
             }
-            return { authenticated: true, did: data.did, pds: pdsUrl };
+            lastSessionResult = { authenticated: true, did: data.did, pds: pdsUrl };
+            return lastSessionResult;
           } else {
             if (get().did !== "" || get().isSessionChecked !== true) {
               set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "" });
             }
-            return { authenticated: false, did: "", pds: "" };
+            lastSessionResult = { authenticated: false, did: "", pds: "" };
+            return lastSessionResult;
           }
         } catch (e) {
           if (!isAbortError(e)) {
             console.error('Session check failed:', e);
           }
-          set({ isSessionChecked: true });
-          return { authenticated: false, did: "", pds: "", timedOut: isAbortError(e) };
+          set({ isSessionChecked: !isAbortError(e) });
+          const result = { authenticated: false, did: "", pds: "", timedOut: isAbortError(e) };
+          if (!result.timedOut) lastSessionResult = result;
+          return result;
         } finally {
           sessionCheckPromise = null;
         }
@@ -171,6 +180,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       } catch (error) {
         console.error(`Logout (${mode}) error:`, error);
       } finally {
+        lastSessionResult = null;
         set({
           did: "",
           userProf: null,

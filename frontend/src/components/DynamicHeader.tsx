@@ -7,7 +7,7 @@ import { notifications } from '@mantine/notifications';
 import { Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const DynamicHeader = () => {
   const { localeData: locale } = useLocale();
@@ -17,6 +17,7 @@ const DynamicHeader = () => {
   const searchParams = useSearchParams();
   const loginError = searchParams.get('loginError');
   const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
+  const sessionSyncStartedRef = useRef(false);
   const checkSessionMessage = locale.Home_CheckSession_Message;
   const checkSessionTitle = locale.Home_CheckSession_Title;
   const checkSessionTimeoutMessage = locale.Home_CheckSession_Timeout_Message;
@@ -27,6 +28,10 @@ const DynamicHeader = () => {
 
     // セッションを確認
     const syncSession = async () => {
+      if (sessionSyncStartedRef.current) return;
+      sessionSyncStartedRef.current = true;
+      if (useXrpcAgentStore.getState().isSessionChecked) return;
+
       const id = 'session-check';
       notifications.show({
         id,
