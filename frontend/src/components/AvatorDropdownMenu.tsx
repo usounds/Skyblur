@@ -1,12 +1,10 @@
 "use client"
-import { ActionIcon, Avatar, Group, Menu, Text, UnstyledButton, rem, Modal } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { ActionIcon, Avatar, Menu, Modal } from '@mantine/core';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { LogOut, LogIn, Users, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import classes from './AvatorDropdownMenu.module.css';
 import { AuthenticationTitle } from './login/Login';
 import { LogoutModal } from './LogoutModal';
 
@@ -35,15 +33,17 @@ export function AvatorDropdownMenu() {
         <>
             <Menu shadow="md" width={200} >
                 <Menu.Target>
-                    {(userProf && agent) ? (
-                        userProf.avatar ? (
-                            <Avatar src={userProf.avatar} radius="xl" size={20} />
+                    <ActionIcon variant="default" size="lg" aria-label="Account menu">
+                        {(userProf && agent) ? (
+                            userProf.avatar ? (
+                                <Avatar src={userProf.avatar} radius="xl" size={20} />
+                            ) : (
+                                <Users stroke="currentColor" strokeWidth={1.5} size={20} />
+                            )
                         ) : (
-                            <Users size={20} />
-                        )
-                    ) : (
-                        <Users size={20} />
-                    )}
+                            <Users stroke="currentColor" strokeWidth={1.5} size={20} />
+                        )}
+                    </ActionIcon>
                 </Menu.Target>
 
                 {(userProf && agent) ?
