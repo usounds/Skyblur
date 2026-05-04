@@ -19,7 +19,7 @@ describe("useXrpcAgentStore.checkSession", () => {
     vi.restoreAllMocks();
   });
 
-  it("does not leave initial UI blocked when session check times out", async () => {
+  it("keeps the session unresolved when session check times out", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((_input: RequestInfo | URL, init?: RequestInit) =>
@@ -36,7 +36,7 @@ describe("useXrpcAgentStore.checkSession", () => {
     await vi.advanceTimersByTimeAsync(10_000);
 
     await expect(session).resolves.toEqual({ authenticated: false, did: "", pds: "", timedOut: true });
-    expect(useXrpcAgentStore.getState().isSessionChecked).toBe(true);
+    expect(useXrpcAgentStore.getState().isSessionChecked).toBe(false);
     expect(useXrpcAgentStore.getState().did).toBe("");
   });
 });

@@ -116,7 +116,7 @@ async function expectLoginValidationMessage(
   await handleInput.pressSequentially(handle);
   await expect(handleInput).toHaveValue(handle);
   await expect(page.getByRole("button", { name: "Login", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Login", exact: true }).click({ force: true });
+  await page.getByRole("button", { name: "Login", exact: true }).click();
   await expect(page.getByText(message).first()).toBeVisible();
   await expect(page).toHaveURL(/\/console$/);
 }
@@ -124,7 +124,7 @@ async function expectLoginValidationMessage(
 test("OAuth metadata points to the Next.js API OAuth routes", async ({ request, baseURL }) => {
   const res = await request.get("/oauth-client-metadata.json");
   await skipIfUnavailable(res);
-  expect(res.ok(), await responseText(res)).toBeTruthy();
+  expect(res.ok(), await responseText(res)).toBe(true);
   expect(res.headers()["cache-control"]).toContain("max-age=3600");
 
   const metadata = await res.json();
@@ -145,7 +145,7 @@ test("public app pages render core unauthenticated content", async ({
   context,
   baseURL,
 }) => {
-  await useEnglishLocale(context, baseURL);
+  await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
 
   await gotoAndSkipIfUnavailable(page, "/");
   await expect(page).toHaveURL(/\/$/);
@@ -242,6 +242,7 @@ test("home start session retry opens the console when the session recovers", asy
   await useEnglishLocale(context, baseURL);
 
   let sessionRequests = 0;
+  let recoveredSessionRequestNumber = 0;
   await page.route("**/api/oauth/session", async (route) => {
     sessionRequests += 1;
 
@@ -250,6 +251,9 @@ test("home start session retry opens the console when the session recovers", asy
       return;
     }
 
+    if (recoveredSessionRequestNumber === 0) {
+      recoveredSessionRequestNumber = sessionRequests;
+    }
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -276,11 +280,12 @@ test("home start session retry opens the console when the session recovers", asy
 
   await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
   await page.clock.runFor(30_000);
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
   await page.getByRole("button", { name: "Retry" }).click();
 
   await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
-  expect(sessionRequests).toBe(2);
+  expect(recoveredSessionRequestNumber).toBe(2);
 });
 
 test("header controls toggle theme and language from the rendered UI", async ({
@@ -317,7 +322,7 @@ test("not found screen renders a clear 404 message", async ({ page }) => {
 test("public metadata endpoints expose app identity documents", async ({ request }) => {
   const manifest = await request.get("/manifest.webmanifest");
   await skipIfUnavailable(manifest);
-  expect(manifest.ok(), await responseText(manifest)).toBeTruthy();
+  expect(manifest.ok(), await responseText(manifest)).toBe(true);
   await expect(manifest.json()).resolves.toMatchObject({
     name: "Skyblur",
     short_name: "Skyblur",
@@ -327,7 +332,7 @@ test("public metadata endpoints expose app identity documents", async ({ request
 
   const did = await request.get("/.well-known/did.json");
   await skipIfUnavailable(did);
-  expect(did.ok(), await responseText(did)).toBeTruthy();
+  expect(did.ok(), await responseText(did)).toBe(true);
   const didDocument = await did.json();
   expect(didDocument.id).toMatch(/^did:web:/);
   expect(JSON.stringify(didDocument.service)).toContain("#skyblur_api");
@@ -352,7 +357,7 @@ test("OAuth session endpoint reports unauthenticated without a signed DID cookie
 }) => {
   const res = await request.get("/api/oauth/session");
   await skipIfUnavailable(res);
-  expect(res.ok(), await responseText(res)).toBeTruthy();
+  expect(res.ok(), await responseText(res)).toBe(true);
 
   expect(res.headers()["content-type"]).toMatch(/application\/json/);
   await expect(res.json()).resolves.toEqual({ authenticated: false });
@@ -361,7 +366,7 @@ test("OAuth session endpoint reports unauthenticated without a signed DID cookie
 test("OAuth soft logout succeeds and expires the DID cookie", async ({ request }) => {
   const res = await request.post("/api/oauth/soft-logout");
   await skipIfUnavailable(res);
-  expect(res.ok(), await responseText(res)).toBeTruthy();
+  expect(res.ok(), await responseText(res)).toBe(true);
 
   await expect(res.json()).resolves.toEqual({ success: true });
   expect(res.headers()["set-cookie"]).toContain("oauth_did=");
@@ -373,7 +378,7 @@ test("OAuth logout succeeds without a signed DID cookie and expires the DID cook
 }) => {
   const res = await request.post("/api/oauth/logout");
   await skipIfUnavailable(res);
-  expect(res.ok(), await responseText(res)).toBeTruthy();
+  expect(res.ok(), await responseText(res)).toBe(true);
 
   await expect(res.json()).resolves.toEqual({ success: true });
   expect(res.headers()["set-cookie"]).toContain("oauth_did=");
@@ -426,7 +431,7 @@ test("XRPC POST requires local OAuth when the method is not public", async ({ re
 test("handle resolution can be reached through the Next.js server resolver", async ({ request }) => {
   const res = await request.get("/api/resolve-handle?handle=test.bsky.social");
   await skipIfUnavailable(res);
-  expect(res.ok(), await responseText(res)).toBeTruthy();
+  expect(res.ok(), await responseText(res)).toBe(true);
 
   const body = await res.json();
   expect(body.did).toMatch(/^did:(plc|web):/);
@@ -508,18 +513,23 @@ test("/console login form shows callback errors and clears typeahead input", asy
   context,
   baseURL,
 }) => {
-  await useEnglishLocale(context, baseURL);
+  await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
 
   await gotoAndSkipIfUnavailable(page, "/console?loginError=invalid_handle");
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { name: "Skyblur" })).toBeVisible();
   await expect(main.getByText("Invalid handle.")).toBeVisible();
 
-  const handleInput = page.getByRole("combobox", { name: "Handle" });
-  await handleInput.fill("clear-me");
+  const loginDialog = page.getByRole("dialog", { name: "Login" });
+  await expect(loginDialog).toBeVisible();
+  await expect(loginDialog.getByText("Invalid handle.")).toBeVisible();
+
+  const handleInput = loginDialog.getByRole("combobox");
+  await handleInput.fill("clearme");
+  await expect(handleInput).toHaveValue("clearme");
   await handleInput.fill("");
   await expect(handleInput).toHaveValue("");
-  await expect(page.getByRole("main").getByRole("button", { name: "Login", exact: true })).toBeDisabled();
+  await expect(loginDialog.getByRole("button", { name: "Login", exact: true })).toBeDisabled();
 });
 
 test("/settings redirects unauthenticated visitors back home", async ({
@@ -734,12 +744,13 @@ test("/post refetches restricted detail after the session resolves authenticated
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
   expect(getPostRequests).toBe(1);
 
+  await expect.poll(() => sessionRequests).toBe(1);
   resolveSession();
 
   await expect(page.getByText("Authenticated restricted post detail text")).toBeVisible();
   await expect(page.getByText("Authenticated restricted post detail additional")).toBeVisible();
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
-  expect(sessionRequests).toBeGreaterThanOrEqual(1);
+  expect(sessionRequests).toBe(1);
   expect(getPostRequests).toBe(2);
 });
 
@@ -1124,8 +1135,8 @@ test("/console create post form writes reply and quote controls from the screen"
 
   await expect(page.getByText("Post completed!")).toBeVisible();
   const writes = applyWriteBodies.flatMap((body) => body.input?.writes || body.writes || []);
-  expect(writes.some((write) => write.collection === "app.bsky.feed.threadgate")).toBeTruthy();
-  expect(writes.some((write) => write.collection === "app.bsky.feed.postgate")).toBeTruthy();
+  expect(writes.some((write) => write.collection === "app.bsky.feed.threadgate")).toBe(true);
+  expect(writes.some((write) => write.collection === "app.bsky.feed.postgate")).toBe(true);
   const threadgate = writes.find((write) => write.collection === "app.bsky.feed.threadgate");
   expect(threadgate.value.allow.map((rule: { $type: string }) => rule.$type)).toEqual([
     "app.bsky.feed.threadgate#mentionRule",
@@ -1164,10 +1175,10 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
 
   await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Visible E2E [secret] console post");
-  await page.getByRole("button", { name: "Back" }).click({ force: true });
+  await page.getByRole("button", { name: "Back" }).click();
   const backDialog = page.getByRole("dialog", { name: "Confirm" });
   await expect(backDialog).toBeVisible();
-  await backDialog.getByRole("button", { name: "Back" }).click({ force: true });
+  await backDialog.getByRole("button", { name: "Back" }).click();
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
 
