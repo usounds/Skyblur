@@ -38,9 +38,15 @@ export async function GET(request: Request) {
     clearOAuthCallbackCookie(response);
     return response;
   } catch (error: unknown) {
-    console.error("OAuth Callback Error:", error);
     const redirectUrl = new URL(redirectTo);
-    redirectUrl.searchParams.set("loginError", "callback_failed");
+    const callbackError = url.searchParams.get("error");
+
+    if (callbackError === "access_denied") {
+      redirectUrl.searchParams.set("loginError", "rejected");
+    } else {
+      console.error("OAuth Callback Error:", error);
+      redirectUrl.searchParams.set("loginError", "callback_failed");
+    }
 
     const response = NextResponse.redirect(redirectUrl);
     response.headers.set("Cache-Control", "no-store");

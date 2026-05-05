@@ -33,11 +33,16 @@ interface SkyblurJwtPayload extends JWTPayload {
     lxm?: string
 }
 
-function getAcceptedAudiences(): string[] {
-    return [
-        'did:web:preview.skyblur.uk',
-        'did:web:skyblur.uk',
-    ];
+function getAcceptedAudiences(c: Context): string[] {
+    const hosts = [
+        c.env.APPVIEW_HOST,
+        ...String(c.env.APPVIEW_PROXY_HOSTS || '')
+            .split(',')
+            .map((host) => host.trim())
+            .filter(Boolean),
+    ].filter(Boolean);
+
+    return [...new Set(hosts)].map((host) => `did:web:${host}`);
 }
 
 export const getAuthenticatedDid = async (c: Context): Promise<string | null> => {
@@ -46,7 +51,8 @@ export const getAuthenticatedDid = async (c: Context): Promise<string | null> =>
     const secret = (c.env as any).OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
 
     if (authorization) {
-        const audiences = getAcceptedAudiences();
+        const audiences = getAcceptedAudiences(c);
+        let lastError: unknown = null;
 
         // JWT検証
         for (const audience of audiences) {
@@ -56,9 +62,11 @@ export const getAuthenticatedDid = async (c: Context): Promise<string | null> =>
                 const payload = verifiedJwt.payload as SkyblurJwtPayload;
                 return payload.iss || payload.sub || '';
             } catch (e) {
-                console.warn(`[auth] JWT verification failed for audience ${audience}:`, e);
+                lastError = e;
             }
         }
+
+        console.warn(`[auth] JWT verification failed for audiences ${audiences.join(', ')}:`, lastError);
     }
 
     if (rawDid) {

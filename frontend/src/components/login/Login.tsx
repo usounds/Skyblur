@@ -222,7 +222,30 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
             const redirectUrl = getRedirectUrl();
             const loginUrl = `${apiHost}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
-            window.location.assign(loginUrl);
+            const response = await fetch(loginUrl, {
+                headers: {
+                    Accept: 'application/json',
+                },
+            });
+            const data = await response.json().catch(() => null) as { url?: string; error?: string; message?: string } | null;
+
+            if (!response.ok || !data?.url) {
+                const message = data?.error === 'invalid_handle'
+                    ? locale.Login_InvalidHandle
+                    : data?.message || locale.Login_RedirectFailed;
+                setErrorMessage(message);
+                notifications.clean();
+                notifications.show({
+                    title: 'Error',
+                    message,
+                    color: 'red',
+                    icon: <X />
+                });
+                setIsHandleLoading(false);
+                return;
+            }
+
+            window.location.assign(data.url);
 
             // リダイレクトまで待機
             await new Promise(() => { });

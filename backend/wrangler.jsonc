@@ -1,99 +1,138 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "skyblurapi",
-  "main": "src/index.ts",
-  "compatibility_date": "2026-01-20",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
-  "vars": {
-    "APPVIEW_HOST": "dev.skyblur.uk",
-    "API_HOST": "devapi.skyblur.uk"
-  },
-  "kv_namespaces": [
-    {
-      "binding": "SKYBLUR_KV_CACHE",
-      "id": "a29848660cb649cf8ebaffced3041ea0"
-    }
-  ],
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "SKYBLUR_DO",
-        "class_name": "OAuthStoreDO"
-      },
-      {
-        "name": "SKYBLUR_DO_RESTRICTED",
-        "class_name": "RestrictedPostDO"
-      }
-    ]
-  },
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": [
-        "OAuthStoreDO"
-      ]
-    },
-    {
-      "tag": "v2",
-      "new_sqlite_classes": [
-        "RestrictedPostDO"
-      ]
-    }
-  ],
-  "env": {
-    "production": {
-      "vars": {
-        "APPVIEW_HOST": "skyblur.uk",
-        "APPVIEW_PROXY_HOSTS": "preview.skyblur.uk",
-        "API_HOST": "api.skyblur.uk"
-      },
-      "kv_namespaces": [
-        {
-          "binding": "SKYBLUR_KV_CACHE",
-          "id": "a29848660cb649cf8ebaffced3041ea0"
-        }
-      ],
-      "durable_objects": {
-        "bindings": [
-          {
-            "name": "SKYBLUR_DO",
-            "class_name": "OAuthStoreDO"
-          },
-          {
-            "name": "SKYBLUR_DO_RESTRICTED",
-            "class_name": "RestrictedPostDO"
-          }
-        ]
-      },
-      "routes": [
-        {
-          "pattern": "api.skyblur.uk",
-          "custom_domain": true
-        }
-      ],
-      "observability": {
-        "enabled": true,
-        "head_sampling_rate": 0.3
-      },
-      "r2_buckets": [
-        {
-          "binding": "SKYBLUR_BACKUP",
-          "bucket_name": "skyblur-backup"
-        }
-      ],
-      "triggers": {
-        "crons": [
-          "0 0 * * *"
-        ]
-      }
-    }
-  },
-  "r2_buckets": [
-    {
-      "binding": "SKYBLUR_BACKUP",
-      "bucket_name": "skyblur-backup"
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "skyblurapi",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-01-20",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"vars": {
+		"APPVIEW_HOST": "dev.skyblur.uk",
+		"API_HOST": "devapi.skyblur.uk"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SKYBLUR_KV_CACHE",
+			"id": "56a373ab2112453693aeb18c78af7e07"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "SKYBLUR_DO",
+				"class_name": "OAuthStoreDO"
+			},
+			{
+				"name": "SKYBLUR_DO_RESTRICTED",
+				"class_name": "RestrictedPostDO"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"OAuthStoreDO"
+			]
+		},
+		{
+			"tag": "v2",
+			"new_sqlite_classes": [
+				"RestrictedPostDO"
+			]
+		}
+	],
+	"env": {
+		"preview": {
+			"vars": {
+				"APPVIEW_HOST": "preview.skyblur.uk",
+				"API_HOST": "previewapi.skyblur.uk"
+			},
+			"kv_namespaces": [
+				{
+					"binding": "SKYBLUR_KV_CACHE",
+					"id": "56a373ab2112453693aeb18c78af7e07"
+				}
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "SKYBLUR_DO",
+						"class_name": "OAuthStoreDO"
+					},
+					{
+						"name": "SKYBLUR_DO_RESTRICTED",
+						"class_name": "RestrictedPostDO"
+					}
+				]
+			},
+			"routes": [
+				{
+					"pattern": "previewapi.skyblur.uk",
+					"custom_domain": true
+				}
+			],
+			"observability": {
+				"enabled": true,
+				"head_sampling_rate": 0.3
+			},
+			"r2_buckets": [
+				{
+					"binding": "SKYBLUR_BACKUP",
+					"bucket_name": "skyblur-preview-backup"
+				}
+			]
+		},
+		"production": {
+			"vars": {
+				"APPVIEW_HOST": "skyblur.uk",
+				"API_HOST": "api.skyblur.uk"
+			},
+			"kv_namespaces": [
+				{
+					"binding": "SKYBLUR_KV_CACHE",
+					"id": "a29848660cb649cf8ebaffced3041ea0"
+				}
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "SKYBLUR_DO",
+						"class_name": "OAuthStoreDO"
+					},
+					{
+						"name": "SKYBLUR_DO_RESTRICTED",
+						"class_name": "RestrictedPostDO"
+					}
+				]
+			},
+			"routes": [
+				{
+					"pattern": "api.skyblur.uk",
+					"custom_domain": true
+				}
+			],
+			"observability": {
+				"enabled": true,
+				"head_sampling_rate": 0.3
+			},
+			"r2_buckets": [
+				{
+					"binding": "SKYBLUR_BACKUP",
+					"bucket_name": "skyblur-backup"
+				}
+			],
+			"triggers": {
+				"crons": [
+					"0 0 * * *"
+				]
+			}
+		}
+	},
+	"r2_buckets": [
+		{
+			"binding": "SKYBLUR_BACKUP",
+			"bucket_name": "skyblur-preview-backup"
+		}
+	]
 }

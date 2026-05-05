@@ -47,11 +47,11 @@ describe('AuthUtils', () => {
             expect(did).toBe('did:example:auth');
             expect(JWTTokenHandler.verifyJWT).toHaveBeenCalledWith(
                 'Bearer valid-token',
-                'did:web:preview.skyblur.uk'
+                'did:web:app.example.com'
             );
         });
 
-        it('should fall back to the production DID audience', async () => {
+        it('should fall back to proxy DID audiences from env', async () => {
             const c: any = {
                 req: {
                     header: vi.fn().mockReturnValue('Bearer valid-token'),
@@ -60,7 +60,8 @@ describe('AuthUtils', () => {
                     }
                 },
                 env: {
-                    APPVIEW_HOST: 'app.example.com'
+                    APPVIEW_HOST: 'app.example.com',
+                    APPVIEW_PROXY_HOSTS: 'preview.example.com, legacy.example.com'
                 }
             };
 
@@ -77,16 +78,16 @@ describe('AuthUtils', () => {
             expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
                 1,
                 'Bearer valid-token',
-                'did:web:preview.skyblur.uk'
+                'did:web:app.example.com'
             );
             expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
                 2,
                 'Bearer valid-token',
-                'did:web:skyblur.uk'
+                'did:web:preview.example.com'
             );
         });
 
-        it('should only try preview and production DID audiences', async () => {
+        it('should only try APPVIEW_HOST and APPVIEW_PROXY_HOSTS audiences', async () => {
             const c: any = {
                 req: {
                     header: vi.fn().mockReturnValue('Bearer valid-token'),
@@ -114,12 +115,12 @@ describe('AuthUtils', () => {
             expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
                 1,
                 'Bearer valid-token',
-                'did:web:preview.skyblur.uk'
+                'did:web:skyblur.uk'
             );
             expect(JWTTokenHandler.verifyJWT).toHaveBeenNthCalledWith(
                 2,
                 'Bearer valid-token',
-                'did:web:skyblur.uk'
+                'did:web:preview.skyblur.uk'
             );
             expect(JWTTokenHandler.verifyJWT).toHaveBeenCalledTimes(2);
         });

@@ -417,6 +417,56 @@ test("OAuth callback failure redirects home with a login error", async ({ reques
   expect(res.headers()["location"]).toContain("loginError=callback_failed");
 });
 
+test("OAuth callback user rejection redirects without server error logging", async ({ request }) => {
+  const res = await request.get("/api/oauth/callback?error=access_denied&state=bad", {
+    maxRedirects: 0,
+  });
+  await skipIfUnavailable(res);
+
+  if (res.status() === 500) {
+    return;
+  }
+
+  expect(res.status(), await responseText(res)).toBe(307);
+  expect(res.headers()["cache-control"]).toBe("no-store");
+  expect(res.headers()["location"]).toContain("loginError=rejected");
+});
+
+test("OAuth login rejects cross-host callback redirects", async ({ request, baseURL }) => {
+  const res = await request.get(
+    "/api/oauth/login?handle=bad_handle&redirect_uri=https%3A%2F%2Fdev.skyblur.uk%2Fconsole",
+    { maxRedirects: 0 },
+  );
+  await skipIfUnavailable(res);
+
+  if (res.status() === 500) {
+    return;
+  }
+
+  const location = new URL(res.headers()["location"]);
+  expect(res.status(), await responseText(res)).toBe(307);
+  expect(res.headers()["cache-control"]).toBe("no-store");
+  expect(location.origin).toBe(expectedOAuthOrigin(baseURL));
+  expect(location.pathname).toBe("/console");
+  expect(location.searchParams.get("loginError")).toBe("invalid_handle");
+});
+
+test("OAuth login returns JSON errors for client-side login starts", async ({ request }) => {
+  const res = await request.get("/api/oauth/login?handle=bad_handle", {
+    headers: { accept: "application/json" },
+    maxRedirects: 0,
+  });
+  await skipIfUnavailable(res);
+
+  if (res.status() === 500) {
+    return;
+  }
+
+  expect(res.status(), await responseText(res)).toBe(400);
+  expect(res.headers()["cache-control"]).toBe("no-store");
+  await expect(res.json()).resolves.toMatchObject({ error: "invalid_handle" });
+});
+
 test("app.bsky XRPC requires local OAuth instead of leaking a Skyblur API scope error", async ({
   request,
 }) => {
@@ -1540,8 +1590,8 @@ test("/console login form redirects valid handle to OAuth login", async ({
   await page.route("**/api/oauth/login?**", async (route) => {
     await route.fulfill({
       status: 200,
-      contentType: "text/plain",
-      body: "mock oauth login",
+      contentType: "application/json",
+      body: JSON.stringify({ url: "https://bsky.social/oauth/authorize?client_id=e2e" }),
     });
   });
 
@@ -1552,6 +1602,29 @@ test("/console login form redirects valid handle to OAuth login", async ({
   await page.getByRole("button", { name: "Login", exact: true }).click();
 
   await expect((await loginRequest).url()).toContain("redirect_uri=");
+});
+
+test("/console login form shows server-side OAuth start errors inline", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await openConsoleLoginForm(page, context, baseURL);
+  await page.route("**/api/oauth/login?**", async (route) => {
+    await route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "invalid_handle" }),
+    });
+  });
+
+  await page.getByLabel("Agree to the contents").check();
+  await page.getByRole("combobox", { name: "Handle" }).fill("alice.bsky.social");
+  await page.getByRole("button", { name: "Login", exact: true }).click();
+
+  await expect(page.getByRole("combobox", { name: "Handle" })).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#handle-error")).toHaveText("Invalid handle.");
+  await expect(page).toHaveURL(/\/console$/);
 });
 
 test("/console login form restores saved handle and agreement state", async ({

@@ -6,10 +6,6 @@ function isLocalHost(host: string) {
   return /^localhost(?::\d+)?$/.test(host) || /^127\.0\.0\.1(?::\d+)?$/.test(host);
 }
 
-function isSkyblurHost(host: string) {
-  return host === "skyblur.uk" || host.endsWith(".skyblur.uk");
-}
-
 function normalizeConfiguredOrigin(value: string) {
   const url = new URL(value);
   if (url.pathname !== "/" || url.search || url.hash) {
@@ -43,20 +39,12 @@ function getRequestHost(request: Request) {
 
 export function getRequestOrigin(request: Request) {
   const configuredOrigin = getConfiguredOrigin();
-  const actualHost = getRequestHostFromHeaders(request);
-  const actualProto = new URL(request.url).protocol.replace(":", "") || "http";
-
-  if (configuredOrigin) {
-    const configuredHost = normalizeHost(new URL(configuredOrigin).host);
-    if (configuredHost === actualHost || !isSkyblurHost(actualHost)) {
-      return configuredOrigin;
-    }
-    return `${actualProto}://${actualHost}`;
-  }
+  if (configuredOrigin) return configuredOrigin;
 
   const host = getRequestHost(request);
+  const proto = new URL(request.url).protocol.replace(":", "") || "http";
 
-  return `${actualProto}://${host}`;
+  return `${proto}://${host}`;
 }
 
 export function getAppOriginFromRequest(request: Request) {
@@ -65,12 +53,9 @@ export function getAppOriginFromRequest(request: Request) {
 
 export function getCookieDomain(request: Request) {
   const configuredOrigin = getConfiguredOrigin();
-  const actualHost = getRequestHostFromHeaders(request);
-  const host = configuredOrigin && !isSkyblurHost(actualHost)
+  const host = configuredOrigin
     ? new URL(configuredOrigin).host
-    : isSkyblurHost(actualHost)
-      ? actualHost
-      : getRequestHost(request);
+    : getRequestHost(request);
 
   if (isLocalHost(host)) {
     return undefined;

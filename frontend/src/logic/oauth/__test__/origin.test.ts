@@ -32,18 +32,6 @@ describe("OAuth origin helpers", () => {
     expect(getAppOriginFromRequest(req)).toBe("https://skyblur.uk");
   });
 
-  it("uses the actual Skyblur host when it differs from the configured base URL", () => {
-    process.env.NEXT_PUBLIC_BASE_URL = "https://dev.skyblur.uk/";
-    const req = request("https://preview.skyblur.uk/api", {
-      "x-forwarded-host": "preview.skyblur.uk",
-      host: "preview.skyblur.uk",
-    });
-
-    expect(getRequestOrigin(req)).toBe("https://preview.skyblur.uk");
-    expect(getAppOriginFromRequest(req)).toBe("https://preview.skyblur.uk");
-    expect(getCookieDomain(req)).toBe(".skyblur.uk");
-  });
-
   it("uses the request URL protocol for localhost when no base URL is configured", () => {
     delete process.env.NEXT_PUBLIC_BASE_URL;
     const req = request("http://localhost:4500/api", {
