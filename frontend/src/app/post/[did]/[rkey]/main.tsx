@@ -9,7 +9,7 @@ import { getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from '@/types/types';
+import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from '@/types/types';
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
@@ -18,8 +18,9 @@ import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from "react";
-import { X } from 'lucide-react';
+import { Globe, Handshake, LockKeyhole, LogIn, ShieldQuestion, UserCheck, Users, X } from 'lucide-react';
 import { BlueskyIcon } from '@/components/Icons';
+import classes from './PostPage.module.css';
 
 export const PostPage = () => {
     const params = useParams();
@@ -127,6 +128,7 @@ export const PostPage = () => {
                     if (passwordArg) {
                         setIsDecrypt(true);
                         setIsDecrypting(false);
+                        authenticatedRefetchKeyRef.current = `${did}/${rkey}/${loginDid}`;
                     }
                 } else {
                     // It's masked or error
@@ -229,6 +231,7 @@ export const PostPage = () => {
 
     useEffect(() => {
         if (!did || !rkey || !isSessionChecked || !loginDid) return;
+        if (isDecrypt || encryptKey) return;
 
         const refetchKey = `${did}/${rkey}/${loginDid}`;
         if (authenticatedRefetchKeyRef.current === refetchKey) return;
@@ -281,6 +284,30 @@ export const PostPage = () => {
     const shouldShowLoading = isLoading || (isRestrictedTarget && loginDid && !isRestrictedFetchDone);
     console.log(`PostPage Render: postText='${postText}', isMasked=${isMasked}, shouldShowLoading=${shouldShowLoading}, loginDid=${!!loginDid}, isSessionChecked=${isSessionChecked}`);
 
+    const visibilityKey = visibility || (encryptCid ? VISIBILITY_PASSWORD : VISIBILITY_PUBLIC);
+    const visibilityBadge = (() => {
+        if (visibilityKey === VISIBILITY_LOGIN) {
+            return { label: locale.Visibility_Login, Icon: LogIn, tone: 'login' };
+        }
+        if (visibilityKey === VISIBILITY_PASSWORD) {
+            return { label: locale.Visibility_Password, Icon: LockKeyhole, tone: 'password' };
+        }
+        if (visibilityKey === VISIBILITY_FOLLOWERS) {
+            return { label: locale.CreatePost_VisibilityFollowers, Icon: Users, tone: 'followers' };
+        }
+        if (visibilityKey === VISIBILITY_FOLLOWING) {
+            return { label: locale.CreatePost_VisibilityFollowing, Icon: UserCheck, tone: 'following' };
+        }
+        if (visibilityKey === VISIBILITY_MUTUAL) {
+            return { label: locale.CreatePost_VisibilityMutual, Icon: Handshake, tone: 'mutual' };
+        }
+        if (visibilityKey === 'UNKNOWN') {
+            return { label: locale.CreatePost_NeedLoginTitle, Icon: ShieldQuestion, tone: 'unknown' };
+        }
+        return { label: locale.Visibility_Public, Icon: Globe, tone: 'public' };
+    })();
+    const VisibilityIcon = visibilityBadge.Icon;
+
     return (
         <>
             <link rel="alternate" href={aturi} />
@@ -310,6 +337,19 @@ export const PostPage = () => {
                                     {/* DEBUG BANNER REMOVED */}
 
                                     <div className="p-2 mx-2 max-w-screen-sm">
+                                        <div className={classes.visibilityBadgeWrap}>
+                                            <div
+                                                className={classes.visibilityBadge}
+                                                data-testid="post-visibility-badge"
+                                                data-tone={visibilityBadge.tone}
+                                            >
+                                                <span className={classes.visibilityIcon}>
+                                                    <VisibilityIcon size={15} strokeWidth={2.4} />
+                                                </span>
+                                                <span>{visibilityBadge.label}</span>
+                                            </div>
+                                        </div>
+
                                         {((visibility === VISIBILITY_LOGIN || visibility === VISIBILITY_FOLLOWERS || visibility === VISIBILITY_FOLLOWING || visibility === VISIBILITY_MUTUAL) && !loginDid) ? (
                                             <div className="flex flex-col items-center justify-center m-4 gap-4">
                                                 <div className="text-sm text-gray-500">

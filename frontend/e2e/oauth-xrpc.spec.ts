@@ -563,6 +563,34 @@ for (const [handle, message] of [
   });
 }
 
+test("/console warns before starting OAuth for likely handle typos", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await openConsoleLoginForm(page, context, baseURL);
+  let loginRequests = 0;
+  await page.route("**/api/oauth/login?**", async (route) => {
+    loginRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ url: "https://bsky.social/oauth/authorize?client_id=e2e" }),
+    });
+  });
+
+  const handleInput = page.getByRole("combobox", { name: "Handle" });
+  await page.getByLabel("Agree to the contents").check();
+  await handleInput.fill("shibata1945.bsky.socal");
+  await expect(handleInput).toHaveValue("shibata1945.bsky.socal");
+  await expect(page.getByText('This may be a typo for "bsky.social". Please check your handle.').first()).toBeVisible();
+
+  await page.getByRole("button", { name: "Login", exact: true }).click();
+  await expect(page.getByText('This may be a typo for "bsky.social". Please check your handle.').first()).toBeVisible();
+  await expect(page).toHaveURL(/\/console$/);
+  expect(loginRequests).toBe(0);
+});
+
 test("/console login form shows callback errors and clears typeahead input", async ({
   page,
   context,
@@ -707,6 +735,76 @@ test("/post validates and unlocks password-protected detail content", async ({
   await expect(page.getByText("Unlocked post detail text")).toBeVisible();
   await expect(page.getByText("Unlocked post detail additional")).toBeVisible();
 });
+
+for (const { visibility, label, tone, options } of [
+  {
+    visibility: "public",
+    label: "Public",
+    tone: "public",
+    options: { postDetailVariant: "public" as const },
+  },
+  {
+    visibility: "password",
+    label: "Password required",
+    tone: "password",
+    options: { postDetailVariant: "password" as const },
+  },
+  {
+    visibility: "login",
+    label: "Login required",
+    tone: "login",
+    options: {
+      authenticated: false,
+      postDetailVariant: "authRequired" as const,
+      postDetailVisibility: "login" as const,
+    },
+  },
+  {
+    visibility: "followers",
+    label: "Followers only",
+    tone: "followers",
+    options: {
+      authenticated: false,
+      postDetailVariant: "authRequired" as const,
+      postDetailVisibility: "followers" as const,
+    },
+  },
+  {
+    visibility: "following",
+    label: "Following only",
+    tone: "following",
+    options: {
+      authenticated: false,
+      postDetailVariant: "authRequired" as const,
+      postDetailVisibility: "following" as const,
+    },
+  },
+  {
+    visibility: "mutual",
+    label: "Mutuals only",
+    tone: "mutual",
+    options: {
+      authenticated: false,
+      postDetailVariant: "authRequired" as const,
+      postDetailVisibility: "mutual" as const,
+    },
+  },
+]) {
+  test(`/post renders the ${visibility} visibility badge`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, options);
+
+    await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2e-badge-${visibility}`);
+
+    const badge = page.getByTestId("post-visibility-badge");
+    await expect(badge).toBeVisible();
+    await expect(badge).toContainText(label);
+    await expect(badge).toHaveAttribute("data-tone", tone);
+  });
+}
 
 test("/post shows restricted login-required detail content to logged-out visitors", async ({
   page,

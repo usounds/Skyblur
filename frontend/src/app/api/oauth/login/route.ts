@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { getOAuthClient } from "@/logic/oauth/client";
 import { OAUTH_CALLBACK_COOKIE } from "@/logic/oauth/cookies";
 import { SESSION_TTL_SECONDS } from "@/logic/oauth/constants";
+import {
+  getLikelyOAuthHandleTypo,
+  isHandleResolutionError,
+  isValidOAuthHandle,
+  normalizeOAuthHandle,
+} from "@/logic/oauth/handle";
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
 function sanitizeRedirect(value: string | null, origin: string) {
@@ -28,13 +34,42 @@ function wantsJson(request: Request) {
   return request.headers.get("accept")?.includes("application/json") ?? false;
 }
 
+function invalidHandleResponse(jsonResponse: boolean, redirectTo: string) {
+  if (jsonResponse) {
+    return NextResponse.json(
+      { error: "invalid_handle", message: "Invalid handle." },
+      {
+        status: 400,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
+  }
+
+  const redirectUrl = new URL(redirectTo);
+  redirectUrl.searchParams.set("loginError", "invalid_handle");
+  const response = NextResponse.redirect(redirectUrl);
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = getRequestOrigin(request);
-  const client = await getOAuthClient(origin);
-  const handle = url.searchParams.get("handle");
+  const handle = normalizeOAuthHandle(url.searchParams.get("handle"));
   const redirectTo = sanitizeRedirect(url.searchParams.get("redirect_uri"), origin);
   const jsonResponse = wantsJson(request);
+
+  if (handle && !isValidOAuthHandle(handle)) {
+    console.warn("OAuth Login rejected malformed handle:", handle);
+    return invalidHandleResponse(jsonResponse, redirectTo);
+  }
+
+  if (handle && getLikelyOAuthHandleTypo(handle)) {
+    console.warn("OAuth Login rejected likely mistyped handle:", handle);
+    return invalidHandleResponse(jsonResponse, redirectTo);
+  }
+
+  const client = await getOAuthClient(origin);
 
   try {
     const authorizeTarget = handle
@@ -60,21 +95,12 @@ export async function GET(request: Request) {
     });
     return response;
   } catch (error) {
-    console.error("OAuth Login Error:", error);
-    if (jsonResponse) {
-      return NextResponse.json(
-        { error: "invalid_handle", message: "Invalid handle." },
-        {
-          status: 400,
-          headers: { "Cache-Control": "no-store" },
-        },
-      );
+    if (handle && isHandleResolutionError(error)) {
+      console.warn("OAuth Login failed to resolve handle:", handle);
+    } else {
+      console.error("OAuth Login Error:", error);
     }
 
-    const redirectUrl = new URL(redirectTo);
-    redirectUrl.searchParams.set("loginError", "invalid_handle");
-    const response = NextResponse.redirect(redirectUrl);
-    response.headers.set("Cache-Control", "no-store");
-    return response;
+    return invalidHandleResponse(jsonResponse, redirectTo);
   }
 }

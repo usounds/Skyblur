@@ -56,6 +56,7 @@ const messages = {
     Login_InvalidCharacter: "Blueskyのハンドルには英数字、ハイフン、ドットのみ使用できます。入力内容をご確認ください。",
     Login_HandleCannotEndWithDot: "ハンドル末尾にドットは使用できません。",
     Login_HandleCannotHaveConsecutiveDots: "ハンドルに連続したドットは使用できません。",
+    Login_HandleMaybeTypo: "{1} の入力間違いかもしれません。ハンドルを確認してください。",
     Login_CreateAccount: "新規アカウント作成",
     CreatePost_Fixed: "[全文を読む]",
     CreatePost_Post: "本文",

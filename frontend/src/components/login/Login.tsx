@@ -3,6 +3,7 @@ import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { AtPassport } from '@atpassport/client/core';
 import { AtPassportIcon, AtPassportUI } from '@atpassport/client/ui';
+import { getLikelyOAuthHandleTypo, normalizeOAuthHandle } from '@/logic/oauth/handle';
 import {
     Anchor,
     Autocomplete,
@@ -44,6 +45,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
     const publicAgent = useXrpcAgentStore((state) => state.publicAgent);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [warningMessage, setWarningMessage] = useState<string | null>(null);
     const [agreed, setAgreed] = useState<boolean>(() => {
         /* istanbul ignore next -- E2E exercises the client path; this fallback is for SSR safety. */
         if (typeof window !== 'undefined') {
@@ -208,6 +210,20 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return
         }
 
+        const likelyTypo = getLikelyOAuthHandleTypo(normalizeOAuthHandle(handle) || '');
+        if (likelyTypo) {
+            const message = locale.Login_HandleMaybeTypo.replace("{1}", likelyTypo);
+            setWarningMessage(message);
+            notifications.show({
+                title: 'Warning',
+                message,
+                color: 'yellow',
+                icon: <X />
+            });
+            setIsHandleLoading(false);
+            return;
+        }
+
         notifications.show({
             id: 'login-process',
             title: locale.Login_Login,
@@ -363,8 +379,12 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                         setHandle(value);
                         setSuggestions([]);
                         setErrorMessage(null);
+                        const likelyTypo = getLikelyOAuthHandleTypo(normalizeOAuthHandle(value) || '');
+                        setWarningMessage(
+                            likelyTypo ? locale.Login_HandleMaybeTypo.replace("{1}", likelyTypo) : null
+                        );
                     }}
-                    error={errorMessage}
+                    error={errorMessage || warningMessage}
                     styles={{
                         input: {
                             fontSize: 16,

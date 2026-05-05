@@ -14,8 +14,8 @@ const optionalSessionSkyblurMethods = new Set([
   "uk.skyblur.post.getPost",
 ]);
 
-const bskyAppViewOrigin = "https://api.bsky.app";
-const bskyAppViewSearchTimeoutMs = 10_000;
+const searchPostsMethod = "app.bsky.feed.searchPosts";
+const searchPostsTimeoutMs = 10_000;
 
 function getSkyblurApiOrigin(request: Request) {
   if (process.env.SKYBLUR_API_ORIGIN) {
@@ -183,6 +183,7 @@ async function publicSkyblurErrorResponse(method: string, response: Response) {
 function sessionProxyResponse(method: string, response: any) {
   const authError = sanitizeHeaderValue(response.headers?.get?.("www-authenticate") ?? null);
   const xrpcError = getXrpcErrorName(response.data);
+  const dpopNonce = response.headers?.get?.("dpop-nonce") ? "present" : null;
 
   return NextResponse.json(response.data, {
     status: response.ok ? 200 : response.status,
@@ -193,6 +194,7 @@ function sessionProxyResponse(method: string, response: any) {
       "x-skyblur-upstream-status": String(response.status),
       ...(authError ? { "x-skyblur-upstream-auth-error": authError } : {}),
       ...(xrpcError ? { "x-skyblur-upstream-xrpc-error": xrpcError } : {}),
+      ...(dpopNonce ? { "x-skyblur-upstream-dpop-nonce": dpopNonce } : {}),
     },
   });
 }
@@ -222,6 +224,51 @@ function getXrpcQueryParams(request: Request) {
   }
 
   return params;
+}
+
+function sanitizeDiagnosticParams(params: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(params).map(([key, value]) => [
+      key,
+      value.length > 120 ? `${value.slice(0, 120)}...` : value,
+    ]),
+  );
+}
+
+function getErrorDiagnostic(error: unknown) {
+  const err = error as {
+    name?: string;
+    message?: string;
+    cause?: { code?: string };
+  };
+
+  return {
+    name: err?.name || "UnknownError",
+    message: err?.message?.slice(0, 240) || "",
+    causeCode: err?.cause?.code || null,
+  };
+}
+
+function logSearchPostsResponse(params: Record<string, string>, startedAt: number, response: any) {
+  console.warn("[xrpc] searchPosts upstream response", {
+    method: searchPostsMethod,
+    params: sanitizeDiagnosticParams(params),
+    elapsedMs: Date.now() - startedAt,
+    status: response.status,
+    ok: response.ok,
+    authError: sanitizeHeaderValue(response.headers?.get?.("www-authenticate") ?? null),
+    dpopNonce: response.headers?.get?.("dpop-nonce") ? "present" : "absent",
+    xrpcError: getXrpcErrorName(response.data),
+  });
+}
+
+function logSearchPostsError(params: Record<string, string>, startedAt: number, error: unknown) {
+  console.warn("[xrpc] searchPosts upstream error", {
+    method: searchPostsMethod,
+    params: sanitizeDiagnosticParams(params),
+    elapsedMs: Date.now() - startedAt,
+    error: getErrorDiagnostic(error),
+  });
 }
 
 async function publicSkyblurResponse(request: Request, method: string) {
@@ -268,46 +315,6 @@ async function publicSkyblurResponse(request: Request, method: string) {
   });
 }
 
-async function bskyAppViewSearchPostsResponse(params: Record<string, string>) {
-  const method = "app.bsky.feed.searchPosts";
-  const upstreamUrl = new URL(`/xrpc/${method}`, bskyAppViewOrigin);
-  for (const [key, value] of Object.entries(params)) {
-    upstreamUrl.searchParams.set(key, value);
-  }
-
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), bskyAppViewSearchTimeoutMs);
-
-  let response;
-  try {
-    response = await fetch(upstreamUrl, {
-      headers: {
-        Accept: "application/json",
-      },
-      signal: abortController.signal,
-    });
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return upstreamTimeoutResponse(method, "bsky-appview");
-    }
-
-    return upstreamFetchFailedResponse(method, "bsky-appview");
-  } finally {
-    clearTimeout(timeout);
-  }
-
-  return new NextResponse(response.body, {
-    status: response.status,
-    headers: {
-      "Cache-Control": "no-store",
-      "content-type": response.headers.get("content-type") || "application/json",
-      "x-skyblur-xrpc-mode": "bsky-appview",
-      "x-skyblur-xrpc-method": method,
-      "x-skyblur-upstream-status": String(response.status),
-    },
-  });
-}
-
 export async function GET(
   request: Request,
   context: { params: Promise<{ method: string }> },
@@ -316,18 +323,6 @@ export async function GET(
 
   if (publicSkyblurMethods.has(method)) {
     return publicSkyblurResponse(request, method);
-  }
-
-  if (method === "app.bsky.feed.searchPosts") {
-    const oauthSession = await getOAuthSession(request);
-
-    if (!oauthSession) {
-      return localAuthMissingResponse(method);
-    }
-
-    const params = getXrpcQueryParams(request);
-
-    return bskyAppViewSearchPostsResponse(params);
   }
 
   const optionalSession = optionalSessionSkyblurMethods.has(method);
@@ -344,13 +339,34 @@ export async function GET(
 
   const params = getXrpcQueryParams(request);
   let response;
+  const isSearchPosts = method === searchPostsMethod;
+  const startedAt = Date.now();
+  const abortController = isSearchPosts ? new AbortController() : null;
+  const timeout = abortController
+    ? setTimeout(() => abortController.abort(), searchPostsTimeoutMs)
+    : null;
+
   try {
-    response = await (client as any).get(method, { params });
+    response = await (client as any).get(method, {
+      params,
+      ...(abortController ? { signal: abortController.signal } : {}),
+    });
+    if (isSearchPosts) {
+      logSearchPostsResponse(params, startedAt, response);
+    }
   } catch (error) {
+    if (isSearchPosts) {
+      logSearchPostsError(params, startedAt, error);
+    }
+    if (error instanceof Error && error.name === "AbortError") {
+      return upstreamTimeoutResponse(method, "session-proxy");
+    }
     if (isUpstreamFetchError(error)) {
       return upstreamFetchFailedResponse(method, "session-proxy");
     }
     throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
   return sessionProxyResponse(method, response);
 }

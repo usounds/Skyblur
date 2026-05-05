@@ -117,7 +117,11 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     setServiceUrl: (serviceUrl) => set({ serviceUrl }),
     setIsLoginModalOpened: (isLoginModalOpened) => set({ isLoginModalOpened }),
     setIsSessionChecked: (isSessionChecked) => {
-      if (!isSessionChecked) getXrpcAgentCache().lastSessionResult = null;
+      if (!isSessionChecked) {
+        const cache = getXrpcAgentCache();
+        cache.lastSessionResult = null;
+        cache.sessionCheckPromise = null;
+      }
       set({ isSessionChecked });
     },
     checkSession: async () => {
@@ -132,6 +136,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             serviceUrl: cache.lastSessionResult.pds,
             isSessionChecked: true,
           });
+          void get().fetchUserProf();
         } else {
           set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "" });
         }
@@ -155,6 +160,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
               set({ isSessionChecked: true });
             }
             cache.lastSessionResult = { authenticated: true, did: data.did, pds: pdsUrl };
+            void get().fetchUserProf();
             return cache.lastSessionResult;
           } else {
             if (get().did !== "" || get().isSessionChecked !== true) {
@@ -179,7 +185,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       return cache.sessionCheckPromise;
     },
     fetchUserProf: async () => {
-      const { did, publicAgent, userProf, setUserProf, isSessionChecked } = get();
+      const { did, agent, publicAgent, userProf, setUserProf, isSessionChecked } = get();
       if (!did || !isSessionChecked) return;
 
       // 取得済み、かつ同じ DID ならスキップ
@@ -190,7 +196,11 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
 
       cache.profFetchPromise = (async () => {
         try {
-          console.log(`Fetching profile for ${did}...`);
+          void agent.get('app.bsky.actor.getProfile', { params: { actor: did as any } }).catch((e) => {
+            console.warn('Profile warmup via local XRPC failed:', e);
+          });
+
+          console.log(`Fetching profile for ${did} via public AppView...`);
           const res = await publicAgent.get('app.bsky.actor.getProfile', { params: { actor: did as any } });
           if (res.ok) {
             setUserProf(res.data);

@@ -1,0 +1,76 @@
+.visibilityBadgeWrap {
+    display: flex;
+    justify-content: flex-start;
+    margin: 0 0 12px;
+}
+
+.visibilityBadge {
+    --badge-accent: #2563eb;
+    --badge-glow: rgba(37, 99, 235, 0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 5px 11px 5px 6px;
+    border: 1px solid color-mix(in srgb, var(--badge-accent) 34%, transparent);
+    border-radius: 999px;
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--badge-accent) 13%, transparent), transparent 58%),
+        light-dark(rgba(255, 255, 255, 0.82), rgba(25, 26, 31, 0.74));
+    box-shadow:
+        0 8px 22px var(--badge-glow),
+        inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.08));
+    color: light-dark(color-mix(in srgb, var(--badge-accent) 68%, #111827), color-mix(in srgb, var(--badge-accent) 50%, #f8fafc));
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
+    backdrop-filter: blur(12px);
+}
+
+.visibilityIcon {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--badge-accent);
+    color: #fff;
+    box-shadow: 0 5px 13px var(--badge-glow);
+}
+
+.visibilityBadge[data-tone='public'] {
+    --badge-accent: #0f766e;
+    --badge-glow: rgba(15, 118, 110, 0.18);
+}
+
+.visibilityBadge[data-tone='login'] {
+    --badge-accent: #2563eb;
+    --badge-glow: rgba(37, 99, 235, 0.2);
+}
+
+.visibilityBadge[data-tone='password'] {
+    --badge-accent: #be123c;
+    --badge-glow: rgba(190, 18, 60, 0.18);
+}
+
+.visibilityBadge[data-tone='followers'] {
+    --badge-accent: #7c3aed;
+    --badge-glow: rgba(124, 58, 237, 0.18);
+}
+
+.visibilityBadge[data-tone='following'] {
+    --badge-accent: #c2410c;
+    --badge-glow: rgba(194, 65, 12, 0.16);
+}
+
+.visibilityBadge[data-tone='mutual'] {
+    --badge-accent: #0891b2;
+    --badge-glow: rgba(8, 145, 178, 0.18);
+}
+
+.visibilityBadge[data-tone='unknown'] {
+    --badge-accent: #64748b;
+    --badge-glow: rgba(100, 116, 139, 0.18);
+}
