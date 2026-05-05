@@ -6,11 +6,6 @@ import { getOAuthClient, isDeletedSessionError, restoreSession } from "@/logic/o
 import { OAUTH_DID_COOKIE, verifySignedDid } from "@/logic/oauth/cookies";
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
-const bskyAppViewProxy: ServiceProxyOptions = {
-  did: "did:web:api.bsky.app" as never,
-  serviceId: "#bsky_appview",
-};
-
 const publicSkyblurMethods = new Set([
   "uk.skyblur.post.decryptByCid",
 ]);
@@ -18,6 +13,9 @@ const publicSkyblurMethods = new Set([
 const optionalSessionSkyblurMethods = new Set([
   "uk.skyblur.post.getPost",
 ]);
+
+const bskyAppViewOrigin = "https://api.bsky.app";
+const bskyAppViewSearchTimeoutMs = 10_000;
 
 function getSkyblurApiOrigin(request: Request) {
   if (process.env.SKYBLUR_API_ORIGIN) {
@@ -47,10 +45,6 @@ function getSkyblurProxyDid(request: Request) {
 }
 
 function getProxyForMethod(request: Request, method: string): ServiceProxyOptions | null {
-  if (method.startsWith("app.bsky.")) {
-    return bskyAppViewProxy;
-  }
-
   if (method.startsWith("uk.skyblur.")) {
     return {
       did: getSkyblurProxyDid(request) as never,
@@ -61,13 +55,14 @@ function getProxyForMethod(request: Request, method: string): ServiceProxyOption
   return null;
 }
 
-async function getSessionClient(request: Request, method: string) {
+async function getOAuthSession(request: Request) {
   const rawDid = (await cookies()).get(OAUTH_DID_COOKIE)?.value;
   const did = verifySignedDid(rawDid ? decodeURIComponent(rawDid) : rawDid);
 
   if (!did) return null;
 
   const oauth = await getOAuthClient(getRequestOrigin(request));
+
   let session;
   try {
     session = await restoreSession(oauth, did);
@@ -76,8 +71,15 @@ async function getSessionClient(request: Request, method: string) {
     throw error;
   }
 
+  return { did, session };
+}
+
+async function getSessionClient(request: Request, method: string) {
+  const oauthSession = await getOAuthSession(request);
+  if (!oauthSession) return null;
+
   return new Client({
-    handler: session,
+    handler: oauthSession.session,
     proxy: getProxyForMethod(request, method),
   });
 }
@@ -129,6 +131,21 @@ function upstreamFetchFailedResponse(method: string, mode: string) {
         "x-skyblur-xrpc-mode": mode,
         "x-skyblur-xrpc-method": method,
         "x-skyblur-upstream-error": "fetch_failed",
+      },
+    },
+  );
+}
+
+function upstreamTimeoutResponse(method: string, mode: string) {
+  return NextResponse.json(
+    { error: "UpstreamTimeout", message: "Upstream service request timed out" },
+    {
+      status: 504,
+      headers: {
+        "Cache-Control": "no-store",
+        "x-skyblur-xrpc-mode": mode,
+        "x-skyblur-xrpc-method": method,
+        "x-skyblur-upstream-error": "timeout",
       },
     },
   );
@@ -194,10 +211,26 @@ function localAuthMissingResponse(method: string) {
   );
 }
 
+function getXrpcQueryParams(request: Request) {
+  const url = new URL(request.url);
+  const params: Record<string, string> = {};
+
+  for (const [key, value] of url.searchParams.entries()) {
+    const normalizedValue = key === "q" ? value.trim() : value;
+    if (normalizedValue === "") continue;
+    params[key] = normalizedValue;
+  }
+
+  return params;
+}
+
 async function publicSkyblurResponse(request: Request, method: string) {
   const url = new URL(request.url);
   const upstreamUrl = new URL(`/xrpc/${method}`, getSkyblurApiOrigin(request));
-  upstreamUrl.search = url.search;
+  for (const [key, value] of url.searchParams.entries()) {
+    if (value === "") continue;
+    upstreamUrl.searchParams.set(key, value);
+  }
 
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
@@ -235,6 +268,46 @@ async function publicSkyblurResponse(request: Request, method: string) {
   });
 }
 
+async function bskyAppViewSearchPostsResponse(params: Record<string, string>) {
+  const method = "app.bsky.feed.searchPosts";
+  const upstreamUrl = new URL(`/xrpc/${method}`, bskyAppViewOrigin);
+  for (const [key, value] of Object.entries(params)) {
+    upstreamUrl.searchParams.set(key, value);
+  }
+
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), bskyAppViewSearchTimeoutMs);
+
+  let response;
+  try {
+    response = await fetch(upstreamUrl, {
+      headers: {
+        Accept: "application/json",
+      },
+      signal: abortController.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return upstreamTimeoutResponse(method, "bsky-appview");
+    }
+
+    return upstreamFetchFailedResponse(method, "bsky-appview");
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  return new NextResponse(response.body, {
+    status: response.status,
+    headers: {
+      "Cache-Control": "no-store",
+      "content-type": response.headers.get("content-type") || "application/json",
+      "x-skyblur-xrpc-mode": "bsky-appview",
+      "x-skyblur-xrpc-method": method,
+      "x-skyblur-upstream-status": String(response.status),
+    },
+  });
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ method: string }> },
@@ -243,6 +316,18 @@ export async function GET(
 
   if (publicSkyblurMethods.has(method)) {
     return publicSkyblurResponse(request, method);
+  }
+
+  if (method === "app.bsky.feed.searchPosts") {
+    const oauthSession = await getOAuthSession(request);
+
+    if (!oauthSession) {
+      return localAuthMissingResponse(method);
+    }
+
+    const params = getXrpcQueryParams(request);
+
+    return bskyAppViewSearchPostsResponse(params);
   }
 
   const optionalSession = optionalSessionSkyblurMethods.has(method);
@@ -257,8 +342,7 @@ export async function GET(
     return localAuthMissingResponse(method);
   }
 
-  const url = new URL(request.url);
-  const params = Object.fromEntries(url.searchParams.entries());
+  const params = getXrpcQueryParams(request);
   let response;
   try {
     response = await (client as any).get(method, { params });

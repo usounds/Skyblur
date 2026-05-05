@@ -20,6 +20,7 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     const [searchTerm, setSearchTerm] = useState("");
     const [currentCursor, setCursor] = useState("");
     const agent = useXrpcAgentStore((state) => state.agent);
+    const userHandle = useXrpcAgentStore((state) => state.userProf?.handle);
     const LIMIT = 20
     const [postList, setPostList] = useState<PostView[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -40,15 +41,18 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     }
 
     const getPosts = async () => {
-        if (!agent) return
+        if (!agent || !userHandle) {
+            setIsLoading(false)
+            return
+        }
         setIsLoading(true)
         setPostList([])
+        const q = [`from:${userHandle}`, searchTerm.trim()].filter(Boolean).join(" ")
 
         const result = await agent.get("app.bsky.feed.searchPosts", {
             params: {
-                q: "from:me " + searchTerm,
+                q,
                 limit: LIMIT,
-                cursor: ''
             }
         });
 
@@ -69,12 +73,13 @@ export const ReplyList: React.FC<ReplyListProps> = ({
     }
 
     const getNext = async () => {
-        if (!agent) return
+        if (!agent || !userHandle) return
         setIsLoading(true)
+        const q = [`from:${userHandle}`, searchTerm.trim()].filter(Boolean).join(" ")
 
         const result = await agent.get("app.bsky.feed.searchPosts", {
             params: {
-                q: "from:me " + searchTerm,
+                q,
                 limit: LIMIT,
                 cursor: currentCursor
             }
@@ -97,11 +102,11 @@ export const ReplyList: React.FC<ReplyListProps> = ({
 
 
     useEffect(() => {
-        if (agent) {
+        if (agent && userHandle) {
             getPosts()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [agent]);
+    }, [agent, userHandle]);
 
     return (
 
