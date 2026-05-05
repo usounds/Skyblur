@@ -488,6 +488,24 @@ test("app.bsky XRPC requires local OAuth instead of leaking a Skyblur API scope 
   expect(JSON.stringify(body)).not.toContain("did:web:dev.skyblur.uk%23skyblur_api");
 });
 
+test("app.bsky XRPC pipeline shuts down instead of hanging indefinitely", async ({
+  request,
+}) => {
+  const startedAt = Date.now();
+  const res = await request.get(
+    "/xrpc/app.bsky.actor.getProfile?actor=did%3Aplc%3Argdcflm4ylsl6udghmtblydc&__e2ePipelineDelayMs=11000",
+    { timeout: 20_000 },
+  );
+  const elapsedMs = Date.now() - startedAt;
+  await skipIfUnavailable(res);
+
+  expect(res.status(), await responseText(res)).toBe(504);
+  expect(res.headers()["x-skyblur-upstream-error"]).toBe("timeout");
+  expect(res.headers()["x-skyblur-atproto-proxy"]).toBe("did:web:api.bsky.app#bsky_appview");
+  expect(Number(res.headers()["x-skyblur-xrpc-elapsed-ms"])).toBeGreaterThanOrEqual(9_000);
+  expect(elapsedMs).toBeLessThan(15_000);
+});
+
 test("XRPC POST requires local OAuth when the method is not public", async ({ request }) => {
   const res = await request.post("/xrpc/app.bsky.feed.post", {
     data: {

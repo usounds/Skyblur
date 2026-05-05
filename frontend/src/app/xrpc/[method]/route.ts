@@ -14,8 +14,87 @@ const optionalSessionSkyblurMethods = new Set([
   "uk.skyblur.post.getPost",
 ]);
 
+const bskyAppViewProxy: ServiceProxyOptions = {
+  did: "did:web:api.bsky.app" as never,
+  serviceId: "#bsky_appview",
+};
+
 const searchPostsMethod = "app.bsky.feed.searchPosts";
 const searchPostsTimeoutMs = 10_000;
+const searchPostsMaxAttempts = 2;
+const appBskyPipelineTimeoutMs = 10_000;
+const e2ePipelineDelayParam = "__e2ePipelineDelayMs";
+
+type XrpcDiagnostics = {
+  startedAt: number;
+  attempt?: number;
+  proxy?: string;
+  stage?: "pipeline-delay" | "session" | "upstream";
+  sessionMs?: number;
+  upstreamMs?: number;
+};
+
+class XrpcPipelineTimeoutError extends Error {
+  constructor() {
+    super("XRPC session proxy pipeline timed out");
+    this.name = "XrpcPipelineTimeoutError";
+  }
+}
+
+function isAppBskyMethod(method: string) {
+  return method.startsWith("app.bsky.");
+}
+
+function isTimeoutError(error: unknown) {
+  return (
+    error instanceof XrpcPipelineTimeoutError ||
+    (error instanceof Error && error.name === "AbortError")
+  );
+}
+
+async function withPipelineTimeout<T>(
+  timeoutMs: number,
+  fn: (signal: AbortSignal) => Promise<T>,
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const abortPromise = new Promise<never>((_, reject) => {
+    controller.signal.addEventListener("abort", () => reject(new XrpcPipelineTimeoutError()), {
+      once: true,
+    });
+  });
+
+  try {
+    return await Promise.race([fn(controller.signal), abortPromise]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function waitForSignal(ms: number, signal: AbortSignal) {
+  if (ms <= 0) return;
+  if (signal.aborted) throw new XrpcPipelineTimeoutError();
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(resolve, ms);
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timeout);
+        reject(new XrpcPipelineTimeoutError());
+      },
+      { once: true },
+    );
+  });
+}
+
+function getE2ePipelineDelayMs(request: Request) {
+  if (process.env.E2E_TEST !== "true") return 0;
+
+  const raw = new URL(request.url).searchParams.get(e2ePipelineDelayParam);
+  const delayMs = raw ? Number(raw) : 0;
+  return Number.isFinite(delayMs) && delayMs > 0 ? Math.min(delayMs, 30_000) : 0;
+}
 
 function getSkyblurApiOrigin(request: Request) {
   if (process.env.SKYBLUR_API_ORIGIN) {
@@ -52,7 +131,16 @@ function getProxyForMethod(request: Request, method: string): ServiceProxyOption
     };
   }
 
+  if (isAppBskyMethod(method)) {
+    return bskyAppViewProxy;
+  }
+
   return null;
+}
+
+function getProxyHeaderValue(proxy: ServiceProxyOptions | null) {
+  if (!proxy) return null;
+  return `${proxy.did}${proxy.serviceId}`;
 }
 
 async function getOAuthSession(request: Request) {
@@ -121,7 +209,7 @@ function isUpstreamFetchError(error: unknown) {
   );
 }
 
-function upstreamFetchFailedResponse(method: string, mode: string) {
+function upstreamFetchFailedResponse(method: string, mode: string, diagnostics?: XrpcDiagnostics) {
   return NextResponse.json(
     { error: "UpstreamFetchFailed", message: "Upstream service request failed" },
     {
@@ -131,12 +219,26 @@ function upstreamFetchFailedResponse(method: string, mode: string) {
         "x-skyblur-xrpc-mode": mode,
         "x-skyblur-xrpc-method": method,
         "x-skyblur-upstream-error": "fetch_failed",
+        ...getDiagnosticHeaders(diagnostics),
       },
     },
   );
 }
 
-function upstreamTimeoutResponse(method: string, mode: string) {
+function getDiagnosticHeaders(diagnostics?: XrpcDiagnostics) {
+  if (!diagnostics) return {};
+
+  return {
+    "x-skyblur-xrpc-elapsed-ms": String(Date.now() - diagnostics.startedAt),
+    ...(diagnostics.attempt ? { "x-skyblur-xrpc-attempt": String(diagnostics.attempt) } : {}),
+    ...(diagnostics.proxy ? { "x-skyblur-atproto-proxy": diagnostics.proxy } : {}),
+    ...(diagnostics.stage ? { "x-skyblur-xrpc-stage": diagnostics.stage } : {}),
+    ...(diagnostics.sessionMs != null ? { "x-skyblur-xrpc-session-ms": String(diagnostics.sessionMs) } : {}),
+    ...(diagnostics.upstreamMs != null ? { "x-skyblur-xrpc-upstream-ms": String(diagnostics.upstreamMs) } : {}),
+  };
+}
+
+function upstreamTimeoutResponse(method: string, mode: string, diagnostics?: XrpcDiagnostics) {
   return NextResponse.json(
     { error: "UpstreamTimeout", message: "Upstream service request timed out" },
     {
@@ -146,6 +248,7 @@ function upstreamTimeoutResponse(method: string, mode: string) {
         "x-skyblur-xrpc-mode": mode,
         "x-skyblur-xrpc-method": method,
         "x-skyblur-upstream-error": "timeout",
+        ...getDiagnosticHeaders(diagnostics),
       },
     },
   );
@@ -180,7 +283,7 @@ async function publicSkyblurErrorResponse(method: string, response: Response) {
   });
 }
 
-function sessionProxyResponse(method: string, response: any) {
+function sessionProxyResponse(method: string, response: any, diagnostics?: XrpcDiagnostics) {
   const authError = sanitizeHeaderValue(response.headers?.get?.("www-authenticate") ?? null);
   const xrpcError = getXrpcErrorName(response.data);
   const dpopNonce = response.headers?.get?.("dpop-nonce") ? "present" : null;
@@ -195,6 +298,7 @@ function sessionProxyResponse(method: string, response: any) {
       ...(authError ? { "x-skyblur-upstream-auth-error": authError } : {}),
       ...(xrpcError ? { "x-skyblur-upstream-xrpc-error": xrpcError } : {}),
       ...(dpopNonce ? { "x-skyblur-upstream-dpop-nonce": dpopNonce } : {}),
+      ...getDiagnosticHeaders(diagnostics),
     },
   });
 }
@@ -218,6 +322,7 @@ function getXrpcQueryParams(request: Request) {
   const params: Record<string, string> = {};
 
   for (const [key, value] of url.searchParams.entries()) {
+    if (key === e2ePipelineDelayParam) continue;
     const normalizedValue = key === "q" ? value.trim() : value;
     if (normalizedValue === "") continue;
     params[key] = normalizedValue;
@@ -326,49 +431,85 @@ export async function GET(
   }
 
   const optionalSession = optionalSessionSkyblurMethods.has(method);
-  const client = optionalSession
-    ? await getOptionalSessionClient(request, method)
-    : await getSessionClient(request, method);
-
-  if (!client) {
-    if (optionalSession) {
-      return publicSkyblurResponse(request, method);
-    }
-    return localAuthMissingResponse(method);
-  }
-
   const params = getXrpcQueryParams(request);
   let response;
   const isSearchPosts = method === searchPostsMethod;
+  const isAppBsky = isAppBskyMethod(method);
   const startedAt = Date.now();
-  const abortController = isSearchPosts ? new AbortController() : null;
-  const timeout = abortController
-    ? setTimeout(() => abortController.abort(), searchPostsTimeoutMs)
-    : null;
+  const maxAttempts = isSearchPosts ? searchPostsMaxAttempts : 1;
+  const e2ePipelineDelayMs = getE2ePipelineDelayMs(request);
+  const diagnostics: XrpcDiagnostics = {
+    startedAt,
+    proxy: getProxyHeaderValue(getProxyForMethod(request, method)) ?? undefined,
+  };
 
-  try {
-    response = await (client as any).get(method, {
-      params,
-      ...(abortController ? { signal: abortController.signal } : {}),
-    });
-    if (isSearchPosts) {
-      logSearchPostsResponse(params, startedAt, response);
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    diagnostics.attempt = attempt;
+    const abortController = isSearchPosts && !isAppBsky ? new AbortController() : null;
+    const timeout = abortController ? setTimeout(() => abortController.abort(), searchPostsTimeoutMs) : null;
+
+    try {
+      const runSessionProxyGet = async (signal?: AbortSignal) => {
+        if (signal) {
+          diagnostics.stage = "pipeline-delay";
+          await waitForSignal(e2ePipelineDelayMs, signal);
+        }
+
+        diagnostics.stage = "session";
+        const sessionStartedAt = Date.now();
+        const client = optionalSession
+          ? await getOptionalSessionClient(request, method)
+          : await getSessionClient(request, method);
+        diagnostics.sessionMs = Date.now() - sessionStartedAt;
+
+        if (!client) {
+          if (optionalSession) {
+            return publicSkyblurResponse(request, method);
+          }
+          return localAuthMissingResponse(method);
+        }
+
+        diagnostics.stage = "upstream";
+        const upstreamStartedAt = Date.now();
+        const result = await (client as any).get(method, {
+          params,
+          ...(signal ? { signal } : {}),
+          ...(abortController ? { signal: abortController.signal } : {}),
+        });
+        diagnostics.upstreamMs = Date.now() - upstreamStartedAt;
+        return result;
+      };
+
+      response = isAppBsky
+        ? await withPipelineTimeout(appBskyPipelineTimeoutMs, runSessionProxyGet)
+        : await runSessionProxyGet();
+      if (response instanceof NextResponse) {
+        return response;
+      }
+      if (isSearchPosts) {
+        logSearchPostsResponse(params, startedAt, response);
+      }
+      break;
+    } catch (error) {
+      if (isSearchPosts) {
+        logSearchPostsError(params, startedAt, error);
+      }
+      if (isTimeoutError(error)) {
+        if (attempt < maxAttempts) {
+          continue;
+        }
+        return upstreamTimeoutResponse(method, "session-proxy", diagnostics);
+      }
+      if (isUpstreamFetchError(error)) {
+        return upstreamFetchFailedResponse(method, "session-proxy", diagnostics);
+      }
+      throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
-  } catch (error) {
-    if (isSearchPosts) {
-      logSearchPostsError(params, startedAt, error);
-    }
-    if (error instanceof Error && error.name === "AbortError") {
-      return upstreamTimeoutResponse(method, "session-proxy");
-    }
-    if (isUpstreamFetchError(error)) {
-      return upstreamFetchFailedResponse(method, "session-proxy");
-    }
-    throw error;
-  } finally {
-    if (timeout) clearTimeout(timeout);
   }
-  return sessionProxyResponse(method, response);
+
+  return sessionProxyResponse(method, response, diagnostics);
 }
 
 export async function POST(
@@ -382,9 +523,16 @@ export async function POST(
   }
 
   const optionalSession = optionalSessionSkyblurMethods.has(method);
+  const diagnostics: XrpcDiagnostics = {
+    startedAt: Date.now(),
+    proxy: getProxyHeaderValue(getProxyForMethod(request, method)) ?? undefined,
+  };
+  diagnostics.stage = "session";
+  const sessionStartedAt = Date.now();
   const client = optionalSession
     ? await getOptionalSessionClient(request, method)
     : await getSessionClient(request, method);
+  diagnostics.sessionMs = Date.now() - sessionStartedAt;
 
   if (!client) {
     if (optionalSession) {
@@ -398,17 +546,20 @@ export async function POST(
   const input = isJson ? await request.json() : new Uint8Array(await request.arrayBuffer());
   let response;
   try {
+    diagnostics.stage = "upstream";
+    const upstreamStartedAt = Date.now();
     response = await (client as any).post(method, {
       input,
       encoding: isJson ? undefined : contentType,
       headers: isJson ? undefined : { "Content-Type": contentType },
     });
+    diagnostics.upstreamMs = Date.now() - upstreamStartedAt;
   } catch (error) {
     if (isUpstreamFetchError(error)) {
-      return upstreamFetchFailedResponse(method, "session-proxy");
+      return upstreamFetchFailedResponse(method, "session-proxy", diagnostics);
     }
     throw error;
   }
 
-  return sessionProxyResponse(method, response);
+  return sessionProxyResponse(method, response, diagnostics);
 }

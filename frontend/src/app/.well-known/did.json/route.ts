@@ -1,12 +1,51 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(req: Request) {
-  const host = req.headers.get('host') || 'skyblur.uk';
+function normalizeHost(host: string) {
+  return host.trim().toLowerCase();
+}
 
-  let apiEndpoint = 'api.skyblur.uk'
-  if (process.env.NODE_ENV !== 'production') {
-    apiEndpoint = 'devapi.skyblur.uk'
+function isLocalHost(host: string) {
+  return /^localhost(?::\d+)?$/.test(host) || /^127\.0\.0\.1(?::\d+)?$/.test(host);
+}
+
+function getRequestHost(request: Request) {
+  const url = new URL(request.url);
+  return normalizeHost(
+    request.headers.get('x-forwarded-host') ||
+      request.headers.get('host') ||
+      url.host,
+  );
+}
+
+function getConfiguredHost(request: Request) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  if (baseUrl) {
+    return new URL(baseUrl).host;
   }
+
+  const host = getRequestHost(request);
+  if (isLocalHost(host)) {
+    return host;
+  }
+
+  throw new Error('NEXT_PUBLIC_BASE_URL is required outside localhost');
+}
+
+function getApiEndpoint(host: string) {
+  if (host === 'preview.skyblur.uk') {
+    return 'previewapi.skyblur.uk';
+  }
+
+  if (host === 'dev.skyblur.uk' || host.includes('localhost') || host.startsWith('127.0.0.1')) {
+    return 'devapi.skyblur.uk';
+  }
+
+  return 'api.skyblur.uk';
+}
+
+export async function GET(request: Request) {
+  const host = getConfiguredHost(request);
+  const apiEndpoint = getApiEndpoint(host);
 
   try {
     const res = await fetch(`https://${apiEndpoint}/api/did-document?host=${host}`, {

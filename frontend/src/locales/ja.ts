@@ -149,6 +149,7 @@ const messages = {
     ReplyList_ReplyToThis: "この投稿に返信する",
     ReplyList_ReplyDescrition: "[ <- 返信 ] ",
     ReplyList_Search: "絞り込む",
+    ReplyList_SearchTakingLong: "取得に時間がかかっています。自動で再取得します。",
     Pref_Title: "設定",
     Pref_MyPage: "マイページ",
     Pref_MyPagePublish: "公開する",

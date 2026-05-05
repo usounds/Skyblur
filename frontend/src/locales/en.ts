@@ -149,6 +149,7 @@ const messages = {
     ReplyList_ReplyToThis: "Reply to this post",
     ReplyList_ReplyDescrition: "[ <- Reply ] ",
     ReplyList_Search: "Search",
+    ReplyList_SearchTakingLong: "Fetching is taking longer than expected. Retrying automatically.",
     Pref_Title: "Settings",
     Pref_MyPage: "My Page",
     Pref_MyPagePublish: "Publish",

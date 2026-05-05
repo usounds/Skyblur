@@ -4,6 +4,7 @@ import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { useLocale } from "@/state/Locale";
 import { PostView } from "@/types/types";
 import { Button, Input, Timeline, Group } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from "react";
 import BeatLoader from "react-spinners/BeatLoader";
 import { Reply } from 'lucide-react';
@@ -12,6 +13,12 @@ type ReplyListProps = {
     handleSetPost: (input: PostView) => void;
     did: string;
 };
+
+const SEARCH_RETRY_DELAY_MS = 1_000;
+const SEARCH_MAX_ATTEMPTS = 2;
+const SEARCH_RETRY_NOTIFICATION_ID = "reply-search-timeout-retry";
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const ReplyList: React.FC<ReplyListProps> = ({
     handleSetPost,
@@ -39,6 +46,39 @@ export const ReplyList: React.FC<ReplyListProps> = ({
         })
     }
 
+    const isSearchTimeout = (result: Awaited<ReturnType<typeof agent.get>>) => {
+        return !result.ok && result.status === 504;
+    }
+
+    const searchPosts = async (params: {
+        q: string;
+        sort: "latest";
+        limit: number;
+        cursor?: string;
+    }) => {
+        for (let attempt = 1; attempt <= SEARCH_MAX_ATTEMPTS; attempt++) {
+            const result = await agent.get("app.bsky.feed.searchPosts", { params });
+
+            if (result.ok) {
+                notifications.hide(SEARCH_RETRY_NOTIFICATION_ID);
+            }
+
+            if (isSearchTimeout(result) && attempt < SEARCH_MAX_ATTEMPTS) {
+                notifications.show({
+                    id: SEARCH_RETRY_NOTIFICATION_ID,
+                    color: "yellow",
+                    loading: true,
+                    message: locale.ReplyList_SearchTakingLong,
+                    autoClose: 4000,
+                });
+                await wait(SEARCH_RETRY_DELAY_MS);
+                continue;
+            }
+
+            return result;
+        }
+    }
+
     const getPosts = async () => {
         if (!agent) {
             setIsLoading(false)
@@ -49,14 +89,13 @@ export const ReplyList: React.FC<ReplyListProps> = ({
         const q = ["from:me", searchTerm.trim()].filter(Boolean).join(" ")
 
         try {
-            const result = await agent.get("app.bsky.feed.searchPosts", {
-                params: {
-                    q,
-                    sort: "latest",
-                    limit: LIMIT,
-                }
+            const result = await searchPosts({
+                q,
+                sort: "latest",
+                limit: LIMIT,
             });
 
+            if (!result) return
             if (!result.ok) return
 
             const filteredPosts = filterByRootAuthor(result.data.posts as PostView[], did)
@@ -81,15 +120,14 @@ export const ReplyList: React.FC<ReplyListProps> = ({
         const q = ["from:me", searchTerm.trim()].filter(Boolean).join(" ")
 
         try {
-            const result = await agent.get("app.bsky.feed.searchPosts", {
-                params: {
-                    q,
-                    sort: "latest",
-                    limit: LIMIT,
-                    cursor: currentCursor
-                }
+            const result = await searchPosts({
+                q,
+                sort: "latest",
+                limit: LIMIT,
+                cursor: currentCursor
             });
 
+            if (!result) return
             if (!result.ok) return
             const filteredPosts = filterByRootAuthor(result.data.posts as PostView[], did)
 

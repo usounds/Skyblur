@@ -196,10 +196,6 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
 
       cache.profFetchPromise = (async () => {
         try {
-          void agent.get('app.bsky.actor.getProfile', { params: { actor: did as any } }).catch((e) => {
-            console.warn('Profile warmup via local XRPC failed:', e);
-          });
-
           console.log(`Fetching profile for ${did} via public AppView...`);
           const res = await publicAgent.get('app.bsky.actor.getProfile', { params: { actor: did as any } });
           if (res.ok) {
