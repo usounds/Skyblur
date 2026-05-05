@@ -46,11 +46,17 @@
                             "login",
                             "followers",
                             "following",
-                            "mutual"
+                            "mutual",
+                            "list"
                         ],
                         "maxLength": 100,
-                        "description": "For 'login', the post requires login to view (Bluesky account required). For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody. 'followers' restricted to author's followers. 'following' restricted to users author follows. 'mutual' restricted to mutual followers.",
+                        "description": "For 'login', the post requires login to view (Bluesky account required). For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody. 'followers' restricted to author's followers. 'following' restricted to users author follows. 'mutual' restricted to mutual followers. 'list' restricted to members of the author's selected Bluesky list.",
                         "maxGraphemes": 10
+                    },
+                    "listUri": {
+                        "type": "string",
+                        "format": "at-uri",
+                        "description": "Selected Bluesky list AT-URI. Required by application validation when visibility is 'list'."
                     }
                 }
             },

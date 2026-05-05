@@ -1,6 +1,6 @@
 import { expect, test } from "./fixtures";
 
-import { mockDid, mockHandle, useLoggedInOAuthMock } from "./oauth-mock";
+import { mockCurrentSessionScope, mockDid, mockHandle, mockOlderSessionScope, useLoggedInOAuthMock } from "./oauth-mock";
 
 test.describe.configure({ mode: "parallel" });
 
@@ -125,7 +125,7 @@ test("OAuth metadata points to the Next.js API OAuth routes", async ({ request, 
   const res = await request.get("/oauth-client-metadata.json");
   await skipIfUnavailable(res);
   expect(res.ok(), await responseText(res)).toBe(true);
-  expect(res.headers()["cache-control"]).toContain("max-age=3600");
+  expect(res.headers()["cache-control"]).toContain("no-store");
 
   const metadata = await res.json();
   const oauthOrigin = expectedOAuthOrigin(baseURL);
@@ -136,6 +136,8 @@ test("OAuth metadata points to the Next.js API OAuth routes", async ({ request, 
   expect(metadata.response_types).toEqual(["code"]);
   expect(metadata.scope).toContain("atproto");
   expect(metadata.scope).toContain("repo:app.bsky.feed.post?action=create&action=delete");
+  expect(metadata.scope).toContain("rpc:app.bsky.graph.getLists?aud=*");
+  expect(metadata.scope).toContain("rpc:app.bsky.graph.getList?aud=*");
   expect(metadata.token_endpoint_auth_method).toBe("private_key_jwt");
   expect(metadata.dpop_bound_access_tokens).toBe(true);
 });
@@ -541,6 +543,39 @@ test("handle resolution validates missing and malformed handles", async ({ reque
   await expect(malformed.json()).resolves.toEqual({ error: "Invalid handle" });
 });
 
+test("handle resolution rejects local and IP literal handles", async ({ request }) => {
+  const localIp = await request.get("/api/resolve-handle?handle=127.0.0.1");
+  await skipIfUnavailable(localIp);
+  expect(localIp.status(), await responseText(localIp)).toBe(400);
+  await expect(localIp.json()).resolves.toEqual({ error: "Invalid handle" });
+
+  const localhost = await request.get("/api/resolve-handle?handle=localhost.localdomain");
+  await skipIfUnavailable(localhost);
+  expect(localhost.status(), await responseText(localhost)).toBe(400);
+  await expect(localhost.json()).resolves.toEqual({ error: "Invalid handle" });
+
+  const privateSuffix = await request.get("/api/resolve-handle?handle=pds.internal");
+  await skipIfUnavailable(privateSuffix);
+  expect(privateSuffix.status(), await responseText(privateSuffix)).toBe(400);
+  await expect(privateSuffix.json()).resolves.toEqual({ error: "Invalid handle" });
+});
+
+test("OAuth login rejects local and IP literal handles before authorize", async ({ request }) => {
+  const res = await request.get("/api/oauth/login?handle=127.0.0.1", {
+    headers: { Accept: "application/json" },
+  });
+  await skipIfUnavailable(res);
+  expect(res.status(), await responseText(res)).toBe(400);
+  await expect(res.json()).resolves.toMatchObject({ error: "invalid_handle" });
+
+  const privateSuffix = await request.get("/api/oauth/login?handle=pds.internal", {
+    headers: { Accept: "application/json" },
+  });
+  await skipIfUnavailable(privateSuffix);
+  expect(privateSuffix.status(), await responseText(privateSuffix)).toBe(400);
+  await expect(privateSuffix.json()).resolves.toMatchObject({ error: "invalid_handle" });
+});
+
 test("/console shows the login form when there is no OAuth session", async ({
   page,
   context,
@@ -807,6 +842,16 @@ for (const { visibility, label, tone, options } of [
       postDetailVisibility: "mutual" as const,
     },
   },
+  {
+    visibility: "list",
+    label: "List only",
+    tone: "list",
+    options: {
+      authenticated: false,
+      postDetailVariant: "authRequired" as const,
+      postDetailVisibility: "list" as const,
+    },
+  },
 ]) {
   test(`/post renders the ${visibility} visibility badge`, async ({
     page,
@@ -978,6 +1023,8 @@ for (const [restrictedErrorCode, message] of [
   ["NotFollower", "You do not have permission to view this post (Followers only)."],
   ["NotFollowing", "You do not have permission to view this post (Following only)."],
   ["NotMutual", "You do not have permission to view this post (Mutuals only)."],
+  ["NotListMember", "This post is limited to a selected list, or permission could not be confirmed."],
+  ["ListMembershipCheckFailed", "List visibility could not be confirmed. Please try again later."],
   ["AuthRequired", "Please log in to view this post."],
   ["ContentMissing", "Content not found."],
   ["Other", "You do not have permission to view this post."],
@@ -1022,6 +1069,63 @@ test("/console renders logged-in dashboard from mocked OAuth session", async ({
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
   await expect(page.getByText("console post")).toBeVisible();
+});
+
+test("/console prompts relogin when app.bsky rpc scopes are missing", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    sessionScope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
+  });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+
+  await expect(page.getByText("Login permissions need to be updated")).toBeVisible();
+  await expect(page.getByText("Skyblur has added a new feature. Press Log in again on the right to start using it.")).toBeVisible();
+  await expect(page.getByText("rpc:app.bsky.graph.getLists?aud=*")).toBeVisible();
+
+  const relogin = page.getByRole("link", { name: "Log in again" });
+  await expect(relogin).toBeVisible();
+  await expect(relogin).toHaveAttribute("href", /\/api\/oauth\/login\?redirect_uri=/);
+});
+
+test("/console prompts relogin for an older session missing list visibility scopes", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    sessionScope: mockOlderSessionScope,
+  });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+
+  await expect(page.getByText("Login permissions need to be updated")).toBeVisible();
+  await expect(page.getByText("Skyblur has added a new feature. Press Log in again on the right to start using it.")).toBeVisible();
+  await expect(page.getByText("rpc:app.bsky.graph.getLists?aud=*")).toBeVisible();
+  await expect(page.getByText("rpc:app.bsky.graph.getList?aud=*")).toBeVisible();
+  await expect(page.getByText("rpc:app.bsky.feed.searchPosts?aud=*")).toHaveCount(0);
+
+  const relogin = page.getByRole("link", { name: "Log in again" });
+  await expect(relogin).toBeVisible();
+  await expect(relogin).toHaveAttribute("href", /\/api\/oauth\/login\?redirect_uri=/);
+});
+
+test("/console hides relogin prompt when current app.bsky rpc scopes are present", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    sessionScope: mockCurrentSessionScope,
+  });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+
+  await expect(page.getByText("Login permissions need to be updated")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Create a post" })).toBeVisible();
 });
 
 test("/console remains usable when the profile fetch fails", async ({
@@ -1133,6 +1237,34 @@ test("/console create post form covers validation, reply, visibility, and submit
 
   await expect(page.getByText("Post completed!")).toBeVisible();
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
+});
+
+test("/console submits list visibility post after selecting an owned list", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await page.getByRole("button", { name: "Create a post" }).click();
+
+  await page.getByPlaceholder("Please enter the content.").fill("E2E list [secret] post");
+  await page.getByPlaceholder("Enter additional information if necessary.").fill("E2E list-only additional");
+  await page.getByRole("button", { name: "List only" }).click();
+
+  await expect(page.getByText("Allowed list", { exact: true })).toBeVisible();
+  await expect(page.getByText("E2E Allowed List")).toBeVisible();
+  await expect(page.getByText("Someone else's list")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Post now" })).toBeDisabled();
+
+  await page.getByText("E2E Allowed List").click();
+  await expect(page.getByLabel("Selected")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Post now" })).toBeEnabled();
+
+  await page.getByRole("button", { name: "Post now" }).click();
+
+  await expect(page.getByText("Post completed!")).toBeVisible();
 });
 
 test("/console submits password-protected post from the create form", async ({

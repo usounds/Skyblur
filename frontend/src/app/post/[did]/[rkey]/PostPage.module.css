@@ -70,6 +70,11 @@
     --badge-glow: rgba(8, 145, 178, 0.18);
 }
 
+.visibilityBadge[data-tone='list'] {
+    --badge-accent: #0d9488;
+    --badge-glow: rgba(13, 148, 136, 0.18);
+}
+
 .visibilityBadge[data-tone='unknown'] {
     --badge-accent: #64748b;
     --badge-glow: rgba(100, 116, 139, 0.18);

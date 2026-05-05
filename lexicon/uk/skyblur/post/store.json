@@ -35,8 +35,14 @@
                             "enum": [
                                 "followers",
                                 "following",
-                                "mutual"
+                                "mutual",
+                                "list"
                             ]
+                        },
+                        "listUri": {
+                            "type": "string",
+                            "format": "at-uri",
+                            "description": "Selected Bluesky list AT-URI. Required by application validation when visibility is 'list'."
                         }
                     }
                 }

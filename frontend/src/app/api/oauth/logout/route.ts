@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getOAuthClient, isDeletedSessionError } from "@/logic/oauth/client";
+import { getOAuthClient, isDeletedSessionError, isUnsafeOAuthResourceError } from "@/logic/oauth/client";
 import { OAUTH_DID_COOKIE, verifySignedDid } from "@/logic/oauth/cookies";
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
@@ -15,7 +15,9 @@ export async function POST(request: Request) {
       const oauth = await getOAuthClient(origin);
       await oauth.revoke(did as never);
     } catch (error) {
-      if (!isDeletedSessionError(error)) console.error("OAuth revoke error:", error);
+      if (!isDeletedSessionError(error) && !isUnsafeOAuthResourceError(error)) {
+        console.error("OAuth revoke error:", error);
+      }
     }
   }
 

@@ -3,6 +3,29 @@ import type { BrowserContext, Page } from "@playwright/test";
 export const mockDid = "did:plc:e2emock";
 export const mockHandle = "e2e.skyblur.test";
 export const mockPds = "https://e2e-pds.skyblur.test";
+export const mockCurrentSessionScope = [
+  "atproto",
+  "repo:app.bsky.feed.post?action=create&action=delete",
+  "rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview",
+  "rpc:app.bsky.graph.getLists?aud=*",
+  "rpc:app.bsky.graph.getList?aud=*",
+  "rpc:app.bsky.feed.getFeedGenerator?aud=*",
+  "rpc:app.bsky.feed.searchPosts?aud=*",
+].join(" ");
+
+export const mockOlderSessionScope = [
+  "repo?collection=uk.skyblur.post&collection=uk.skyblur.preference",
+  "rpc?lxm=uk.skyblur.post.deleteStored&lxm=uk.skyblur.post.encrypt&lxm=uk.skyblur.post.getPost&lxm=uk.skyblur.post.store&aud=*",
+  "atproto",
+  "rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app%23bsky_appview",
+  "repo:app.bsky.feed.post?action=create&action=delete",
+  "repo:app.bsky.feed.generator?action=create&action=update&action=delete",
+  "repo:app.bsky.feed.threadgate?action=create&action=update&action=delete",
+  "repo:app.bsky.feed.postgate?action=create&action=update&action=delete",
+  "rpc:app.bsky.feed.getFeedGenerator?aud=*",
+  "rpc:app.bsky.feed.searchPosts?aud=*",
+  "blob:*/*",
+].join(" ");
 
 const mockProfile = {
   did: mockDid,
@@ -62,6 +85,15 @@ const mockMutualPost = {
   ...mockRestrictedPost,
   uri: `at://${mockDid}/app.bsky.feed.post/e2emutual`,
   visibility: "mutual",
+};
+
+const mockListUri = `at://${mockDid}/app.bsky.graph.list/e2elist`;
+
+const mockListPost = {
+  ...mockRestrictedPost,
+  uri: `at://${mockDid}/app.bsky.feed.post/e2elist`,
+  visibility: "list",
+  listUri: mockListUri,
 };
 
 const mockLoginOnlyPost = {
@@ -133,9 +165,9 @@ type OAuthMockOptions = {
   listRecordsAbort?: boolean;
   replySearchHasNextPage?: boolean;
   replySearchEmpty?: boolean;
-  postVariant?: "public" | "password" | "restricted" | "following" | "mutual" | "login" | "empty";
+  postVariant?: "public" | "password" | "restricted" | "following" | "mutual" | "list" | "login" | "empty";
   postDetailVariant?: "public" | "password" | "authRequired" | "error";
-  postDetailVisibility?: "login" | "followers" | "following" | "mutual";
+  postDetailVisibility?: "login" | "followers" | "following" | "mutual" | "list";
   decryptStatus?: 200 | 403 | 500;
   encryptStatus?: 200 | 500;
   storeStatus?: 200 | 500;
@@ -144,10 +176,11 @@ type OAuthMockOptions = {
   applyWritesStatus?: 200 | 500;
   constellationIntentStatus?: 200 | 500;
   constellationAllStatus?: 200 | 500;
-  restrictedErrorCode?: "NotFollower" | "NotFollowing" | "NotMutual" | "AuthRequired" | "ContentMissing" | "Other";
+  restrictedErrorCode?: "NotFollower" | "NotFollowing" | "NotMutual" | "NotListMember" | "ListMembershipCheckFailed" | "AuthRequired" | "ContentMissing" | "Other";
   profileAvatar?: string;
   profileDisplayName?: string;
   profileStatus?: 200 | 500;
+  sessionScope?: string;
 };
 
 export async function useLoggedInOAuthMock(
@@ -207,7 +240,7 @@ export async function useLoggedInOAuthMock(
         authenticated: true,
         did: mockDid,
         pds: mockPds,
-        scope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
+        scope: options.sessionScope ?? mockCurrentSessionScope,
       }),
     });
   });
@@ -340,6 +373,7 @@ export async function useLoggedInOAuthMock(
         restricted: mockRestrictedPost,
         following: mockFollowingPost,
         mutual: mockMutualPost,
+        list: mockListPost,
         login: mockLoginOnlyPost,
       }[options.postVariant || "public"];
 
@@ -385,6 +419,60 @@ export async function useLoggedInOAuthMock(
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(userProfile),
+      });
+      return;
+    }
+
+    if (method === "app.bsky.graph.getLists") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          cursor: "",
+          lists: [
+            {
+              uri: mockListUri,
+              cid: "bafy-e2e-list",
+              creator: userProfile,
+              name: "E2E Allowed List",
+              description: "People allowed to read list-only Skyblur posts",
+              purpose: "app.bsky.graph.defs#curatelist",
+              listItemCount: 3,
+              indexedAt: "2026-05-04T03:02:34.000Z",
+            },
+            {
+              uri: "at://did:plc:other/app.bsky.graph.list/other",
+              cid: "bafy-e2e-other-list",
+              creator: { ...userProfile, did: "did:plc:other" },
+              name: "Someone else's list",
+              purpose: "app.bsky.graph.defs#curatelist",
+              listItemCount: 10,
+              indexedAt: "2026-05-04T03:02:34.000Z",
+            },
+          ],
+        }),
+      });
+      return;
+    }
+
+    if (method === "app.bsky.graph.getList") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          cursor: "",
+          list: {
+            uri: mockListUri,
+            cid: "bafy-e2e-list",
+            creator: userProfile,
+            name: "E2E Allowed List",
+            description: "People allowed to read list-only Skyblur posts",
+            purpose: "app.bsky.graph.defs#curatelist",
+            listItemCount: 3,
+            indexedAt: "2026-05-04T03:02:34.000Z",
+          },
+          items: [],
+        }),
       });
       return;
     }
@@ -599,6 +687,7 @@ export async function useLoggedInOAuthMock(
             errorCode: "AuthRequired",
             createdAt: "2026-05-04T03:32:34.000Z",
             visibility: options.postDetailVisibility || "followers",
+            listUri: options.postDetailVisibility === "list" ? mockListUri : undefined,
           }),
         });
         return;
@@ -658,6 +747,8 @@ export async function useLoggedInOAuthMock(
             text: "*****",
             additional: "",
             errorCode: options.restrictedErrorCode,
+            visibility: options.restrictedErrorCode?.startsWith("NotList") || options.restrictedErrorCode === "ListMembershipCheckFailed" ? "list" : undefined,
+            listUri: options.restrictedErrorCode?.startsWith("NotList") || options.restrictedErrorCode === "ListMembershipCheckFailed" ? mockListUri : undefined,
           }),
         });
         return;

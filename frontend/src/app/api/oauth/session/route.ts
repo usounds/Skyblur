@@ -1,7 +1,13 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getOAuthClient, isDeletedSessionError, restoreSession } from "@/logic/oauth/client";
+import {
+  getOAuthClient,
+  getSafeTokenInfo,
+  isDeletedSessionError,
+  isUnsafeOAuthResourceError,
+  restoreSession,
+} from "@/logic/oauth/client";
 import { OAUTH_DID_COOKIE, verifySignedDid } from "@/logic/oauth/cookies";
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
@@ -21,7 +27,7 @@ export async function GET(request: Request) {
   try {
     const oauth = await getOAuthClient(getRequestOrigin(request));
     const session = await restoreSession(oauth, did);
-    const tokenInfo = await session.getTokenInfo();
+    const tokenInfo = await getSafeTokenInfo(session);
     return NextResponse.json({
       authenticated: true,
       did: session.did,
@@ -34,7 +40,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    if (isDeletedSessionError(error)) {
+    if (isDeletedSessionError(error) || isUnsafeOAuthResourceError(error)) {
       return NextResponse.json({ authenticated: false }, {
         headers: {
           "Cache-Control": "no-store",

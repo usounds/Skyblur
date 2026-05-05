@@ -26,6 +26,10 @@ const _mainSchema = /*#__PURE__*/ v.record(
      */
     encryptBody: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.blob()),
     /**
+     * Selected Bluesky list AT-URI. Required by application validation when visibility is 'list'.
+     */
+    listUri: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.resourceUriString()),
+    /**
      * The post main contents. Blurred text must be enclosed in brackets [].
      * @maxLength 3000
      * @maxGraphemes 300
@@ -36,13 +40,14 @@ const _mainSchema = /*#__PURE__*/ v.record(
     ]),
     uri: /*#__PURE__*/ v.resourceUriString(),
     /**
-     * For 'login', the post requires login to view (Bluesky account required). For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody. 'followers' restricted to author's followers. 'following' restricted to users author follows. 'mutual' restricted to mutual followers.
+     * For 'login', the post requires login to view (Bluesky account required). For 'password', the text only contains blurred text, and additional is always empty. The unblurred text and additional are included in the encryptBody. 'followers' restricted to author's followers. 'following' restricted to users author follows. 'mutual' restricted to mutual followers. 'list' restricted to members of the author's selected Bluesky list.
      * @maxLength 100
      * @maxGraphemes 10
      */
     visibility: /*#__PURE__*/ v.literalEnum([
       "followers",
       "following",
+      "list",
       "login",
       "mutual",
       "password",

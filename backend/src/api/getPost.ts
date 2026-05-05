@@ -5,6 +5,7 @@ import { Context } from 'hono'
 import { Client, simpleFetchHandler } from '@atcute/client'
 import type { AppBskyGraphGetRelationships } from '@atcute/bluesky'
 import { type ActorIdentifier } from '@atcute/lexicons'
+import { checkListMembership, isValidListUri } from './listVisibility'
 
 import { getAuthenticatedDid } from '@/logic/AuthUtils'
 
@@ -52,6 +53,13 @@ async function getSkyblurRecord(repo: string, rkey: string) {
     return await getRecordFromEndpoint(pdsUrl, repo, rkey);
 }
 
+async function getRestrictedContent(c: Context, repo: string, rkey: string) {
+    const doNamespace = (c.env as any).SKYBLUR_DO_RESTRICTED as DurableObjectNamespace;
+    const doId = doNamespace.idFromName(repo);
+    const stub = doNamespace.get(doId);
+    return await stub.fetch(new Request('http://do/get?key=' + rkey));
+}
+
 export const handle = async (c: Context) => {
     const authorization = c.req.header('Authorization') || ''
     // Auth logic via Utils
@@ -96,7 +104,8 @@ export const handle = async (c: Context) => {
     const visibility = recordObj.visibility as string;
 
 
-    if (['followers', 'following', 'mutual'].includes(visibility)) {
+    if (['followers', 'following', 'mutual', 'list'].includes(visibility)) {
+        const listUri = recordObj.listUri;
         if (!requesterDid) {
 
             return c.json({
@@ -106,7 +115,8 @@ export const handle = async (c: Context) => {
                 errorCode: 'AuthRequired',
                 errorDescription: `Login is required to view this content (Visibility: ${visibility})`,
                 createdAt: recordObj.createdAt,
-                visibility: visibility
+                visibility: visibility,
+                listUri
             });
         }
 
@@ -116,6 +126,16 @@ export const handle = async (c: Context) => {
         if (requesterDid === repo) {
 
             isAuthorized = true;
+        } else if (visibility === 'list') {
+            if (!listUri) {
+                errorCode = 'ListUriMissing';
+            } else if (!isValidListUri(listUri, repo)) {
+                errorCode = 'InvalidListUri';
+            } else {
+                const result = await checkListMembership({ requesterDid, authorDid: repo, listUri });
+                isAuthorized = result.ok;
+                errorCode = result.errorCode || '';
+            }
         } else {
             // Check relationship
             try {
@@ -172,25 +192,22 @@ export const handle = async (c: Context) => {
                 errorCode: errorCode || 'NotAuthorized',
                 errorDescription: `One of the requirements is not met: ${visibility}`,
                 createdAt: recordObj.createdAt,
-                visibility: visibility
+                visibility: visibility,
+                listUri
             });
         }
 
         // Authorized: Fetch content from DO
         try {
-            const doNamespace = (c.env as any).SKYBLUR_DO_RESTRICTED as DurableObjectNamespace;
-            // Sharding by Author DID (same as store logic)
-            const doId = doNamespace.idFromName(repo);
-            const stub = doNamespace.get(doId);
-
-            const doRes = await stub.fetch(new Request('http://do/get?key=' + rkey));
+            const doRes = await getRestrictedContent(c, repo, rkey);
             if (doRes.ok) {
-                const data = await doRes.json() as { text: string, additional: string, visibility?: string };
+                const data = await doRes.json() as { text: string, additional: string, visibility?: string, listUri?: string };
                 return c.json({
                     text: data.text,
                     additional: data.additional,
                     createdAt: recordObj.createdAt,
-                    visibility: data.visibility || visibility
+                    visibility: data.visibility || visibility,
+                    listUri: data.listUri || listUri
                 });
             } else {
                 return c.json({
@@ -200,7 +217,8 @@ export const handle = async (c: Context) => {
                     errorCode: 'ContentMissing',
                     errorDescription: 'The content could not be retrieved from the authorized storage.',
                     createdAt: recordObj.createdAt,
-                    visibility: visibility
+                    visibility: visibility,
+                    listUri
                 });
             }
         } catch (e) {

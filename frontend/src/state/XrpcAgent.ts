@@ -1,5 +1,6 @@
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
+import { scopeList } from '../logic/oauth/constants';
 import { create } from 'zustand';
 
 type State = {
@@ -13,6 +14,7 @@ type State = {
   isLoginModalOpened: boolean;
   isSessionChecked: boolean;
   scope: string;
+  missingAppBskyRpcScopes: string[];
 };
 
 type SessionCheckResult = {
@@ -20,6 +22,8 @@ type SessionCheckResult = {
   did: string;
   pds: string;
   timedOut?: boolean;
+  scope?: string;
+  missingAppBskyRpcScopes?: string[];
 };
 
 type XrpcAgentCache = {
@@ -35,6 +39,7 @@ type Action = {
   setServiceUrl: (setServiceUrl: string) => void;
   setIsLoginModalOpened: (isLoginModalOpened: boolean) => void;
   setIsSessionChecked: (isSessionChecked: boolean) => void;
+  getReloginUrl: (redirectUrl?: string) => string;
   checkSession: () => Promise<SessionCheckResult>;
   fetchUserProf: () => Promise<void>;
   logout: (mode: 'soft' | 'hard') => Promise<void>;
@@ -79,6 +84,22 @@ function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
+function parseScopes(scope: string) {
+  return new Set(scope.split(/\s+/).map((item) => item.trim()).filter(Boolean));
+}
+
+export function getRequiredAppBskyRpcScopes() {
+  return scopeList
+    .split(/\s+/)
+    .map((item) => item.trim())
+    .filter((item) => item.startsWith('rpc:app.bsky.'));
+}
+
+export function getMissingAppBskyRpcScopes(sessionScope: string) {
+  const sessionScopes = parseScopes(sessionScope);
+  return getRequiredAppBskyRpcScopes().filter((requiredScope) => !sessionScopes.has(requiredScope));
+}
+
 export const useXrpcAgentStore = create<State & Action>((set, get) => {
   return ({
     agent: new Client({
@@ -111,11 +132,16 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     isLoginModalOpened: false,
     isSessionChecked: false,
     scope: '',
+    missingAppBskyRpcScopes: [],
     setUserProf: (userProf) => set({ userProf }),
     setDid: (did) => set({ did }),
     setBlueskyLoginMessage: (blueskyLoginMessage) => set({ blueskyLoginMessage }),
     setServiceUrl: (serviceUrl) => set({ serviceUrl }),
     setIsLoginModalOpened: (isLoginModalOpened) => set({ isLoginModalOpened }),
+    getReloginUrl: (redirectUrl?: string) => {
+      const redirect = redirectUrl || (typeof window !== 'undefined' ? window.location.href : '/console');
+      return `${xrpcService}/api/oauth/login?redirect_uri=${encodeURIComponent(redirect)}`;
+    },
     setIsSessionChecked: (isSessionChecked) => {
       if (!isSessionChecked) {
         const cache = getXrpcAgentCache();
@@ -135,10 +161,12 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             did: cache.lastSessionResult.did,
             serviceUrl: cache.lastSessionResult.pds,
             isSessionChecked: true,
+            scope: cache.lastSessionResult.scope || '',
+            missingAppBskyRpcScopes: cache.lastSessionResult.missingAppBskyRpcScopes || [],
           });
           void get().fetchUserProf();
         } else {
-          set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "" });
+          set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "", missingAppBskyRpcScopes: [] });
         }
         return cache.lastSessionResult;
       }
@@ -153,18 +181,19 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
           if (data.authenticated) {
             const pdsUrl = data.pds || 'https://bsky.social';
             const nextScope = data.scope || '';
+            const missingAppBskyRpcScopes = getMissingAppBskyRpcScopes(nextScope);
 
             if (get().did !== data.did || get().serviceUrl !== pdsUrl || get().scope !== nextScope) {
-              set({ did: data.did, serviceUrl: pdsUrl, isSessionChecked: true, scope: nextScope });
+              set({ did: data.did, serviceUrl: pdsUrl, isSessionChecked: true, scope: nextScope, missingAppBskyRpcScopes });
             } else {
-              set({ isSessionChecked: true });
+              set({ isSessionChecked: true, missingAppBskyRpcScopes });
             }
-            cache.lastSessionResult = { authenticated: true, did: data.did, pds: pdsUrl };
+            cache.lastSessionResult = { authenticated: true, did: data.did, pds: pdsUrl, scope: nextScope, missingAppBskyRpcScopes };
             void get().fetchUserProf();
             return cache.lastSessionResult;
           } else {
             if (get().did !== "" || get().isSessionChecked !== true) {
-              set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "" });
+              set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "", missingAppBskyRpcScopes: [] });
             }
             cache.lastSessionResult = { authenticated: false, did: "", pds: "" };
             return cache.lastSessionResult;
@@ -226,7 +255,8 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
           userProf: null,
           serviceUrl: "",
           isSessionChecked: true,
-          scope: ""
+          scope: "",
+          missingAppBskyRpcScopes: []
         });
         window.localStorage.removeItem('oauth.did');
       }

@@ -7,9 +7,10 @@ import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { isRestrictedVisibility as isRestrictedVisibilityScope } from "@/logic/listVisibility";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from '@/types/types';
+import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from '@/types/types';
 import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
@@ -18,7 +19,7 @@ import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from "react";
-import { Globe, Handshake, LockKeyhole, LogIn, ShieldQuestion, UserCheck, Users, X } from 'lucide-react';
+import { Globe, Handshake, List, LockKeyhole, LogIn, ShieldQuestion, UserCheck, Users, X } from 'lucide-react';
 import { BlueskyIcon } from '@/components/Icons';
 import classes from './PostPage.module.css';
 
@@ -104,7 +105,8 @@ export const PostPage = () => {
                     errorCode?: string,
                     createdAt?: string,
                     visibility?: string,
-                    encryptCid?: string
+                    encryptCid?: string,
+                    listUri?: string
                 };
 
                 console.log("getPost success:", data);
@@ -146,6 +148,10 @@ export const PostPage = () => {
                         errorMsg = locale.Post_Restricted_NotAuthorized_Following;
                     } else if (code === 'NotMutual') {
                         errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
+                    } else if (['NotListMember', 'ListUriMissing', 'InvalidListUri'].includes(code)) {
+                        errorMsg = locale.Post_Restricted_NotAuthorized_List;
+                    } else if (code === 'ListMembershipCheckFailed') {
+                        errorMsg = locale.Post_Restricted_ListCheckFailed;
                     } else if (code === 'AuthRequired') {
                         errorMsg = locale.Post_Restricted_LoginRequired;
                     } else if (code === 'ContentMissing') {
@@ -276,7 +282,7 @@ export const PostPage = () => {
         );
     }
 
-    const isRestrictedVisibility = [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility as any) || visibility === 'UNKNOWN';
+    const isRestrictedVisibility = isRestrictedVisibilityScope(visibility) || visibility === 'UNKNOWN';
     const isMaskedText = /^([○◯]+)$/.test(postText.trim());
     const isRestrictedTarget = isRestrictedVisibility || (isMaskedText && !visibility);
 
@@ -300,6 +306,9 @@ export const PostPage = () => {
         }
         if (visibilityKey === VISIBILITY_MUTUAL) {
             return { label: locale.CreatePost_VisibilityMutual, Icon: Handshake, tone: 'mutual' };
+        }
+        if (visibilityKey === VISIBILITY_LIST) {
+            return { label: locale.CreatePost_VisibilityList, Icon: List, tone: 'list' };
         }
         if (visibilityKey === 'UNKNOWN') {
             return { label: locale.CreatePost_NeedLoginTitle, Icon: ShieldQuestion, tone: 'unknown' };
@@ -350,13 +359,14 @@ export const PostPage = () => {
                                             </div>
                                         </div>
 
-                                        {((visibility === VISIBILITY_LOGIN || visibility === VISIBILITY_FOLLOWERS || visibility === VISIBILITY_FOLLOWING || visibility === VISIBILITY_MUTUAL) && !loginDid) ? (
+                                        {((visibility === VISIBILITY_LOGIN || isRestrictedVisibilityScope(visibility)) && !loginDid) ? (
                                             <div className="flex flex-col items-center justify-center m-4 gap-4">
                                                 <div className="text-sm text-gray-500">
                                                     {(visibility === VISIBILITY_LOGIN) && "この投稿を参照するにはログインが必要です。"}
                                                     {(visibility === VISIBILITY_FOLLOWERS) && "この投稿はフォロワー限定です。参照するにはログインが必要です。"}
                                                     {(visibility === VISIBILITY_FOLLOWING) && "この投稿はフォロー中限定です。参照するにはログインが必要です。"}
                                                     {(visibility === VISIBILITY_MUTUAL) && "この投稿は相互フォロー限定です。参照するにはログインが必要です。"}
+                                                    {(visibility === VISIBILITY_LIST) && "この投稿はリスト限定です。参照するにはログインが必要です。"}
                                                 </div>
                                                 <Button
                                                     color="blue"

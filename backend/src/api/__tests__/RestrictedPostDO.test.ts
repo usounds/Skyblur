@@ -12,12 +12,13 @@ describe('RestrictedPostDO', () => {
 
             // Initialization (CREATE TABLE)
             if (q.startsWith('CREATE TABLE')) return;
+            if (q.startsWith('ALTER TABLE')) return;
 
             // INSERT OR REPLACE INTO posts
             if (q.startsWith('INSERT OR REPLACE INTO POSTS')) {
-                const [rkey, text, additional, visibility, created_at] = args;
+                const [rkey, text, additional, visibility, listUri, created_at] = args;
                 const existingIndex = postsDB.findIndex(p => p.rkey === rkey);
-                const row = { rkey, text, additional, visibility, created_at };
+                const row = { rkey, text, additional, visibility, listUri, created_at };
                 if (existingIndex >= 0) {
                     postsDB[existingIndex] = row;
                 } else {
@@ -40,7 +41,7 @@ describe('RestrictedPostDO', () => {
             }
 
             // SELECT ... FROM posts WHERE rkey = ?
-            if (q.startsWith('SELECT TEXT, ADDITIONAL, VISIBILITY FROM POSTS')) {
+            if (q.startsWith('SELECT TEXT, ADDITIONAL, VISIBILITY')) {
                 const [key] = args;
                 const row = postsDB.find(p => p.rkey === key);
                 return {
@@ -68,7 +69,7 @@ describe('RestrictedPostDO', () => {
         // PUT
         const putReq = new Request('http://do/?key=test', {
             method: 'PUT',
-            body: JSON.stringify({ text: 'Hello', additional: 'meta', visibility: 'followers', did: 'did:user' })
+            body: JSON.stringify({ text: 'Hello', additional: 'meta', visibility: 'list', listUri: 'at://did:user/app.bsky.graph.list/list1', did: 'did:user' })
         });
         await doInstance.fetch(putReq);
 
@@ -80,7 +81,7 @@ describe('RestrictedPostDO', () => {
         const res = await doInstance.fetch(getReq);
         const data = await res.json();
 
-        expect(data).toMatchObject({ text: 'Hello', visibility: 'followers' });
+        expect(data).toMatchObject({ text: 'Hello', visibility: 'list', listUri: 'at://did:user/app.bsky.graph.list/list1' });
     });
 
     it('should handle DELETE request', async () => {
@@ -88,6 +89,7 @@ describe('RestrictedPostDO', () => {
         const sqlExec = vi.fn((query: string, ...args: any[]) => {
             const q = query.trim().toUpperCase();
             if (q.startsWith('CREATE TABLE')) return;
+            if (q.startsWith('ALTER TABLE')) return;
 
             if (q.startsWith('DELETE FROM POSTS')) {
                 const [key] = args;
@@ -120,6 +122,7 @@ describe('RestrictedPostDO', () => {
         const sqlExec = vi.fn((query: string) => {
             const q = query.trim().toUpperCase();
             if (q.startsWith('CREATE TABLE')) return;
+            if (q.startsWith('ALTER TABLE')) return;
 
             if (q.startsWith('SELECT * FROM POSTS')) {
                 return {

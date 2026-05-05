@@ -5,15 +5,16 @@ import Reaction from "@/components/Reaction";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { isRestrictedVisibility } from "@/logic/listVisibility";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
+import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from "@/types/types";
 import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { ActionIcon, Box, Button, Divider, Group, Input, Text, Timeline, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useCallback, useEffect, useState, useRef } from "react";
-import { Lock, LockOpen, LogIn, X, Globe, Users, UserCheck, Handshake } from 'lucide-react';
+import { Lock, LockOpen, LogIn, X, Globe, Users, UserCheck, Handshake, List } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import Loading from './Loading';
 import classes from './PostList.module.css';
@@ -150,14 +151,14 @@ export const PostList: React.FC<PostListProps> = ({
         if (!item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD) {
             return
         }
-        const isLoginRequiredVisibility = [VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any);
+        const isLoginRequiredVisibility = item.blur?.visibility === VISIBILITY_LOGIN || isRestrictedVisibility(item.blur?.visibility);
         if (isLoginRequiredVisibility && !loginDid) {
             setIsLoginModalOpened(true);
             return
         }
 
         // Tap-to-Reveal Logic (Restricted Posts)
-        const isRestricted = [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any) || (item.blur?.visibility as any) === 'UNKNOWN' || (/^([○◯]+)$/.test(item.blur?.text?.trim() || '') && !item.blur?.visibility);
+        const isRestricted = isRestrictedVisibility(item.blur?.visibility) || (item.blur?.visibility as any) === 'UNKNOWN' || (/^([○◯]+)$/.test(item.blur?.text?.trim() || '') && !item.blur?.visibility);
 
         if (!item.isDetailDisplay && isRestricted) {
             /* istanbul ignore next -- Restricted reveal is only available after an authenticated proxy agent exists. */
@@ -214,6 +215,10 @@ export const PostList: React.FC<PostListProps> = ({
                             errorMsg = locale.Post_Restricted_NotAuthorized_Following;
                         } else if (code === 'NotMutual') {
                             errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
+                        } else if (['NotListMember', 'ListUriMissing', 'InvalidListUri'].includes(code)) {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_List;
+                        } else if (code === 'ListMembershipCheckFailed') {
+                            errorMsg = locale.Post_Restricted_ListCheckFailed;
                         } else if (code === 'AuthRequired') {
                             errorMsg = locale.Post_Restricted_LoginRequired;
                         } else if (code === 'ContentMissing') {
@@ -428,6 +433,13 @@ export const PostList: React.FC<PostListProps> = ({
                                             </Tooltip>
                                         );
                                     }
+                                    if (item.blur?.visibility === VISIBILITY_LIST) {
+                                        return (
+                                            <Tooltip label={locale.CreatePost_VisibilityList} withArrow position="right">
+                                                <List size={14} />
+                                            </Tooltip>
+                                        );
+                                    }
                                     return (
                                         <Tooltip label={locale.Visibility_Public} withArrow position="right">
                                             <Globe size={14} />
@@ -440,7 +452,7 @@ export const PostList: React.FC<PostListProps> = ({
                             <div className={classes.postCard}>
                                 {/* 本文 */}
                                 <Box onClick={() => handleDisplay(item)}>
-                                    {([VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(item.blur?.visibility as any) && !loginDid && !handleEdit) ? (
+                                    {((item.blur?.visibility === VISIBILITY_LOGIN || isRestrictedVisibility(item.blur?.visibility)) && !loginDid && !handleEdit) ? (
                                         <div className="p-2 text-sm text-gray-500 italic">
                                             {locale.PostList_NeedLoginMessage}
                                         </div>

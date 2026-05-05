@@ -24,13 +24,17 @@ const _mainSchema = /*#__PURE__*/ v.procedure("uk.skyblur.post.getPost", {
       createdAt: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.datetimeString()),
       encryptCid: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),
       /**
-       * Error code for restricted content. e.g. AuthRequired, NotFollower, NotFollowing, NotMutual
+       * Error code for restricted content. e.g. AuthRequired, NotFollower, NotFollowing, NotMutual, NotListMember, ListMembershipCheckFailed, ListUriMissing, InvalidListUri
        */
       errorCode: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),
       /**
        * Description of the error code.
        */
       errorDescription: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),
+      /**
+       * Selected Bluesky list AT-URI for list visibility. May be returned for authorized, masked and authorization error responses.
+       */
+      listUri: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.resourceUriString()),
       message: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),
       text: /*#__PURE__*/ v.string(),
       visibility: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.string()),

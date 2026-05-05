@@ -1,6 +1,7 @@
 "use client"
 import { useLocale } from "@/state/Locale";
-import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
+import { isRestrictedVisibility } from "@/logic/listVisibility";
+import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from "@/types/types";
 import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { Button, Group, Menu, Modal } from '@mantine/core';
@@ -116,7 +117,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
         }
 
         // Clean up DO if post was restricted
-        if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(post.blur.visibility || '')) {
+        if (isRestrictedVisibility(post.blur.visibility || '')) {
             try {
                 await agent.post('uk.skyblur.post.deleteStored', {
                     input: {
@@ -168,7 +169,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
             <Menu.Dropdown>
                 <Menu.Label>Menu</Menu.Label>
                 {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) ||
-                    [VISIBILITY_PUBLIC, VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(post.blur.visibility || '') ||
+                    [VISIBILITY_PUBLIC, VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST].includes(post.blur.visibility || '') ||
                     !post.blur.visibility) &&
                     <Menu.Item leftSection={<SquarePen size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
                 }

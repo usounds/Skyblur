@@ -2,7 +2,12 @@ import { Client, type ServiceProxyOptions } from "@atcute/client";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getOAuthClient, isDeletedSessionError, restoreSession } from "@/logic/oauth/client";
+import {
+  getOAuthClient,
+  isDeletedSessionError,
+  isUnsafeOAuthResourceError,
+  restoreSession,
+} from "@/logic/oauth/client";
 import { OAUTH_DID_COOKIE, verifySignedDid } from "@/logic/oauth/cookies";
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
@@ -20,6 +25,11 @@ const bskyAppViewProxy: ServiceProxyOptions = {
 };
 
 const searchPostsMethod = "app.bsky.feed.searchPosts";
+const retryableAppBskyGetMethods = new Set([
+  searchPostsMethod,
+  "app.bsky.graph.getLists",
+  "app.bsky.graph.getList",
+]);
 const searchPostsTimeoutMs = 10_000;
 const searchPostsMaxAttempts = 2;
 const appBskyPipelineTimeoutMs = 10_000;
@@ -155,7 +165,7 @@ async function getOAuthSession(request: Request) {
   try {
     session = await restoreSession(oauth, did);
   } catch (error) {
-    if (isDeletedSessionError(error)) return null;
+    if (isDeletedSessionError(error) || isUnsafeOAuthResourceError(error)) return null;
     throw error;
   }
 
@@ -436,7 +446,7 @@ export async function GET(
   const isSearchPosts = method === searchPostsMethod;
   const isAppBsky = isAppBskyMethod(method);
   const startedAt = Date.now();
-  const maxAttempts = isSearchPosts ? searchPostsMaxAttempts : 1;
+  const maxAttempts = retryableAppBskyGetMethods.has(method) ? searchPostsMaxAttempts : 1;
   const e2ePipelineDelayMs = getE2ePipelineDelayMs(request);
   const diagnostics: XrpcDiagnostics = {
     startedAt,

@@ -1,0 +1,164 @@
+# タスク一覧
+
+- [x] 1. Lexicon JSON と生成型を更新する
+  - File: `lexicon/uk/skyblur/post/record.json`, `lexicon/uk/skyblur/post/store.json`, `lexicon/uk/skyblur/post/getPost.json`
+  - `visibility` enum に `"list"` を追加し、`listUri` を `format: "at-uri"` の optional field として追加する。
+  - `store` input は `list` visibility を許可し、`listUri` を application validation で必須にできる schema にする。
+  - `getPost` output は authorized / masked / authorization error response のいずれでも optional `listUri` を返せるようにする。
+  - Lexicon 契約として、`NotListMember` / `ListMembershipCheckFailed` / `ListUriMissing` / `InvalidListUri` が backend response と frontend error mapping の両方で扱えることを確認する。
+  - `listUri` が authorized / masked / authorization error / `ContentMissing` response で落ちないことを型と schema 上で確認する。
+  - frontend/backend の両方で `rtk pnpm gen-lex` を実行し、生成済み Lexicon TypeScript 型を同期する。
+  - _Leverage: `frontend/package.json`, `backend/package.json`, `frontend/lex.config.ts`, `backend/lex.config.ts`, `frontend/src/lexicon/UkSkyblur.ts`, `backend/src/lexicon/UkSkyblur.ts`_
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+  - _Prompt: Role: Lexicon/TypeScript Developer | Task: Update Skyblur post Lexicon JSON and generated frontend/backend TypeScript types for list visibility and listUri | Restrictions: Keep Lexicon JSON as source of truth, preserve existing visibility values, do not hand-edit generated output except through the project generation flow | Success: record/store/getPost schemas accept list visibility where intended, generated types compile in frontend and backend_
+
+- [x] 2. 共有 visibility 定数と draft state を追加する
+  - File: `frontend/src/types/types.ts`, `frontend/src/state/TempPost.ts`
+  - `VISIBILITY_LIST = "list"` を追加する。
+  - `TempPost` に `listUri?: string` と `setListUri(listUri?: string)` を追加する。
+  - visibility が `list` 以外へ変わったときは draft の `listUri` を clear し、`list` のまま編集する場合は保持できるようにする。
+  - _Leverage: `VISIBILITY_FOLLOWERS`, `VISIBILITY_FOLLOWING`, `VISIBILITY_MUTUAL`, existing zustand persist pattern_
+  - _Requirements: 1.9, 5.3, 5.4_
+  - _Prompt: Role: Frontend State Developer | Task: Add shared list visibility constants and persisted draft listUri state following existing Skyblur state patterns | Restrictions: Do not change existing visibility constants semantics, avoid broad refactors outside visibility helpers and draft state | Success: list visibility can be represented consistently in frontend code and draft restore preserves selected list metadata_
+
+- [x] 3. frontend の list visibility helper を実装する
+  - File: `frontend/src/logic/listVisibility.ts`
+  - `fetchOwnedLists(agent, did)` を実装し、`app.bsky.graph.getLists` を `actor=did`, `limit=100` で cursor paging する。
+  - 返却された `list.creator.did` がログイン DID と一致するものだけを `OwnedListOption` に変換する。
+  - `fetchListSummary(agent, listUri)` を `app.bsky.graph.getList` の `limit=1` で実装し、表示用 `list` object だけを使う。
+  - `normalizeListView`, `isListVisibility`, `isRestrictedVisibility` を実装し、`listItemCount` を `memberCount` に対応させる。
+  - list name を取得できない場合は rkey または短縮 URI に fallback する。
+  - _Leverage: `frontend/src/state/XrpcAgent.ts`, `@atcute/bluesky` listView/getLists/getList types_
+  - _Requirements: 1.3, 1.7, 4.2, 4.3, 非機能要件 パフォーマンス/使いやすさ_
+  - _Prompt: Role: Frontend API Developer | Task: Implement frontend listVisibility helper for owned list fetching, list summary hydration, visibility predicates, and safe display fallback | Restrictions: Only show lists owned by the logged-in DID, do not use getList items for authorization, handle failed metadata fetch without blocking post flows | Success: helpers return stable options, support pagination, avoid list visibility condition duplication, and are unit-testable_
+
+- [x] 4. `OwnedListPicker` UI を実装する
+  - File: `frontend/src/components/OwnedListPicker.tsx`
+  - 投稿者所有リストの loading / empty / error / selected / validation error state を実装する。
+  - compact panel、64〜80px list row、lucide icon、member count/purpose badge、selected check を既存 UI と調和する見た目で作る。
+  - 件数が多い場合の検索入力、長い名前・説明の折り返し/line clamp、mobile full-width layout を実装する。
+  - `value`, `onChange`, `did`, `agent`, `disabled`, `error` props で `CreatePostForm` から制御できるようにする。
+  - keyboard/focus 操作、Enter/Space での選択、disabled 状態、validation error と picker の関連付けを実装する。
+  - 必要な locale key を先に追加するか、Task 10 と衝突しない形で placeholder を使わず実装する。
+  - _Leverage: `frontend/src/components/CreatePost.tsx`, Mantine, lucide-react, `useLocale`, existing visibility tile styling_
+  - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 1.10_
+  - _Prompt: Role: Frontend UI Developer | Task: Build a polished OwnedListPicker that matches the observed Skyblur console design and supports all list selection states | Restrictions: Avoid large decorative cards, keep text inside bounds on mobile/desktop, preserve existing form ergonomics | Success: picker is responsive, visually consistent, accessible enough for keyboard/focus usage, and clearly communicates selected/empty/error states_
+
+- [x] 5. 投稿作成・編集 UI に list visibility を統合する
+  - File: `frontend/src/components/CreatePost.tsx`
+  - 公開範囲タイルに 7 個目の「リスト限定」を追加し、desktop/tablet は 4+3、mobile は 2 列の grid に調整する。
+  - `OwnedListPicker` を visibility grid 直下に表示し、未選択時は投稿をブロックする。
+  - `uk.skyblur.post.store` input と `com.atproto.repo.applyWrites` record に `listUri` を含める。
+  - 編集時は `prevBlur.blur.listUri` を preselect し、表示名取得に失敗しても `listUri` を落とさない。
+  - list から非制限公開範囲へ変更した場合、既存 restricted cleanup と同じく `uk.skyblur.post.deleteStored` を呼ぶ。
+  - `list -> public/login/password`、`followers/following/mutual -> list`、編集キャンセル、表示名 hydrate 失敗時の `listUri` 維持/clear の期待値を実装内で固定する。
+  - _Leverage: existing restricted visibility branch, password branch, applyWrites flow, `apiProxyAgent`, `TempPost`_
+  - _Requirements: 1.1, 1.2, 1.8, 1.9, 1.10, 5.2, 5.3, 5.4_
+  - _Prompt: Role: Frontend Feature Developer | Task: Integrate list visibility into CreatePostForm creation/editing, persistence, validation, and cleanup flows | Restrictions: Preserve existing public/login/password/followers/following/mutual behavior, do not duplicate restricted storage logic unnecessarily, keep UI layout stable with seven visibility options | Success: authors can create and edit list visibility posts with selected listUri saved consistently_
+
+- [x] 6. backend list visibility helper を実装する
+  - File: `backend/src/api/listVisibility.ts`
+  - `isValidListUri`, `assertListOwnedByRepo`, `checkListMembership` を実装する。
+  - `isValidListUri` は URI shape の検証、`assertListOwnedByRepo` は `app.bsky.graph.getList` または list record 取得による実在・所有者確認を担当するよう契約を分ける。
+  - `blue.microcosm.links.getBacklinks` を `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks` へ呼び出す。
+  - `subject` は exactly once URL encode し、`source=app.bsky.graph.listitem:subject`, `did=<author DID>`, `limit=100`, `reverse=false` を使う。
+  - `BacklinksResponse` を runtime validation し、`records` の `{ did, collection, rkey }` から candidate `app.bsky.graph.listitem` record を PDS の `com.atproto.repo.getRecord` で取得する。
+  - `did !== authorDid`, `collection !== "app.bsky.graph.listitem"`, `value.subject !== requesterDid`, `value.list !== listUri` は許可に使わない。
+  - `total > records.length` で一致候補を確認できない場合は deny-by-default で `ListMembershipCheckFailed` にする。
+  - このタスク内で `backend/src/api/__tests__/listVisibility.test.ts` を追加し、URI shape、所有確認成功/失敗、membership success/failure、不正応答、`total > records.length`、exactly-once encode を先に固定する。
+  - _Leverage: `backend/src/api/getPost.ts` record parsing/fetch patterns, `fetchServiceEndpoint`, `simpleFetchHandler`, existing deny-by-default behavior_
+  - _Requirements: 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 非機能要件 セキュリティ/信頼性_
+  - _Prompt: Role: Backend Authorization Developer | Task: Implement robust list membership authorization using getBacklinks response records and candidate listitem record verification | Restrictions: Never authorize on total > 0 alone, do not leak hidden content on any API/validation failure, avoid double URL encoding, mock external calls in tests | Success: membership checks are deterministic, deny-by-default, and cover malformed/unbounded responses_
+
+- [x] 7. backend storage と API validation を listUri 対応にする
+  - File: `backend/src/api/store.ts`, `backend/src/api/deleteStored.ts`, `backend/src/api/RestrictedPostDO.ts`
+  - `store.ts` は既存の `safeParse` を維持し、`visibility === "list"` のとき `listUri` 必須、URI 形式、投稿者所有 list URI を追加検証する。
+  - `listUri` は「形式は正しいが投稿者 DID と異なる」「投稿者 DID 形式だが所有確認に失敗」の両方を拒否する。
+  - `visibility !== "list"` のときは `listUri` を保存しない、または null として扱う。
+  - `RestrictedPostDO` の SQLite schema に `list_uri TEXT` を migration-safe に追加し、PUT/GET/dump で `listUri` を扱う。
+  - `RestrictedPostDO` は unknown body を信用せず、必要最小限の shape を確認する。
+  - `deleteStored.ts` は Lexicon schema に対する runtime validation を追加し、list visibility も rkey 単位の既存 cleanup と同じ挙動にする。
+  - このタスク内で `store.test.ts`, `RestrictedPostDO.test.ts`, `deleteStored.test.ts` の listUri 関連テストを更新し、storage/migration の回帰を早めに固定する。
+  - _Leverage: `UkSkyblurPostStore.mainSchema`, `safeParse`, existing DO SQL patterns, `deleteStored` URI ownership check_
+  - _Requirements: 3.3, 3.6, 5.2, 5.3, 5.4, 非機能要件 セキュリティ/信頼性_
+  - _Prompt: Role: Backend Storage Developer | Task: Extend store/delete/RestrictedPostDO validation and persistence to support listUri safely | Restrictions: Keep existing restricted rows compatible, do not bypass Lexicon validation, do not store listUri for non-list visibility | Success: listUri is persisted and retrieved only when appropriate, existing rows continue working, invalid requests never reach storage_
+
+- [x] 8. `getPost` に list authorization を統合する
+  - File: `backend/src/api/getPost.ts`
+  - `visibility === "list"` branch を追加し、未ログインは masked response + `AuthRequired`、投稿者本人は membership check なしで許可する。
+  - `listUri` missing/invalid は hidden content を返さず `ListUriMissing` / `InvalidListUri` を返す。
+  - 投稿者以外のログイン閲覧者は `checkListMembership` を使い、member の場合だけ DO から hidden content を取得する。
+  - 成功・masked・認可エラー・`ContentMissing` の response で `visibility` と `listUri` を落とさない。
+  - 既存 `followers` / `following` / `mutual` / `password` / `public` の分岐は回帰させない。
+  - _Leverage: existing relationship authorization branch, DO fetch branch, password/public fallthrough_
+  - _Requirements: 2.1, 2.2, 2.8, 2.9, 2.10, 3.4, 4.4, 4.5, 5.1_
+  - _Prompt: Role: Backend API Developer | Task: Integrate list visibility authorization into uk.skyblur.post.getPost while preserving all existing visibility behavior | Restrictions: Hidden text/additional must never be returned on failed auth, author access bypasses membership only for own posts, include listUri for UI display | Success: getPost handles list visibility end-to-end and existing visibility tests still pass_
+
+- [x] 9. 投稿一覧・詳細・編集入口の表示とエラー mapping を更新する
+  - File: `frontend/src/app/console/ConsoleContent.tsx`, `frontend/src/components/PostList.tsx`, `frontend/src/app/post/[did]/[rkey]/main.tsx`, `frontend/src/app/post/[did]/[rkey]/PostPage.module.css`, `frontend/src/components/DropdownMenu.tsx`
+  - `isRestrictedVisibility` を使い、`followers/following/mutual` 直書き条件に `list` を追加漏れしないよう置き換える。
+  - console/post list/detail の restricted fetch、prefetch、reveal、cleanup、login-required 表示条件に `list` を含める。
+  - `NotListMember`, `ListMembershipCheckFailed`, `ListUriMissing`, `InvalidListUri` を list-specific locale message へ mapping する。
+  - 投稿詳細 badge に `list` label/icon/tone を追加し、CSS に `data-tone="list"` を追加する。
+  - list name が取得できる場合は表示し、取得できない場合は短縮 list URI に fallback する。
+  - `DropdownMenu` の投稿削除時 cleanup 条件に `list` を含める。
+  - _Leverage: existing PostList reveal flow, post detail visibility badge, ConsoleContent edit prefetch, DropdownMenu delete cleanup_
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.5_
+  - _Prompt: Role: Frontend Integration Developer | Task: Update list/detail/console/delete UI paths so list visibility behaves like existing restricted visibility with list-specific labels and errors | Restrictions: Do not collapse list errors into generic errors, keep login-required behavior consistent, preserve existing badge aesthetics | Success: list posts display and reveal correctly across list, detail, edit, and delete flows_
+
+- [x] 10. locale と terms を更新する
+  - File: `frontend/src/locales/ja.ts`, `frontend/src/locales/en.ts`, `frontend/src/locales/terms/ja.md`, `frontend/src/locales/terms/en.md`
+  - リスト限定ラベル、説明、picker loading/empty/error、未選択 validation、認可エラー文言を日本語・英語に追加する。
+  - `NotListMember` はメンバーシップ詳細を断定しすぎず、非公開の所属情報を推測させない文言にする。
+  - terms に list visibility の保存場所、Cloudflare/PDS/Bluesky API/constellation/閲覧者または list item repo の PDS への通信を説明する。
+  - 既存 followers/following/mutual の terms と矛盾しない文脈で追記する。
+  - _Leverage: existing restricted visibility locale keys and terms sections_
+  - _Requirements: 4.6, 非機能要件 使いやすさ/セキュリティ_
+  - _Prompt: Role: Localization and Product Copy Developer | Task: Add Japanese and English copy for list visibility UI, errors, validation, and terms disclosures | Restrictions: Keep wording understandable without exposing private membership details, preserve existing tone, update both languages together | Success: all new UI states have localized copy and terms accurately describe data flow_
+
+- [x] 11. backend unit tests を追加・更新する
+  - File: `backend/src/api/__tests__/store.test.ts`, `backend/src/api/__tests__/getPost.test.ts`, `backend/src/api/__tests__/RestrictedPostDO.test.ts`, `backend/src/api/__tests__/deleteStored.test.ts`, `backend/src/api/__tests__/listVisibility.test.ts`
+  - `store` の `safeParse` failure、`listUri` missing/invalid/non-list cleanup、DO に listUri が渡ることをテストする。
+  - `store` が「形式は正しいが投稿者 DID と異なる listUri」と「投稿者 DID 形式だが所有確認に失敗する listUri」を拒否することをテストする。
+  - `RestrictedPostDO` の migration-safe schema、PUT/GET/dump listUri、既存 rows 互換をテストする。
+  - `deleteStored` の runtime validation と既存 deletion behavior をテストする。
+  - `checkListMembership` の success / non-member / API failure / malformed response / candidate mismatch / `total > records.length` / double encode 防止をテストする。
+  - Task 6/7 で追加済みの backend helper/storage tests を整理し、重複しすぎる mock を減らす。
+  - `getPost` の author access、unauthenticated、member、non-member、check failure、listUri propagation をテストする。
+  - _Leverage: existing vitest mocks for `@atcute/client`, DO SQL test harness, getPost tests_
+  - _Requirements: 2.1-2.11, 3.3, 3.4, 3.6, 5.5_
+  - _Prompt: Role: Backend QA Engineer | Task: Add comprehensive backend unit tests for list visibility storage, authorization, validation, and getPost behavior | Restrictions: Mock external services deterministically, test denial paths thoroughly, keep existing visibility regression tests passing | Success: backend tests cover all security-sensitive list visibility paths and existing tests remain green_
+
+- [x] 12. frontend unit/component tests と E2E mock を更新する
+  - File: `frontend/e2e/oauth-mock.ts`, relevant frontend test files
+  - `OwnedListPicker` の loading / empty / error / selected / validation error / long text layout をテストする。
+  - `fetchOwnedLists`, `fetchListSummary`, `isRestrictedVisibility`, `TempPost.listUri` をテストする。
+  - `frontend/e2e/oauth-mock.ts` に画面導線用の `app.bsky.graph.getLists`, `app.bsky.graph.getList`, `blue.microcosm.links.getBacklinks`, candidate `com.atproto.repo.getRecord` mock response を追加する。
+  - authorization algorithm の網羅は backend `listVisibility.test.ts` に寄せ、frontend mock は UI 状態を作るための代表 response に限定する。
+  - console/post detail の既存 E2E が list API mock 追加後も落ちないことを確認する。
+  - public/login/password/followers/following/mutual の代表 smoke E2E を残し、list 追加で既存導線が消えないことを確認する。
+  - _Leverage: existing Playwright OAuth mock, frontend test patterns, WebKit project_
+  - _Requirements: 1.3, 1.5, 1.6, 4.1-4.6, 5.5_
+  - _Prompt: Role: Frontend QA Engineer | Task: Add component/helper tests and extend E2E mocks for list visibility UI and API flows | Restrictions: Prefer behavior and layout assertions over implementation details, include mobile/desktop overflow risks, keep existing OAuth mock stable | Success: list picker and list visibility display paths are covered and existing E2E tests continue to run with mocks_
+
+- [x] 13. E2E で list visibility の主要導線を検証する
+  - File: `frontend/e2e/*`
+  - 投稿作成 UI で list visibility を選ぶと polished な list picker が表示されることを確認する。
+  - 自分の所有リストだけが表示され、未選択では投稿できないことを確認する。
+  - list visibility 投稿を編集すると保存済みリストが preselect されることを確認する。
+  - 投稿詳細で list badge と list-specific message が表示されることを確認する。
+  - 未ログイン、非メンバー、メンバー、API check failure の表示を確認する。
+  - WebKit desktop/mobile で text overflow と layout collapse がないことを確認する。
+  - _Leverage: existing `frontend/e2e/oauth-*.spec.ts`, Playwright WebKit config, screenshot/layout checks_
+  - _Requirements: 1.1-1.10, 2.1, 2.8-2.10, 4.1-4.6, 5.5_
+  - _Prompt: Role: E2E QA Engineer | Task: Implement list visibility end-to-end coverage across authoring, editing, viewing, authorization states, and responsive UI | Restrictions: Use mocked external services, verify user-visible behavior, include WebKit desktop/mobile checks | Success: E2E proves the list visibility workflow works without breaking existing console/post detail flows_
+
+- [x] 14. 回帰確認と build/test を実行する
+  - File: project scripts and test commands
+  - frontend/backend の Lexicon 型生成後、TypeScript/build/test を実行する。
+  - Next.js build はプロジェクト指示どおり必ず権限付きで実行する。
+  - backend test、frontend unit/component test、Playwright WebKit E2E を実行する。
+  - 既存 public/login/password/followers/following/mutual の作成・保存・取得・表示が変わらないことを確認する。
+  - _Leverage: `rtk pnpm gen-lex`, `rtk pnpm test`, `rtk pnpm exec playwright`, `rtk pnpm build`_
+  - _Requirements: 3.5, 5.1, 5.5, 非機能要件 信頼性_
+  - _Prompt: Role: Release Verification Engineer | Task: Run generation, builds, unit tests, and E2E regression checks for list visibility implementation | Restrictions: Prefix shell commands with rtk, run Next.js build with required privileges, do not ignore failing regression tests | Success: generated types are current, builds pass, tests pass, and existing visibility scopes remain stable_

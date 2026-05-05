@@ -53,3 +53,8 @@ create_app.json
 .sst
 .pnpm-store/
 .serena/
+
+# spec-workflow local workflow state
+.spec-workflow/approvals/
+.spec-workflow/archive/
+.spec-workflow/specs/*/Implementation Logs/

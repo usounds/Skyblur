@@ -3,13 +3,15 @@
 import { isDid } from "@atcute/lexicons/syntax";
 import type { Did } from "@atcute/lexicons";
 import { headers } from "next/headers";
+import { isValidServerSideHandle, normalizeOAuthHandle } from "@/logic/oauth/handle";
 
 export type ResolveHandleResult =
   | { ok: true; did: Did }
   | { ok: false; error: string; status: number };
 
 export async function resolveHandleAction(handle: string): Promise<ResolveHandleResult> {
-  if (!/^[a-zA-Z0-9.-]+$/.test(handle) || !handle.includes(".")) {
+  const normalizedHandle = normalizeOAuthHandle(handle);
+  if (!normalizedHandle || !isValidServerSideHandle(normalizedHandle)) {
     return { ok: false, error: "Invalid handle", status: 400 };
   }
 
@@ -20,12 +22,12 @@ export async function resolveHandleAction(handle: string): Promise<ResolveHandle
     host.startsWith("localhost:") ||
     host.startsWith("127.0.0.1:");
 
-  if (isLocalE2E && handle === "test.bsky.social") {
+  if (isLocalE2E && normalizedHandle === "test.bsky.social") {
     return { ok: true, did: "did:plc:mock" as Did };
   }
 
   try {
-    const url = new URL("/.well-known/atproto-did", `https://${handle}`);
+    const url = new URL("/.well-known/atproto-did", `https://${normalizedHandle}`);
     const response = await fetch(url, {
       signal: AbortSignal.timeout(5000),
       cache: "no-store",

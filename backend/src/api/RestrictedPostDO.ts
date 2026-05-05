@@ -12,6 +12,7 @@ export class RestrictedPostDO extends DurableObject {
                 text TEXT,
                 additional TEXT,
                 visibility TEXT,
+                list_uri TEXT,
                 created_at TEXT
             );
             CREATE TABLE IF NOT EXISTS config (
@@ -19,6 +20,13 @@ export class RestrictedPostDO extends DurableObject {
                 value TEXT
             );
         `);
+        try {
+            this.ctx.storage.sql.exec("ALTER TABLE posts ADD COLUMN list_uri TEXT");
+        } catch (e) {
+            if (!String(e).toLowerCase().includes("duplicate")) {
+                console.warn("[RestrictedPostDO] list_uri migration skipped", e);
+            }
+        }
     }
 
     async fetch(request: Request) {
@@ -44,7 +52,7 @@ export class RestrictedPostDO extends DurableObject {
                 return new Response("Missing key", { status: 400 });
             }
 
-            const result = this.ctx.storage.sql.exec("SELECT text, additional, visibility FROM posts WHERE rkey = ?", key);
+            const result = this.ctx.storage.sql.exec("SELECT text, additional, visibility, list_uri as listUri FROM posts WHERE rkey = ?", key);
             // .one() returns the first row or null if no results
             const row = result.one();
 
@@ -60,7 +68,14 @@ export class RestrictedPostDO extends DurableObject {
             if (!key) return new Response("Missing key", { status: 400 });
 
             const body = await request.json() as any;
+            if (!body || typeof body !== "object") {
+                return new Response("Invalid body", { status: 400 });
+            }
             const { text, additional, visibility, did } = body;
+            const listUri = visibility === "list" && typeof body.listUri === "string" ? body.listUri : null;
+            if (typeof text !== "string" || (additional !== undefined && typeof additional !== "string") || typeof visibility !== "string") {
+                return new Response("Invalid body", { status: 400 });
+            }
             const createdAt = new Date().toISOString();
 
             // Store DID if provided (Singleton config)
@@ -69,8 +84,8 @@ export class RestrictedPostDO extends DurableObject {
             }
 
             this.ctx.storage.sql.exec(
-                "INSERT OR REPLACE INTO posts (rkey, text, additional, visibility, created_at) VALUES (?, ?, ?, ?, ?)",
-                key, text, additional, visibility, createdAt
+                "INSERT OR REPLACE INTO posts (rkey, text, additional, visibility, list_uri, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                key, text, additional || "", visibility, listUri, createdAt
             );
             return new Response("OK");
         }

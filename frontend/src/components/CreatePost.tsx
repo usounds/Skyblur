@@ -5,10 +5,11 @@ import { UkSkyblurPostEncrypt, UkSkyblurPostStore } from "@/lexicon/UkSkyblur";
 import { transformUrl } from "@/logic/HandleBluesky";
 import { IdentityResolver } from '@/logic/IdentityResolver';
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
+import { isListVisibility, isRestrictedVisibility, type OwnedListOption } from "@/logic/listVisibility";
 import { useLocale } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, THREADGATE_FOLLOWERS, THREADGATE_FOLLOWING, THREADGATE_MENTION, THREADGATE_QUOTE_ALLOW, TRAILING_PUNCTUATION_REGEX, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
+import { MENTION_REGEX, PostListItem, PostView, SKYBLUR_POST_COLLECTION, TAG_REGEX, THREADGATE_FOLLOWERS, THREADGATE_FOLLOWING, THREADGATE_MENTION, THREADGATE_QUOTE_ALLOW, TRAILING_PUNCTUATION_REGEX, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from "@/types/types";
 import '@atcute/atproto';
 import '@atcute/bluesky';
 import { AppBskyFeedPost, AppBskyRichtextFacet } from '@atcute/bluesky';
@@ -19,9 +20,10 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import DOMPurify from 'dompurify';
 import { franc } from 'franc';
-import { ArrowLeft, Check, Globe, Lock, LogIn, Users, UserPlus, UserCheck, X, Save, Handshake, Info } from 'lucide-react';
+import { ArrowLeft, Check, Globe, Lock, LogIn, Users, UserPlus, UserCheck, X, Save, Handshake, Info, List } from 'lucide-react';
 import { useEffect, useState, ChangeEvent } from "react";
 import { BlueskyIcon } from './Icons';
+import { OwnedListPicker } from './OwnedListPicker';
 import classes from './CreatePost.module.css';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -64,6 +66,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [visibility, setVisibilityState] = useState<string>(prevBlur?.blur.visibility || VISIBILITY_PUBLIC);
     const tempVisibility = useTempPostStore((state) => state.visibility);
     const setTempVisibility = useTempPostStore((state) => state.setVisibility);
+    const tempListUri = useTempPostStore((state) => state.listUri);
+    const setTempListUri = useTempPostStore((state) => state.setListUri);
+    const [listUri, setListUriState] = useState<string | undefined>(prevBlur?.blur.listUri);
+    const [listPickerError, setListPickerError] = useState('');
     const [isEncrypt, setIsEncrypt] = useState<boolean>(prevBlur?.blur.visibility === VISIBILITY_PASSWORD);
     const encryptKey = useTempPostStore((state) => state.encryptKey) || '';
     const tempLimitConsecutive = useTempPostStore((state) => state.limitConsecutive);
@@ -75,6 +81,24 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const [restorePostData, { open: openRestorePostData, close: closeRestorePostData }] = useDisclosure(false);
     const [confirmBackOpened, { open: openConfirmBack, close: closeConfirmBack }] = useDisclosure(false);
     const [isLimitConsecutiveOmmit, setIsLimitConsecutiveOmmit] = useState<boolean>(false);
+
+    const setVisibility = (nextVisibility: string) => {
+        setVisibilityState(nextVisibility);
+        setIsEncrypt(nextVisibility === VISIBILITY_PASSWORD);
+        if (!isListVisibility(nextVisibility)) {
+            setListUriState(undefined);
+            if (!prevBlur) setTempListUri(undefined);
+        }
+        if (!prevBlur) setTempVisibility(nextVisibility);
+        setListPickerError('');
+    };
+
+    const setSelectedList = (list: OwnedListOption | null) => {
+        const nextListUri = list?.uri;
+        setListUriState(nextListUri);
+        if (!prevBlur) setTempListUri(nextListUri);
+        setListPickerError('');
+    };
 
     function detectLanguage(text: string): string {
         // francを使用してテキストの言語を検出
@@ -243,6 +267,10 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             }
         }
         if (!postText) return
+        if (isListVisibility(visibility) && !listUri) {
+            setListPickerError(locale.CreatePost_ListPickerRequired);
+            return;
+        }
         setIsLoading(true)
         setAppUrl('')
 
@@ -625,7 +653,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     setIsLoading(false)
                     return
                 }
-            } else if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility)) {
+            } else if (isRestrictedVisibility(visibility)) {
                 // Restricted Visibility
 
                 notifications.show({
@@ -639,8 +667,11 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                 const storeBody: UkSkyblurPostStore.Input = {
                     text: postText,
                     additional: addText,
-                    visibility: visibility as "followers" | "following" | "mutual",
+                    visibility: visibility as "followers" | "following" | "mutual" | "list",
                     uri: blurUri as ResourceUri
+                }
+                if (isListVisibility(visibility)) {
+                    storeBody.listUri = listUri as ResourceUri;
                 }
 
                 const response = await apiProxyAgent.post('uk.skyblur.post.store', {
@@ -654,6 +685,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                         text: postTextBlur,
                         createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
                         visibility: visibility,
+                        ...(isListVisibility(visibility) ? { listUri } : {}),
                     }
                     writes.push({
                         $type: applyKey,
@@ -696,7 +728,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
             let progressPrefix = '';
             if (isEncrypt) {
                 progressPrefix = '(3/3) ';
-            } else if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility)) {
+            } else if (isRestrictedVisibility(visibility)) {
                 progressPrefix = '(2/2) ';
             }
 
@@ -719,9 +751,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             if (ret.ok) {
                 // Clean up DO if visibility changed from restricted to non-restricted
-                if (prevBlur && [VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(prevBlur.blur.visibility || '')) {
+                if (prevBlur && isRestrictedVisibility(prevBlur.blur.visibility || '')) {
                     // Previous was restricted
-                    if (![VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility)) {
+                    if (!isRestrictedVisibility(visibility)) {
                         // New visibility is not restricted, delete from DO
                         try {
                             await apiProxyAgent.post('uk.skyblur.post.deleteStored', {
@@ -824,6 +856,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setTempReply('')
         setEncryptKey('')
         setTempVisibility(VISIBILITY_PUBLIC)
+        setTempListUri(undefined)
         setTempLimitConsecutive(false)
     };
 
@@ -832,8 +865,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setPostText(tempText, tempSimpleMode, tempLimitConsecutive);
         setAddText(tempAdditional)
         setSimpleMode(tempSimpleMode)
-        setVisibilityState(tempVisibility ?? VISIBILITY_PUBLIC)
-        setIsEncrypt(tempVisibility === VISIBILITY_PASSWORD)
+        setVisibility(tempVisibility ?? VISIBILITY_PUBLIC)
+        setListUriState(tempVisibility === VISIBILITY_LIST ? tempListUri : undefined)
         setIsLimitConsecutiveOmmit(tempLimitConsecutive || false)
 
         if (tempReply && agent && tempReply.includes(did)) {
@@ -1099,7 +1132,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                             <div className='mt-4 mb-2'>{locale.CreatePost_PublishMethodTitle}</div>
                             <div className="block text-sm text-gray-400 mt-1 mb-2">{locale.CreatePost_PublishMethodDescription}</div>
 
-                            <SimpleGrid cols={{ base: 2, sm: 3, md: 6 }} spacing="xs">
+                            <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs">
                                 {[
                                     { value: VISIBILITY_PUBLIC, label: locale.CreatePost_VisibilityPublic, icon: Globe },
                                     { value: VISIBILITY_LOGIN, label: locale.CreatePost_VisibilityLogin, icon: LogIn },
@@ -1107,6 +1140,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     { value: VISIBILITY_FOLLOWERS, label: locale.CreatePost_VisibilityFollowers, icon: Users },
                                     { value: VISIBILITY_FOLLOWING, label: locale.CreatePost_VisibilityFollowing, icon: UserCheck },
                                     { value: VISIBILITY_MUTUAL, label: locale.CreatePost_VisibilityMutual, icon: Handshake },
+                                    { value: VISIBILITY_LIST, label: locale.CreatePost_VisibilityList, icon: List },
                                 ].map((option) => {
                                     const isSelected = visibility === option.value;
                                     const isDisabled = prevBlur && prevBlur.blur.visibility === VISIBILITY_PASSWORD && option.value !== VISIBILITY_PASSWORD ||
@@ -1124,9 +1158,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                             px={2}
                                             onClick={() => {
                                                 if (isDisabled) return;
-                                                setVisibilityState(option.value);
-                                                setIsEncrypt(option.value === VISIBILITY_PASSWORD);
-                                                if (!prevBlur) setTempVisibility(option.value);
+                                                setVisibility(option.value);
                                             }}
                                             styles={{
                                                 label: {
@@ -1156,10 +1188,21 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                 {visibility === VISIBILITY_FOLLOWERS && locale.CreatePost_VisibilityFollowersDescription}
                                 {visibility === VISIBILITY_FOLLOWING && locale.CreatePost_VisibilityFollowingDescription}
                                 {visibility === VISIBILITY_MUTUAL && locale.CreatePost_VisibilityMutualDescription}
+                                {visibility === VISIBILITY_LIST && locale.CreatePost_VisibilityListDescription}
                             </div>
 
+                            {isListVisibility(visibility) && (
+                                <OwnedListPicker
+                                    value={listUri}
+                                    onChange={setSelectedList}
+                                    did={did}
+                                    agent={agent || null}
+                                    disabled={isLoading}
+                                    error={listPickerError}
+                                />
+                            )}
 
-                            {[VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(visibility) && (
+                            {isRestrictedVisibility(visibility) && (
                                 <div className="mt-4">
                                     <Alert
                                         variant="light"
@@ -1235,7 +1278,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                                     <Button
                                         onClick={handleCrearePost}
                                         loaderProps={{ type: 'dots' }}
-                                        disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0) || /[ \t\r\n\u3000]/.test(encryptKey)}
+                                        disabled={isLoading || postText.length === 0 || (isEncrypt && encryptKey.length === 0) || (isListVisibility(visibility) && !listUri) || /[ \t\r\n\u3000]/.test(encryptKey)}
                                         loading={isLoading}
                                         leftSection={<Save />}
                                     >

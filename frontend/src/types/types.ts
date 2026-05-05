@@ -38,6 +38,7 @@ export const VISIBILITY_LOGIN = 'login' as string;
 export const VISIBILITY_FOLLOWERS = 'followers' as string;
 export const VISIBILITY_FOLLOWING = 'following' as string;
 export const VISIBILITY_MUTUAL = 'mutual' as string;
+export const VISIBILITY_LIST = 'list' as string;
 export const THREADGATE_MENTION = 'mention' as string;
 export const THREADGATE_FOLLOWING = 'following' as string;
 export const THREADGATE_FOLLOWERS = 'followers' as string;

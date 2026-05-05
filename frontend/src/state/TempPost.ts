@@ -1,3 +1,4 @@
+import { VISIBILITY_LIST } from '@/types/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -8,6 +9,7 @@ type State = {
   reply?: string;
   encryptKey?: string;
   visibility?: string;
+  listUri?: string;
   limitConsecutive?: boolean;
 };
 
@@ -18,6 +20,7 @@ type Action = {
   setReply: (reply: string) => void;
   setEncryptKey: (encryptKey: string) => void;
   setVisibility: (visibility: string) => void;
+  setListUri: (listUri?: string) => void;
   setLimitConsecutive: (limit: boolean) => void;
 };
 
@@ -34,7 +37,11 @@ export const useTempPostStore = create(
       setSimpleMode: (simpleMode: boolean) => set({ simpleMode }),
       setReply: (reply: string) => set({ reply }),
       setEncryptKey: (encryptKey: string) => set({ encryptKey }),
-      setVisibility: (visibility: string) => set({ visibility }),
+      setVisibility: (visibility: string) => set((state) => ({
+        visibility,
+        listUri: visibility === VISIBILITY_LIST ? state.listUri : undefined,
+      })),
+      setListUri: (listUri?: string) => set({ listUri }),
       setLimitConsecutive: (limit: boolean) => set({ limitConsecutive: limit }),
     }),
     {

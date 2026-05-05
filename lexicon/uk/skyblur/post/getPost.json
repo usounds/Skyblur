@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "procedure",
-      "description": "Get Skyblur post. If the specified post is password-protected, you can retrieve the unlocked content by providing the password. Auth required for followers, following and mutual.",
+      "description": "Get Skyblur post. If the specified post is password-protected, you can retrieve the unlocked content by providing the password. Auth required for followers, following, mutual and list visibility.",
       "input": {
         "encoding": "application/json",
         "schema": {
@@ -44,7 +44,7 @@
             },
             "errorCode": {
               "type": "string",
-              "description": "Error code for restricted content. e.g. AuthRequired, NotFollower, NotFollowing, NotMutual"
+              "description": "Error code for restricted content. e.g. AuthRequired, NotFollower, NotFollowing, NotMutual, NotListMember, ListMembershipCheckFailed, ListUriMissing, InvalidListUri"
             },
             "errorDescription": {
               "type": "string",
@@ -56,6 +56,11 @@
             },
             "visibility": {
               "type": "string"
+            },
+            "listUri": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "Selected Bluesky list AT-URI for list visibility. May be returned for authorized, masked and authorization error responses."
             },
             "encryptCid": {
               "type": "string"

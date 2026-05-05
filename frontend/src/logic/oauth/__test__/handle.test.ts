@@ -4,6 +4,7 @@ import {
   getLikelyOAuthHandleTypo,
   isHandleResolutionError,
   isValidOAuthHandle,
+  isValidServerSideHandle,
   normalizeOAuthHandle,
 } from "../handle";
 
@@ -30,6 +31,15 @@ describe("OAuth handle helpers", () => {
     expect(isValidOAuthHandle("alice..bsky.social")).toBe(false);
     expect(isValidOAuthHandle("alice.bsky.social.")).toBe(false);
     expect(isValidOAuthHandle("-alice.bsky.social")).toBe(false);
+  });
+
+  it("rejects server-side handle targets that could resolve locally", () => {
+    expect(isValidServerSideHandle("127.0.0.1")).toBe(false);
+    expect(isValidServerSideHandle("10.0.0.1")).toBe(false);
+    expect(isValidServerSideHandle("192.168.0.1")).toBe(false);
+    expect(isValidServerSideHandle("172.16.0.1")).toBe(false);
+    expect(isValidServerSideHandle("localhost.localdomain")).toBe(false);
+    expect(isValidOAuthHandle("127.0.0.1")).toBe(false);
   });
 
   it("detects resolver failures through nested causes", () => {

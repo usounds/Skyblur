@@ -2,6 +2,7 @@ import { UkSkyblurPostStore } from '../lexicon/index'
 import { Context } from 'hono'
 import { getAuthenticatedDid } from '../logic/AuthUtils'
 import { safeParse } from '@atcute/lexicons'
+import { assertListOwnedByRepo, isValidListUri } from './listVisibility'
 
 export const handle = async (c: Context) => {
     console.log('[store] Request received');
@@ -16,7 +17,7 @@ export const handle = async (c: Context) => {
 
     const input = result.value;
 
-    const { text, additional, visibility, uri } = input
+    const { text, additional, visibility, uri, listUri } = input
     console.log(`[store] URI: ${uri}, Vis: ${visibility}`);
 
     const requesterDid = await getAuthenticatedDid(c);
@@ -31,6 +32,18 @@ export const handle = async (c: Context) => {
     if (!uri.startsWith(`at://${requesterDid}/uk.skyblur.post/`)) {
         console.warn('[store] URI mismatch or invalid collection');
         return c.json({ success: false, message: 'URI does not match authenticated user or invalid collection' }, 403);
+    }
+
+    if (visibility === 'list') {
+        if (!listUri) {
+            return c.json({ success: false, message: 'listUri is required for list visibility' }, 400);
+        }
+        if (!isValidListUri(listUri, requesterDid)) {
+            return c.json({ success: false, message: 'Invalid listUri' }, 400);
+        }
+        if (!await assertListOwnedByRepo(listUri, requesterDid)) {
+            return c.json({ success: false, message: 'List ownership could not be verified' }, 403);
+        }
     }
 
     try {
@@ -48,7 +61,13 @@ export const handle = async (c: Context) => {
             return c.json({ success: false, message: 'Invalid URI, rkey missing' }, 400);
         }
 
-        const val = { text, additional, visibility, did: requesterDid };
+        const val = {
+            text,
+            additional,
+            visibility,
+            did: requesterDid,
+            listUri: visibility === 'list' ? listUri : undefined,
+        };
 
         console.log(`[store] Sending PUT to DO... Key=${rkey}`);
         const res = await stub.fetch(new Request('http://do/store?key=' + rkey, {

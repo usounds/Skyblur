@@ -18,6 +18,10 @@ const _mainSchema = /*#__PURE__*/ v.procedure("uk.skyblur.post.store", {
         ]),
       ),
       /**
+       * Selected Bluesky list AT-URI. Required by application validation when visibility is 'list'.
+       */
+      listUri: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.resourceUriString()),
+      /**
        * @maxLength 3000
        * @maxGraphemes 300
        */
@@ -32,6 +36,7 @@ const _mainSchema = /*#__PURE__*/ v.procedure("uk.skyblur.post.store", {
       visibility: /*#__PURE__*/ v.literalEnum([
         "followers",
         "following",
+        "list",
         "mutual",
       ]),
     }),

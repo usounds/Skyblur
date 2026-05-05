@@ -10,6 +10,8 @@ export const scopeList = [
   "repo:app.bsky.feed.generator?action=create&action=update&action=delete",
   "repo:app.bsky.feed.threadgate?action=create&action=update&action=delete",
   "repo:app.bsky.feed.postgate?action=create&action=update&action=delete",
+  "rpc:app.bsky.graph.getLists?aud=*",
+  "rpc:app.bsky.graph.getList?aud=*",
   "rpc:app.bsky.feed.getFeedGenerator?aud=*",
   "rpc:app.bsky.feed.searchPosts?aud=*",
   "blob:*/*",

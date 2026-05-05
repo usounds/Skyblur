@@ -3,10 +3,12 @@ import { CreatePostForm } from "@/components/CreatePost";
 import { AuthenticationTitle } from "@/components/login/Login";
 import PageLoading from "@/components/PageLoading";
 import { PostList } from "@/components/PostList";
+import { ScopeReloginNotice } from "@/components/ScopeReloginNotice";
 import { useLocale } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL } from "@/types/types";
+import { isRestrictedVisibility } from "@/logic/listVisibility";
+import { PostListItem } from "@/types/types";
 import { Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -34,7 +36,7 @@ export function ConsoleContent() {
             return;
         }
         // Restricted content pre-fetch
-        if ([VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL].includes(input.blur.visibility || '')) {
+        if (isRestrictedVisibility(input.blur.visibility || '')) {
             notifications.show({
                 id: 'edit-fetch',
                 title: 'Loading',
@@ -65,6 +67,10 @@ export function ConsoleContent() {
                             errorMsg = locale.Post_Restricted_NotAuthorized_Following;
                         } else if (code === 'NotMutual') {
                             errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
+                        } else if (['NotListMember', 'ListUriMissing', 'InvalidListUri'].includes(code)) {
+                            errorMsg = locale.Post_Restricted_NotAuthorized_List;
+                        } else if (code === 'ListMembershipCheckFailed') {
+                            errorMsg = locale.Post_Restricted_ListCheckFailed;
                         } else if (code === 'AuthRequired') {
                             errorMsg = locale.Post_Restricted_LoginRequired;
                         } else if (code === 'ContentMissing') {
@@ -198,6 +204,7 @@ export function ConsoleContent() {
         <div className="mx-auto max-w-screen-md px-4 pt-4 pb-12">
             <main>
                 <div className="w-full">
+                    <ScopeReloginNotice />
                     {mode === 'create' ? (
                         <CreatePostForm setMode={setMode} prevBlur={prevBlur} onBack={() => setMode("menu")} />
                     ) : (

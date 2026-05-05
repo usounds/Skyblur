@@ -22,7 +22,7 @@ This Site uses the following external services, which results in communication w
 ## About Data Retention Location per Visibility Scope
 - The OAuth credentials and private posts of this service are stored in Cloudflare.
 - Public, Password, and Login-required posts are stored in the PDS.
-- For Followers-only, Following-only, and Mutual-only posts, the blurred text is stored in the PDS, and the original text is stored in Cloudflare.
+- For Followers-only, Following-only, Mutual-only, and List-only posts, the blurred text is stored in the PDS, and the original text is stored in Cloudflare.
 
 ## Attribution of Copyright
 Copyright for all content posted on this Site by users belongs to the poster themselves. This Site only displays users' posts.
@@ -49,6 +49,12 @@ If this Site confirms that a user has engaged in prohibited acts, the service ma
 - For these features, if a discrepancy occurs between the data on the PDS and the data stored on this Site, this Site will prioritize the data stored on this Site for rendering. For other visibility scopes, the PDS content is considered correct.
 - If similar features are implemented in the AT Protocol or PDS in the future, the specifications of these features may change significantly, and past data or settings may not be transferable.
 
+## About List-only Visibility
+- For List-only visibility, the URI of the Bluesky list selected by the author is stored in the PDS post record and in the private content storage on Cloudflare.
+- To check whether a viewer can access the post, this Site communicates with the Bluesky API, constellation, and PDSs related to the author or viewer, then verifies the relevant list item record.
+- List-only post content may appear with a delay on this Site and third-party clients that support this feature.
+- List visibility and membership depend on Bluesky-side data. Immediately after adding or removing an account from a list, authorization checks may be delayed.
+
 ## Prohibition of Moderation Evasion
 This service cannot be used for the purpose of evading moderation or usage restrictions on other services.
 
@@ -57,6 +63,7 @@ Additionally, some or all of the data posted through this service is stored on P
 In the unlikely event that your posts lead to allegations of these Terms of Service violations, or cause disadvantages such as account suspension or restriction, the developers and operators of this service shall bear no responsibility whatsoever. Please be fully aware of this in advance and use the service in compliance with the terms of each linked service.
 
 ## Revision History
+- 2026/05/05 Added clauses for List-only visibility.
 - 2026/03/03 Added a clause regarding the prohibition of moderation evasion.
 - 2026/02/23 Specified that the OAuth credentials and private posts are stored in Cloudflare.
 - 2026/02/07 Added clauses regarding the addition of Followers-only, Following-only, and Mutual-only visibility features.

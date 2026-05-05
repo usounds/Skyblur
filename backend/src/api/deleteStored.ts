@@ -1,6 +1,8 @@
 import { type Context } from 'hono';
 import { Env } from '@/index';
 import { getAuthenticatedDid } from '@/logic/AuthUtils';
+import { UkSkyblurPostDeleteStored } from '@/lexicon/index';
+import { safeParse } from '@atcute/lexicons';
 
 function jsonResponse(c: Context<{ Bindings: Env }>, body: unknown, status = 200) {
     if (typeof c.json === 'function') {
@@ -21,11 +23,13 @@ async function readJsonBody(c: Context<{ Bindings: Env }>) {
 export const handle = async (c: Context<{ Bindings: Env }>) => {
     try {
         const body = await readJsonBody(c);
-        const uri = body.uri;
+        const result = safeParse(UkSkyblurPostDeleteStored.mainSchema.input.schema, body);
 
-        if (!uri) {
-            return jsonResponse(c, { success: false, error: 'Missing uri' }, 400);
+        if (!result.ok) {
+            return jsonResponse(c, { success: false, error: `Validation failed: ${result.message}` }, 400);
         }
+
+        const { uri } = result.value;
 
         const requesterDid = await getAuthenticatedDid(c);
         if (!requesterDid) {
