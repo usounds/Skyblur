@@ -177,8 +177,8 @@ export function ConsoleContent() {
 
     // --- ここから早期リターン ---
 
-    // 認証確認中、またはプロフィール取得中の場合
-    if (isAuthenticated === null || (isAuthenticated === true && !userProf)) {
+    // 認証確認中のみ待機する。プロフィール取得失敗でコンソール全体は止めない。
+    if (isAuthenticated === null) {
         return <PageLoading />;
     }
 
@@ -203,7 +203,7 @@ export function ConsoleContent() {
                     ) : (
                         <div className="mx-auto max-w-screen-sm flex flex-col">
                             <div className="my-4 text-center" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both' }}>
-                                {locale.Menu_LoginMessage.replace("{2}", (new Date().getHours() < 5 || new Date().getHours() >= 18) ? locale.Greeting_Night : (new Date().getHours() < 11) ? locale.Greeting_Morning : locale.Greeting_Day).replace("{1}", userProf?.displayName || 'No Name')}
+                                {locale.Menu_LoginMessage.replace("{2}", (new Date().getHours() < 5 || new Date().getHours() >= 18) ? locale.Greeting_Night : (new Date().getHours() < 11) ? locale.Greeting_Morning : locale.Greeting_Day).replace("{1}", userProf?.displayName || userProf?.handle || did || 'User')}
                             </div>
 
                             <div className="flex justify-center gap-4 mb-8" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' }}>

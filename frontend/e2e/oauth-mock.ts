@@ -207,7 +207,6 @@ export async function useLoggedInOAuthMock(
         authenticated: true,
         did: mockDid,
         pds: mockPds,
-        userProf: userProfile,
         scope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
       }),
     });

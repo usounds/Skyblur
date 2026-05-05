@@ -232,7 +232,6 @@ test.describe("home start session flows", () => {
         }),
       });
     });
-
     await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
     await gotoAndSkipIfUnavailable(page, "/");
 
@@ -280,12 +279,20 @@ test.describe("home start session flows", () => {
           authenticated: true,
           did: mockDid,
           pds: "https://e2e-pds.skyblur.test",
-          userProf: {
-            did: mockDid,
-            handle: mockHandle,
-            displayName: "E2E Tester",
-            description: "Recovered session user",
-          },
+          scope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
+        }),
+      });
+    });
+    await page.route("https://public.api.bsky.app/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          did: mockDid,
+          handle: mockHandle,
+          displayName: "E2E Tester",
+          description: "Recovered session user",
+          avatar: "",
         }),
       });
     });
@@ -748,11 +755,6 @@ test("/post refetches restricted detail after the session resolves authenticated
         authenticated: true,
         did: mockDid,
         pds: "https://e2e-pds.skyblur.test",
-        userProf: {
-          did: mockDid,
-          handle: mockHandle,
-          displayName: "E2E Tester",
-        },
         scope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
       }),
     });
@@ -904,6 +906,24 @@ test("/console renders logged-in dashboard from mocked OAuth session", async ({
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
   await expect(page.getByText("console post")).toBeVisible();
+});
+
+test("/console remains usable when the profile fetch fails", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { profileStatus: 500 });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+
+  await expect(page).toHaveURL(/\/console$/);
+  await expect(page.getByText(mockDid)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create a post" })).toBeVisible();
+  await expect(page.getByText("Post List")).toBeVisible();
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await expect(page.getByText(mockDid).last()).toBeVisible();
+  await expect(page.getByText("Logout")).toBeVisible();
 });
 
 test("/console create post form covers validation, reply, visibility, and submit UI", async ({

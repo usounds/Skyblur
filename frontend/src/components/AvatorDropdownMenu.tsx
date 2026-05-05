@@ -12,12 +12,12 @@ export function AvatorDropdownMenu() {
     const agent = useXrpcAgentStore(state => state.agent);
     const { localeData: locale } = useLocale();
     const userProf = useXrpcAgentStore(state => state.userProf);
-    const setDid = useXrpcAgentStore(state => state.setDid);
     const did = useXrpcAgentStore(state => state.did);
     const isLoginModalOpened = useXrpcAgentStore(state => state.isLoginModalOpened);
     const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
     const router = useRouter();
     const [logoutModalOpened, setLogoutModalOpened] = useState(false);
+    const isLoggedIn = Boolean(did);
 
     const login = async () => {
         setIsLoginModalOpened(true);
@@ -34,23 +34,19 @@ export function AvatorDropdownMenu() {
             <Menu shadow="md" width={200} >
                 <Menu.Target>
                     <ActionIcon variant="default" size="lg" aria-label="Account menu">
-                        {(userProf && agent) ? (
-                            userProf.avatar ? (
-                                <Avatar src={userProf.avatar} radius="xl" size={20} />
-                            ) : (
-                                <Users stroke="currentColor" strokeWidth={1.5} size={20} />
-                            )
+                        {(isLoggedIn && userProf?.avatar && agent) ? (
+                            <Avatar src={userProf.avatar} radius="xl" size={20} />
                         ) : (
                             <Users stroke="currentColor" strokeWidth={1.5} size={20} />
                         )}
                     </ActionIcon>
                 </Menu.Target>
 
-                {(userProf && agent) ?
+                {isLoggedIn ?
                     <Menu.Dropdown>
                         <Menu.Label>User</Menu.Label>
                         <Menu.Item leftSection="@" disabled={true}>
-                            {userProf.handle}
+                            {userProf?.handle || did}
                         </Menu.Item>
                         <Menu.Label>Menu</Menu.Label>
                         <Menu.Item leftSection={<Settings size={18} />} onClick={handleSettings}>

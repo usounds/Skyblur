@@ -26,7 +26,6 @@ export async function GET(request: Request) {
       authenticated: true,
       did: session.did,
       pds: tokenInfo.aud,
-      userProf: null,
       scope: tokenInfo.scope,
     }, {
       headers: {

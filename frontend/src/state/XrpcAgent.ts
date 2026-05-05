@@ -147,14 +147,10 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
           const data = await res.json() as any;
           if (data.authenticated) {
             const pdsUrl = data.pds || 'https://bsky.social';
-            // 変更がある場合のみ更新
-            const updates: any = { did: data.did, serviceUrl: pdsUrl, isSessionChecked: true };
-            if (data.userProf) {
-              updates.userProf = data.userProf;
-            }
+            const nextScope = data.scope || '';
 
-            if (get().did !== data.did || get().serviceUrl !== pdsUrl || data.userProf || get().scope !== (data.scope || '')) {
-              set({ ...updates, scope: data.scope || '' });
+            if (get().did !== data.did || get().serviceUrl !== pdsUrl || get().scope !== nextScope) {
+              set({ did: data.did, serviceUrl: pdsUrl, isSessionChecked: true, scope: nextScope });
             } else {
               set({ isSessionChecked: true });
             }

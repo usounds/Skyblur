@@ -544,70 +544,11 @@ app.get('/oauth/session', async (c) => {
 
     try {
       return await withSession(c, did, async (session) => {
-        // PDS の特定
-        let resolvedPds = (session as any).pds ||
-          (session as any).server?.serverMetadata?.issuer ||
-          (session as any).info?.pds ||
-          (session as any).info?.identity?.pds?.[0] ||
-          (session as any).info?.identity?.services?.atproto_pds?.[0] ||
-          (session as any).info?.server ||
-          '';
-
-        if (!resolvedPds) {
-          const cacheKey = `diddoc_${did}`;
-          try {
-            const doNamespace = c.env.SKYBLUR_DO;
-            const doId = doNamespace.idFromName('global_cache');
-            const stub = doNamespace.get(doId);
-
-            let didDoc: any = null;
-            const cacheRes = await stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`));
-            if (cacheRes.ok) {
-              didDoc = await cacheRes.json();
-            }
-
-            if (!didDoc && did.startsWith('did:plc:')) {
-              const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`, {
-                signal: AbortSignal.timeout(10000)
-              });
-              if (res.ok) {
-                didDoc = await res.json();
-                c.executionCtx.waitUntil(
-                  stub.fetch(new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(didDoc)
-                  }))
-                );
-              }
-            }
-
-            if (didDoc) {
-              const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
-              if (service) resolvedPds = service.serviceEndpoint;
-            }
-          } catch (e) {
-            console.error('Failed to resolve PDS from cache/directory:', e);
-          }
-        }
-
-        const client = new Client({ handler: session });
-        let userProf: any = null;
-        try {
-          const profileRes = await (client as any).get('app.bsky.actor.getProfile', {
-            params: { actor: session.did },
-            signal: AbortSignal.timeout(3000)
-          });
-          if (profileRes.ok) userProf = profileRes.data;
-        } catch (err) {
-          console.error('Failed to fetch profile during session check (timed out or error):', err);
-        }
-
         const scope = await session.getTokenInfo();
         return c.json({
           authenticated: true,
           did: session.did,
           pds: scope.aud,
-          userProf,
           scope: scope.scope,
         });
       });
