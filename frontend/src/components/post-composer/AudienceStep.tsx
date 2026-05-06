@@ -77,6 +77,10 @@ export function getGateControlsEditable(state: PostComposerState, initialData?: 
   return state.mode !== "edit" || initialData?.gateControlsEditable !== false;
 }
 
+export function getReplyTargetEditable(state: PostComposerState) {
+  return state.mode === "create";
+}
+
 export function AudienceStep({ state, setState, initialData, stepError, stepErrorMessage }: AudienceStepProps) {
   const { localeData: locale } = useLocale();
   const did = useXrpcAgentStore((store) => store.did);
@@ -98,6 +102,7 @@ export function AudienceStep({ state, setState, initialData, stepError, stepErro
   const passwordError = stepError?.field === "password" ? stepErrorMessage : undefined;
   const visibilityOutcome = getVisibilityOutcomeCopy(state.visibility, locale);
   const gateControlsEditable = getGateControlsEditable(state, initialData);
+  const replyTargetEditable = getReplyTargetEditable(state);
 
   const visibilityOptions = [
     { value: VISIBILITY_PUBLIC as VisibilityValue, label: locale.CreatePost_VisibilityPublic, icon: Globe },
@@ -236,37 +241,41 @@ export function AudienceStep({ state, setState, initialData, stepError, stepErro
               label={locale.CreatePost_ThreadGateQuoteAllow}
             />
 
-            <Text fw={600} mt="md" mb={4}>{locale.PostComposer_ReplyTargetTitle}</Text>
-            <Text size="sm" c="dimmed" mb="xs">{locale.PostComposer_ReplyTargetDescription}</Text>
-            <Switch
-              checked={replyPickerOpened}
-              onChange={(event) => {
-                const checked = event.currentTarget.checked;
-                setReplyPickerOpened(checked);
-                if (!checked) setState({ replyPost: undefined });
-              }}
-              label={locale.PostComposer_ReplyTargetToggle}
-            />
-            {replyPickerOpened && did && (
-              <div style={{ marginTop: 12 }}>
-                {state.replyPost ? (
-                  <Paper withBorder radius="sm" p="sm">
-                    <Group gap={8} mb={6}>
-                      <ReplyIcon size={16} />
-                      <Text size="sm" fw={600}>{locale.PostComposer_SelectedReplyTarget}</Text>
-                    </Group>
-                    <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>{state.replyPost.record.text}</Text>
-                    <Group justify="space-between" mt="sm">
-                      <Text size="xs" c="dimmed">{formatDateToLocale(state.replyPost.record.createdAt)}</Text>
-                      <Button size="compact-sm" variant="default" onClick={() => setState({ replyPost: undefined })}>
-                        {locale.PostComposer_ChangeReplyTarget}
-                      </Button>
-                    </Group>
-                  </Paper>
-                ) : (
-                  <ReplyList handleSetPost={(replyPost) => setState({ replyPost })} did={did} />
+            {replyTargetEditable && (
+              <>
+                <Text fw={600} mt="md" mb={4}>{locale.PostComposer_ReplyTargetTitle}</Text>
+                <Text size="sm" c="dimmed" mb="xs">{locale.PostComposer_ReplyTargetDescription}</Text>
+                <Switch
+                  checked={replyPickerOpened}
+                  onChange={(event) => {
+                    const checked = event.currentTarget.checked;
+                    setReplyPickerOpened(checked);
+                    if (!checked) setState({ replyPost: undefined });
+                  }}
+                  label={locale.PostComposer_ReplyTargetToggle}
+                />
+                {replyPickerOpened && did && (
+                  <div style={{ marginTop: 12 }}>
+                    {state.replyPost ? (
+                      <Paper withBorder radius="sm" p="sm">
+                        <Group gap={8} mb={6}>
+                          <ReplyIcon size={16} />
+                          <Text size="sm" fw={600}>{locale.PostComposer_SelectedReplyTarget}</Text>
+                        </Group>
+                        <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>{state.replyPost.record.text}</Text>
+                        <Group justify="space-between" mt="sm">
+                          <Text size="xs" c="dimmed">{formatDateToLocale(state.replyPost.record.createdAt)}</Text>
+                          <Button size="compact-sm" variant="default" onClick={() => setState({ replyPost: undefined })}>
+                            {locale.PostComposer_ChangeReplyTarget}
+                          </Button>
+                        </Group>
+                      </Paper>
+                    ) : (
+                      <ReplyList handleSetPost={(replyPost) => setState({ replyPost })} did={did} />
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </Accordion.Panel>
         </Accordion.Item>

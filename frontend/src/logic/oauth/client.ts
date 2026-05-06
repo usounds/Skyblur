@@ -11,6 +11,7 @@ import {
   OAuthClient,
   type ClientAssertionPrivateJwk,
   type OAuthSession,
+  type ProtectedResourceMetadataCache,
 } from "@atcute/oauth-node-client";
 
 import { scopeList } from "./constants";
@@ -18,6 +19,20 @@ import { DynamoOAuthStore, requestOAuthLock } from "./dynamo-store";
 import { isValidServerSideHandle, normalizeOAuthHandle } from "./handle";
 
 const oauthClients = new Map<string, OAuthClient>();
+type CachedOAuthMetadataResponse = {
+  body: string;
+  contentType: string | null;
+};
+const protectedResourceMetadataFallbackStore = new DynamoOAuthStore<
+  string,
+  CachedOAuthMetadataResponse
+>("pr-metadata");
+const disabledProtectedResourceMetadataCache: ProtectedResourceMetadataCache = {
+  get: () => undefined,
+  set: () => undefined,
+  delete: () => undefined,
+  clear: () => undefined,
+};
 
 export class UnsafeOAuthResourceError extends Error {
   constructor(url: string) {
@@ -81,10 +96,97 @@ export function assertSafeOAuthResourceUrl(value: string | URL) {
   }
 }
 
-export const guardedOAuthFetch: typeof fetch = (input, init) => {
+function isRetryableOAuthFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const method = init?.method ?? (input instanceof Request ? input.method : "GET");
+  return method.toUpperCase() === "GET" || method.toUpperCase() === "HEAD";
+}
+
+function isRetryableOAuthStatus(status: number) {
+  return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
+function isProtectedResourceMetadataFetch(input: RequestInfo | URL, init?: RequestInit) {
+  if (!isRetryableOAuthFetch(input, init)) return false;
+
+  const url = getFetchUrl(input);
+  return url.pathname === "/.well-known/oauth-protected-resource";
+}
+
+function protectedResourceMetadataCacheKey(input: RequestInfo | URL) {
+  return getFetchUrl(input).origin;
+}
+
+async function cacheProtectedResourceMetadata(input: RequestInfo | URL, response: Response) {
+  if (response.status !== 200) return;
+
+  try {
+    await protectedResourceMetadataFallbackStore.set(protectedResourceMetadataCacheKey(input), {
+      body: await response.clone().text(),
+      contentType: response.headers.get("content-type"),
+    });
+  } catch (error) {
+    console.warn("[OAuth] Failed to cache protected resource metadata fallback.", error);
+  }
+}
+
+async function getCachedProtectedResourceMetadata(input: RequestInfo | URL) {
+  try {
+    const cached = await protectedResourceMetadataFallbackStore.get(
+      protectedResourceMetadataCacheKey(input),
+    );
+    if (!cached) return undefined;
+
+    return new Response(cached.body, {
+      status: 200,
+      headers: cached.contentType ? { "content-type": cached.contentType } : undefined,
+    });
+  } catch (error) {
+    console.warn("[OAuth] Failed to read protected resource metadata fallback.", error);
+    return undefined;
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export const guardedOAuthFetch: typeof fetch = async (input, init) => {
   const url = getFetchUrl(input);
   assertSafeOAuthResourceUrl(url);
-  return fetch(input, init);
+  const retryable = isRetryableOAuthFetch(input, init);
+  const fallbackable = isProtectedResourceMetadataFetch(input, init);
+  const attempts = retryable ? 3 : 1;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await fetch(input, init);
+      if (fallbackable) {
+        await cacheProtectedResourceMetadata(input, response);
+      }
+      if (!retryable || !isRetryableOAuthStatus(response.status) || attempt === attempts - 1) {
+        if (fallbackable && isRetryableOAuthStatus(response.status)) {
+          const cached = await getCachedProtectedResourceMetadata(input);
+          if (cached) return cached;
+        }
+        return response;
+      }
+      lastError = new Error(`OAuth metadata fetch returned ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      if (!retryable || attempt === attempts - 1) {
+        if (fallbackable) {
+          const cached = await getCachedProtectedResourceMetadata(input);
+          if (cached) return cached;
+        }
+        throw error;
+      }
+    }
+
+    await sleep(150 * (attempt + 1));
+  }
+
+  throw lastError;
 };
 
 export const guardedWellKnownFetch: typeof fetch = (input, init) => {
@@ -141,6 +243,7 @@ export async function getOAuthClient(origin: string) {
     stores: {
       sessions: new DynamoOAuthStore("session"),
       states: new DynamoOAuthStore("state"),
+      prMetadata: disabledProtectedResourceMetadataCache,
     },
     requestLock: requestOAuthLock,
     actorResolver: new LocalActorResolver({

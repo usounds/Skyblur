@@ -6,7 +6,7 @@ import { ScopeReloginNotice } from "@/components/ScopeReloginNotice";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { Alert, Button, Group, Modal, Text } from "@mantine/core";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { EditPostLoader } from "./EditPostLoader";
 import { PostComposerScreen } from "./PostComposerScreen";
@@ -28,6 +28,21 @@ type PostComposerRouteScaffoldProps = {
   rkeyParam?: string;
 };
 
+const activeCreateSessionKey = "skyblur.post-composer.active-create-session";
+
+function hasActiveCreateSession() {
+  return typeof window !== "undefined" && window.sessionStorage.getItem(activeCreateSessionKey) === "1";
+}
+
+function setActiveCreateSession(active: boolean) {
+  if (typeof window === "undefined") return;
+  if (active) {
+    window.sessionStorage.setItem(activeCreateSessionKey, "1");
+  } else {
+    window.sessionStorage.removeItem(activeCreateSessionKey);
+  }
+}
+
 function safeDecode(value?: string) {
   if (!value) return "";
 
@@ -39,6 +54,8 @@ function safeDecode(value?: string) {
 }
 
 function syncCreateDraft(state: PostComposerState) {
+  setActiveCreateSession(true);
+
   const tempPost = useTempPostStore.getState();
 
   tempPost.setVisibility(state.visibility);
@@ -73,7 +90,9 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   const sensitivePassword = useSensitiveDraftStore((state) => state.password || state.encryptKey);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [restorePostData, setRestorePostData] = useState(false);
-  const [restoreDecision, setRestoreDecision] = useState<"pending" | "restored" | "fresh">("pending");
+  const initialRestoreDecision = mode === "create" && hasActiveCreateSession() ? "fresh" : "pending";
+  const [restoreDecision, setRestoreDecision] = useState<"pending" | "restored" | "fresh">(initialRestoreDecision);
+  const restoreDecisionRef = useRef<"pending" | "restored" | "fresh">(initialRestoreDecision);
   const [isDraftHydrated, setIsDraftHydrated] = useState(mode !== "create");
   const [initialCreateDraft, setInitialCreateDraft] = useState<PostComposerInitialData | null>(null);
   const [restoredReplyPost, setRestoredReplyPost] = useState<PostView | undefined>();
@@ -81,6 +100,15 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   const [restoreReplyWarning, setRestoreReplyWarning] = useState("");
 
   const routeDid = useMemo(() => safeDecode(didParam), [didParam]);
+  const commitRestoreDecision = useCallback((decision: "pending" | "restored" | "fresh") => {
+    restoreDecisionRef.current = decision;
+    if (mode === "create" && decision !== "pending") setActiveCreateSession(true);
+    setRestoreDecision(decision);
+  }, [mode]);
+  const exitToConsole = useCallback(() => {
+    setActiveCreateSession(false);
+    router.push("/console");
+  }, [router]);
   const routeRkey = useMemo(() => safeDecode(rkeyParam), [rkeyParam]);
   const hasInvalidEditParams = mode === "edit" && (!routeDid || !routeRkey);
   const isDifferentAccount = mode === "edit" && !!routeDid && !!did && routeDid !== did;
@@ -132,7 +160,8 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
     visibility: VISIBILITY_PUBLIC as VisibilityValue,
     passwordUnlocked: false,
 	  }), [did]);
-	  const activeCreateInitialData = restoreDecision === "restored" ? (initialCreateDraft ?? createInitialData) : emptyCreateInitialData;
+  const shouldUsePersistedCreateDraft = restoreDecision === "restored" || (initialRestoreDecision === "fresh" && hasCreateDraft);
+  const activeCreateInitialData = shouldUsePersistedCreateDraft ? (initialCreateDraft ?? createInitialData) : emptyCreateInitialData;
 
 	  useEffect(() => {
 	    if (mode !== "create") return;
@@ -206,10 +235,10 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   }, [mode]);
 
   useEffect(() => {
-    if (mode !== "create" || isAuthenticated !== true || !isDraftHydrated || restoreDecision !== "pending") return;
+    if (mode !== "create" || isAuthenticated !== true || !isDraftHydrated || restoreDecisionRef.current !== "pending") return;
 
 	    if (!hasCreateDraft) {
-	      setRestoreDecision("fresh");
+	      commitRestoreDecision("fresh");
 	      return;
 	    }
 
@@ -217,7 +246,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
 
 	    setInitialCreateDraft(createInitialData);
 	    setRestorePostData(true);
-	  }, [createInitialData, hasCreateDraft, isAuthenticated, isDraftHydrated, isTempReplyResolved, mode, restoreDecision, tempReply]);
+	  }, [commitRestoreDecision, createInitialData, hasCreateDraft, isAuthenticated, isDraftHydrated, isTempReplyResolved, mode, tempReply]);
 
   useEffect(() => {
     const currentState = useXrpcAgentStore.getState();
@@ -273,7 +302,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
             opened={restorePostData}
             onClose={() => {
               setRestorePostData(false);
-              setRestoreDecision("fresh");
+              commitRestoreDecision("fresh");
             }}
             title={locale.CreatePost_RestoreTitle}
             centered
@@ -292,7 +321,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
                 color="gray"
                 onClick={() => {
                   setRestorePostData(false);
-                  setRestoreDecision("fresh");
+                  commitRestoreDecision("fresh");
                 }}
               >
                 {locale.DeleteList_CancelButton}
@@ -303,7 +332,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
                 onClick={() => {
                   clearTempPost();
                   setRestorePostData(false);
-                  setRestoreDecision("fresh");
+                  commitRestoreDecision("fresh");
                 }}
               >
                 {locale.DeleteList_DeleteButton}
@@ -312,7 +341,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
                 variant="filled"
                 onClick={() => {
                   setRestorePostData(false);
-                  setRestoreDecision("restored");
+                  commitRestoreDecision("restored");
                 }}
               >
                 {locale.CreatePost_RestoreButton}
@@ -328,7 +357,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
     <PostComposerScreen
       key={mode === "create" ? restoreDecision : initialData?.blurUri}
       initialData={initialData ?? activeCreateInitialData}
-      onBack={() => router.push("/console")}
+      onBack={exitToConsole}
       onStateChange={mode === "create" ? syncCreateDraft : undefined}
       requiresRelogin={missingScopes.length > 0}
       onSubmit={async (state, plan) => {
@@ -336,7 +365,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
         if (result.status === "success") {
           clearSensitiveDraft();
           clearTempPost();
-          router.push("/console");
+          exitToConsole();
         }
         return result;
       }}

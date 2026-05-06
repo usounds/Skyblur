@@ -246,6 +246,7 @@ const messages = {
     PostComposer_ErrorApplyWritesFailed: "投稿レコードの保存に失敗しました。保存は完了していません。もう一度お試しください。",
     PostComposer_ErrorUnauthorized: "保存に必要な権限を確認できませんでした。再ログインしてからもう一度お試しください。",
     PostComposer_ErrorConflict: "投稿がほかの更新と競合しました。最新の内容を確認してからもう一度お試しください。",
+    PostComposer_SaveSuccess: "保存しました",
     PostComposer_ErrorGateSavePartial: "本文と補足は保存されましたが、返信・引用設定を保存できませんでした。設定だけ確認してもう一度お試しください。",
     PostComposer_WarningRestrictedCleanupFailed: "投稿は保存されましたが、以前の限定公開データが残っている可能性があります。時間をおいて確認してください。",
     PostComposer_GateControlsUnavailable: "返信・引用設定を確認できなかったため、この編集では変更できません。本文と補足は保存できます。",

@@ -177,14 +177,18 @@ type OAuthMockOptions = {
   postVariant?: "public" | "password" | "restricted" | "following" | "mutual" | "list" | "login" | "empty";
   postDetailVariant?: "public" | "password" | "authRequired" | "error";
   postDetailVisibility?: "login" | "followers" | "following" | "mutual" | "list";
+  passwordEncryptBodyShape?: "ref-link" | "ref-string" | "cid" | "link" | "missing";
   decryptStatus?: 200 | 403 | 500;
   encryptStatus?: 200 | 500;
   storeStatus?: 200 | 500;
   getPostStatus?: 200 | 500;
+  deleteStoredStatus?: 200 | 500;
   uploadBlobStatus?: 200 | 500;
   applyWritesStatus?: 200 | 500;
   editRecordStatus?: 200 | 500;
   editRecordVariant?: "invalid-type" | "invalid-visibility" | "invalid-text" | "password-missing-encrypt";
+  editThreadGateStatus?: 200 | 400 | 404 | 500;
+  editPostGateStatus?: 200 | 400 | 404 | 500;
   constellationIntentStatus?: 200 | 500;
   constellationAllStatus?: 200 | 500;
   restrictedErrorCode?: "NotFollower" | "NotFollowing" | "NotMutual" | "NotListMember" | "ListMembershipCheckFailed" | "AuthRequired" | "ContentMissing" | "Other";
@@ -379,9 +383,21 @@ export async function useLoggedInOAuthMock(
         return;
       }
 
+      const passwordPost = {
+        ...mockPasswordPost,
+        encryptBody: options.passwordEncryptBodyShape === "missing"
+          ? undefined
+          : options.passwordEncryptBodyShape === "ref-string"
+            ? { ref: "bafy-e2e-password", mimeType: "text/plain", size: 18 }
+            : options.passwordEncryptBodyShape === "cid"
+              ? { cid: "bafy-e2e-password", mimeType: "text/plain", size: 18 }
+              : options.passwordEncryptBodyShape === "link"
+                ? { $link: "bafy-e2e-password", mimeType: "text/plain", size: 18 }
+                : mockPasswordPost.encryptBody,
+      };
       const postByVariant = {
         public: mockPost,
-        password: mockPasswordPost,
+        password: passwordPost,
         restricted: mockRestrictedPost,
         following: mockFollowingPost,
         mutual: mockMutualPost,
@@ -545,6 +561,76 @@ export async function useLoggedInOAuthMock(
             uri: `at://${mockDid}/uk.skyblur.post/e2eblur-${editVariant}`,
             cid: "bafy-e2e-blur",
             value,
+          }),
+        });
+        return;
+      }
+
+      if (collection === "app.bsky.feed.threadgate") {
+        if (options.editThreadGateStatus === 500) {
+          await route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "ThreadGateFailed" }),
+          });
+          return;
+        }
+        if (options.editThreadGateStatus !== 200) {
+          await route.fulfill({
+            status: options.editThreadGateStatus ?? 400,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "RecordNotFound" }),
+          });
+          return;
+        }
+
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            uri: `at://${mockDid}/app.bsky.feed.threadgate/e2eblur-public`,
+            cid: "bafy-e2e-threadgate",
+            value: {
+              $type: "app.bsky.feed.threadgate",
+              allow: [
+                { $type: "app.bsky.feed.threadgate#mentionRule" },
+                { $type: "app.bsky.feed.threadgate#followingRule" },
+                { $type: "app.bsky.feed.threadgate#followerRule" },
+              ],
+            },
+          }),
+        });
+        return;
+      }
+
+      if (collection === "app.bsky.feed.postgate") {
+        if (options.editPostGateStatus === 500) {
+          await route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "PostGateFailed" }),
+          });
+          return;
+        }
+        if (options.editPostGateStatus !== 200) {
+          await route.fulfill({
+            status: options.editPostGateStatus ?? 400,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "RecordNotFound" }),
+          });
+          return;
+        }
+
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            uri: `at://${mockDid}/app.bsky.feed.postgate/e2eblur-public`,
+            cid: "bafy-e2e-postgate",
+            value: {
+              $type: "app.bsky.feed.postgate",
+              embeddingRules: [{ $type: "app.bsky.feed.postgate#disableRule" }],
+            },
           }),
         });
         return;
@@ -855,6 +941,15 @@ export async function useLoggedInOAuthMock(
     }
 
     if (method === "uk.skyblur.post.deleteStored") {
+      if (options.deleteStoredStatus === 500) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "DeleteStoredFailed" }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: "application/json",

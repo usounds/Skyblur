@@ -246,6 +246,7 @@ const messages = {
     PostComposer_ErrorApplyWritesFailed: "Could not save the post records. The save is not complete. Try again.",
     PostComposer_ErrorUnauthorized: "The required save permission could not be confirmed. Log in again and try once more.",
     PostComposer_ErrorConflict: "The post conflicted with another update. Check the latest content and try again.",
+    PostComposer_SaveSuccess: "Saved",
     PostComposer_ErrorGateSavePartial: "The text and additional text were saved, but reply and quote settings could not be saved. Check those settings and try again.",
     PostComposer_WarningRestrictedCleanupFailed: "The post was saved, but previous restricted data may still remain. Check again later.",
     PostComposer_GateControlsUnavailable: "Reply and quote settings could not be checked, so they cannot be changed in this edit. Text and additional text can still be saved.",

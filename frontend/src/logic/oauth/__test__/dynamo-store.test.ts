@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("requestOAuthLock", () => {
+describe("Dynamo OAuth store", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
@@ -60,4 +60,24 @@ describe("requestOAuthLock", () => {
     releaseFirst("first");
     await expect(first).resolves.toBe("first");
   }, 10_000);
+
+  it("stores protected resource metadata fallback for one hour", async () => {
+    const { DynamoOAuthStore } = await import("../dynamo-store");
+    const { OAUTH_METADATA_TTL_SECONDS } = await import("../constants");
+    expect(OAUTH_METADATA_TTL_SECONDS).toBe(60 * 60);
+    const store = new DynamoOAuthStore<string, { resource: string; authorization_servers: [string] }>("pr-metadata");
+
+    await store.set("https://morel.us-east.host.bsky.network", {
+      resource: "https://morel.us-east.host.bsky.network",
+      authorization_servers: ["https://bsky.social"],
+    });
+
+    await expect(store.get("https://morel.us-east.host.bsky.network")).resolves.toEqual({
+      resource: "https://morel.us-east.host.bsky.network",
+      authorization_servers: ["https://bsky.social"],
+    });
+
+    await vi.advanceTimersByTimeAsync((OAUTH_METADATA_TTL_SECONDS * 1000) + 1_000);
+    await expect(store.get("https://morel.us-east.host.bsky.network")).resolves.toBeUndefined();
+  });
 });

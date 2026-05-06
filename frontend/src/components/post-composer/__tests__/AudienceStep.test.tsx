@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getGateControlsEditable, getPasswordWhitespaceError, getVisibilityOutcomeCopy } from "../AudienceStep";
+import { getGateControlsEditable, getPasswordWhitespaceError, getReplyTargetEditable, getVisibilityOutcomeCopy } from "../AudienceStep";
 import type { PostComposerState } from "@/types/postComposer";
 import { getPostTextWarning } from "../WriteStep";
 
@@ -56,6 +56,29 @@ describe("AudienceStep helpers", () => {
     expect(getGateControlsEditable(state, { mode: "edit", authorDid: "did:plc:abc", gateControlsEditable: false })).toBe(false);
     expect(getGateControlsEditable(state, { mode: "edit", authorDid: "did:plc:abc", gateControlsEditable: true })).toBe(true);
     expect(getGateControlsEditable({ ...state, mode: "create" }, { mode: "create", authorDid: "did:plc:abc", gateControlsEditable: false })).toBe(true);
+  });
+
+  it("allows reply target changes only while creating a post", () => {
+    const state: PostComposerState = {
+      mode: "create",
+      step: "audience",
+      text: "hello",
+      textForRecord: "hello",
+      textForBluesky: "hello",
+      blurredText: "hello",
+      additional: "",
+      simpleMode: false,
+      limitConsecutive: false,
+      visibility: "public",
+      password: "",
+      threadGate: [],
+      postGate: { allowQuote: true },
+      dirty: false,
+      submitting: false,
+    };
+
+    expect(getReplyTargetEditable(state)).toBe(true);
+    expect(getReplyTargetEditable({ ...state, mode: "edit" })).toBe(false);
   });
 });
 

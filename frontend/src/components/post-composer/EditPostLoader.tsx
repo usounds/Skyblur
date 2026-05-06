@@ -14,11 +14,13 @@ import {
   type ThreadGateValue,
   type VisibilityValue,
 } from "@/types/types";
-import { Alert, Loader, Stack, Text } from "@mantine/core";
+import { Alert, Button, Group, Skeleton, Stack, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import type { ResourceUri } from "@atcute/lexicons/syntax";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { PasswordUnlockGate } from "./PasswordUnlockGate";
+import { PostComposerStepper } from "./PostComposerStepper";
 
 type EditPostLoaderProps = {
   did: string;
@@ -31,6 +33,8 @@ type EditLoadState =
   | { status: "error"; message: string }
   | { status: "password"; baseInitialData: PostComposerInitialData; encryptCid: string }
   | { status: "loaded"; initialData: PostComposerInitialData };
+
+const editPostLoadingNotificationId = "post-composer-edit-loading";
 
 const visibilityValues = new Set<VisibilityValue>([
   "public",
@@ -161,7 +165,20 @@ export function parsePostGateRecord(value: unknown): { recordExists: boolean; po
   };
 }
 
-async function loadGateInitialData(agent: any, did: string, rkey: string) {
+type XrpcGetRecordResponse = {
+  ok?: boolean;
+  status?: number;
+  data?: { error?: unknown; value?: unknown };
+};
+
+export function isMissingGateRecordResponse(response: XrpcGetRecordResponse) {
+  return !response.ok && (
+    response.status === 404
+    || (response.status === 400 && response.data?.error === "RecordNotFound")
+  );
+}
+
+export async function loadGateInitialData(agent: any, did: string, rkey: string) {
   let gateControlsEditable = true;
 
   const [threadGateResponse, postGateResponse] = await Promise.all([
@@ -181,7 +198,7 @@ async function loadGateInitialData(agent: any, did: string, rkey: string) {
     }).catch(() => ({ ok: false, status: 500 })),
   ]);
 
-  if ((!threadGateResponse.ok && threadGateResponse.status !== 404) || (!postGateResponse.ok && postGateResponse.status !== 404)) {
+  if ((!threadGateResponse.ok && !isMissingGateRecordResponse(threadGateResponse)) || (!postGateResponse.ok && !isMissingGateRecordResponse(postGateResponse))) {
     gateControlsEditable = false;
   }
 
@@ -201,7 +218,7 @@ async function loadGateInitialData(agent: any, did: string, rkey: string) {
   };
 }
 
-function getRestrictedEditErrorMessage(errorCode: string, locale: Record<string, string>) {
+export function getRestrictedEditErrorMessage(errorCode: string, locale: Record<string, string>) {
   if (errorCode === "NotFollower") return locale.Post_Restricted_NotAuthorized_Followers;
   if (errorCode === "NotFollowing") return locale.Post_Restricted_NotAuthorized_Following;
   if (errorCode === "NotMutual") return locale.Post_Restricted_NotAuthorized_Mutual;
@@ -210,6 +227,50 @@ function getRestrictedEditErrorMessage(errorCode: string, locale: Record<string,
   if (errorCode.startsWith("NotList")) return locale.Post_Restricted_NotAuthorized_List;
   if (errorCode === "ListMembershipCheckFailed") return locale.Post_Restricted_ListCheckFailed;
   return locale.Post_Restricted_NotAuthorized;
+}
+
+export function EditPostLoadingFrame() {
+  const { localeData: locale } = useLocale();
+
+  return (
+    <Stack gap="lg" aria-busy="true">
+      <PostComposerStepper
+        step="write"
+        onStepChange={() => {}}
+        isStepReachable={(step) => step === "write"}
+      />
+
+      <div>
+        <Text size="sm" fw={700} mb={6}>{locale.CreatePost_Post}</Text>
+        <Skeleton height={36} width={140} radius="xl" mb={8} />
+        <Text size="sm" c="dimmed" mb="xs">{locale.PostComposer_BracketHelp}</Text>
+        <Skeleton height={150} radius="sm" mb="md" />
+
+        <Text size="sm" fw={600} mt="md">{locale.CreatePost_Additional}</Text>
+        <Text size="sm" c="dimmed" mb="xs">{locale.CreatePost_AdditionalDescription}</Text>
+        <Skeleton height={110} radius="sm" />
+      </div>
+
+      <Group justify="space-between">
+        <Button
+          type="button"
+          variant="light"
+          color="blue"
+          leftSection={<ArrowLeft size={16} />}
+          disabled
+        >
+          {locale.PostComposer_ActionBack}
+        </Button>
+        <Button
+          type="button"
+          rightSection={<ArrowRight size={16} />}
+          disabled
+        >
+          {locale.PostComposer_ActionNext}
+        </Button>
+      </Group>
+    </Stack>
+  );
 }
 
 export function EditPostLoader({ did, rkey, children }: EditPostLoaderProps) {
@@ -227,6 +288,25 @@ export function EditPostLoader({ did, rkey, children }: EditPostLoaderProps) {
   const requestIdRef = useRef(0);
 
   const routeParams = useMemo(() => normalizeEditRouteParams(did, rkey), [did, rkey]);
+
+  useEffect(() => {
+    if (loadState.status !== "loading") {
+      notifications.hide(editPostLoadingNotificationId);
+      return;
+    }
+
+    notifications.show({
+      id: editPostLoadingNotificationId,
+      loading: true,
+      autoClose: false,
+      withCloseButton: false,
+      message: locale.PostComposer_LoadingPost,
+    });
+
+    return () => {
+      notifications.hide(editPostLoadingNotificationId);
+    };
+  }, [loadState.status, locale.PostComposer_LoadingPost]);
 
   useEffect(() => {
     if (!isSessionChecked) return;
@@ -363,12 +443,7 @@ export function EditPostLoader({ did, rkey, children }: EditPostLoaderProps) {
   ]);
 
   if (loadState.status === "loading") {
-    return (
-      <Stack align="center" gap="sm" py="xl">
-        <Loader />
-        <Text size="sm" c="dimmed">{locale.PostComposer_LoadingPost}</Text>
-      </Stack>
-    );
+    return <EditPostLoadingFrame />;
   }
 
   if (loadState.status === "error") {

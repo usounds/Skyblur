@@ -9,9 +9,9 @@ import {
 import type { Store } from "@atcute/oauth-node-client";
 import { Resource } from "sst";
 
-import { LOCK_TTL_SECONDS, SESSION_TTL_SECONDS, STATE_TTL_SECONDS } from "./constants";
+import { LOCK_TTL_SECONDS, OAUTH_METADATA_TTL_SECONDS, SESSION_TTL_SECONDS, STATE_TTL_SECONDS } from "./constants";
 
-type StoreKind = "session" | "state";
+type StoreKind = "session" | "state" | "pr-metadata";
 type OAuthMemoryItem = {
   value: string;
   expiresAt: number;
@@ -52,7 +52,9 @@ function getTableName() {
 }
 
 function ttlForKind(kind: StoreKind) {
-  return kind === "session" ? SESSION_TTL_SECONDS : STATE_TTL_SECONDS;
+  if (kind === "session") return SESSION_TTL_SECONDS;
+  if (kind === "state") return STATE_TTL_SECONDS;
+  return OAUTH_METADATA_TTL_SECONDS;
 }
 
 function isLocalFallbackEnabled() {

@@ -1,5 +1,6 @@
 export const SESSION_TTL_SECONDS = 180 * 24 * 60 * 60;
 export const STATE_TTL_SECONDS = 10 * 60;
+export const OAUTH_METADATA_TTL_SECONDS = 60 * 60;
 export const LOCK_TTL_SECONDS = 60;
 
 export const scopeList = [

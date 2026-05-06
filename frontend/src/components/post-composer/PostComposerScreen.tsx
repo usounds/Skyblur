@@ -110,6 +110,17 @@ export function getStepError(state: PostComposerState, step: ComposerStep): Comp
   return undefined;
 }
 
+export function shouldConfirmComposerBack(state: PostComposerState) {
+  return state.dirty
+    || state.text.trim().length > 0
+    || state.additional.trim().length > 0
+    || state.password.trim().length > 0
+    || !!state.listUri
+    || !!state.replyPost
+    || state.threadGate.length > 0
+    || !state.postGate.allowQuote;
+}
+
 export function PostComposerScreen({
   initialData,
   onBack,
@@ -210,7 +221,7 @@ export function PostComposerScreen({
       goToStep(previousStep);
       return;
     }
-    if (state.mode === "edit" && state.dirty) {
+    if (shouldConfirmComposerBack(state)) {
       setConfirmBackOpened(true);
       return;
     }
@@ -235,6 +246,11 @@ export function PostComposerScreen({
     try {
       const result = await onSubmit(state, savePlanResult.plan);
       if (result.status === "success") {
+        notifications.show({
+          id: "post-composer-save-success",
+          color: "green",
+          message: locale.PostComposer_SaveSuccess,
+        });
         if (result.warning) {
           notifications.show({
             id: `post-composer-${result.warning.reason}`,
