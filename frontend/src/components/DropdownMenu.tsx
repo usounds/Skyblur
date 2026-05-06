@@ -4,7 +4,7 @@ import { isRestrictedVisibility } from "@/logic/listVisibility";
 import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from "@/types/types";
 import { Client } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
-import { Button, Group, Menu, Modal } from '@mantine/core';
+import { ActionIcon, Button, Group, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
@@ -192,7 +192,9 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                 </Group>
             </Modal>
             <Menu.Target>
-                <Ellipsis data-testid="post-menu" size={24} />
+                <ActionIcon variant="subtle" color="gray" aria-label="Post menu" data-testid="post-menu">
+                    <Ellipsis size={24} />
+                </ActionIcon>
             </Menu.Target>
 
             <Menu.Dropdown>

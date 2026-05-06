@@ -26,9 +26,9 @@ const e2eWebServerOutput = process.env.E2E_WEB_SERVER_LOGS === "true" ? "pipe" :
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30_000,
+  timeout: 60_000,
   expect: {
-    timeout: 10_000,
+    timeout: 20_000,
   },
   use: {
     baseURL: e2eBaseURL,

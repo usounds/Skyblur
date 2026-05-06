@@ -237,7 +237,7 @@ export const PostPage = () => {
 
     useEffect(() => {
         if (!did || !rkey || !isSessionChecked || !loginDid) return;
-        if (isDecrypt || encryptKey) return;
+        if (isDecrypt || encryptKey || encryptCid) return;
 
         const refetchKey = `${did}/${rkey}/${loginDid}`;
         if (authenticatedRefetchKeyRef.current === refetchKey) return;
@@ -245,7 +245,7 @@ export const PostPage = () => {
 
         getPostData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [did, rkey, isSessionChecked, loginDid]);
+    }, [did, rkey, isSessionChecked, loginDid, isDecrypt, encryptKey, encryptCid]);
 
 
 

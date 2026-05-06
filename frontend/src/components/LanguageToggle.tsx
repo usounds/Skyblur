@@ -18,7 +18,7 @@ const LanguageToggle: React.FC = () => {
             onClick={toggleLocale}
             variant="default"
             size="lg"
-            aria-label="Toggle color scheme"
+            aria-label="Toggle language"
         >
             <Languages size={20} />
         </ActionIcon>

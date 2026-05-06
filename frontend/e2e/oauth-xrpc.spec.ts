@@ -172,9 +172,17 @@ async function confirmComposerBack(page: import("@playwright/test").Page) {
     await page.getByRole("button", { name: "Back" }).first().click({ force: true });
   }
   await expect(confirmMessage).toBeVisible();
-  const dialog = page.locator('[role="dialog"]').filter({ hasText: "Your changes will not be saved. Are you sure you want to go back?" });
-  await dialog.getByRole("button", { name: "Back" }).click({ force: true });
-  await expect(dialog).toBeHidden();
+  const dialog = page.getByRole("dialog", { name: "Confirm" }).filter({
+    hasText: "Your changes will not be saved. Are you sure you want to go back?",
+  });
+  const backButton = dialog.getByRole("button", { name: "Back", exact: true });
+  await backButton.click({ force: true });
+  await expect(dialog).toBeHidden({ timeout: 3_000 }).catch(async () => {
+    if (await dialog.isVisible({ timeout: 500 }).catch(() => false)) {
+      await backButton.click({ force: true, timeout: 1_000 }).catch(() => {});
+    }
+    await expect(dialog).toBeHidden();
+  });
 }
 
 async function restoreUnexpectedCreateDraft(page: import("@playwright/test").Page) {
@@ -221,19 +229,40 @@ async function goToCheckStep(page: import("@playwright/test").Page) {
 async function selectReplyTarget(page: import("@playwright/test").Page) {
   let lastError: unknown;
 
+  const ensureAudienceStep = async () => {
+    if (await page.getByText("What this setting does").isVisible().catch(() => false)) return;
+    if (await page.getByText("What appears on Skyblur").isVisible().catch(() => false)) {
+      await page.getByRole("button", { name: "Back" }).click({ force: true });
+      await expect(page.getByText("What this setting does")).toBeVisible();
+      return;
+    }
+    if (await page.getByText("Write", { exact: true }).isVisible().catch(() => false)) {
+      await goToAudienceStep(page);
+    }
+  };
+
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await page.getByRole("button", { name: "Reply to this post" }).click({ timeout: 5_000 });
+      await ensureAudienceStep();
+      const replyTargetButton = page.getByRole("button", { name: "Reply to this post" }).first();
+      if (!await replyTargetButton.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        const replyTargetToggle = page.getByRole("switch", { name: "Set a reply target" });
+        if (!await replyTargetToggle.isChecked().catch(() => false)) {
+          await replyTargetToggle.focus();
+          await page.keyboard.press("Space");
+          if (!await replyTargetToggle.isChecked({ timeout: 1_000 }).catch(() => false)) {
+            await replyTargetToggle.click({ force: true });
+          }
+          await expect(replyTargetToggle).toBeChecked({ timeout: 2_000 });
+        }
+      }
+      await expect(replyTargetButton).toBeVisible({ timeout: 20_000 });
+      await replyTargetButton.click({ timeout: 5_000 });
       return;
     } catch (error) {
       lastError = error;
-      if (!await page.getByText("Write", { exact: true }).isVisible().catch(() => false)) break;
-      await goToAudienceStep(page);
+      await ensureAudienceStep();
       await openComposerDetails(page);
-      if (!await page.getByRole("button", { name: "Reply to this post" }).isVisible().catch(() => false)) {
-        await page.getByLabel("Set a reply target").click();
-      }
-      await expect(page.getByText("E2E reply target post")).toBeVisible();
     }
   }
 
@@ -248,13 +277,14 @@ async function clickOpenPostMenuEdit(page: import("@playwright/test").Page) {
       if (!await page.getByRole("menuitem", { name: "Edit" }).isVisible().catch(() => false)) {
         await page.getByTestId("post-menu").last().click();
       }
-      await page.getByRole("menuitem", { name: "Edit" }).click({ timeout: 5_000 });
-      await page.waitForURL(/\/console\/posts\/.+\/edit$/, { timeout: 5_000 });
+      const editMenuItem = page.getByRole("menuitem", { name: "Edit" });
+      await editMenuItem.click({ force: true, timeout: 5_000 });
+      await page.waitForURL(/\/console\/posts\/.+\/edit$/, { timeout: 15_000 });
       return;
     } catch (error) {
       lastError = error;
       if (/\/console\/posts\/.+\/edit$/.test(page.url())) return;
-      await expect(page.getByText("Post List")).toBeVisible();
+      await page.waitForTimeout(250);
     }
   }
 
@@ -516,17 +546,19 @@ test("header controls toggle theme and language from the rendered UI", async ({
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
 
-  const headerButtons = page.getByRole("button", { name: "Toggle color scheme" });
-  await expect(headerButtons).toHaveCount(2);
+  const languageToggle = page.getByRole("button", { name: "Toggle language" });
+  const colorSchemeToggle = page.getByRole("button", { name: "Toggle color scheme" });
+  await expect(languageToggle).toBeVisible();
+  await expect(colorSchemeToggle).toBeVisible();
 
-  await headerButtons.first().click();
+  await languageToggle.click();
   await expect(page.getByRole("heading", { name: "Skyblurへようこそ" })).toBeVisible();
-  await headerButtons.first().click();
+  await languageToggle.click();
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
 
-  await headerButtons.nth(1).click();
+  await colorSchemeToggle.click();
   await expect(page.locator("html")).toHaveAttribute("data-mantine-color-scheme", "dark");
-  await headerButtons.nth(1).click();
+  await colorSchemeToggle.click();
   await expect(page.locator("html")).toHaveAttribute("data-mantine-color-scheme", "light");
 });
 
@@ -868,7 +900,7 @@ test("/console login form shows callback errors and clears typeahead input", asy
   const handleInput = loginDialog.getByRole("combobox");
   await handleInput.fill("clearme");
   await expect(handleInput).toHaveValue("clearme");
-  await handleInput.fill("");
+  await handleInput.clear();
   await expect(handleInput).toHaveValue("");
   await expect(loginDialog.getByRole("button", { name: "Login", exact: true })).toBeDisabled();
 });
@@ -987,7 +1019,9 @@ test("/post validates and unlocks password-protected detail content", async ({
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByText("Password is required")).toBeVisible();
 
-  await page.locator("input").last().fill("p@ssword");
+  const passwordInput = page.getByRole("textbox");
+  await passwordInput.fill("p@ssword");
+  await expect(passwordInput).toHaveValue("p@ssword");
   await page.getByRole("button", { name: "Unlock" }).click();
 
   await expect(page.getByText("Unlocked post detail text")).toBeVisible();
@@ -1420,8 +1454,6 @@ test("/console create post form covers validation, reply, visibility, and submit
   await page.getByRole("button", { name: "Public" }).click();
 
   await openComposerDetails(page);
-  await page.getByLabel("Set a reply target").click();
-  await expect(page.getByText("E2E reply target post")).toBeVisible();
   await selectReplyTarget(page);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await page.getByLabel("Set a reply target").click();
@@ -1845,8 +1877,12 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
 
   await expect(page).toHaveURL(/\/console\/posts\/.+\/edit$/);
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
-  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Visible E2E [secret] console post");
-  await page.getByPlaceholder("Please enter the content.").fill("Visible E2E [changed] console post");
+  const editPostInput = page.getByPlaceholder("Please enter the content.");
+  await expect(editPostInput).toHaveValue("Visible E2E [secret] console post");
+  await page.waitForTimeout(500);
+  await expect(editPostInput).toHaveValue("Visible E2E [secret] console post");
+  await editPostInput.fill("Visible E2E [changed] console post");
+  await expect(editPostInput).toHaveValue("Visible E2E [changed] console post");
   await page.getByRole("button", { name: "Back" }).click();
   const backDialog = page.getByRole("dialog", { name: "Confirm" });
   await expect(backDialog).toBeVisible();
@@ -2517,8 +2553,6 @@ test("/console restores draft content with a selected reply target", async ({
   await page.getByPlaceholder("Please enter the content.").fill("Reply draft [secret] text");
   await goToAudienceStep(page);
   await openComposerDetails(page);
-  await page.getByLabel("Set a reply target").check();
-  await expect(page.getByText("E2E reply target post")).toBeVisible();
   await selectReplyTarget(page);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
