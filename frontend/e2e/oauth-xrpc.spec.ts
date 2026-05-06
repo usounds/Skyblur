@@ -1327,7 +1327,7 @@ test("/console prompts relogin when app.bsky rpc scopes are missing", async ({
 
   const relogin = page.getByRole("link", { name: "Log in again" });
   await expect(relogin).toBeVisible();
-  await expect(relogin).toHaveAttribute("href", /\/api\/oauth\/login\?redirect_uri=/);
+  await expect(relogin).toHaveAttribute("href", new RegExp(`/api/oauth/login\\?redirect_uri=.*&handle=${mockHandle}`));
 });
 
 test("/console prompts relogin for an older session missing list visibility scopes", async ({
@@ -1349,7 +1349,7 @@ test("/console prompts relogin for an older session missing list visibility scop
 
   const relogin = page.getByRole("link", { name: "Log in again" });
   await expect(relogin).toBeVisible();
-  await expect(relogin).toHaveAttribute("href", /\/api\/oauth\/login\?redirect_uri=/);
+  await expect(relogin).toHaveAttribute("href", new RegExp(`/api/oauth/login\\?redirect_uri=.*&handle=${mockHandle}`));
 });
 
 test("/console hides relogin prompt when current app.bsky rpc scopes are present", async ({

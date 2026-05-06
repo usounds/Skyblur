@@ -1,0 +1,105 @@
+.notice {
+  border: 1px solid var(--mantine-color-yellow-3);
+  border-left-width: 3px;
+  background: var(--mantine-color-yellow-0);
+  box-shadow: none;
+}
+
+.icon {
+  color: var(--mantine-color-yellow-8);
+}
+
+.title {
+  color: var(--mantine-color-yellow-9);
+  font-weight: 700;
+}
+
+.body {
+  min-width: 0;
+}
+
+.message {
+  color: var(--mantine-color-gray-9);
+}
+
+.content {
+  width: 100%;
+}
+
+.copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.description {
+  color: var(--mantine-color-gray-9);
+  line-height: 1.55;
+}
+
+.scopes {
+  color: var(--mantine-color-gray-6);
+}
+
+.button {
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--mantine-color-blue-7) 40%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.button:hover {
+  border-color: var(--mantine-color-blue-6);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14);
+}
+
+.button:active {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+}
+
+[data-mantine-color-scheme="dark"] .notice {
+  border-color: rgba(250, 176, 5, 0.28);
+  border-left-color: var(--mantine-color-yellow-5);
+  background: var(--mantine-color-dark-7);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+[data-mantine-color-scheme="dark"] .icon {
+  color: var(--mantine-color-yellow-3);
+}
+
+[data-mantine-color-scheme="dark"] .title {
+  color: var(--mantine-color-yellow-2);
+}
+
+[data-mantine-color-scheme="dark"] .message,
+[data-mantine-color-scheme="dark"] .description {
+  color: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme="dark"] .scopes {
+  color: rgba(255, 236, 153, 0.62);
+}
+
+[data-mantine-color-scheme="dark"] .button {
+  border-color: color-mix(in srgb, var(--mantine-color-blue-4) 34%, transparent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
+[data-mantine-color-scheme="dark"] .button:hover {
+  border-color: var(--mantine-color-blue-4);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.26);
+}
+
+@media (max-width: 40em) {
+  .content {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .button {
+    width: fit-content;
+  }
+}

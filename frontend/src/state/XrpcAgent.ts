@@ -141,7 +141,12 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     setIsLoginModalOpened: (isLoginModalOpened) => set({ isLoginModalOpened }),
     getReloginUrl: (redirectUrl?: string) => {
       const redirect = redirectUrl || (typeof window !== 'undefined' ? window.location.href : '/console');
-      return `${xrpcService}/api/oauth/login?redirect_uri=${encodeURIComponent(redirect)}`;
+      const params = new URLSearchParams({ redirect_uri: redirect });
+      const handle = get().userProf?.handle;
+      if (handle) {
+        params.set("handle", handle);
+      }
+      return `${xrpcService}/api/oauth/login?${params.toString()}`;
     },
     setIsSessionChecked: (isSessionChecked) => {
       if (!isSessionChecked) {

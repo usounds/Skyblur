@@ -17,6 +17,9 @@ import type { OAuthSession } from "@atcute/oauth-node-client";
 
 // 1. DOクラスの定義
 export { RestrictedPostDO } from "@/api/RestrictedPostDO"
+// Legacy compatibility: older preview/prod Durable Objects were created from AirglowPostDO.
+// Keep exporting the old class name so existing objects remain deployable.
+export class AirglowPostDO extends RestrictedPostDO {}
 
 // 1. DOクラスの定義
 export class OAuthStoreDO extends DurableObject {

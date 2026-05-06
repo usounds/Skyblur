@@ -42,6 +42,7 @@ function joinLabels(values: string[], mapper: (value: string) => string, fallbac
 
 export function SkyblurCheckStep({ summary, requiresRelogin, onFix }: SkyblurCheckStepProps) {
   const { localeData: locale } = useLocale();
+  const isEditMode = summary.savePlan.mode === "edit";
   const [skyblurPreviewAudience, setSkyblurPreviewAudience] = useState<string | null>("allowed");
   const hasBlockingFix = summary.fixTargets.length > 0;
   const hasBlockedAudience = summary.audience.unreadableView !== "full-text";
@@ -157,7 +158,13 @@ export function SkyblurCheckStep({ summary, requiresRelogin, onFix }: SkyblurChe
             <EyeOff size={17} />
             <Text fw={800}>{locale.PostComposer_CheckBlueskyTitle}</Text>
           </Group>
-          <PostTextWithBold postText={summary.blueskyText} isValidateBrackets={false} isMask={locale.CreatePost_OmmitChar} />
+          {isEditMode ? (
+            <Text size="sm" c="dimmed">
+              {locale.PostComposer_CheckEditBlueskyNotUpdated}
+            </Text>
+          ) : (
+            <PostTextWithBold postText={summary.blueskyText} isValidateBrackets={false} isMask={locale.CreatePost_OmmitChar} />
+          )}
 
           <div className={classes.platformSettings}>
             <div className={classes.metaRow}>
@@ -169,13 +176,15 @@ export function SkyblurCheckStep({ summary, requiresRelogin, onFix }: SkyblurChe
                 {joinLabels(summary.threadGate, (value) => getThreadGateLabel(value, locale), locale.PostComposer_CheckNoRestriction)}
               </Text>
             </div>
-            <div className={classes.metaRow}>
-              <Group gap={6}>
-                <CornerDownRight size={15} />
-                <Text size="sm" c="dimmed">{locale.PostComposer_ReplyTargetTitle}</Text>
-              </Group>
-              <Text size="sm" fw={600}>{summary.replyTarget ?? locale.PostComposer_CheckNoRestriction}</Text>
-            </div>
+            {!isEditMode && (
+              <div className={classes.metaRow}>
+                <Group gap={6}>
+                  <CornerDownRight size={15} />
+                  <Text size="sm" c="dimmed">{locale.PostComposer_ReplyTargetTitle}</Text>
+                </Group>
+                <Text size="sm" fw={600}>{summary.replyTarget ?? locale.PostComposer_CheckNoRestriction}</Text>
+              </div>
+            )}
             <div className={classes.metaRow}>
               <Group gap={6}>
                 <Quote size={15} />
@@ -187,11 +196,6 @@ export function SkyblurCheckStep({ summary, requiresRelogin, onFix }: SkyblurChe
         </section>
       </div>
 
-      {summary.savePlan.mode === "edit" && !summary.updatesBlueskyPostBody && (
-        <Text size="sm" className={classes.quietNotice}>
-          {locale.PostComposer_CheckEditBlueskyNotUpdated}
-        </Text>
-      )}
     </div>
   );
 }

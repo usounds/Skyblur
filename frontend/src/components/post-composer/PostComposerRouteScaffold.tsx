@@ -15,6 +15,7 @@ import { AudienceStep } from "./AudienceStep";
 import { SkyblurCheckStep } from "./SkyblurCheckStep";
 import { buildPostComposerSavePlan, postComposerSave } from "@/logic/postComposer/save";
 import { buildSkyblurCheckSummary } from "@/logic/postComposer/skyblurCheck";
+import { useComposerLocaleSwitchGuardStore } from "@/state/ComposerLocaleSwitchGuard";
 import { clearSensitiveDraft, useSensitiveDraftStore } from "@/state/SensitiveDraft";
 import { useTempPostStore } from "@/state/TempPost";
 import { useRouter } from "next/navigation";
@@ -71,6 +72,7 @@ function syncCreateDraft(state: PostComposerState) {
 export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostComposerRouteScaffoldProps) {
   const { localeData: locale } = useLocale();
   const router = useRouter();
+  const setHasUnsavedComposerChanges = useComposerLocaleSwitchGuardStore((state) => state.setHasUnsavedComposerChanges);
   const did = useXrpcAgentStore((state) => state.did);
   const agent = useXrpcAgentStore((state) => state.agent);
   const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
@@ -107,8 +109,14 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   }, [mode]);
   const exitToConsole = useCallback(() => {
     setActiveCreateSession(false);
+    setHasUnsavedComposerChanges(false);
     router.push("/console");
-  }, [router]);
+  }, [router, setHasUnsavedComposerChanges]);
+  useEffect(() => {
+    return () => {
+      setHasUnsavedComposerChanges(false);
+    };
+  }, [setHasUnsavedComposerChanges]);
   const routeRkey = useMemo(() => safeDecode(rkeyParam), [rkeyParam]);
   const hasInvalidEditParams = mode === "edit" && (!routeDid || !routeRkey);
   const isDifferentAccount = mode === "edit" && !!routeDid && !!did && routeDid !== did;
@@ -125,11 +133,11 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
       simpleMode: tempSimpleMode,
       limitConsecutive: tempLimitConsecutive,
       visibility,
-	      listUri: visibility === VISIBILITY_LIST ? tempListUri : undefined,
-	      replyPost: restoredReplyPost,
-	      passwordUnlocked: false,
-	      ...(isPassword ? { originalStorageFormat: "password-blob" as const } : {}),
-	    };
+      listUri: visibility === VISIBILITY_LIST ? tempListUri : undefined,
+      replyPost: restoredReplyPost,
+      passwordUnlocked: false,
+      ...(isPassword ? { originalStorageFormat: "password-blob" as const } : {}),
+    };
   }, [
     did,
     sensitiveAdditional,
@@ -138,17 +146,17 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
     tempLimitConsecutive,
     tempListUri,
     tempSimpleMode,
-	    tempText,
-	    tempVisibility,
-	    sensitivePassword,
-	    restoredReplyPost,
-	  ]);
-	  const hasCreateDraft = mode === "create" && !!(
-	    tempText
-	    || tempAdditional
-	    || tempReply
-	    || (tempVisibility === VISIBILITY_PASSWORD && (sensitiveText || sensitiveAdditional || sensitivePassword))
-	  );
+    tempText,
+    tempVisibility,
+    sensitivePassword,
+    restoredReplyPost,
+  ]);
+  const hasCreateDraft = mode === "create" && !!(
+    tempText
+    || tempAdditional
+    || tempReply
+    || (tempVisibility === VISIBILITY_PASSWORD && (sensitiveText || sensitiveAdditional || sensitivePassword))
+  );
   const emptyCreateInitialData = useMemo<PostComposerInitialData>(() => ({
     mode: "create",
     authorDid: did,
@@ -358,13 +366,19 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
       key={mode === "create" ? restoreDecision : initialData?.blurUri}
       initialData={initialData ?? activeCreateInitialData}
       onBack={exitToConsole}
-      onStateChange={mode === "create" ? syncCreateDraft : undefined}
+      onStateChange={(state) => {
+        setHasUnsavedComposerChanges(state.dirty);
+        if (mode === "create") {
+          syncCreateDraft(state);
+        }
+      }}
       requiresRelogin={missingScopes.length > 0}
       onSubmit={async (state, plan) => {
         const result = await postComposerSave({ state, plan, did, agent, apiProxyAgent, locale, initialData });
         if (result.status === "success") {
           clearSensitiveDraft();
           clearTempPost();
+          setHasUnsavedComposerChanges(false);
           exitToConsole();
         }
         return result;

@@ -40,6 +40,9 @@
 			"new_sqlite_classes": [
 				"RestrictedPostDO"
 			]
+		},
+		{
+			"tag": "v3"
 		}
 	],
 	"env": {
@@ -76,6 +79,23 @@
 				"enabled": true,
 				"head_sampling_rate": 0.3
 			},
+			"migrations": [
+				{
+					"tag": "v1",
+					"new_sqlite_classes": [
+						"OAuthStoreDO"
+					]
+				},
+				{
+					"tag": "v2",
+					"new_sqlite_classes": [
+						"RestrictedPostDO"
+					]
+				},
+				{
+					"tag": "v3"
+				}
+			],
 			"r2_buckets": [
 				{
 					"binding": "SKYBLUR_BACKUP",
@@ -116,6 +136,29 @@
 				"enabled": true,
 				"head_sampling_rate": 0.3
 			},
+			"migrations": [
+				{
+					"tag": "v1",
+					"new_sqlite_classes": [
+						"OAuthStoreDO"
+					]
+				},
+				{
+					"tag": "v2",
+					"new_sqlite_classes": [
+						"RestrictedPostDO"
+					]
+				},
+				{
+					"tag": "v3"
+				},
+				{
+					"tag": "v4",
+					"deleted_classes": [
+						"AirglowPostDO"
+					]
+				}
+			],
 			"r2_buckets": [
 				{
 					"binding": "SKYBLUR_BACKUP",
