@@ -47,6 +47,7 @@ const mockPreference = {
 };
 
 const mockPost = {
+  $type: "uk.skyblur.post",
   uri: `at://${mockDid}/app.bsky.feed.post/e2epost`,
   text: "Visible E2E [secret] console post",
   additional: "E2E additional note",
@@ -55,6 +56,7 @@ const mockPost = {
 };
 
 const mockPasswordPost = {
+  $type: "uk.skyblur.post",
   uri: `at://${mockDid}/app.bsky.feed.post/e2epassword`,
   text: "Password E2E ****** post",
   additional: "",
@@ -68,6 +70,7 @@ const mockPasswordPost = {
 };
 
 const mockRestrictedPost = {
+  $type: "uk.skyblur.post",
   uri: `at://${mockDid}/app.bsky.feed.post/e2erestricted`,
   text: "*****",
   additional: "",
@@ -163,8 +166,14 @@ type OAuthMockOptions = {
   listRecordsHasNextPage?: boolean;
   listRecordsStatus?: 200 | 500;
   listRecordsAbort?: boolean;
+  getListsStatus?: 200 | 500;
+  getListsEmpty?: boolean;
+  getListsFailuresBeforeSuccess?: number;
   replySearchHasNextPage?: boolean;
   replySearchEmpty?: boolean;
+  replySearchStatus?: 200 | 500 | 504;
+  replyResolveStatus?: 200 | 500;
+  replyResolveEmpty?: boolean;
   postVariant?: "public" | "password" | "restricted" | "following" | "mutual" | "list" | "login" | "empty";
   postDetailVariant?: "public" | "password" | "authRequired" | "error";
   postDetailVisibility?: "login" | "followers" | "following" | "mutual" | "list";
@@ -174,6 +183,8 @@ type OAuthMockOptions = {
   getPostStatus?: 200 | 500;
   uploadBlobStatus?: 200 | 500;
   applyWritesStatus?: 200 | 500;
+  editRecordStatus?: 200 | 500;
+  editRecordVariant?: "invalid-type" | "invalid-visibility" | "invalid-text" | "password-missing-encrypt";
   constellationIntentStatus?: 200 | 500;
   constellationAllStatus?: 200 | 500;
   restrictedErrorCode?: "NotFollower" | "NotFollowing" | "NotMutual" | "NotListMember" | "ListMembershipCheckFailed" | "AuthRequired" | "ContentMissing" | "Other";
@@ -189,6 +200,7 @@ export async function useLoggedInOAuthMock(
   baseURL: string | undefined,
   options: OAuthMockOptions = {},
 ) {
+  let getListsCalls = 0;
   for (const routePattern of [
     "**/api/oauth/session",
     "https://plc.directory/**",
@@ -424,22 +436,39 @@ export async function useLoggedInOAuthMock(
     }
 
     if (method === "app.bsky.graph.getLists") {
+      getListsCalls += 1;
+      if (
+        options.getListsStatus === 500
+        || getListsCalls <= (options.getListsFailuresBeforeSuccess ?? 0)
+      ) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "GetListsFailed" }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           cursor: "",
           lists: [
-            {
-              uri: mockListUri,
-              cid: "bafy-e2e-list",
-              creator: userProfile,
-              name: "E2E Allowed List",
-              description: "People allowed to read list-only Skyblur posts",
-              purpose: "app.bsky.graph.defs#curatelist",
-              listItemCount: 3,
-              indexedAt: "2026-05-04T03:02:34.000Z",
-            },
+            ...(options.getListsEmpty
+              ? []
+              : [
+                  {
+                    uri: mockListUri,
+                    cid: "bafy-e2e-list",
+                    creator: userProfile,
+                    name: "E2E Allowed List",
+                    description: "People allowed to read list-only Skyblur posts",
+                    purpose: "app.bsky.graph.defs#curatelist",
+                    listItemCount: 3,
+                    indexedAt: "2026-05-04T03:02:34.000Z",
+                  },
+                ]),
             {
               uri: "at://did:plc:other/app.bsky.graph.list/other",
               cid: "bafy-e2e-other-list",
@@ -479,6 +508,48 @@ export async function useLoggedInOAuthMock(
 
     if (method === "com.atproto.repo.getRecord") {
       const collection = url.searchParams.get("collection");
+      if (collection === "uk.skyblur.post") {
+        if (options.editRecordStatus === 500) {
+          await route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "EditRecordFailed" }),
+          });
+          return;
+        }
+
+        const editVariant = options.postVariant === "empty" ? "public" : (options.postVariant || "public");
+        const postByVariant = {
+          public: mockPost,
+          password: mockPasswordPost,
+          restricted: mockRestrictedPost,
+          following: mockFollowingPost,
+          mutual: mockMutualPost,
+          list: mockListPost,
+          login: mockLoginOnlyPost,
+        }[editVariant];
+        const value = options.editRecordVariant === "invalid-type"
+          ? { ...postByVariant, $type: "app.bsky.feed.post" }
+          : options.editRecordVariant === "invalid-visibility"
+            ? { ...postByVariant, visibility: "unknown" }
+            : options.editRecordVariant === "invalid-text"
+              ? { ...postByVariant, text: null }
+              : options.editRecordVariant === "password-missing-encrypt"
+                ? { ...mockPasswordPost, encryptBody: undefined }
+                : postByVariant;
+
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            uri: `at://${mockDid}/uk.skyblur.post/e2eblur-${editVariant}`,
+            cid: "bafy-e2e-blur",
+            value,
+          }),
+        });
+        return;
+      }
+
       if (collection === "app.bsky.feed.generator") {
         if (options.noCustomFeed) {
           await route.fulfill({
@@ -592,6 +663,15 @@ export async function useLoggedInOAuthMock(
     }
 
     if (method === "app.bsky.feed.searchPosts") {
+      if (options.replySearchStatus === 500 || options.replySearchStatus === 504) {
+        await route.fulfill({
+          status: options.replySearchStatus,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "ReplySearchFailed" }),
+        });
+        return;
+      }
+
       if (options.replySearchEmpty) {
         await route.fulfill({
           status: 200,
@@ -630,11 +710,20 @@ export async function useLoggedInOAuthMock(
     }
 
     if (method === "app.bsky.feed.getPosts") {
+      if (options.replyResolveStatus === 500) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "ReplyResolveFailed" }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          posts: [mockReplyPost],
+          posts: options.replyResolveEmpty ? [] : [mockReplyPost],
         }),
       });
       return;

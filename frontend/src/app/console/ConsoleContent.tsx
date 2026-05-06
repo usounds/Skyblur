@@ -1,5 +1,4 @@
 "use client";
-import { CreatePostForm } from "@/components/CreatePost";
 import { AuthenticationTitle } from "@/components/login/Login";
 import PageLoading from "@/components/PageLoading";
 import { PostList } from "@/components/PostList";
@@ -7,127 +6,37 @@ import { ScopeReloginNotice } from "@/components/ScopeReloginNotice";
 import { useLocale } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { isRestrictedVisibility } from "@/logic/listVisibility";
 import { PostListItem } from "@/types/types";
 import { Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
-import { notifications } from '@mantine/notifications'; // Added
-import { ResourceUri } from '@atcute/lexicons/syntax'; // Added
-import { Pencil, X } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function ConsoleContent() {
-    const [prevBlur, setPrevBlur] = useState<PostListItem>()
     const did = useXrpcAgentStore((state) => state.did);
     const { localeData: locale } = useLocale();
     const userProf = useXrpcAgentStore((state) => state.userProf);
     const mode = useModeStore((state) => state.mode);
     const setMode = useModeStore((state) => state.setMode);
     const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
+    const router = useRouter();
 
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     const handleEdit = async (input: PostListItem) => {
-        // Only fetch if not already fetched/decrypted
-        if (input.isDecrypt) {
-            setPrevBlur(input);
-            setMode("create")
+        const parts = input.blurATUri.split('/');
+        const routeDid = parts[2];
+        const routeRkey = parts[4];
+        if (routeDid && routeRkey) {
+            router.push(`/console/posts/${encodeURIComponent(routeDid)}/${encodeURIComponent(routeRkey)}/edit`);
             return;
         }
-        // Restricted content pre-fetch
-        if (isRestrictedVisibility(input.blur.visibility || '')) {
-            notifications.show({
-                id: 'edit-fetch',
-                title: 'Loading',
-                message: locale.Post_Restricted_FetchingAuth, // existing string or close enough
-                loading: true,
-                autoClose: false,
-                withCloseButton: false,
-            });
-
-            try {
-                /* istanbul ignore next -- Restricted edit controls are only reachable after an authenticated proxy agent exists. */
-                if (!apiProxyAgent) throw new Error("No agent");
-                const res = await apiProxyAgent.post('uk.skyblur.post.getPost', {
-                    input: {
-                        uri: input.blurATUri as ResourceUri
-                    }
-                });
-
-                if (res.ok && res.data) {
-                    const data = res.data as { text: string, additional: string, message?: string, errorCode?: string };
-
-                    if (data.errorCode) {
-                        const code = data.errorCode;
-                        let errorMsg = '';
-                        if (code === 'NotFollower') {
-                            errorMsg = locale.Post_Restricted_NotAuthorized_Followers;
-                        } else if (code === 'NotFollowing') {
-                            errorMsg = locale.Post_Restricted_NotAuthorized_Following;
-                        } else if (code === 'NotMutual') {
-                            errorMsg = locale.Post_Restricted_NotAuthorized_Mutual;
-                        } else if (['NotListMember', 'ListUriMissing', 'InvalidListUri'].includes(code)) {
-                            errorMsg = locale.Post_Restricted_NotAuthorized_List;
-                        } else if (code === 'ListMembershipCheckFailed') {
-                            errorMsg = locale.Post_Restricted_ListCheckFailed;
-                        } else if (code === 'AuthRequired') {
-                            errorMsg = locale.Post_Restricted_LoginRequired;
-                        } else if (code === 'ContentMissing') {
-                            errorMsg = locale.Post_Restricted_ContentMissing;
-                        } else {
-                            errorMsg = locale.Post_Restricted_NotAuthorized;
-                        }
-
-                        if (errorMsg) {
-                            notifications.show({
-                                title: 'Error',
-                                message: errorMsg,
-                                color: 'red',
-                                icon: <X />,
-                                autoClose: 10000,
-                            });
-                        }
-
-                        // Fail safe: keep original input
-                        setPrevBlur(input);
-
-                    } else {
-                        // Success
-                        const newInput = {
-                            ...input,
-                            blur: {
-                                ...input.blur,
-                                text: data.text,
-                                additional: data.additional
-                            }
-                        };
-                        setPrevBlur(newInput);
-                    }
-                } else {
-                    // Fallback
-                    setPrevBlur(input);
-                }
-            } catch (e) {
-                console.error("Pre-fetch failed", e);
-                setPrevBlur(input);
-                notifications.show({
-                    title: 'Error',
-                    message: "Failed to load restricted content.",
-                    color: 'red'
-                });
-            } finally {
-                notifications.hide('edit-fetch');
-            }
-        } else {
-            setPrevBlur(input);
-        }
-        setMode("create")
     };
 
     const handleNew = () => {
-        setPrevBlur(undefined)
-        setMode("create")
+        router.push("/console/posts/new")
     };
 
     const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
@@ -205,25 +114,21 @@ export function ConsoleContent() {
             <main>
                 <div className="w-full">
                     <ScopeReloginNotice />
-                    {mode === 'create' ? (
-                        <CreatePostForm setMode={setMode} prevBlur={prevBlur} onBack={() => setMode("menu")} />
-                    ) : (
-                        <div className="mx-auto max-w-screen-sm flex flex-col">
-                            <div className="my-4 text-center" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both' }}>
-                                {locale.Menu_LoginMessage.replace("{2}", (new Date().getHours() < 5 || new Date().getHours() >= 18) ? locale.Greeting_Night : (new Date().getHours() < 11) ? locale.Greeting_Morning : locale.Greeting_Day).replace("{1}", userProf?.displayName || userProf?.handle || did || 'User')}
-                            </div>
-
-                            <div className="flex justify-center gap-4 mb-8" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' }}>
-                                <Button leftSection={<Pencil size={14} />} variant="filled" onClick={() => handleNew()}>
-                                    {locale.Menu_CreatePost}
-                                </Button>
-                            </div>
-
-                            {isSessionChecked && did && (
-                                <PostList handleEdit={handleEdit} agent={apiProxyAgent} did={did} />
-                            )}
+                    <div className="mx-auto max-w-screen-sm flex flex-col">
+                        <div className="my-4 text-center" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both' }}>
+                            {locale.Menu_LoginMessage.replace("{2}", (new Date().getHours() < 5 || new Date().getHours() >= 18) ? locale.Greeting_Night : (new Date().getHours() < 11) ? locale.Greeting_Morning : locale.Greeting_Day).replace("{1}", userProf?.displayName || userProf?.handle || did || 'User')}
                         </div>
-                    )}
+
+                        <div className="flex justify-center gap-4 mb-8" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' }}>
+                            <Button leftSection={<Pencil size={14} />} variant="filled" onClick={() => handleNew()}>
+                                {locale.Menu_CreatePost}
+                            </Button>
+                        </div>
+
+                        {isSessionChecked && did && (
+                            <PostList handleEdit={handleEdit} agent={apiProxyAgent} did={did} />
+                        )}
+                    </div>
                 </div>
             </main>
         </div>

@@ -6,6 +6,7 @@ import { transformUrl } from "@/logic/HandleBluesky";
 import { IdentityResolver } from '@/logic/IdentityResolver';
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { isListVisibility, isRestrictedVisibility, type OwnedListOption } from "@/logic/listVisibility";
+import { normalizeFullWidthBrackets, transformPostText } from "@/logic/postComposer/text";
 import { useLocale } from "@/state/Locale";
 import { useTempPostStore } from "@/state/TempPost";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
@@ -76,6 +77,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const setTempLimitConsecutive = useTempPostStore((state) => state.setLimitConsecutive);
     const [threadGate, setThreadGate] = useState<string[]>([THREADGATE_QUOTE_ALLOW]);
     const setEncryptKey = useTempPostStore((state) => state.setEncryptKey);
+    const clearTempPost = useTempPostStore((state) => state.clearTempPost);
     const [buttonName, setButtonName] = useState(locale.CreatePost_CreateButton);
     const [changeModeOpened, { open: openChangeMode, close: closeChangeMode }] = useDisclosure(false);
     const [restorePostData, { open: openRestorePostData, close: closeRestorePostData }] = useDisclosure(false);
@@ -125,28 +127,8 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
     }
 
-    function containsFullWidthBrackets(input: string): boolean {
-        const fullWidthBracketsPattern = /［|］/;
-        return fullWidthBracketsPattern.test(input);
-    }
-
-    function areBracketsUnbalanced(input: string): boolean {
-        let openBracketsCount = 0;
-        let closeBracketsCount = 0;
-
-        for (const char of input) {
-            if (char === '[') {
-                openBracketsCount++;
-            } else if (char === ']') {
-                closeBracketsCount++;
-            }
-        }
-
-        return openBracketsCount !== closeBracketsCount;
-    }
-
     function convertFullWidthToHalfWidthBrackets(): void {
-        setPostText(postText.replace(/［/g, '[').replace(/］/g, ']'), simpleMode)
+        setPostText(normalizeFullWidthBrackets(postText), simpleMode)
     }
 
     const handleSetReplyPost = async (post: PostView) => {
@@ -164,59 +146,35 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     const setPostText = (text: string, simpleMode: boolean, limitConsecutive?: boolean) => {
         if (!text) setPostTextBlur("")
         setAppUrl('')
-        let postTextLocal = text
-        if (simpleMode) {
-            const lines = postTextLocal.split('\n');
-            // 行数が2行以上の場合にのみ処理を実行
-            if (lines.length > 1) {
-                postTextLocal = lines.map((line, index, lines) => {
-                    // 2行目の最初に "[" を追加
-                    if (index === 1) {
-                        line = `[${line}`;
-                    }
-                    // 最後の行に "]" を追加
-                    if (index === lines.length - 1) {
-                        line = `${line}]`;
-                    }
-                    return line;
-                }).join('\n');
-            }
-        }
-
-
-        // 正規表現で [] に囲まれた部分を ○ に置換
         const limit = limitConsecutive ?? isLimitConsecutiveOmmit;
-        const blurredText = postTextLocal.replace(/\[(.*?)\]/gs, (_, match) => {
-            // マッチした文字列内の改行を維持しつつ ommitChar で置換
-            let replaced = match.replace(/./g, locale.CreatePost_OmmitChar);
-            if (limit && replaced.length > 5) {
-                replaced = locale.CreatePost_OmmitChar.repeat(5);
-            }
-            return replaced;
+        const transformedText = transformPostText({
+            text,
+            simpleMode,
+            limitConsecutive: limit,
+            omitChar: locale.CreatePost_OmmitChar,
         });
-
 
         // 状態を更新
         setPostTest(text)
-        setPostTextForRecord(postTextLocal);
-        setPostTextBlur(blurredText);
+        setPostTextForRecord(transformedText.recordText);
+        setPostTextBlur(transformedText.blurredText);
 
         if (!prevBlur) setTempText(text)
 
-        setIsIncludeFullBranket(containsFullWidthBrackets(text))
+        setIsIncludeFullBranket(transformedText.hasFullWidthBrackets)
 
-        if (validateBrackets(text)) {
+        if (transformedText.validationError === 'duplicate-or-unclosed-bracket') {
             setWarning(locale.CreatePost_ErrorDuplicateBranket)
             return
         }
 
-        if (areBracketsUnbalanced(text)) {
+        if (transformedText.validationError === 'unbalanced-bracket') {
             setWarning(locale.CreatePost_BracketsUnbalanced)
             return
         }
 
 
-        if (simpleMode && text && (text.includes("[") || text.includes("]"))) {
+        if (transformedText.validationError === 'bracket-in-simple-mode') {
             setWarning(locale.CreatePost_NotBracketInSimpleMode);
             return;
         }
@@ -224,31 +182,6 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
         setWarning('')
 
     };
-
-    function validateBrackets(input: string): boolean {
-        let insideBracket = false; // 現在 `[` の中にいるかどうかを追跡
-
-        for (let i = 0; i < input.length; i++) {
-            const char = input[i];
-
-            if (char === "[") {
-                // すでに `[` の中にいる場合はエラー
-                if (insideBracket) {
-                    return true;
-                }
-                insideBracket = true; // `[` の中に入る
-            } else if (char === "]") {
-                // `[` の中にいる場合は終了
-                if (insideBracket) {
-                    insideBracket = false;
-                }
-            }
-        }
-
-        if (insideBracket) return true
-
-        return false; // エラーがなければ `error: false`
-    }
 
     const handleCrearePost = async () => {
         if (!agent) {
@@ -847,17 +780,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
     };
 
     const handleTempDelete = () => {
-        setTempText('')
-        setTempAdditional('')
-        setTempSimpleMode(false)
-        setTempReply('')
-        setEncryptKey('')
-        setTempSimpleMode(false)
-        setTempReply('')
-        setEncryptKey('')
-        setTempVisibility(VISIBILITY_PUBLIC)
-        setTempListUri(undefined)
-        setTempLimitConsecutive(false)
+        clearTempPost()
     };
 
     const handleTempApply = async () => {

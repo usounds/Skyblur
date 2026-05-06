@@ -44,6 +44,20 @@ export const THREADGATE_FOLLOWING = 'following' as string;
 export const THREADGATE_FOLLOWERS = 'followers' as string;
 export const THREADGATE_QUOTE_ALLOW = 'quote' as string;
 
+export type VisibilityValue =
+    | 'public'
+    | 'password'
+    | 'login'
+    | 'followers'
+    | 'following'
+    | 'mutual'
+    | 'list';
+
+export type ThreadGateValue =
+    | 'mention'
+    | 'following'
+    | 'followers';
+
 export type PostListItem = {
     blur: UkSkyblurPost.Record;
     blurATUri: string;

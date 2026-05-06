@@ -104,6 +104,71 @@ async function openConsoleWithClock(
   await gotoAndSkipIfUnavailable(page, "/console");
 }
 
+async function openCreateComposer(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Create a post" }).click();
+  await expect(page).toHaveURL(/\/console\/posts\/new$/);
+  await expect(page.getByText("Write", { exact: true })).toBeVisible();
+}
+
+async function clickCreateComposer(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Create a post" }).click();
+  await expect(page).toHaveURL(/\/console\/posts\/new$/);
+}
+
+async function readComposerDraftStorage(page: import("@playwright/test").Page) {
+  return page.evaluate(() => {
+    const readState = (key: string) => {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return {};
+      try {
+        return JSON.parse(raw).state ?? {};
+      } catch {
+        return {};
+      }
+    };
+
+    return {
+      temp: readState("zustand.temptext"),
+      sensitive: readState("zustand.sensitive-post-draft"),
+    };
+  });
+}
+
+async function goToAudienceStep(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("What this setting does")).toBeVisible();
+}
+
+async function openComposerDetails(page: import("@playwright/test").Page) {
+  await page.getByText("Bluesky details").click();
+  await expect(page.getByText("Reply target", { exact: true })).toBeVisible();
+}
+
+async function goToCheckStep(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("What appears on Skyblur")).toBeVisible({ timeout: 20_000 });
+}
+
+async function submitComposer(page: import("@playwright/test").Page, name = "Post") {
+  await page.getByRole("button", { name }).click({ force: true });
+  await expect(page).toHaveURL(/\/console$/);
+}
+
+async function submitCreateComposer(page: import("@playwright/test").Page) {
+  await goToAudienceStep(page);
+  await goToCheckStep(page);
+  await submitComposer(page);
+}
+
+async function openLastPostEdit(page: import("@playwright/test").Page) {
+  await page.getByTestId("post-menu").last().click();
+  await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
+  await Promise.all([
+    page.waitForURL(/\/console\/posts\/.+\/edit$/),
+    page.getByRole("menuitem", { name: "Edit" }).click({ force: true }),
+  ]);
+}
+
 async function expectLoginValidationMessage(
   page: import("@playwright/test").Page,
   handle: string,
@@ -1154,19 +1219,14 @@ test("/console create post form covers validation, reply, visibility, and submit
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
 
   await expect(page.getByText("Post content")).toBeVisible();
   await expect(page.getByText("Simple Mode")).toBeVisible();
-  await expect(page.getByText("Preview of the post that will be published on Bluesky")).toBeVisible();
   await expect(page.getByText("Additional", { exact: true })).toBeVisible();
-  await expect(page.getByText("Reply", { exact: true })).toBeVisible();
-  await expect(page.getByText("Publish Settings")).toBeVisible();
-  await expect(page.getByText("Reply Control", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Post now" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
 
   const postInput = page.getByPlaceholder("Please enter the content.");
-  const previewInput = page.getByPlaceholder("This will be automatically set when you enter content.");
   const additionalInput = page.getByPlaceholder("Enter additional information if necessary.");
 
   await postInput.fill("Select secret text");
@@ -1178,26 +1238,21 @@ test("/console create post form covers validation, reply, visibility, and submit
   });
   await page.getByRole("button", { name: "Enclose the selected text with []" }).click();
   await expect(postInput).toHaveValue("Select [secret] text");
-  await expect(previewInput).toHaveValue("Select ****** text");
 
   await postInput.fill("E2E post with [secret] #coverage https://example.com");
-  await expect(previewInput).toHaveValue("E2E post with ****** #coverage https://example.com");
   await additionalInput.fill("E2E additional content shown only on Skyblur");
-  await expect(page.getByRole("button", { name: "Post now" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
 
   await postInput.fill("This uses ［full width］ brackets");
   await expect(page.getByRole("button", { name: "Convert Full-width Brackets to Half-width Brackets" })).toBeVisible();
   await page.getByRole("button", { name: "Convert Full-width Brackets to Half-width Brackets" }).click();
   await expect(postInput).toHaveValue("This uses [full width] brackets");
-  await expect(previewInput).toHaveValue("This uses ********** brackets");
   await page.getByLabel("Omit consecutive * (Bluesky only)").check();
-  await expect(previewInput).toHaveValue("This uses ***** brackets");
   await page.getByLabel("Omit consecutive * (Bluesky only)").uncheck();
-  await expect(previewInput).toHaveValue("This uses ********** brackets");
 
   await postInput.fill("This [has [bad] brackets");
   await expect(page.getByText("A closing ] is missing. Please add ].")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Post now" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
 
   await page.getByLabel("Simple Mode").click();
   await expect(page.getByRole("dialog", { name: "Change Mode" })).toBeVisible();
@@ -1206,36 +1261,38 @@ test("/console create post form covers validation, reply, visibility, and submit
   await page.getByRole("button", { name: "Change" }).click();
   await expect(page.getByText("The second line and beyond will be automatically blurred.")).toBeVisible();
   await postInput.fill("Public line\nHidden line");
-  await expect(previewInput).toHaveValue("Public line\n***********");
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
 
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "Password" }).click();
-  await expect(page.getByText("Only users who know the password can view")).toBeVisible();
+  await expect(page.getByText("Only people who know the password can read the full text and additional text.")).toBeVisible();
   await expect(page.getByPlaceholder("p@ssw0rd")).toBeVisible();
   await page.getByPlaceholder("p@ssw0rd").fill("bad pass");
   await expect(page.getByText("Spaces are not allowed in the password.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Post now" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
   await page.getByPlaceholder("p@ssw0rd").fill("p@ssword");
 
   await page.getByRole("button", { name: "Followers only" }).click();
-  await expect(page.getByText("About Visibility Scope")).toBeVisible();
-  await expect(page.getByText("Only users who follow you can view")).toBeVisible();
+  await expect(page.getByText("Only people logged in to Skyblur who follow you can read the full text and additional text.")).toBeVisible();
   await page.getByRole("button", { name: "Public" }).click();
 
-  await page.getByLabel("Select Post").check();
-  await expect(page.getByRole("button", { name: "Search" })).toBeVisible();
+  await openComposerDetails(page);
+  await page.getByLabel("Set a reply target").check();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await page.getByRole("button", { name: "Reply to this post" }).click();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
-  await page.getByLabel("Select Post").uncheck();
+  await page.getByLabel("Set a reply target").uncheck();
 
+  await page.getByRole("button", { name: "Back" }).click();
   await postInput.fill(
     `E2E final covered post #coverage #${"a".repeat(65)} # https://example.com @badhandle`,
   );
   await additionalInput.fill("Final E2E additional content");
-  await expect(page.getByRole("button", { name: "Post now" })).toBeEnabled();
-  await page.getByRole("button", { name: "Post now" }).click();
-
-  await expect(page.getByText("Post completed!")).toBeVisible();
+  await goToAudienceStep(page);
+  await goToCheckStep(page);
+  await expect(page.getByText("What appears on Skyblur")).toBeVisible();
+  await expect(page.getByText("What appears on Bluesky")).toBeVisible();
+  await submitComposer(page);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 });
 
@@ -1247,24 +1304,53 @@ test("/console submits list visibility post after selecting an owned list", asyn
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
 
   await page.getByPlaceholder("Please enter the content.").fill("E2E list [secret] post");
   await page.getByPlaceholder("Enter additional information if necessary.").fill("E2E list-only additional");
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "List only" }).click();
 
   await expect(page.getByText("Allowed list", { exact: true })).toBeVisible();
   await expect(page.getByText("E2E Allowed List")).toBeVisible();
   await expect(page.getByText("Someone else's list")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Post now" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
 
   await page.getByText("E2E Allowed List").click();
   await expect(page.getByLabel("Selected")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Post now" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
 
-  await page.getByRole("button", { name: "Post now" }).click();
+  await goToCheckStep(page);
+  await submitComposer(page);
+});
 
-  await expect(page.getByText("Post completed!")).toBeVisible();
+test("/console list visibility shows an empty owned-list state", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { getListsEmpty: true });
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("E2E list empty state");
+  await goToAudienceStep(page);
+  await page.getByRole("button", { name: "List only" }).click();
+  await expect(page.getByText("No lists owned by this account were found.")).toBeVisible();
+});
+
+test("/console list visibility shows owned-list loading failures", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { getListsStatus: 500 });
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("E2E list error state");
+  await goToAudienceStep(page);
+  await page.getByRole("button", { name: "List only" }).click();
+  await expect(page.getByText("Failed to load lists.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
 });
 
 test("/console submits password-protected post from the create form", async ({
@@ -1275,18 +1361,18 @@ test("/console submits password-protected post from the create form", async ({
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
 
   await page.getByPlaceholder("Please enter the content.").fill("E2E password [secret] post");
   await page.getByPlaceholder("Enter additional information if necessary.").fill("E2E encrypted additional");
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "Password" }).click();
-  await expect(page.getByText("Only users who know the password can view")).toBeVisible();
+  await expect(page.getByText("Only people who know the password can read the full text and additional text.")).toBeVisible();
   await page.getByPlaceholder("p@ssw0rd").fill("p@ssword");
-  await expect(page.getByRole("button", { name: "Post now" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
 
-  await page.getByRole("button", { name: "Post now" }).click();
-
-  await expect(page.getByText("Post completed!")).toBeVisible();
+  await goToCheckStep(page);
+  await submitComposer(page);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 });
 
@@ -1298,25 +1384,25 @@ test("/console submits restricted post with reply controls from the create form"
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
 
   await page.getByPlaceholder("Please enter the content.").fill("E2E followers [secret] post");
   await page.getByPlaceholder("Enter additional information if necessary.").fill("E2E followers-only additional");
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "Followers only" }).click();
-  await expect(page.getByText("About Visibility Scope")).toBeVisible();
-  await expect(page.getByText("Only users who follow you can view")).toBeVisible();
+  await expect(page.getByText("Only people logged in to Skyblur who follow you can read the full text and additional text.")).toBeVisible();
+  await openComposerDetails(page);
   await page.getByText("Mentioned users").click();
   await page.getByText("Followed users").click();
-  await page.getByText("Allow quotes of this post").click();
-  await page.getByLabel("Select Post").check();
+  await page.getByLabel("Allow quotes of this post").uncheck();
+  await page.getByLabel("Set a reply target").check();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await page.getByRole("button", { name: "Reply to this post" }).click();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Post now" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
 
-  await page.getByRole("button", { name: "Post now" }).click();
-
-  await expect(page.getByText("Post completed!")).toBeVisible();
+  await goToCheckStep(page);
+  await submitComposer(page);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 });
 
@@ -1330,7 +1416,7 @@ test("/console create post form covers bracket warnings and reply paging", async
   });
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
 
   const postInput = page.getByPlaceholder("Please enter the content.");
   await postInput.fill("This has unbalanced] brackets");
@@ -1343,11 +1429,43 @@ test("/console create post form covers bracket warnings and reply paging", async
 
   await page.getByLabel("Simple Mode").click();
   await page.getByRole("button", { name: "Change" }).click();
-  await page.getByLabel("Select Post").check();
+  await postInput.fill("Reply paging [secret]");
+  await goToAudienceStep(page);
+  await openComposerDetails(page);
+  await page.getByLabel("Set a reply target").check();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await expect(page.getByText("External root reply should be filtered")).toHaveCount(0);
-  await page.getByRole("button", { name: "Read More" }).click();
-  await expect(page.getByText("E2E reply next page post")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Read More" })).toBeVisible();
+});
+
+test("/console reply target picker handles empty searches", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { replySearchEmpty: true });
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("E2E empty reply picker");
+  await goToAudienceStep(page);
+  await openComposerDetails(page);
+  await page.getByLabel("Set a reply target").check();
+  await expect(page.getByText("No posts available.")).toBeVisible();
+});
+
+test("/console reply target picker handles failed searches", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { replySearchStatus: 500 });
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("E2E failed reply picker");
+  await goToAudienceStep(page);
+  await openComposerDetails(page);
+  await page.getByLabel("Set a reply target").check();
+  await expect(page.getByText("No posts available.")).toBeVisible();
 });
 
 test("/console create post form keeps encrypted submission open when encryption fails", async ({
@@ -1358,13 +1476,19 @@ test("/console create post form keeps encrypted submission open when encryption 
   await useLoggedInOAuthMock(page, context, baseURL, { encryptStatus: 500 });
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed password [secret]");
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "Password" }).click();
   await page.getByPlaceholder("p@ssw0rd").fill("p@ssword");
-  await page.getByRole("button", { name: "Post now" }).click();
+  await goToCheckStep(page);
+  await page.getByRole("button", { name: "Post" }).click({ force: true });
+  await expect(page.getByText("Encryption failed. The text, additional text, and password are still kept. Try again.")).toBeVisible();
+  await expect(page.locator("#post-composer-encrypt-failed")).toHaveCount(0);
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("E2E failed password [secret]");
-  await expect(page.getByText("Post completed!")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/console\/posts\/new$/);
 });
 
 test("/console create post form shows upload failure", async ({
@@ -1375,12 +1499,15 @@ test("/console create post form shows upload failure", async ({
   await useLoggedInOAuthMock(page, context, baseURL, { uploadBlobStatus: 500 });
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed upload [secret]");
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "Password" }).click();
   await page.getByPlaceholder("p@ssw0rd").fill("p@ssword");
-  await page.getByRole("button", { name: "Post now" }).click();
-  await expect(page.getByText("Blob upload failed")).toBeVisible();
+  await goToCheckStep(page);
+  await page.getByRole("button", { name: "Post" }).click({ force: true });
+  await expect(page.getByText("Could not upload the encrypted data. The post has not been created yet. Try again.")).toBeVisible();
+  await expect(page.locator("#post-composer-blob-upload-failed")).toHaveCount(0);
 });
 
 test("/console create post form shows restricted storage failure", async ({
@@ -1391,12 +1518,15 @@ test("/console create post form shows restricted storage failure", async ({
   await useLoggedInOAuthMock(page, context, baseURL, { storeStatus: 500 });
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed restricted [secret]");
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "Followers only" }).click();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Post now" }).click();
-  await expect(page.getByText("Failed to store restricted content.")).toBeVisible();
+  await goToCheckStep(page);
+  await page.getByRole("button", { name: "Post" }).click({ force: true });
+  await expect(page.getByText("Could not save the restricted full text. The text and additional text are still on this screen. Try again.")).toBeVisible();
+  await expect(page.locator("#post-composer-restricted-store-failed")).toHaveCount(0);
 });
 
 test("/console create post form shows apply write failure", async ({
@@ -1407,10 +1537,13 @@ test("/console create post form shows apply write failure", async ({
   await useLoggedInOAuthMock(page, context, baseURL, { applyWritesStatus: 500 });
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed apply [secret]");
-  await page.getByRole("button", { name: "Post now" }).click();
-  await expect(page.getByText(/Error:/)).toBeVisible();
+  await goToAudienceStep(page);
+  await goToCheckStep(page);
+  await page.getByRole("button", { name: "Post" }).click({ force: true });
+  await expect(page.getByText("Could not save the post records. The save is not complete. Try again.")).toBeVisible();
+  await expect(page.locator("#post-composer-apply-writes-failed")).toHaveCount(0);
 });
 
 test("/console create post form writes reply and quote controls from the screen", async ({
@@ -1431,22 +1564,76 @@ test("/console create post form writes reply and quote controls from the screen"
   });
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
-  await page.getByPlaceholder("Please enter the content.").fill("E2E reply controls [secret] #thread");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("E2E reply controls [secret] #thread https://example.com");
+  await goToAudienceStep(page);
+  await openComposerDetails(page);
   await expect(page.getByText("Reply Control", { exact: true })).toBeVisible();
   await expect(page.getByText("Mentioned users")).toBeVisible();
-  await page.getByTestId("threadgate-mention").locator("label").click();
-  await page.getByTestId("threadgate-following").locator("label").click();
-  await page.getByTestId("threadgate-followers").locator("label").click();
-  await page.getByTestId("threadgate-quote").locator("label").click();
+  await page.getByText("Mentioned users").click();
+  await page.getByText("Followed users").click();
+  await page.getByText("Your followers").click();
+  await page.getByLabel("Allow quotes of this post").uncheck();
+  await page.getByLabel("Set a reply target").check();
+  await expect(page.getByText("E2E reply target post")).toBeVisible();
+  await page.getByRole("button", { name: "Reply to this post" }).click();
   await expect(page.locator('input[value="mention"]')).toBeChecked();
   await expect(page.locator('input[value="following"]')).toBeChecked();
   await expect(page.locator('input[value="followers"]')).toBeChecked();
-  await expect(page.locator('input[value="quote"]')).not.toBeChecked();
-  await page.getByRole("button", { name: "Post now" }).click();
+  await goToCheckStep(page);
+  await submitComposer(page);
+  expect(applyWriteBodies).toHaveLength(1);
+  const applyWriteInput = applyWriteBodies[0].input || applyWriteBodies[0];
+  expect(applyWriteInput.repo).toBe(mockDid);
+  expect(applyWriteInput.validate).toBeUndefined();
 
-  await expect(page.getByText("Post completed!")).toBeVisible();
-  const writes = applyWriteBodies.flatMap((body) => body.input?.writes || body.writes || []);
+  const writes: any[] = applyWriteInput.writes || [];
+  const blueskyPost = writes.find((write) => write.collection === "app.bsky.feed.post");
+  expect(blueskyPost).toBeTruthy();
+  expect(blueskyPost.$type).toBe("com.atproto.repo.applyWrites#create");
+  expect(blueskyPost.rkey).toBeTruthy();
+  expect(blueskyPost.value).toMatchObject({
+    $type: "app.bsky.feed.post",
+    text: "E2E reply controls ****** #thread https://example.com",
+    langs: expect.any(Array),
+    via: "Skyblur",
+    "uk.skyblur.post.uri": `at://${mockDid}/uk.skyblur.post/${blueskyPost.rkey}`,
+    "uk.skyblur.post.visibility": "public",
+    embed: {
+      $type: "app.bsky.embed.external",
+      external: {
+        uri: expect.stringContaining(`/post/${mockDid}/${blueskyPost.rkey}`),
+        title: "Skyblur",
+        description: "Refer to the unblurred text.",
+      },
+    },
+    reply: {
+      $type: "app.bsky.feed.post#replyRef",
+      root: {
+        cid: "bafy-e2e-root",
+        uri: `at://${mockDid}/app.bsky.feed.post/e2eroot`,
+        $type: "com.atproto.repo.strongRef",
+      },
+      parent: {
+        cid: "bafy-e2e-reply",
+        uri: `at://${mockDid}/app.bsky.feed.post/e2ereply`,
+        $type: "com.atproto.repo.strongRef",
+      },
+    },
+  });
+  expect(blueskyPost.value.langs.length).toBeGreaterThan(0);
+  expect(blueskyPost.value.createdAt).toEqual(expect.any(String));
+  expect(blueskyPost.value.facets).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      features: [expect.objectContaining({ $type: "app.bsky.richtext.facet#tag", tag: "thread" })],
+    }),
+    expect.objectContaining({
+      features: [expect.objectContaining({ $type: "app.bsky.richtext.facet#link", uri: "https://example.com" })],
+    }),
+  ]));
+
+  const skyblurRecord = writes.find((write) => write.collection === "uk.skyblur.post");
+  expect(skyblurRecord.value.uri).toBe(`at://${mockDid}/app.bsky.feed.post/${blueskyPost.rkey}`);
   expect(writes.some((write) => write.collection === "app.bsky.feed.threadgate")).toBe(true);
   expect(writes.some((write) => write.collection === "app.bsky.feed.postgate")).toBe(true);
   const threadgate = writes.find((write) => write.collection === "app.bsky.feed.threadgate");
@@ -1455,6 +1642,20 @@ test("/console create post form writes reply and quote controls from the screen"
     "app.bsky.feed.threadgate#followingRule",
     "app.bsky.feed.threadgate#followerRule",
   ]);
+
+  const draftStorage = await readComposerDraftStorage(page);
+  expect(draftStorage.temp).toMatchObject({
+    text: "",
+    additional: "",
+    reply: "",
+    visibility: "public",
+  });
+  expect(draftStorage.sensitive).toMatchObject({
+    text: "",
+    additional: "",
+    password: "",
+    encryptKey: "",
+  });
 });
 
 test("/console post list supports reveal, reaction, edit, and delete actions", async ({
@@ -1482,15 +1683,21 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
   await page.getByRole("menuitem", { name: "Copy Skyblur URL" }).click();
   await expect(page.getByText("URL has been copied!")).toBeVisible();
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await openLastPostEdit(page);
 
-  await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
+  await expect(page).toHaveURL(/\/console\/posts\/did%3Aplc%3Ae2emock\/e2eblur-public\/edit$/);
+  await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Visible E2E [secret] console post");
+  await page.getByPlaceholder("Please enter the content.").fill("Visible E2E [changed] console post");
   await page.getByRole("button", { name: "Back" }).click();
   const backDialog = page.getByRole("dialog", { name: "Confirm" });
   await expect(backDialog).toBeVisible();
+  await backDialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(backDialog).toBeHidden();
+  await expect(page).toHaveURL(/\/console\/posts\/did%3Aplc%3Ae2emock\/e2eblur-public\/edit$/);
+  await page.getByRole("main").getByRole("button", { name: "Back" }).click();
   await backDialog.getByRole("button", { name: "Back" }).click();
+  await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
 
@@ -1521,11 +1728,9 @@ test("/console post list decrypts password-protected posts", async ({
 
   await expect(page.getByText("Decrypted E2E password text")).toBeVisible();
   await expect(page.getByText("Decrypted E2E password additional")).toBeVisible();
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
-  await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
+  await openLastPostEdit(page);
+  await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Decrypted E2E password text");
-  await expect(page.getByPlaceholder("p@ssw0rd")).toHaveValue("p@ssword");
 });
 
 test("/console post list validates password unlock errors", async ({
@@ -1652,12 +1857,9 @@ test("/console restricted edit reports authorization errors before opening the f
 
   await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await openLastPostEdit(page);
 
   await expect(page.getByText("You do not have permission to view this post (Mutuals only).")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
-  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("*****");
 });
 
 test("/console restricted edit keeps the original post when prefetch returns non-ok", async ({
@@ -1672,11 +1874,9 @@ test("/console restricted edit keeps the original post when prefetch returns non
 
   await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await openLastPostEdit(page);
 
-  await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
-  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("*****");
+  await expect(page.getByText("Could not load the restricted post body.")).toBeVisible();
 });
 
 for (const [restrictedErrorCode, message] of [
@@ -1698,12 +1898,9 @@ for (const [restrictedErrorCode, message] of [
 
     await gotoAndSkipIfUnavailable(page, "/console");
     await expect(page.getByText("*****")).toBeVisible();
-    await page.getByTestId("post-menu").last().click();
-    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await openLastPostEdit(page);
 
     await expect(page.getByText(message)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
-    await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("*****");
   });
 }
 
@@ -1716,35 +1913,46 @@ test("/console prefetches restricted post details before editing", async ({
 
   await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await openLastPostEdit(page);
 
-  await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
+  await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Fetched restricted E2E text");
   await expect(page.getByPlaceholder("Enter additional information if necessary.")).toHaveValue("Fetched restricted E2E additional");
 });
 
-test("/console updates a restricted post to public and removes stored content", async ({
+test("/console supports restricted-to-public edit migration", async ({
   page,
   context,
   baseURL,
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "restricted" });
+  const deleteStoredBodies: any[] = [];
+  await page.route("**/xrpc/uk.skyblur.post.deleteStored", async (route) => {
+    deleteStoredBodies.push(JSON.parse(route.request().postData() || "{}"));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ deleted: true }),
+    });
+  });
 
   await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("*****")).toBeVisible();
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await openLastPostEdit(page);
 
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Fetched restricted E2E text");
+  await goToAudienceStep(page);
   await page.getByRole("button", { name: "Public" }).click();
-  await expect(page.getByText("Anyone on Bluesky can see it.")).toBeVisible();
-  const cleanupRequest = page.waitForRequest(/\/xrpc\/uk\.skyblur\.post\.deleteStored/);
-  await page.getByRole("button", { name: "Update" }).click();
+  await expect(page.getByText("Everyone can read the full text and additional text.")).toBeVisible();
+  await goToCheckStep(page);
+  await expect(page.getByText("This visibility change is not supported while editing yet. Recreate the post if you need this change.")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Update/ })).toBeEnabled();
+  await page.getByRole("button", { name: /Update/ }).click({ force: true });
 
-  expect((await cleanupRequest).postData() || "").toContain("uk.skyblur.post");
-  await expect(page.getByText("Post completed!")).toBeVisible();
-  await expect(page.getByText(/E2E Tester/)).toBeVisible();
+  await expect(page).toHaveURL(/\/console$/);
+  expect(deleteStoredBodies).toHaveLength(1);
+  const cleanupInput = deleteStoredBodies[0].input ?? deleteStoredBodies[0];
+  expect(cleanupInput.uri).toBe(`at://${mockDid}/uk.skyblur.post/e2eblur-restricted`);
 });
 
 test("/console deletes restricted posts and cleans up stored content", async ({
@@ -1777,18 +1985,68 @@ test("/console updates an existing post from the edit form", async ({
 
   await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText("Visible E2E")).toBeVisible();
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await openLastPostEdit(page);
 
   const postInput = page.getByPlaceholder("Please enter the content.");
-  await expect(page.getByRole("button", { name: "Update" })).toBeVisible();
+  await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await postInput.fill("Updated E2E [secret] post");
   await page.getByPlaceholder("Enter additional information if necessary.").fill("Updated E2E additional");
-  await expect(page.getByRole("button", { name: "Update" })).toBeEnabled();
-  await page.getByRole("button", { name: "Update" }).click();
+  await goToAudienceStep(page);
+  await goToCheckStep(page);
+  await expect(page.getByText("The already-published Bluesky text and card will not change in this update.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Update/ })).toBeEnabled();
+  await page.getByRole("button", { name: /Update/ }).click({ force: true });
 
-  await expect(page.getByText("Post completed!")).toBeVisible();
+  await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
+});
+
+test("/console edit route reports invalid and unsupported edit records", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+  await gotoAndSkipIfUnavailable(page, "/console/posts/not-a-did/e2eblur/edit");
+  await expect(page.getByText("This post cannot be edited from the currently logged-in account.")).toBeVisible();
+
+  await useLoggedInOAuthMock(page, context, baseURL, { editRecordStatus: 500 });
+  await gotoAndSkipIfUnavailable(page, `/console/posts/${encodeURIComponent(mockDid)}/e2eblur/edit`);
+  await expect(page.getByText("Could not load the post for editing.")).toBeVisible();
+
+  for (const editRecordVariant of ["invalid-type", "invalid-visibility", "invalid-text"] as const) {
+    await useLoggedInOAuthMock(page, context, baseURL, { editRecordVariant });
+    await gotoAndSkipIfUnavailable(page, `/console/posts/${encodeURIComponent(mockDid)}/e2eblur/edit`);
+    await expect(page.getByText("This post format cannot be edited.")).toBeVisible();
+  }
+
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    postVariant: "password",
+    editRecordVariant: "password-missing-encrypt",
+  });
+  await gotoAndSkipIfUnavailable(page, `/console/posts/${encodeURIComponent(mockDid)}/e2eblur/edit`);
+  await expect(page.getByText("Could not find the encrypted data for this password post.")).toBeVisible();
+});
+
+test("/console edit route validates password unlock failures", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "password", decryptStatus: 403 });
+  await gotoAndSkipIfUnavailable(page, `/console/posts/${encodeURIComponent(mockDid)}/e2eblur/edit`);
+
+  await expect(page.getByText("Edit password post")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Unlock" })).toBeDisabled();
+  await page.getByPlaceholder("p@ssw0rd").fill("wrong-password");
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(page.getByText("Incorrect password")).toBeVisible();
+
+  await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "password", decryptStatus: 500 });
+  await gotoAndSkipIfUnavailable(page, `/console/posts/${encodeURIComponent(mockDid)}/e2eblur/edit`);
+  await page.getByPlaceholder("p@ssw0rd").fill("server-error");
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(page.getByText("Content not found.")).toBeVisible();
 });
 
 test("/console restores and discards draft content in the create form", async ({
@@ -1799,26 +2057,22 @@ test("/console restores and discards draft content in the create form", async ({
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
   await page.getByPlaceholder("Please enter the content.").fill("Draft E2E [secret] text");
   await page.getByPlaceholder("Enter additional information if necessary.").fill("Draft E2E additional");
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Create a post" }).click();
-  await expect(
-    page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" }),
-  ).toBeVisible();
-  await expect(page.getByText("Draft E2E [secret] text")).toBeVisible();
+  await clickCreateComposer(page);
+  await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
   await page.getByRole("button", { name: "Restore" }).click();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Draft E2E [secret] text");
   await expect(page.getByPlaceholder("Enter additional information if necessary.")).toHaveValue("Draft E2E additional");
   await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByText(/E2E Tester/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Create a post" }).click();
-  await expect(
-    page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" }),
-  ).toBeVisible();
+  await clickCreateComposer(page);
+  await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("");
 });
@@ -1831,22 +2085,49 @@ test("/console restores draft content with a selected reply target", async ({
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
-  await page.getByRole("button", { name: "Create a post" }).click();
+  await openCreateComposer(page);
   await page.getByPlaceholder("Please enter the content.").fill("Reply draft [secret] text");
-  await page.getByLabel("Select Post").check();
+  await goToAudienceStep(page);
+  await openComposerDetails(page);
+  await page.getByLabel("Set a reply target").check();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await page.getByRole("button", { name: "Reply to this post" }).click();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Create a post" }).click();
-  await expect(
-    page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" }),
-  ).toBeVisible();
+  await clickCreateComposer(page);
+  await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
   await page.getByRole("button", { name: "Restore" }).click();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Reply draft [secret] text");
+});
+
+test("/console keeps draft text when the saved reply target cannot be restored", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("Reply failure draft [secret] text");
+  await goToAudienceStep(page);
+  await openComposerDetails(page);
+  await page.getByLabel("Set a reply target").check();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
+  await page.getByRole("button", { name: "Reply to this post" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByText(/E2E Tester/)).toBeVisible();
+
+  await useLoggedInOAuthMock(page, context, baseURL, { replyResolveStatus: 500 });
+  await clickCreateComposer(page);
+  await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
+  await expect(page.getByText("The reply target could not be restored. Text, additional text, and visibility can still be restored.")).toBeVisible();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Reply failure draft [secret] text");
 });
 
 test("/console login form redirects valid handle to OAuth login", async ({
@@ -2179,7 +2460,8 @@ test("/settings creates preferences and validates custom feed avatar input", asy
       Buffer.alloc(950 * 1024),
     ]),
   });
-  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
+  await page.getByRole("button", { name: "Save" }).click({ force: true });
   await expect(page.getByText("Save Completed!").first()).toBeVisible();
   await expect(page).toHaveURL(/\/console$/);
 });

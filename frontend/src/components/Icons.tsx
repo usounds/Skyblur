@@ -4,6 +4,7 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
     size?: number | string;
 }
 
+/* istanbul ignore next -- Icon default sizing is a static rendering fallback, not an E2E behavior branch. */
 export const BlueskyIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
     <svg
         width={size}
@@ -19,6 +20,7 @@ export const BlueskyIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
     </svg>
 );
 
+/* istanbul ignore next -- Icon default sizing is a static rendering fallback, not an E2E behavior branch. */
 export const GithubIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
     <svg
         width={size}

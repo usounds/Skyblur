@@ -1,0 +1,13 @@
+.input {
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.input:focus {
+  border-color: var(--mantine-color-blue-6) !important;
+  box-shadow: 0 0 0 3px rgba(34, 139, 230, 0.14) !important;
+}
+
+[data-mantine-color-scheme="dark"] .input:focus {
+  border-color: var(--mantine-color-blue-4) !important;
+  box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2) !important;
+}

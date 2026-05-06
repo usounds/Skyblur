@@ -1,0 +1,171 @@
+# タスク一覧
+
+- [x] 1. 投稿 composer の型と保存計画の契約を定義する
+  - File: `frontend/src/types/postComposer.ts`, `frontend/src/types/types.ts`
+  - `ComposerStep`, `PostComposerMode`, `PostComposerState`, `PostComposerInitialData`, `SavePlan`, `SaveResult`, `SkyblurCheckSummary`, `ComposerFixTarget` を定義する。
+  - `threadGate` と `postGate` を別契約として持ち、返信制限と引用制限が保存計画・Skyblur Check・E2E で混同されないようにする。
+  - `SavePlan` は MVP の到達可能 case を `create-public`, `create-password`, `create-restricted`, `update-same-storage` に絞り、保存形式移行 case は型上も次フェーズ扱いにする。
+  - 同じ保存形式内編集で変更可能な field を型または helper で明示し、Bluesky post 本体本文更新を MVP 対象外にする。
+  - _Leverage: `frontend/src/types/types.ts`, `frontend/src/logic/listVisibility.ts`, existing visibility constants_
+  - _Requirements: 4.7, 5.1, 6.1, 6.2, 6.6, 7.3, 9.2, 9.3, 9.4_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript Architecture Developer | Task: Define post composer types and MVP save plan contracts for create/update-same-storage flows, including separate threadGate/postGate state | Restrictions: Do not introduce storage migration kinds into MVP implementation types, preserve existing visibility constants, avoid broad refactors outside composer-facing types | _Leverage: frontend/src/types/types.ts, frontend/src/logic/listVisibility.ts | _Requirements: 4.7, 5.1, 6.1, 6.2, 6.6, 7.3, 9.2, 9.3, 9.4 | Success: Composer state and save plan types compile, make threadGate/postGate distinct, and prevent accidental implementation of out-of-MVP visibility migration_
+
+- [x] 2. 投稿本文変換・validation・visibility summary の pure logic を抽出する
+  - File: `frontend/src/logic/postComposer/text.ts`, `frontend/src/logic/postComposer/visibilitySummary.ts`, `frontend/src/logic/postComposer/__tests__/text.test.ts`
+  - 既存 `CreatePost.tsx` の伏せ字本文生成、`[]` validation、シンプルモード、連続伏せ字省略を pure function に抽出する。
+  - `buildVisibilitySummary` は public/login/password/followers/following/mutual/list の readable/unreadable 表示を返す。
+  - `buildVisibilitySummary` は保存ロジックと同じ visibility 判定 source を使い、UI copy だけでサーバー認可とズレないようにする。
+  - 全角カッコ、閉じ忘れ、入れ子、連続伏せ字省略、simple mode の unit test を追加する。
+  - _Leverage: `frontend/src/components/CreatePost.tsx`, `frontend/src/logic/listVisibility.ts`, `frontend/src/components/PostTextWithBold.tsx`_
+  - _Requirements: 3.1, 3.2, 3.3, 3.5, 4.5, 4.8, 5.2, 非機能要件 セキュリティ/信頼性_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Logic Developer | Task: Extract pure post composer text transformation, bracket validation, and visibility summary logic with focused unit tests | Restrictions: Preserve existing text output semantics, do not couple pure helpers to React state, reuse existing visibility predicates | _Leverage: frontend/src/components/CreatePost.tsx, frontend/src/logic/listVisibility.ts, frontend/src/components/PostTextWithBold.tsx | _Requirements: 3.1, 3.2, 3.3, 3.5, 4.5, 4.8, 5.2 | Success: Helpers are unit-tested, existing visible output remains compatible, and readable/unreadable summaries share source logic with save/visibility decisions_
+
+- [x] 3. SensitiveDraftStore と一時保持 clear policy を実装する
+  - File: `frontend/src/state/TempPost.ts`, `frontend/src/state/SensitiveDraft.ts`, `frontend/src/state/__test__/SensitiveDraft.test.ts`
+  - 新規投稿の通常 draft と password 用 sensitive draft の境界を実装する。
+  - visibility を password に切り替えた時点で本文・補足・password・encryptKey を sensitive draft bucket に移し、通常 draft に本文・補足の複製を残さない。
+  - component memory 上の `PostComposerState.text` / `additional` / `password` は入力制御として許容するが、password visibility 中に永続化する場合の保存先は `SensitiveDraftStore` のみにする。
+  - persisted normal draft には password visibility 中の本文・補足・password・encryptKey を残さない。
+  - password から非 password visibility に戻した場合、password/encryptKey を破棄し、本文・補足は通常 draft へ戻せるようにする。
+  - 投稿成功、明示破棄、logout/session change で `clearSensitiveDraft()` を必ず呼べる API を用意する。
+  - 既存 `zustand.temptext.encryptKey` は policy に沿って migration または破棄する。
+  - _Leverage: existing zustand persist pattern in `frontend/src/state/TempPost.ts`, `frontend/src/state/XrpcAgent.ts` session state_
+  - _Requirements: 6.8, 6.9, 6.10, 9.5, 9.6, 9.8, 非機能要件 セキュリティ/信頼性_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend State/Security Developer | Task: Implement SensitiveDraftStore and clear policy for password composer data, including new password post draft migration and clear triggers | Restrictions: Do not send sensitive draft data to server/logs/URL/analytics, do not leave duplicated password text/additional/password/encryptKey in persisted normal draft, allow component memory only for input control, preserve non-password draft behavior | _Leverage: frontend/src/state/TempPost.ts, frontend/src/state/XrpcAgent.ts | _Requirements: 6.8, 6.9, 6.10, 9.5, 9.6, 9.8 | Success: Sensitive data is retained only in the user's browser, persisted only through SensitiveDraftStore while password visibility is active, cleared on required triggers, and covered by tests for visibility switching and session/logout clear_
+
+- [x] 4. 投稿作成・編集 route scaffold を追加する
+  - File: `frontend/src/app/console/posts/new/page.tsx`, `frontend/src/app/console/posts/[did]/[rkey]/edit/page.tsx`, `frontend/src/app/console/ConsoleContent.tsx`
+  - `/console/posts/new` と `/console/posts/[did]/[rkey]/edit` の route scaffold を追加する。
+  - scaffold は認証状態、アカウント選択、戻り先、未実装状態の安全な表示だけを扱い、既存 `/console` の inline composer 導線はこのタスクでは壊さない。
+  - edit route は params shape とログイン状態の基本確認までに留め、実際の record load、unlock、保存は後続タスクへ委ねる。
+  - `/console` からの本切り替えは `PostComposerScreen`、`EditPostLoader`、`postComposerSave` が揃った後の統合タスクで行う。
+  - _Leverage: `frontend/src/app/console/ConsoleContent.tsx`, `frontend/src/components/PostList.tsx`, `frontend/src/state/XrpcAgent.ts`_
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.6, 9.2_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Next.js App Router Developer | Task: Add safe dedicated create/edit route scaffolds without switching live /console composer entry points yet | Restrictions: Preserve existing /console inline composer behavior until the integration task, do not remove post management features, do not expose broken create/edit routes as primary user paths | _Leverage: frontend/src/app/console/ConsoleContent.tsx, frontend/src/components/PostList.tsx, frontend/src/state/XrpcAgent.ts | _Requirements: 2.1, 2.2, 2.3, 2.4, 2.6, 9.2 | Success: Dedicated route files exist and are safe to visit, but existing /console create/edit production behavior is not broken before composer/load/save pieces are ready_
+
+- [x] 5. EditPostLoader と PasswordUnlockGate を実装する
+  - File: `frontend/src/components/post-composer/EditPostLoader.tsx`, `frontend/src/components/post-composer/PasswordUnlockGate.tsx`, `frontend/src/components/post-composer/__tests__/EditPostLoader.test.tsx`
+  - edit route の `did` / `rkey` / record URI / collection / `$type` / visibility enum を検証する。
+  - `did` がログイン DID と一致しない場合、秘密情報取得 API を呼ばず編集不可にする。
+  - password 投稿は composer 表示前に unlock gate で復号し、失敗時は composer に進ませない。
+  - restricted 投稿は `uk.skyblur.post.getPost` 成功時だけ編集可能本文・補足を渡し、masked record のまま保存させない。
+  - unlock password の二重送信防止、CID 正規化、明示破棄/logout/session change 時の復号済み state clear を実装する。
+  - _Leverage: `frontend/src/components/PostList.tsx` decrypt flow, `frontend/src/state/XrpcAgent.ts`, `frontend/src/lexicon` generated types_
+  - _Requirements: 6.3, 6.4, 6.5, 6.8, 6.10, 6.11, 9.3, 非機能要件 セキュリティ/信頼性_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Security Flow Developer | Task: Implement edit record loading and password unlock gate with strict validation and sensitive state cleanup | Restrictions: Never fetch or expose hidden content before route/owner/type validation, do not allow masked restricted records to be saved, prevent double submit | _Leverage: frontend/src/components/PostList.tsx, frontend/src/state/XrpcAgent.ts, frontend/src/lexicon | _Requirements: 6.3, 6.4, 6.5, 6.8, 6.10, 6.11, 9.3 | Success: Edit initialization is safe, password unlock gates composer access, and invalid/failed states never leak or overwrite content_
+
+- [x] 6. PostComposerScreen と 3 ステップ UI を実装する
+  - File: `frontend/src/components/post-composer/PostComposerScreen.tsx`, `frontend/src/components/post-composer/PostComposerStepper.tsx`, `frontend/src/components/post-composer/PostComposerActions.tsx`
+  - `書く`、`見せる相手`、`投稿前チェック` の step state、戻る、任意 step への移動、dirty state、submit state を管理する。
+  - 入力不備がある場合は該当 step 内で理由を表示し、修正できるようにする。
+  - モバイルでは下部固定アクションまたは同等の常時到達しやすい操作を実装し、Safari/WebKit の textarea focus・keyboard 表示と干渉しないようにする。
+  - 未保存変更がある状態でブラウザバック、reload、route遷移、tab close を行う場合は離脱確認を出す。
+  - PostComposer locale key またはタスク10で確定する key と互換の最小文言を使い、仮文言のまま完了扱いにしない。
+  - submit はタスク1の `SavePlan` / `SaveResult` 契約に接続し、仮 save で完了扱いにしない。
+  - _Leverage: Mantine components, existing console layout, `useLocale`, `useTempPostStore`_
+  - _Requirements: 1.1, 1.5, 1.6, 1.7, 1.8, 2.5, 8.1, 8.2, 8.4, 8.5, 9.6_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend UX Infrastructure Developer | Task: Build the main post composer screen, stepper, actions, dirty-state leave protection, and mobile-safe actions | Restrictions: Do not make the stepper feel like a slow wizard, avoid nested cards, preserve text/button bounds on mobile, do not submit invalid states, do not mark complete with placeholder copy or fake save behavior | _Leverage: Mantine, existing console layout, useLocale, useTempPostStore | _Requirements: 1.1, 1.5, 1.6, 1.7, 1.8, 2.5, 8.1, 8.2, 8.4, 8.5, 9.6 | Success: Composer step navigation is ergonomic, uses real/compatible locale keys, connects to SavePlan/SaveResult contracts, preserves input, blocks invalid progress with clear messages, and works on mobile/WebKit without overlapping controls_
+
+- [x] 7. WriteStep と AudienceStep を実装する
+  - File: `frontend/src/components/post-composer/WriteStep.tsx`, `frontend/src/components/post-composer/AudienceStep.tsx`, `frontend/src/components/post-composer/__tests__/AudienceStep.test.tsx`
+  - WriteStep は本文、伏せ字指定、文字数、シンプルモード、連続伏せ字省略、補足入力を扱う。
+  - AudienceStep は公開範囲、password、listUri、返信先、返信制限 `threadGate`、引用制限 `postGate` を扱う。
+  - 返信先、返信制限、引用制限は詳細設定として初期状態で折りたたみ、通常投稿の公開範囲判断を妨げない。
+  - list visibility 未選択、password 空白文字、関係性 visibility のログイン必要説明を表示する。
+  - シンプルモード切り替え時の入力破棄説明と確認を扱い、仮文言のまま完了扱いにしない。
+  - _Leverage: `frontend/src/components/AutoResizeTextArea.tsx`, `frontend/src/components/OwnedListPicker.tsx`, `frontend/src/components/ReplyList.tsx`, existing CreatePost visibility UI_
+  - _Requirements: 1.2, 1.3, 3.1, 3.2, 3.4, 5.1, 5.3, 5.4, 5.5, 7.1, 7.2, 7.3, 7.4, 7.5_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Form Developer | Task: Build WriteStep and AudienceStep using existing Skyblur inputs, visibility choices, list picker, reply selection, and separate threadGate/postGate controls | Restrictions: Preserve existing bracket operation, do not expose reply/quote controls as primary friction for normal posts, keep validation localized to the relevant step, do not complete with placeholder copy for destructive/simple-mode changes | _Leverage: AutoResizeTextArea, OwnedListPicker, ReplyList, existing CreatePost visibility UI | _Requirements: 1.2, 1.3, 3.1, 3.2, 3.4, 5.1, 5.3, 5.4, 5.5, 7.1, 7.2, 7.3, 7.4, 7.5 | Success: Write/audience controls are feature-complete, preserve existing behavior, explain simple-mode data loss, and represent threadGate/postGate/list/password states distinctly_
+
+- [x] 8. Skyblur Check を公開事故防止の決定画面として実装する
+  - File: `frontend/src/components/post-composer/SkyblurCheckStep.tsx`, `frontend/src/logic/postComposer/skyblurCheck.ts`, `frontend/src/components/post-composer/__tests__/SkyblurCheckStep.test.tsx`
+  - 最上段に「Bluesky に出る内容」と「Skyblur で読める内容」を配置し、1秒で差分を把握できる表示にする。
+  - 読める人、読めない人の見え方、補足の扱い、公開範囲、返信制限、引用制限、保存される変更を要約する。
+  - 編集時は Bluesky post 本体本文/OGP/card が更新されないことを、責める調子ではなく落ち着いた確認として表示する。
+  - 保存形式をまたぐ公開範囲変更が必要な場合は、MVP未対応と作り直し導線を冷たくない文言で表示する。
+  - `onFix(target)` で該当 step/項目へ戻れるようにする。
+  - 表示内容はタスク1/2/9の `SavePlan`、`SaveResult`、`buildVisibilitySummary`、`buildSkyblurCheckSummary` に基づけ、仮 summary で完了扱いにしない。
+  - _Leverage: `PostTextWithBold`, `HeroDemo` preview ideas, `buildVisibilitySummary`, `buildSkyblurCheckSummary`_
+  - _Requirements: 1.4, 1.8, 4.1, 4.2, 4.3, 4.4, 4.6, 4.7, 4.8, 4.9, 6.7, 6.12, 9.4, 10.5_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Product-minded Frontend Developer | Task: Implement Skyblur Check as the central publication-safety decision screen with clear Bluesky/Skyblur/readability/reply/quote summaries | Restrictions: Do not reduce it to a generic summary page, avoid alarmist copy, ensure unsupported changes are explained gently, keep previews consistent with save output, do not complete with placeholder summary logic | _Leverage: PostTextWithBold, HeroDemo preview logic, buildVisibilitySummary, buildSkyblurCheckSummary | _Requirements: 1.4, 1.8, 4.1, 4.2, 4.3, 4.4, 4.6, 4.7, 4.8, 4.9, 6.7, 6.12, 9.4, 10.5 | Success: Users can immediately understand what appears on Bluesky, what Skyblur reveals, who can/cannot read it, and what will or will not be updated, with content derived from real save/summary helpers_
+
+- [x] 9. postComposerSave と同一保存形式内 edit 保存を実装する
+  - File: `frontend/src/logic/postComposer/save.ts`, `frontend/src/logic/postComposer/__tests__/save.test.ts`, `frontend/src/components/post-composer/PostComposerScreen.tsx`
+  - create public/password/restricted と update-same-storage の保存計画を実装する。
+  - password 投稿は encrypt、uploadBlob、Skyblur record create/update の順序を維持する。
+  - restricted 投稿は `uk.skyblur.post.store` 成功後に record update する。
+  - threadgate と postgate は別 write として扱い、scope不足または対象 record 不整合では本文・補足保存と混同しないエラーを返す。
+  - MVP では `cid` precondition を使わず、record の有無と dirty 判定で create/update/delete を選ぶ。未変更の threadgate/postgate write は発行しない。
+  - `applyWrites` 失敗後の blob/store orphan はMVP許容として扱い、ユーザー表示・再試行・ログ漏洩なしをテストする。
+  - _Leverage: existing `CreatePost.tsx` save flow, `apiProxyAgent`, `agent.post('com.atproto.repo.applyWrites')`, `uk.skyblur.post.store/encrypt`_
+  - _Requirements: 6.1, 6.2, 6.4, 6.5, 6.11, 9.1, 9.2, 9.3, 9.11, 非機能要件 信頼性/セキュリティ_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Save-flow Engineer | Task: Implement postComposerSave with MVP create and same-storage update save plans, password/restricted flows, separate threadGate/postGate writes, dirty-based gate writes, and failure handling | Restrictions: Do not implement cross-storage visibility migration, do not update Bluesky post body in MVP, do not leak sensitive text/password in errors/logs, do not use cid preconditions in MVP | _Leverage: existing CreatePost.tsx save flow, apiProxyAgent, com.atproto.repo.applyWrites, uk.skyblur.post.store/encrypt | _Requirements: 6.1, 6.2, 6.4, 6.5, 6.11, 9.1, 9.2, 9.3, 9.11 | Success: Save flow preserves existing behavior, handles MVP edits safely, separates gate failures from body/additional saves, and returns clear recoverable errors_
+
+- [x] 10. locale 文言を PostComposer prefix で追加する
+  - File: `frontend/src/locales/ja.ts`, `frontend/src/locales/en.ts`
+  - `PostComposer_*` prefix で step名、Skyblur Check、公開範囲説明、password unlock、一時保持/破棄、編集更新対象/非更新対象、作り直し導線、離脱確認、エラー文言を追加する。
+  - 既存 `CreatePost_*` 参照を壊さず、MVPでは flat export を維持する。
+  - 日本語・英語の key 欠落が出ないよう、少なくとも追加 key の対応関係をテストまたは型で確認する。
+  - Bluesky側本文/OGP/cardが更新されない説明は、投稿者を責めない落ち着いた文言にする。
+  - _Leverage: existing `CreatePost_*`, `DeleteList_*`, restricted/list visibility locale keys_
+  - _Requirements: 4.2, 4.9, 5.2, 6.7, 7.4, 9.4, 非機能要件 ロケール管理/使いやすさ_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Localization/Product Copy Developer | Task: Add Japanese and English PostComposer-prefixed locale copy for steps, Skyblur Check, password unlock/draft clearing, edit limitations, recreate flow, leave confirmation, and errors | Restrictions: Keep flat ja/en exports, do not remove existing CreatePost keys, avoid blamey or alarming copy | _Leverage: existing locale CreatePost/DeleteList/restricted keys | _Requirements: 4.2, 4.9, 5.2, 6.7, 7.4, 9.4 | Success: All new UI states have matching Japanese/English keys, existing locale references remain compatible, and copy supports safe user decisions_
+
+- [x] 11. `/console` 導線を専用 route へ本切り替えする
+  - File: `frontend/src/app/console/ConsoleContent.tsx`
+  - `PostComposerScreen`、`EditPostLoader`、`PasswordUnlockGate`、`postComposerSave` が揃った状態で、`/console` から inline `CreatePostForm` を表示せず `/console/posts/new` と edit route へ遷移する導線へ本切り替えする。
+  - 作成ボタンと編集ボタンの視認性を維持し、既存ユーザーが投稿開始導線を見失わないようにする。
+  - E2E mock と production route E2E の移行・確認はタスク13の回帰確認へ寄せる。
+  - _Leverage: `frontend/src/app/console/ConsoleContent.tsx`, dedicated create/edit routes_
+  - _Requirements: 8.1, 8.2, 8.5, 10.1, 10.2_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Console Integration Developer | Task: Switch /console composer entry points to dedicated create/edit routes after composer/load/save pieces exist | Restrictions: Do not remove post management features, keep create/edit entry points discoverable, preserve production route behavior, leave E2E migration and regression verification to the release verification task | _Leverage: frontend/src/app/console/ConsoleContent.tsx, dedicated post composer routes | _Requirements: 8.1, 8.2, 8.5, 10.1, 10.2 | Success: /console entry points route users to functional dedicated composer screens without breaking console management workflows_
+
+- [x] 12. MAGI画像レビュー指摘を反映して3ステップ体験を磨き込む
+  - File: `frontend/src/components/post-composer/WriteStep.tsx`, `frontend/src/components/post-composer/AudienceStep.tsx`, `frontend/src/components/post-composer/SkyblurCheckStep.tsx`, `frontend/src/components/post-composer/PostComposerScreen.tsx`, `frontend/src/components/AutoResizeTextArea.tsx`, `frontend/src/logic/postComposer/visibilitySummary.ts`, `frontend/src/logic/postComposer/skyblurCheck.ts`, `frontend/src/locales/ja.ts`, `frontend/src/locales/en.ts`
+  - 実画面スクリーンショットを使ったMAGIレビューで出た指摘を、既存タスク6〜10の追補として反映する。
+  - 全ステップ上部の再ログイン警告が投稿体験の主役を奪わないよう表示強度・配置を調整し、権限不足が投稿に影響する場合は `投稿する` 導線と明確に連動させる。
+  - WriteStep は「シンプルモード」「伏せたい箇所」「選択部分を[]で括る」の関係を初見でも理解できるようにし、未選択時の `[]` ボタン無反応を避ける。破壊的なシンプルモード切替説明は常時警告ではなく確認導線へ寄せる。
+  - AudienceStep は選択中の公開範囲について、Bluesky 側に見える内容と Skyblur 側で読める内容を短い結果サマリーとして表示し、ユーザーが脳内で公開範囲を推測しなくてよいようにする。
+  - Skyblur Check は「確認表」ではなく投稿前の安心判定画面として、最上部に `投稿できます` / `確認が必要です` / `再ログインが必要です` などの結論を表示する。
+  - Skyblur Check の主役は `Blueskyで見える内容` と `Skyblurで読める内容` の差分比較にし、保存対象や詳細情報は人間向け文言で下位に整理する。
+  - Skyblur Check の Skyblur 側プレビューでは、補足枠が本文と補足のセパレーターとして機能する場合、プレビュー内に重複して `補足` ラベルを表示しない。
+  - `anyone`, `full-text`, `CREATE-PUBLIC`, `create-public`, `writeTargets` などの内部値をUIに出さず、ロケール化された人間向け文言へ変換する。
+  - 3ステップ全体で、ユーザーを責める/脅す表現を避けつつ、公開事故防止に必要な情報は弱めすぎない。
+  - ダークモードでも判定エリア、比較カード、警告/補助表示が強すぎず、背景・境界線・文字コントラストが破綻しないことを確認する。
+  - _Leverage: MAGI visual review findings, existing screenshots in `.codex/screenshots/post-composer/`, `PostTextWithBold`, `buildVisibilitySummary`, `buildSkyblurCheckSummary`, Mantine components_
+  - _Requirements: 1.2, 1.3, 1.4, 1.8, 4.1, 4.2, 4.3, 4.8, 4.9, 5.2, 8.1, 8.2, 8.5, 9.4, 10.5_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Product-minded UX Frontend Developer | Task: Refine the already-implemented three-step composer based on image-based MAGI review, making WriteStep easier to understand, AudienceStep show selected visibility outcomes, and Skyblur Check a human-readable publication-safety decision screen | Restrictions: Do not add a heavy wizard or marketing hero, do not expose internal enum/write target values, do not make warnings alarmist, do not duplicate the additional-text label inside the Skyblur preview when the separated supplemental area already communicates it, preserve existing save semantics and route behavior, keep mobile/WebKit layout stable | _Leverage: screenshots, PostTextWithBold, visibilitySummary, skyblurCheck, Mantine | _Requirements: 1.2, 1.3, 1.4, 1.8, 4.1, 4.2, 4.3, 4.8, 4.9, 5.2, 8.1, 8.2, 8.5, 9.4, 10.5 | Success: The three screenshots no longer show dominant relogin noise, WriteStep explains bracket/simple-mode use without fear, AudienceStep shows concrete Bluesky/Skyblur outcomes for the selected visibility, Skyblur Check contains no internal values, avoids redundant supplement labeling, and clearly tells the user whether posting is safe_
+
+- [x] 13. 回帰確認と build/test を実行する
+  - File: `frontend/e2e/oauth-mock.ts`, `frontend/e2e/oauth-xrpc.spec.ts`, project scripts and test commands
+  - 既存 `/console` inline composer 前提の E2E を、`/console` 起点で `/console/posts/new` と edit route へ遷移する production flow に移行・確認する。
+  - frontend unit/component tests、postComposer logic tests、state tests、Playwright E2E を実行する。
+  - Next.js build はプロジェクト指示どおり必ず権限付きで実行する。
+  - 3 step、本文入力、伏せ字指定、Bluesky preview、Skyblur Check、補足、公開範囲、投稿ボタン有効/無効を確認する。
+  - 新規投稿の主要 visibility、password新規投稿、list未選択エラーを確認する。
+  - 編集 route で同じ保存形式内編集、返信制限/引用制限更新可否、password unlock gate、更新対象/非更新対象表示を確認する。
+  - mobile/desktop と WebKit で layout collapse、button overlap、step操作不能がないことを確認する。
+  - 全組み合わせ網羅は unit/integration と分担し、E2E は production route の実ユーザーフローを中心にする。
+  - 既存 public/login/password/followers/following/mutual/list の作成・保存・取得・表示が回帰していないことを確認する。
+  - WebKit/mobile の投稿作成・編集 route が破綻しないことを確認する。
+  - _Leverage: `rtk pnpm build`, `rtk pnpm test:e2e`, `rtk pnpm test:e2e:coverage`, `rtk pnpm exec playwright`_
+  - _Requirements: 8.5, 9.1, 9.2, 9.3, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10, 非機能要件 パフォーマンス/信頼性_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release Verification Engineer | Task: Migrate/verify production-route E2E for the dedicated post composer, then run builds, unit tests, state/logic tests, Playwright E2E, and regression checks for the post composer refresh | Restrictions: Prefix all shell commands with rtk, run Next.js build with required privileges, do not rely on test-only preview pages, avoid full matrix explosion in E2E, keep OAuth mock stable and representative, do not ignore failing regression tests, report any skipped checks clearly | _Leverage: frontend/e2e/oauth-mock.ts, frontend/e2e/oauth-xrpc.spec.ts, rtk pnpm build, rtk pnpm test:e2e, rtk pnpm test:e2e:coverage, rtk pnpm exec playwright | _Requirements: 8.5, 9.1, 9.2, 9.3, 10.1-10.10 | Success: E2E validates real create/edit routes from /console, covers Skyblur Check and edit limitations, build and relevant tests pass or failures are documented with actionable follow-up, and existing visibility flows remain intact_
+
+- [-] 14. 旧 CreatePost 互換機能の棚卸しと新 composer 差分を確定する
+  - File: `frontend/src/components/CreatePost.tsx`, `frontend/src/components/post-composer/WriteStep.tsx`, `frontend/src/components/post-composer/AudienceStep.tsx`, `frontend/src/components/post-composer/SkyblurCheckStep.tsx`, `frontend/src/logic/postComposer/save.ts`, `frontend/src/logic/postComposer/text.ts`, `frontend/src/logic/postComposer/skyblurCheck.ts`, `frontend/e2e/oauth-xrpc.spec.ts`
+  - Audit: `.spec-workflow/specs/post-composer-refresh/createpost-compatibility-audit.md`
+  - 旧 `CreatePostForm` が実現していた機能を、実装コードベースで再棚卸しする。少なくとも本文/補足入力、`[]` 伏せ字指定、全角括弧変換、括弧 validation、シンプルモード、連続伏せ字省略、Bluesky preview、一時保存/復元/破棄、公開範囲、password、list、返信先、返信制限、引用制限、facets、OGP、暗号化、blob upload、restricted store、applyWrites、edit、restricted cleanup、通知/ローディングを含める。
+  - 新 composer 側について、各機能を `実装済み`、`実装済みだが要修正`、`未実装/回帰疑い`、`仕様変更で不要` に分類する。
+  - 監査結果では、`旧 CreatePost 互換の回帰` と `新仕様追加により発生した保存設計リスク` を分けて記録する。
+  - 重大な回帰疑い・保存設計リスクには、内部実装上の問題だけでなく「ユーザーに見える症状」を1行で記載する。
+  - 現時点で判明している新 composer 側の要注意点として、`CreatePost` で可能だった非 password 公開範囲変更、facets 生成、投稿成功時の下書き clear、新規投稿のみの復元モーダル、password 編集前 unlock cache、保存前 validation 表示、返信先選択後の表示切替、Skyblur Check の表示順・文言・幅、公開範囲全体時の `それ以外` 非表示、dark mode 表示、mobile 幅の visibility grid を確認対象に含める。
+  - `CreatePost` と新 `postComposerSave` の保存 payload を比較し、新規 public/password/restricted/list、返信あり、threadgate/postgate、facet あり、編集同一保存形式、restricted から non-restricted への cleanup の差分を明文化する。
+  - 修正優先順位は、ユーザー体験と保存安全性の観点から `password edit unlock/cache`、`draft 復元時の reply 復元`、`threadgate/postgate edit の本文保存巻き込み回避`、`E2E payload 固定`、`UI/文言の残り` の順を基本にする。
+  - edit の threadgate/postgate は `com.atproto.repo.getRecord` で record を直接取得する前提で扱う。`getRecord` は既存 record の有無と初期値の判定にのみ使い、`cid` precondition は使わない。取得できた gate だけを dirty 判定し、gate 保存は本文・補足保存から分離して、record 不在・scope 不足で本文保存を巻き込まない方針を記録する。
+  - `CreatePost` は専用 route 移行後に削除候補だが、タスク14の照合表で互換性の抜けを潰すまでは削除しない。
+  - 実装に入る前に、照合結果をこの spec のタスクまたは別 Markdown に残し、次に直す順番をユーザーと確認できる状態にする。
+  - E2E はこれまでの仕様変更を反映し、保存成功後の下書き clear、復元モーダルの新規投稿限定表示、入力不備時の step 進行不可、password 境界変更不可、非 password 同士の公開範囲変更可、CreatePost 互換 payload の代表ケースを確認対象へ入れる。
+  - _Leverage: existing `CreatePost.tsx`, post composer components/logic/tests, `frontend/e2e/oauth-xrpc.spec.ts`, `useTempPostStore`, `SensitiveDraftStore`, `buildPostComposerSavePlan`_
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.5, 5.1, 5.3, 5.4, 6.1, 6.2, 6.6, 6.8, 6.10, 7.1, 7.2, 7.3, 7.4, 9.1, 9.2, 9.3, 9.5, 9.7, 9.10, 9.11, 10.3, 10.4, 10.5_
+  - _Prompt: Implement the task for spec post-composer-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Compatibility Audit and Regression Engineer | Task: Inventory every user-visible and save-payload behavior that old CreatePostForm supported, compare it against the new post composer, and produce a concrete compatibility gap list before deleting CreatePost or continuing piecemeal fixes | Restrictions: Do not delete CreatePost before the compatibility table is accepted, do not rely on screenshots alone for save behavior, do not use Playwright if the user has explicitly prohibited it in the current thread, prefix all shell commands with rtk, run Next.js build with required privileges if build verification is requested | _Leverage: CreatePost.tsx, post-composer components and logic, oauth-xrpc E2E, TempPost/SensitiveDraft stores | _Requirements: 3.x, 4.x, 5.x, 6.x, 7.x, 9.x, 10.x | Success: A written compatibility matrix exists, each old CreatePost feature is classified against the new composer, known regressions have follow-up tasks/tests, and CreatePost removal is explicitly blocked until the matrix is accepted_

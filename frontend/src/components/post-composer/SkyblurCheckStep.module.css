@@ -1,0 +1,124 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.statusIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--mantine-color-blue-7);
+  background: var(--mantine-color-blue-0);
+}
+
+.statusIconWarning {
+  color: var(--mantine-color-yellow-8);
+  background: var(--mantine-color-yellow-0);
+}
+
+.fixNotice {
+  padding: 12px;
+  border: 1px solid var(--mantine-color-red-2);
+  border-radius: 8px;
+  background: var(--mantine-color-red-0);
+}
+
+.platformGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.panel {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 8px;
+  background: var(--mantine-color-white);
+}
+
+.metaRow {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.quietNotice {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--mantine-color-blue-8);
+  background: var(--mantine-color-blue-0);
+}
+
+.additionalPreview {
+  margin-top: 16px;
+}
+
+.blueskyEquivalentPreview {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.platformSettings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+[data-mantine-color-scheme="dark"] .statusIcon {
+  color: var(--mantine-color-blue-3);
+  background: rgba(25, 113, 194, 0.18);
+}
+
+[data-mantine-color-scheme="dark"] .statusIconWarning {
+  color: var(--mantine-color-yellow-3);
+  background: rgba(245, 159, 0, 0.16);
+}
+
+[data-mantine-color-scheme="dark"] .fixNotice {
+  border-color: rgba(255, 135, 135, 0.28);
+  background: rgba(250, 82, 82, 0.08);
+}
+
+[data-mantine-color-scheme="dark"] .panel {
+  background: var(--mantine-color-dark-7);
+}
+
+[data-mantine-color-scheme="dark"] .quietNotice {
+  color: var(--mantine-color-blue-2);
+  background: rgba(25, 113, 194, 0.12);
+}
+
+[data-mantine-color-scheme="dark"] .platformSettings {
+  border-top-color: var(--mantine-color-dark-4);
+}
+
+@media (max-width: 48em) {
+  .header {
+    flex-direction: column;
+  }
+
+  .metaRow {
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 8px;
+  }
+}

@@ -2,6 +2,7 @@ import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { scopeList } from '../logic/oauth/constants';
 import { create } from 'zustand';
+import { clearSensitiveDraft } from './SensitiveDraft';
 
 type State = {
   agent: Client;
@@ -183,6 +184,10 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             const nextScope = data.scope || '';
             const missingAppBskyRpcScopes = getMissingAppBskyRpcScopes(nextScope);
 
+            if (get().did && get().did !== data.did) {
+              clearSensitiveDraft();
+            }
+
             if (get().did !== data.did || get().serviceUrl !== pdsUrl || get().scope !== nextScope) {
               set({ did: data.did, serviceUrl: pdsUrl, isSessionChecked: true, scope: nextScope, missingAppBskyRpcScopes });
             } else {
@@ -193,6 +198,9 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             return cache.lastSessionResult;
           } else {
             if (get().did !== "" || get().isSessionChecked !== true) {
+              if (get().did !== "") {
+                clearSensitiveDraft();
+              }
               set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "", missingAppBskyRpcScopes: [] });
             }
             cache.lastSessionResult = { authenticated: false, did: "", pds: "" };
@@ -250,6 +258,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         console.error(`Logout (${mode}) error:`, error);
       } finally {
         getXrpcAgentCache().lastSessionResult = null;
+        clearSensitiveDraft();
         set({
           did: "",
           userProf: null,

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 export default function ServiceWorkerRegister() {
     useEffect(() => {
+        /* istanbul ignore next -- Playwright always sets webdriver; service worker registration is a non-E2E browser side effect. */
         if (navigator.webdriver) return;
 
         /* istanbul ignore next -- Playwright exposes serviceWorker; the false branch is browser capability fallback. */

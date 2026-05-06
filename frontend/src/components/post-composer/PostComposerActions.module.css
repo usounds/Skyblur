@@ -1,0 +1,45 @@
+.dock {
+  position: sticky;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 20;
+  margin-top: 28px;
+  padding: 9px 10px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 10px;
+  background: var(--mantine-color-body);
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.07);
+}
+
+.backButton,
+.primaryButton {
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+
+.backButton:hover {
+  transform: translateX(-2px);
+}
+
+.backButton:focus-visible,
+.primaryButton:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-4);
+  outline-offset: 2px;
+}
+
+.primaryButton {
+  min-width: 112px;
+  box-shadow: 0 2px 7px rgba(34, 139, 230, 0.14);
+}
+
+.primaryButton:hover {
+  transform: translateX(2px);
+  box-shadow: 0 4px 11px rgba(34, 139, 230, 0.18);
+}
+
+.primaryButton:disabled {
+  box-shadow: none;
+  transform: none;
+}
+
+[data-mantine-color-scheme="dark"] .dock {
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.22);
+}

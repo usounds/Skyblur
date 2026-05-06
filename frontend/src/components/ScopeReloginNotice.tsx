@@ -5,7 +5,11 @@ import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { Alert, Button, Group, Text } from '@mantine/core';
 import { RefreshCw, ShieldAlert } from 'lucide-react';
 
-export function ScopeReloginNotice() {
+type ScopeReloginNoticeProps = {
+  compact?: boolean;
+};
+
+export function ScopeReloginNotice({ compact: _compact }: ScopeReloginNoticeProps) {
   const { localeData: locale } = useLocale();
   const did = useXrpcAgentStore((state) => state.did);
   const missingScopes = useXrpcAgentStore((state) => state.missingAppBskyRpcScopes);
@@ -20,6 +24,7 @@ export function ScopeReloginNotice() {
       icon={<ShieldAlert size={18} />}
       title={locale.ScopeRelogin_Title}
       mb="md"
+      radius="sm"
     >
       <Group justify="space-between" align="flex-start" gap="sm">
         <div style={{ minWidth: 0, flex: 1 }}>

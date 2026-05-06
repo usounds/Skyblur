@@ -9,7 +9,7 @@ const repoRoot = process.cwd();
 const inputDir = path.join(repoRoot, ".nyc_output", "e2e");
 const outputDir = path.join(repoRoot, "coverage", "e2e");
 const threshold = Number(process.env.E2E_COVERAGE_THRESHOLD || "80");
-const branchThreshold = Number(process.env.E2E_BRANCH_COVERAGE_THRESHOLD || "80");
+const branchThreshold = Number(process.env.E2E_BRANCH_COVERAGE_THRESHOLD || "85");
 const thresholdMetrics = (
   process.env.E2E_COVERAGE_METRICS || "lines,statements,functions,branches"
 )

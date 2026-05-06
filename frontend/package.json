@@ -47,7 +47,7 @@
     "test:e2e:browsers": "playwright test --project=chromium --project=firefox --project=webkit --grep \"OAuth metadata points|public app pages render core unauthenticated content|home start button opens the console for logged-in users|/console renders logged-in dashboard\"",
     "test:e2e:mobile": "playwright test --project=mobile-chrome --project=mobile-safari --grep \"OAuth metadata points|public app pages render core unauthenticated content|home start button opens the console for logged-in users|/console renders logged-in dashboard\"",
     "test:e2e:all": "playwright test && node scripts/e2e-screen-coverage.mjs",
-    "test:e2e:coverage": "node scripts/e2e-coverage-clean.mjs && E2E_COVERAGE=true playwright test --project=webkit && node scripts/e2e-screen-coverage.mjs && node scripts/e2e-coverage-report.mjs",
+    "test:e2e:coverage": "node scripts/e2e-coverage-clean.mjs && E2E_COVERAGE=true playwright test --project=webkit --workers=1 && node scripts/e2e-screen-coverage.mjs && node scripts/e2e-coverage-report.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
