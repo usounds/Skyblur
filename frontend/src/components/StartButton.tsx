@@ -3,6 +3,7 @@ import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { Button, Loader, Text } from '@mantine/core';
 import { Sparkles } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -157,6 +158,16 @@ export function StartButton() {
                         {locale.Home_CheckingSessionWithTimer.replace('{1}', String(sessionCheckSecondsLeft))}
                     </Text>
                 </div>
+            ) : did ? (
+                <Button
+                    component={Link}
+                    href="/console"
+                    variant="filled" size="md" radius="lg"
+                    leftSection={<Sparkles size={24} />}
+                    className="px-10 h-16 text-lg"
+                >
+                    {locale.Landing_StartButton}
+                </Button>
             ) : (
                 <Button
                     variant="filled" size="md" radius="lg"

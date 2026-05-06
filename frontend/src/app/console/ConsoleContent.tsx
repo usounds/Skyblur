@@ -12,6 +12,7 @@ import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { Pencil } from 'lucide-react';
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export function ConsoleContent() {
@@ -33,10 +34,6 @@ export function ConsoleContent() {
             router.push(`/console/posts/${encodeURIComponent(routeDid)}/${encodeURIComponent(routeRkey)}/edit`);
             return;
         }
-    };
-
-    const handleNew = () => {
-        router.push("/console/posts/new")
     };
 
     const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
@@ -120,7 +117,7 @@ export function ConsoleContent() {
                         </div>
 
                         <div className="flex justify-center gap-4 mb-8" style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' }}>
-                            <Button leftSection={<Pencil size={14} />} variant="filled" onClick={() => handleNew()}>
+                            <Button component={Link} href="/console/posts/new" leftSection={<Pencil size={14} />} variant="filled">
                                 {locale.Menu_CreatePost}
                             </Button>
                         </div>

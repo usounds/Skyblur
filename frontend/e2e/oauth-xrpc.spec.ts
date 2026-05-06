@@ -63,6 +63,20 @@ async function useEnglishLocale(context: {
   ]);
 }
 
+async function useJapaneseLocale(context: {
+  clearCookies: () => Promise<void>;
+  addCookies: (cookies: { name: string; value: string; url: string }[]) => Promise<void>;
+}, baseURL: string | undefined) {
+  await context.clearCookies();
+  await context.addCookies([
+    {
+      name: "lang",
+      value: "ja",
+      url: baseURL || "http://localhost:4500",
+    },
+  ]);
+}
+
 async function openConsoleLoginForm(
   page: import("@playwright/test").Page,
   context: import("@playwright/test").BrowserContext,
@@ -110,13 +124,13 @@ async function openCreateComposer(page: import("@playwright/test").Page) {
     window.localStorage.removeItem("zustand.sensitive-post-draft");
     window.sessionStorage.removeItem("skyblur.post-composer.active-create-session");
   });
-  await page.getByRole("button", { name: "Create a post" }).click({ force: true });
+  await page.getByRole("link", { name: "Create a post" }).click({ force: true });
   await expect(page).toHaveURL(/\/console\/posts\/new$/);
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
 }
 
 async function clickCreateComposer(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "Create a post" }).click({ force: true });
+  await page.getByRole("link", { name: "Create a post" }).click({ force: true });
   await expect(page).toHaveURL(/\/console\/posts\/new$/);
 }
 
@@ -350,6 +364,21 @@ test.describe("home start session flows", () => {
     await expect(page.getByText("Operator Information")).toBeVisible();
   });
 
+  test("public home renders initial Japanese content", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
+    await useJapaneseLocale(context, baseURL);
+
+    await gotoAndSkipIfUnavailable(page, "/");
+
+    await expect(page.getByRole("heading", { name: "Skyblurへようこそ" })).toBeVisible();
+    await expect(page.getByText("Skyblurの投稿を快適にチェックできる、おすすめクライアント")).toBeVisible();
+    await expect(page.getByRole("link", { name: "羽衣" })).toHaveAttribute("href", "https://hagoromo.relog.tech/ja/");
+  });
+
   test("home start button opens the console for logged-in users", async ({
     page,
     context,
@@ -358,7 +387,7 @@ test.describe("home start session flows", () => {
     await useLoggedInOAuthMock(page, context, baseURL);
 
     await gotoAndSkipIfUnavailable(page, "/");
-    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("link", { name: "Start" }).click();
 
     await expect(page).toHaveURL(/\/console$/);
     await expect(page.getByText(/E2E Tester/)).toBeVisible();
@@ -1241,7 +1270,7 @@ test("/console renders logged-in dashboard from mocked OAuth session", async ({
 
   await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Create a post" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create a post" })).toBeVisible();
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
   await expect(page.getByText("console post")).toBeVisible();
@@ -1301,7 +1330,7 @@ test("/console hides relogin prompt when current app.bsky rpc scopes are present
   await gotoAndSkipIfUnavailable(page, "/console");
 
   await expect(page.getByText("Login permissions need to be updated")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Create a post" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create a post" })).toBeVisible();
 });
 
 test("/console remains usable when the profile fetch fails", async ({
@@ -1315,7 +1344,7 @@ test("/console remains usable when the profile fetch fails", async ({
 
   await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText(mockDid)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Create a post" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create a post" })).toBeVisible();
   await expect(page.getByText("Post List")).toBeVisible();
   await page.getByRole("button", { name: "Account menu" }).click();
   await expect(page.getByText(mockDid).last()).toBeVisible();
@@ -1409,6 +1438,22 @@ test("/console create post form covers validation, reply, visibility, and submit
   await expect(page.getByText("What appears on Bluesky")).toBeVisible();
   await submitComposer(page);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
+});
+
+test("/console create post form exits pristine edits without confirmation", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("dialog", { name: "Confirm" })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/console$/);
+  await expect(page.getByText("Post List")).toBeVisible();
 });
 
 test("/console submits list visibility post after selecting an owned list", async ({
@@ -1649,7 +1694,7 @@ test("/console create post form shows apply write failure", async ({
   context,
   baseURL,
 }) => {
-  await useLoggedInOAuthMock(page, context, baseURL, { applyWritesStatus: 500 });
+  await useLoggedInOAuthMock(page, context, baseURL, { applyWritesAbort: true });
 
   await gotoAndSkipIfUnavailable(page, "/console");
   await openCreateComposer(page);
@@ -1828,6 +1873,71 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await expect(page.getByText("Visible E2E")).toHaveCount(0);
 });
 
+test("/console post list reports Skyblur record delete failures", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { applyWritesStatus: 500 });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await expect(page.getByText("Visible E2E")).toBeVisible();
+  await page.getByTestId("post-menu").last().click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  const deleteDialog = page.getByRole("dialog", { name: "Are you sure you want to delete this post?" });
+  await expect(deleteDialog).toBeVisible();
+  await deleteDialog.getByRole("button", { name: "Delete" }).click();
+
+  await expect(page.getByText(/Error:/)).toBeVisible();
+  await expect(page.getByText("Visible E2E").first()).toBeVisible();
+});
+
+test("/console restricted post delete still completes when stored cleanup fails", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, {
+    postVariant: "restricted",
+    deleteStoredStatus: 500,
+  });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await expect(page.getByText("*****")).toBeVisible();
+  await page.getByTestId("post-menu").last().click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("dialog", { name: "Are you sure you want to delete this post?" }).getByRole("button", { name: "Delete" }).click();
+
+  await expect(page.getByText("Delete completed!")).toBeVisible();
+  await expect(page.getByText("*****")).toHaveCount(0);
+});
+
+test("/console post list keeps malformed edit URI fallback from navigating", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { invalidBlurRecordUri: true });
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
+  });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await expect(page.getByText("Visible E2E")).toBeVisible();
+  await page.getByTestId("post-menu").last().click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+
+  await expect(page).toHaveURL(/\/console$/);
+  await expect(page.getByText("Post List")).toBeVisible();
+
+  await page.getByTestId("post-menu").last().click();
+  await page.getByRole("menuitem", { name: "Copy Skyblur URL" }).click();
+  expect(consoleErrors).toContain("URLが無効です");
+});
+
 test("/console post list decrypts password-protected posts", async ({
   page,
   context,
@@ -1846,6 +1956,21 @@ test("/console post list decrypts password-protected posts", async ({
   await openLastPostEdit(page);
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Decrypted E2E password text");
+});
+
+test("/console post list hides edit for locked password-protected posts", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "password" });
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await expect(page.getByText("Password E2E")).toBeVisible();
+  await page.getByTestId("post-menu").last().click();
+
+  await expect(page.getByRole("menuitem", { name: "Edit" })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: "Copy Skyblur URL" })).toBeVisible();
 });
 
 test("/console password-protected edit unlocks encrypted content", async ({
@@ -2275,6 +2400,33 @@ test("/console edit route keeps gate controls locked when gate loading fails", a
   await expect(page.getByLabel("Allow quotes of this post")).toBeDisabled();
 });
 
+test("/console edit route keeps the composer frame while loading the edit record", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { editRecordDelayMs: 3_000 });
+
+  const gotoPromise = gotoAndSkipIfUnavailable(page, `/console/posts/${encodeURIComponent(mockDid)}/e2eblur-public/edit`);
+  await expect(page.getByText("Checking the post.")).toBeVisible();
+  await expect(page.getByText("Write", { exact: true })).toBeVisible();
+  await expect(page.getByText("Post content")).toBeVisible();
+
+  await gotoPromise;
+  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Visible E2E [secret] console post");
+});
+
+test("/console edit route reports edit record request failures", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { editRecordAbort: true });
+
+  await gotoAndSkipIfUnavailable(page, `/console/posts/${encodeURIComponent(mockDid)}/e2eblur-public/edit`);
+  await expect(page.getByText("Could not load the post for editing.")).toBeVisible();
+});
+
 test("/console edit route reports invalid and unsupported edit records", async ({
   page,
   context,
@@ -2485,7 +2637,7 @@ test("/console greeting renders morning, day, and night messages", async ({
     const page = await context.newPage();
     await openConsoleWithClock(page, context, baseURL, iso);
     await expect(page.getByText(greeting)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Create a post" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Create a post" })).toBeVisible();
     await context.close();
   }
 });

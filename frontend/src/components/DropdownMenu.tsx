@@ -7,6 +7,7 @@ import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { Button, Group, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
+import Link from 'next/link';
 import { useState } from "react";
 import { Ellipsis } from 'lucide-react';
 import { SquarePen } from 'lucide-react';
@@ -14,6 +15,15 @@ import { Check, X } from 'lucide-react';
 import { ClipboardCopy } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
+
+const editablePostVisibilities = new Set([
+    VISIBILITY_PUBLIC,
+    VISIBILITY_LOGIN,
+    VISIBILITY_FOLLOWERS,
+    VISIBILITY_FOLLOWING,
+    VISIBILITY_MUTUAL,
+    VISIBILITY_LIST,
+]);
 
 type DropsownMenuProps = {
     handleEdit: ((input: PostListItem) => void) | null;
@@ -27,6 +37,16 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
     const { localeData: locale } = useLocale();
     const [opened, { open, close }] = useDisclosure(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const blurUriParts = post.blurATUri.split('/');
+    const editDid = blurUriParts[2];
+    const editRkey = blurUriParts[4];
+    const editHref = editDid && editRkey
+        ? `/console/posts/${encodeURIComponent(editDid)}/${encodeURIComponent(editRkey)}/edit`
+        : "";
+    const visibility = post.blur.visibility || VISIBILITY_PUBLIC;
+    const canEdit = visibility === VISIBILITY_PASSWORD
+        ? post.isDecrypt
+        : editablePostVisibilities.has(visibility);
 
     const handleCopyToClipboard = async (item: PostListItem) => {
         console.log('handleCopyToClipboard')
@@ -69,12 +89,15 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                 rkey: post?.blur.uri.split('/').pop() || '',
             });
 
-            await agent.post('com.atproto.repo.applyWrites', {
+            const blueskyDeleteResult = await agent.post('com.atproto.repo.applyWrites', {
                 input: {
                     repo: did as ActorIdentifier,
                     writes,
                 },
             });
+            if (!blueskyDeleteResult.ok) {
+                throw new Error(blueskyDeleteResult.data?.error || 'Bluesky post delete failed');
+            }
         } catch (e) {
             //　握りつぶす
             console.error("エラーが発生しました:", e);
@@ -93,12 +116,15 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                 rkey: post?.blurATUri.split('/').pop() || '',
             });
 
-            await agent.post('com.atproto.repo.applyWrites', {
+            const skyblurDeleteResult = await agent.post('com.atproto.repo.applyWrites', {
                 input: {
                     repo: did as ActorIdentifier,
                     writes,
                 },
             });
+            if (!skyblurDeleteResult.ok) {
+                throw new Error(skyblurDeleteResult.data?.error || 'Skyblur post delete failed');
+            }
         } catch (e) {
             // エラーハンドリング
             console.error("エラーが発生しました:", e);
@@ -119,11 +145,14 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
         // Clean up DO if post was restricted
         if (isRestrictedVisibility(post.blur.visibility || '')) {
             try {
-                await agent.post('uk.skyblur.post.deleteStored', {
+                const cleanupResult = await agent.post('uk.skyblur.post.deleteStored', {
                     input: {
                         uri: post.blurATUri as ResourceUri
                     }
                 });
+                if (!cleanupResult.ok) {
+                    throw new Error(cleanupResult.data?.error || 'Stored content cleanup failed');
+                }
                 console.log('Deleted from DO due to post deletion');
             } catch (e) {
                 console.error('Failed to delete from DO:', e);
@@ -168,10 +197,12 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
 
             <Menu.Dropdown>
                 <Menu.Label>Menu</Menu.Label>
-                {((post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt) ||
-                    [VISIBILITY_PUBLIC, VISIBILITY_LOGIN, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST].includes(post.blur.visibility || '') ||
-                    !post.blur.visibility) &&
-                    <Menu.Item leftSection={<SquarePen size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
+                {canEdit &&
+                    (editHref ? (
+                        <Menu.Item component={Link} href={editHref} leftSection={<SquarePen size={18} />}>{locale.DeleteList_Edit}</Menu.Item>
+                    ) : (
+                        <Menu.Item leftSection={<SquarePen size={18} />} onClick={() => handleEdit && handleEdit(post)}>{locale.DeleteList_Edit}</Menu.Item>
+                    ))
                 }
                 <Menu.Item
                     leftSection={<ClipboardCopy size={18} />}

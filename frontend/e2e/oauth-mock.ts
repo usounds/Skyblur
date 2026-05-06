@@ -175,6 +175,8 @@ type OAuthMockOptions = {
   replyResolveStatus?: 200 | 500;
   replyResolveEmpty?: boolean;
   postVariant?: "public" | "password" | "restricted" | "following" | "mutual" | "list" | "login" | "empty";
+  malformedBlurRecordUri?: boolean;
+  invalidBlurRecordUri?: boolean;
   postDetailVariant?: "public" | "password" | "authRequired" | "error";
   postDetailVisibility?: "login" | "followers" | "following" | "mutual" | "list";
   passwordEncryptBodyShape?: "ref-link" | "ref-string" | "cid" | "link" | "missing";
@@ -185,7 +187,10 @@ type OAuthMockOptions = {
   deleteStoredStatus?: 200 | 500;
   uploadBlobStatus?: 200 | 500;
   applyWritesStatus?: 200 | 500;
+  applyWritesAbort?: boolean;
   editRecordStatus?: 200 | 500;
+  editRecordAbort?: boolean;
+  editRecordDelayMs?: number;
   editRecordVariant?: "invalid-type" | "invalid-visibility" | "invalid-text" | "password-missing-encrypt";
   editThreadGateStatus?: 200 | 400 | 404 | 500;
   editPostGateStatus?: 200 | 400 | 404 | 500;
@@ -412,7 +417,11 @@ export async function useLoggedInOAuthMock(
           cursor: options.listRecordsHasNextPage ? "next-page" : "",
           records: [
             {
-              uri: `at://${mockDid}/uk.skyblur.post/e2eblur-${options.postVariant || "public"}`,
+              uri: options.invalidBlurRecordUri
+                ? `invalid-e2eblur-${options.postVariant || "public"}`
+                : options.malformedBlurRecordUri
+                  ? `at://${mockDid}/malformed/e2eblur-${options.postVariant || "public"}`
+                  : `at://${mockDid}/uk.skyblur.post/e2eblur-${options.postVariant || "public"}`,
               cid: "bafy-e2e-blur",
               value: postByVariant,
             },
@@ -525,6 +534,15 @@ export async function useLoggedInOAuthMock(
     if (method === "com.atproto.repo.getRecord") {
       const collection = url.searchParams.get("collection");
       if (collection === "uk.skyblur.post") {
+        if (options.editRecordAbort) {
+          await route.abort();
+          return;
+        }
+
+        if (options.editRecordDelayMs) {
+          await new Promise((resolve) => setTimeout(resolve, options.editRecordDelayMs));
+        }
+
         if (options.editRecordStatus === 500) {
           await route.fulfill({
             status: 500,
@@ -1002,6 +1020,11 @@ export async function useLoggedInOAuthMock(
     }
 
     if (method === "com.atproto.repo.applyWrites") {
+      if (options.applyWritesAbort) {
+        await route.abort();
+        return;
+      }
+
       if (options.applyWritesStatus === 500) {
         await route.fulfill({
           status: 500,

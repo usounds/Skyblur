@@ -509,12 +509,22 @@ export async function postComposerSave(input: PostComposerSaveInput): Promise<Sa
     if (postGateWrite) writes.push(postGateWrite);
   }
 
-  const response = await agent.post("com.atproto.repo.applyWrites", {
-    input: {
-      repo: did,
-      writes,
-    },
-  });
+  let response: Awaited<ReturnType<typeof agent.post>>;
+  try {
+    response = await agent.post("com.atproto.repo.applyWrites", {
+      input: {
+        repo: did,
+        writes,
+      },
+    });
+  } catch {
+    return {
+      status: "failed",
+      reason: "apply-writes-failed",
+      retryable: true,
+      messageKey: "PostComposer_ErrorApplyWritesFailed",
+    };
+  }
 
   if (!response.ok) {
     return {
