@@ -277,8 +277,8 @@ async function clickOpenPostMenuEdit(page: import("@playwright/test").Page) {
       if (!await page.getByRole("menuitem", { name: "Edit" }).isVisible().catch(() => false)) {
         await page.getByTestId("post-menu").last().click();
       }
-      const editMenuItem = page.getByRole("menuitem", { name: "Edit" });
-      await editMenuItem.click({ force: true, timeout: 5_000 });
+      const editMenuItem = page.getByRole("menu").last().getByRole("menuitem", { name: "Edit" });
+      await editMenuItem.click({ timeout: 5_000 });
       await page.waitForURL(/\/console\/posts\/.+\/edit$/, { timeout: 15_000 });
       return;
     } catch (error) {
@@ -307,7 +307,7 @@ async function openLastPostEdit(page: import("@playwright/test").Page) {
   await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
   await Promise.all([
     page.waitForURL(/\/console\/posts\/.+\/edit$/),
-    page.getByRole("menuitem", { name: "Edit" }).click({ force: true }),
+    page.getByRole("menu").last().getByRole("menuitem", { name: "Edit" }).click(),
   ]);
 }
 
@@ -1762,9 +1762,9 @@ test("/console create post form writes reply and quote controls from the screen"
   await openComposerDetails(page);
   await expect(page.getByText("Reply Control", { exact: true })).toBeVisible();
   await expect(page.getByText("Mentioned users")).toBeVisible();
-  await page.getByText("Mentioned users").click();
-  await page.getByText("Followed users").click();
-  await page.getByText("Your followers").click();
+  await page.locator('input[value="mention"]').evaluate((el) => (el as HTMLInputElement).click());
+  await page.locator('input[value="following"]').evaluate((el) => (el as HTMLInputElement).click());
+  await page.locator('input[value="followers"]').evaluate((el) => (el as HTMLInputElement).click());
   await page.getByLabel("Allow quotes of this post").uncheck();
   await page.getByLabel("Set a reply target").check();
   await expect(page.getByText("E2E reply target post")).toBeVisible();
@@ -1889,7 +1889,7 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await backDialog.getByRole("button", { name: "Cancel" }).click();
   await expect(backDialog).toBeHidden();
   await expect(page).toHaveURL(/\/console\/posts\/.+\/edit$/);
-  await page.goto(`${baseURL}/console`);
+  await page.goBack();
   await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();

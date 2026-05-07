@@ -95,6 +95,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   const initialRestoreDecision = mode === "create" && hasActiveCreateSession() ? "fresh" : "pending";
   const [restoreDecision, setRestoreDecision] = useState<"pending" | "restored" | "fresh">(initialRestoreDecision);
   const restoreDecisionRef = useRef<"pending" | "restored" | "fresh">(initialRestoreDecision);
+  const suppressCreateDraftSyncRef = useRef(false);
   const [isDraftHydrated, setIsDraftHydrated] = useState(mode !== "create");
   const [initialCreateDraft, setInitialCreateDraft] = useState<PostComposerInitialData | null>(null);
   const [restoredReplyPost, setRestoredReplyPost] = useState<PostView | undefined>();
@@ -110,10 +111,15 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   const exitToConsole = useCallback(() => {
     setActiveCreateSession(false);
     setHasUnsavedComposerChanges(false);
+    if (mode === "create") {
+      router.back();
+      return;
+    }
     router.push("/console");
-  }, [router, setHasUnsavedComposerChanges]);
+  }, [mode, router, setHasUnsavedComposerChanges]);
   useEffect(() => {
     return () => {
+      suppressCreateDraftSyncRef.current = false;
       setHasUnsavedComposerChanges(false);
     };
   }, [setHasUnsavedComposerChanges]);
@@ -362,11 +368,14 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   }
 
   const renderComposer = (initialData?: PostComposerInitialData) => (
-    <PostComposerScreen
+      <PostComposerScreen
       key={mode === "create" ? restoreDecision : initialData?.blurUri}
       initialData={initialData ?? activeCreateInitialData}
       onBack={exitToConsole}
       onStateChange={(state) => {
+        if (mode === "create" && suppressCreateDraftSyncRef.current) {
+          return;
+        }
         setHasUnsavedComposerChanges(state.dirty);
         if (mode === "create") {
           syncCreateDraft(state);
@@ -376,6 +385,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
       onSubmit={async (state, plan) => {
         const result = await postComposerSave({ state, plan, did, agent, apiProxyAgent, locale, initialData });
         if (result.status === "success") {
+          suppressCreateDraftSyncRef.current = true;
           clearSensitiveDraft();
           clearTempPost();
           setHasUnsavedComposerChanges(false);
