@@ -70,7 +70,7 @@
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
     "lucide-react": "^1.14.0",
-    "next": "^16.2.4",
+    "next": "^16.2.6",
     "react": "^19.2.5",
     "react-content-loader": "^7.1.2",
     "react-dom": "^19.2.5",
