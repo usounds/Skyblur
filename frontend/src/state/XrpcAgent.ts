@@ -116,10 +116,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         // @ts-ignore
         fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
       }),
-      proxy: {
-        did: `did:web:${host}`,
-        serviceId: '#skyblur_api'
-      }
+      proxy: `did:web:${host}#skyblur_api`,
     }),
     publicAgent: new Client({
       handler: simpleFetchHandler({

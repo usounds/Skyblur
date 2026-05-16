@@ -11,29 +11,29 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@atcute/atproto": "^3.1.11",
-    "@atcute/client": "^4.2.1",
-    "@atcute/identity-resolver": "^1.2.2",
-    "@atcute/lexicons": "^1.3.0",
-    "@atcute/oauth-crypto": "^0.1.0",
-    "@atcute/oauth-node-client": "^1.1.0",
+    "@atcute/atproto": "^4.0.0",
+    "@atcute/client": "^5.0.0",
+    "@atcute/identity-resolver": "^2.0.0",
+    "@atcute/lexicons": "^2.0.0",
+    "@atcute/oauth-crypto": "^1.0.0",
+    "@atcute/oauth-node-client": "^2.0.0",
     "did-jwt": "^8.0.18",
     "did-resolver": "^5.0.1",
-    "hono": "^4.12.17",
+    "hono": "^4.12.19",
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
-    "@atcute/bluesky": "^3.3.3",
-    "@atcute/lex-cli": "^2.8.1",
+    "@atcute/bluesky": "^4.0.1",
+    "@atcute/lex-cli": "^3.0.1",
     "@cloudflare/unenv-preset": "^2.16.1",
-    "@cloudflare/workers-types": "^4.20260506.1",
-    "@types/node": "^25.6.0",
-    "@vitest/coverage-v8": "^4.1.5",
-    "@vitest/ui": "^4.1.5",
+    "@cloudflare/workers-types": "^4.20260516.1",
+    "@types/node": "^25.8.0",
+    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/ui": "^4.1.6",
     "unenv": "2.0.0-rc.24",
-    "vite": "^8.0.10",
-    "vitest": "^4.1.5",
-    "wrangler": "^4.88.0"
+    "vite": "^8.0.13",
+    "vitest": "^4.1.6",
+    "wrangler": "^4.92.0"
   },
   "pnpm": {
     "overrides": {

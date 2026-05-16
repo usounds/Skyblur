@@ -1,4 +1,5 @@
-import { Client, type ServiceProxyOptions } from "@atcute/client";
+import { Client } from "@atcute/client";
+import type { AtprotoAudience } from "@atcute/lexicons/syntax";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -19,10 +20,7 @@ const optionalSessionSkyblurMethods = new Set([
   "uk.skyblur.post.getPost",
 ]);
 
-const bskyAppViewProxy: ServiceProxyOptions = {
-  did: "did:web:api.bsky.app" as never,
-  serviceId: "#bsky_appview",
-};
+const bskyAppViewProxy: AtprotoAudience = "did:web:api.bsky.app#bsky_appview";
 
 const searchPostsMethod = "app.bsky.feed.searchPosts";
 const retryableAppBskyGetMethods = new Set([
@@ -133,12 +131,9 @@ function getSkyblurProxyDid(request: Request) {
   return `did:web:${host}`;
 }
 
-function getProxyForMethod(request: Request, method: string): ServiceProxyOptions | null {
+function getProxyForMethod(request: Request, method: string): AtprotoAudience | null {
   if (method.startsWith("uk.skyblur.")) {
-    return {
-      did: getSkyblurProxyDid(request) as never,
-      serviceId: "#skyblur_api",
-    };
+    return `${getSkyblurProxyDid(request)}#skyblur_api` as AtprotoAudience;
   }
 
   if (isAppBskyMethod(method)) {
@@ -148,9 +143,9 @@ function getProxyForMethod(request: Request, method: string): ServiceProxyOption
   return null;
 }
 
-function getProxyHeaderValue(proxy: ServiceProxyOptions | null) {
+function getProxyHeaderValue(proxy: AtprotoAudience | null) {
   if (!proxy) return null;
-  return `${proxy.did}${proxy.serviceId}`;
+  return proxy;
 }
 
 async function getOAuthSession(request: Request) {
