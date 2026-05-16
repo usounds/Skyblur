@@ -74,6 +74,22 @@ function isFallbackError(error: unknown) {
   ].some((name) => errorName.includes(name));
 }
 
+function isConditionalCheckFailed(error: unknown) {
+  if (error instanceof ConditionalCheckFailedException) return true;
+
+  const err = error as {
+    name?: string;
+    code?: string;
+    __type?: string;
+    $metadata?: { httpStatusCode?: number };
+  };
+  const errorName = err.name || err.code || err.__type || "";
+  return (
+    errorName.includes("ConditionalCheckFailedException") ||
+    (errorName.includes("ConditionalCheckFailed") && err.$metadata?.httpStatusCode === 400)
+  );
+}
+
 function warnMemoryFallback(commandName: string) {
   if (globalForOAuthStore.skyblurOAuthWarnedMemoryFallback) return;
   console.warn(
@@ -400,13 +416,13 @@ export async function requestOAuthLock<T>(name: string, fn: () => Promise<T>): P
             }),
           );
         } catch (error) {
-          if (!(error instanceof ConditionalCheckFailedException)) {
+          if (!isConditionalCheckFailed(error)) {
             throw error;
           }
         }
       }
     } catch (error) {
-      if (!(error instanceof ConditionalCheckFailedException)) {
+      if (!isConditionalCheckFailed(error)) {
         throw error;
       }
 

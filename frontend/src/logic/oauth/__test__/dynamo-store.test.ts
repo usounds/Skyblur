@@ -12,6 +12,7 @@ describe("Dynamo OAuth store", () => {
   });
 
   afterEach(() => {
+    vi.doUnmock("@aws-sdk/client-dynamodb");
     vi.useRealTimers();
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
@@ -60,6 +61,36 @@ describe("Dynamo OAuth store", () => {
     releaseFirst("first");
     await expect(first).resolves.toBe("first");
   }, 10_000);
+
+  it("treats bundled ConditionalCheckFailedException shapes as lock contention", async () => {
+    vi.stubEnv("USE_AWS_REAL_DB", "true");
+    vi.stubEnv("OAUTH_STORE_TABLE_NAME", "oauth-store");
+
+    const send = vi.fn()
+      .mockRejectedValueOnce({
+        __type: "com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException",
+        $metadata: { httpStatusCode: 400 },
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    vi.doMock("@aws-sdk/client-dynamodb", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@aws-sdk/client-dynamodb")>();
+      return {
+        ...actual,
+        DynamoDBClient: vi.fn(function DynamoDBClient() {
+          return { send };
+        }),
+      };
+    });
+
+    const { requestOAuthLock } = await import("../dynamo-store");
+    const result = requestOAuthLock("same-session", async () => "acquired");
+
+    await vi.advanceTimersByTimeAsync(250);
+
+    await expect(result).resolves.toBe("acquired");
+    expect(send).toHaveBeenCalledTimes(3);
+  });
 
   it("stores protected resource metadata fallback for one hour", async () => {
     const { DynamoOAuthStore } = await import("../dynamo-store");
