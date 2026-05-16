@@ -3,7 +3,6 @@
 import { UkSkyblurPost } from "@/lexicon/UkSkyblur";
 import { isRestrictedVisibility } from "@/logic/listVisibility";
 import { useLocale } from "@/state/Locale";
-import { useSensitiveDraftStore } from "@/state/SensitiveDraft";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import type { PostComposerInitialData } from "@/types/postComposer";
 import {
@@ -25,6 +24,7 @@ import { PostComposerStepper } from "./PostComposerStepper";
 type EditPostLoaderProps = {
   did: string;
   rkey: string;
+  onBack?: () => void;
   children: (initialData: PostComposerInitialData) => ReactNode;
 };
 
@@ -273,17 +273,12 @@ export function EditPostLoadingFrame() {
   );
 }
 
-export function EditPostLoader({ did, rkey, children }: EditPostLoaderProps) {
+export function EditPostLoader({ did, rkey, onBack, children }: EditPostLoaderProps) {
   const { localeData: locale } = useLocale();
   const loginDid = useXrpcAgentStore((state) => state.did);
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
   const agent = useXrpcAgentStore((state) => state.agent);
   const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
-  const unlockedBlurUri = useSensitiveDraftStore((state) => state.unlockedBlurUri);
-  const unlockedText = useSensitiveDraftStore((state) => state.unlockedText);
-  const unlockedAdditional = useSensitiveDraftStore((state) => state.unlockedAdditional);
-  const unlockedPassword = useSensitiveDraftStore((state) => state.unlockedPassword);
-  const setUnlockedPasswordPost = useSensitiveDraftStore((state) => state.setUnlockedPasswordPost);
   const [loadState, setLoadState] = useState<EditLoadState>({ status: "loading" });
   const requestIdRef = useRef(0);
 
@@ -368,18 +363,6 @@ export function EditPostLoader({ did, rkey, children }: EditPostLoaderProps) {
       };
 
       if (validation.visibility === "password") {
-        if (unlockedBlurUri === baseInitialData.blurUri && unlockedText) {
-          setLoadState({
-            status: "loaded",
-            initialData: applyPasswordUnlockToInitialData(baseInitialData, {
-              text: unlockedText,
-              additional: unlockedAdditional,
-              password: unlockedPassword,
-            }),
-          });
-          return;
-        }
-
         const encryptCid = normalizeEncryptCid(validation.record);
         if (!encryptCid) {
           setLoadState({ status: "error", message: locale.PostComposer_LoadErrorPasswordDataMissing });
@@ -435,11 +418,6 @@ export function EditPostLoader({ did, rkey, children }: EditPostLoaderProps) {
     locale.CreatePost_NeedLoginTitle,
     loginDid,
     routeParams,
-    unlockedAdditional,
-    unlockedBlurUri,
-    unlockedPassword,
-    unlockedText,
-    setUnlockedPasswordPost,
   ]);
 
   if (loadState.status === "loading") {
@@ -459,13 +437,8 @@ export function EditPostLoader({ did, rkey, children }: EditPostLoaderProps) {
       <PasswordUnlockGate
         did={did}
         encryptCid={loadState.encryptCid}
+        onBack={onBack}
         onUnlocked={(unlocked) => {
-          setUnlockedPasswordPost({
-            blurUri: loadState.baseInitialData.blurUri ?? "",
-            text: unlocked.text,
-            additional: unlocked.additional,
-            password: unlocked.password,
-          });
           setLoadState({
             status: "loaded",
             initialData: applyPasswordUnlockToInitialData(loadState.baseInitialData, unlocked),

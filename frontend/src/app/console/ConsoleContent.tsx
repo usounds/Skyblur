@@ -2,11 +2,14 @@
 import { AuthenticationTitle } from "@/components/login/Login";
 import PageLoading from "@/components/PageLoading";
 import { PostList } from "@/components/PostList";
+import { PostComposerRouteScaffold } from "@/components/post-composer/PostComposerRouteScaffold";
+import { applyPasswordUnlockToInitialData, buildEditInitialData, loadGateInitialData } from "@/components/post-composer/EditPostLoader";
 import { ScopeReloginNotice } from "@/components/ScopeReloginNotice";
 import { useLocale } from "@/state/Locale";
 import { useModeStore } from "@/state/Mode";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { PostListItem } from "@/types/types";
+import type { PostComposerInitialData } from "@/types/postComposer";
+import { PostListItem, VISIBILITY_PASSWORD } from "@/types/types";
 import { Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -25,12 +28,30 @@ export function ConsoleContent() {
     const router = useRouter();
 
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const [inlineEditInitialData, setInlineEditInitialData] = useState<PostComposerInitialData | null>(null);
 
     const handleEdit = async (input: PostListItem) => {
         const parts = input.blurATUri.split('/');
         const routeDid = parts[2];
         const routeRkey = parts[4];
         if (routeDid && routeRkey) {
+            if (input.blur.visibility === VISIBILITY_PASSWORD && input.isDecrypt && input.encryptKey) {
+                const gateInitialData = await loadGateInitialData(apiProxyAgent, routeDid, routeRkey);
+                setInlineEditInitialData(applyPasswordUnlockToInitialData({
+                    ...buildEditInitialData({
+                        did: routeDid,
+                        rkey: routeRkey,
+                        cid: input.blurCid,
+                        record: input.blur,
+                    }),
+                    ...gateInitialData,
+                }, {
+                    text: input.blur.text,
+                    additional: input.blur.additional ?? "",
+                    password: input.encryptKey,
+                }));
+                return;
+            }
             router.push(`/console/posts/${encodeURIComponent(routeDid)}/${encodeURIComponent(routeRkey)}/edit`);
             return;
         }
@@ -102,6 +123,16 @@ export function ConsoleContent() {
                     <AuthenticationTitle />
                 </main>
             </div>
+        );
+    }
+
+    if (inlineEditInitialData) {
+        return (
+            <PostComposerRouteScaffold
+                mode="edit"
+                initialEditData={inlineEditInitialData}
+                onExit={() => setInlineEditInitialData(null)}
+            />
         );
     }
 

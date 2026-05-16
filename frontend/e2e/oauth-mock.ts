@@ -177,7 +177,7 @@ type OAuthMockOptions = {
   postVariant?: "public" | "password" | "restricted" | "following" | "mutual" | "list" | "login" | "empty";
   malformedBlurRecordUri?: boolean;
   invalidBlurRecordUri?: boolean;
-  postDetailVariant?: "public" | "password" | "authRequired" | "error";
+  postDetailVariant?: "public" | "password" | "authRequired" | "list" | "error";
   postDetailVisibility?: "login" | "followers" | "following" | "mutual" | "list";
   passwordEncryptBodyShape?: "ref-link" | "ref-string" | "cid" | "link" | "missing";
   decryptStatus?: 200 | 403 | 500;
@@ -927,6 +927,21 @@ export async function useLoggedInOAuthMock(
             encryptCid: "bafy-e2e-post-detail-password",
             createdAt: "2026-05-04T03:22:34.000Z",
             visibility: "password",
+          }),
+        });
+        return;
+      }
+
+      if (options.postDetailVariant === "list") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            text: "List-authorized post detail text",
+            additional: "List-authorized post detail additional",
+            createdAt: "2026-05-04T03:42:34.000Z",
+            visibility: "list",
+            listUri: mockListUri,
           }),
         });
         return;

@@ -2,22 +2,23 @@
 
 import { UkSkyblurPostDecryptByCid } from "@/lexicon/UkSkyblur";
 import { useLocale } from "@/state/Locale";
-import { useSensitiveDraftStore } from "@/state/SensitiveDraft";
-import { Alert, Button, PasswordInput, Stack, Text } from "@mantine/core";
+import { Alert, Button, Group, PasswordInput, Stack, Text } from "@mantine/core";
+import { ArrowLeft } from "lucide-react";
 import { FormEvent, useState } from "react";
+import classes from "./PostComposerActions.module.css";
 
 type PasswordUnlockGateProps = {
   did: string;
   encryptCid: string;
   onUnlocked: (result: { text: string; additional: string; password: string; encryptKey: string }) => void;
+  onBack?: () => void;
 };
 
-export function PasswordUnlockGate({ did, encryptCid, onUnlocked }: PasswordUnlockGateProps) {
+export function PasswordUnlockGate({ did, encryptCid, onUnlocked, onBack }: PasswordUnlockGateProps) {
   const { localeData: locale } = useLocale();
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
-  const setSensitiveDraft = useSensitiveDraftStore((state) => state.setSensitiveDraft);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -59,12 +60,6 @@ export function PasswordUnlockGate({ did, encryptCid, onUnlocked }: PasswordUnlo
 
       const data: UkSkyblurPostDecryptByCid.Output = await response.json();
       const additional = data.additional ?? "";
-      setSensitiveDraft({
-        text: data.text,
-        additional,
-        password,
-        encryptKey: password,
-      });
       onUnlocked({
         text: data.text,
         additional,
@@ -97,6 +92,20 @@ export function PasswordUnlockGate({ did, encryptCid, onUnlocked }: PasswordUnlo
         <Button type="submit" loading={isUnlocking} disabled={!password || isUnlocking}>
           {locale.DeleteList_DecryptButton}
         </Button>
+        {onBack && (
+          <Group justify="space-between" className={classes.dock}>
+            <Button
+              type="button"
+              variant="light"
+              color="blue"
+              leftSection={<ArrowLeft size={16} />}
+              onClick={onBack}
+              className={classes.backButton}
+            >
+              {locale.PostComposer_ActionBack}
+            </Button>
+          </Group>
+        )}
       </Stack>
     </form>
   );

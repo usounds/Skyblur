@@ -7,7 +7,6 @@ import { transformUrl } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { isRestrictedVisibility } from "@/logic/listVisibility";
 import { useLocale } from "@/state/Locale";
-import { useSensitiveDraftStore } from "@/state/SensitiveDraft";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { PostListItem, SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from "@/types/types";
 import { Client } from '@atcute/client';
@@ -38,7 +37,6 @@ export const PostList: React.FC<PostListProps> = ({
     const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
     const loginDid = useXrpcAgentStore((state) => state.did);
     const apiProxyAgent = useXrpcAgentStore((state) => state.apiProxyAgent);
-    const setUnlockedPasswordPost = useSensitiveDraftStore((state) => state.setUnlockedPasswordPost);
     const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
 
     const [isLast, setIsLast] = useState<boolean>(false)
@@ -81,6 +79,7 @@ export const PostList: React.FC<PostListProps> = ({
                 const value = obj.value as unknown as UkSkyblurPost.Record;
                 deleteListLocal.push({
                     blurATUri: obj.uri,
+                    blurCid: obj.cid,
                     blur: value,
                     postURL: transformUrl(value.uri),
                     blurURL: transformUrl(obj.uri),
@@ -330,12 +329,6 @@ export const PostList: React.FC<PostListProps> = ({
 
             if (response.ok) {
                 const data: UkSkyblurPostDecryptByCid.Output = await response.json()
-                setUnlockedPasswordPost({
-                    blurUri: item.blurATUri,
-                    text: data.text,
-                    additional: data.additional ?? '',
-                    password: item.encryptKey,
-                });
                 notifications.clean()
                 setDeleteList((prevList) =>
                     prevList.map((listItem) =>

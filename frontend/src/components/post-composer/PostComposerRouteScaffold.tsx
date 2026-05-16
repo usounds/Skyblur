@@ -17,7 +17,7 @@ import { buildPostComposerSavePlan, postComposerSave } from "@/logic/postCompose
 import { buildSkyblurCheckSummary } from "@/logic/postComposer/skyblurCheck";
 import { useComposerLocaleSwitchGuardStore } from "@/state/ComposerLocaleSwitchGuard";
 import { clearSensitiveDraft, useSensitiveDraftStore } from "@/state/SensitiveDraft";
-import { useTempPostStore } from "@/state/TempPost";
+import { fromReplyPostSnapshot, useTempPostStore } from "@/state/TempPost";
 import { useRouter } from "next/navigation";
 import type { PostComposerInitialData, PostComposerState, SavePlan } from "@/types/postComposer";
 import { VISIBILITY_LIST, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, type PostView, type VisibilityValue } from "@/types/types";
@@ -27,6 +27,8 @@ type PostComposerRouteScaffoldProps = {
   mode: "create" | "edit";
   didParam?: string;
   rkeyParam?: string;
+  initialEditData?: PostComposerInitialData;
+  onExit?: () => void;
 };
 
 const activeCreateSessionKey = "skyblur.post-composer.active-create-session";
@@ -67,9 +69,10 @@ function syncCreateDraft(state: PostComposerState) {
   tempPost.setAdditional(state.additional);
   tempPost.setEncryptKey(state.visibility === VISIBILITY_PASSWORD ? state.password : "");
   tempPost.setReply(state.replyPost?.uri ?? "");
+  tempPost.setReplyPost(state.replyPost);
 }
 
-export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostComposerRouteScaffoldProps) {
+export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEditData, onExit }: PostComposerRouteScaffoldProps) {
   const { localeData: locale } = useLocale();
   const router = useRouter();
   const setHasUnsavedComposerChanges = useComposerLocaleSwitchGuardStore((state) => state.setHasUnsavedComposerChanges);
@@ -87,6 +90,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   const tempListUri = useTempPostStore((state) => state.listUri);
   const tempLimitConsecutive = useTempPostStore((state) => state.limitConsecutive);
   const tempReply = useTempPostStore((state) => state.reply);
+  const tempReplyPostSnapshot = useTempPostStore((state) => state.replyPostSnapshot);
   const sensitiveText = useSensitiveDraftStore((state) => state.text);
   const sensitiveAdditional = useSensitiveDraftStore((state) => state.additional);
   const sensitivePassword = useSensitiveDraftStore((state) => state.password || state.encryptKey);
@@ -111,12 +115,16 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
   const exitToConsole = useCallback(() => {
     setActiveCreateSession(false);
     setHasUnsavedComposerChanges(false);
+    if (onExit) {
+      onExit();
+      return;
+    }
     if (mode === "create") {
       router.back();
       return;
     }
     router.push("/console");
-  }, [mode, router, setHasUnsavedComposerChanges]);
+  }, [mode, onExit, router, setHasUnsavedComposerChanges]);
   useEffect(() => {
     return () => {
       suppressCreateDraftSyncRef.current = false;
@@ -124,8 +132,9 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
     };
   }, [setHasUnsavedComposerChanges]);
   const routeRkey = useMemo(() => safeDecode(rkeyParam), [rkeyParam]);
-  const hasInvalidEditParams = mode === "edit" && (!routeDid || !routeRkey);
-  const isDifferentAccount = mode === "edit" && !!routeDid && !!did && routeDid !== did;
+  const hasInlineEditData = mode === "edit" && !!initialEditData;
+  const hasInvalidEditParams = mode === "edit" && !hasInlineEditData && (!routeDid || !routeRkey);
+  const isDifferentAccount = mode === "edit" && !hasInlineEditData && !!routeDid && !!did && routeDid !== did;
   const createInitialData = useMemo<PostComposerInitialData>(() => {
     const visibility = (tempVisibility ?? VISIBILITY_PUBLIC) as VisibilityValue;
     const isPassword = visibility === VISIBILITY_PASSWORD;
@@ -140,7 +149,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
       limitConsecutive: tempLimitConsecutive,
       visibility,
       listUri: visibility === VISIBILITY_LIST ? tempListUri : undefined,
-      replyPost: restoredReplyPost,
+      replyPost: restoredReplyPost ?? fromReplyPostSnapshot(tempReplyPostSnapshot),
       passwordUnlocked: false,
       ...(isPassword ? { originalStorageFormat: "password-blob" as const } : {}),
     };
@@ -156,6 +165,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
     tempVisibility,
     sensitivePassword,
     restoredReplyPost,
+    tempReplyPostSnapshot,
   ]);
   const hasCreateDraft = mode === "create" && !!(
     tempText
@@ -175,50 +185,57 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
     passwordUnlocked: false,
 	  }), [did]);
   const shouldUsePersistedCreateDraft = restoreDecision === "restored" || (initialRestoreDecision === "fresh" && hasCreateDraft);
-  const activeCreateInitialData = shouldUsePersistedCreateDraft ? (initialCreateDraft ?? createInitialData) : emptyCreateInitialData;
+  const activeCreateInitialData = shouldUsePersistedCreateDraft ? createInitialData : emptyCreateInitialData;
 
-	  useEffect(() => {
-	    if (mode !== "create") return;
-	    if (!isDraftHydrated || isAuthenticated !== true) return;
+  useEffect(() => {
+    if (mode !== "create") return;
+    if (!isDraftHydrated || isAuthenticated !== true) return;
 
-	    if (!tempReply) {
-	      setRestoredReplyPost(undefined);
-	      setRestoreReplyWarning("");
-	      setIsTempReplyResolved(true);
-	      return;
-	    }
+    if (tempReplyPostSnapshot) {
+      setRestoredReplyPost(fromReplyPostSnapshot(tempReplyPostSnapshot));
+      setRestoreReplyWarning("");
+      setIsTempReplyResolved(true);
+      return;
+    }
 
-	    if (!did || !agent || !tempReply.includes(did)) {
-	      setRestoredReplyPost(undefined);
-	      setRestoreReplyWarning(locale.PostComposer_RestoreReplyFailed);
-	      setIsTempReplyResolved(true);
-	      return;
-	    }
+    if (!tempReply) {
+      setRestoredReplyPost(undefined);
+      setRestoreReplyWarning("");
+      setIsTempReplyResolved(true);
+      return;
+    }
 
-	    let isActive = true;
-	    setIsTempReplyResolved(false);
+    if (!did || !agent || !tempReply.includes(did)) {
+      setRestoredReplyPost(undefined);
+      setRestoreReplyWarning(locale.PostComposer_RestoreReplyFailed);
+      setIsTempReplyResolved(true);
+      return;
+    }
 
-	    void agent.get("app.bsky.feed.getPosts", {
-	      params: {
-	        uris: [tempReply as ResourceUri],
-	      },
-	    }).then((result) => {
-	      if (!isActive) return;
-	      const post = result.ok ? result.data?.posts?.[0] : undefined;
-	      setRestoredReplyPost(post as PostView | undefined);
-	      setRestoreReplyWarning(post ? "" : locale.PostComposer_RestoreReplyFailed);
-	      setIsTempReplyResolved(true);
-	    }).catch(() => {
-	      if (!isActive) return;
-	      setRestoredReplyPost(undefined);
-	      setRestoreReplyWarning(locale.PostComposer_RestoreReplyFailed);
-	      setIsTempReplyResolved(true);
-	    });
+    let isActive = true;
+    setIsTempReplyResolved(false);
 
-	    return () => {
-	      isActive = false;
-	    };
-	  }, [agent, did, isAuthenticated, isDraftHydrated, locale.PostComposer_RestoreReplyFailed, mode, tempReply]);
+    void agent.get("app.bsky.feed.getPosts", {
+      params: {
+        uris: [tempReply as ResourceUri],
+      },
+    }).then((result) => {
+      if (!isActive) return;
+      const post = result.ok ? result.data?.posts?.[0] : undefined;
+      setRestoredReplyPost(post as PostView | undefined);
+      setRestoreReplyWarning(post ? "" : locale.PostComposer_RestoreReplyFailed);
+      setIsTempReplyResolved(true);
+    }).catch(() => {
+      if (!isActive) return;
+      setRestoredReplyPost(undefined);
+      setRestoreReplyWarning(locale.PostComposer_RestoreReplyFailed);
+      setIsTempReplyResolved(true);
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [agent, did, isAuthenticated, isDraftHydrated, locale.PostComposer_RestoreReplyFailed, mode, tempReply, tempReplyPostSnapshot]);
 
   useEffect(() => {
     if (mode !== "create") return;
@@ -316,8 +333,10 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
             opened={restorePostData}
             onClose={() => {
               setRestorePostData(false);
-              commitRestoreDecision("fresh");
             }}
+            closeOnClickOutside={false}
+            closeOnEscape={false}
+            withCloseButton={false}
             title={locale.CreatePost_RestoreTitle}
             centered
           >
@@ -335,7 +354,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
                 color="gray"
                 onClick={() => {
                   setRestorePostData(false);
-                  commitRestoreDecision("fresh");
+                  exitToConsole();
                 }}
               >
                 {locale.DeleteList_CancelButton}
@@ -431,8 +450,10 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam }: PostCom
               ? locale.PostComposer_LoadErrorInvalidRoute
               : locale.PostComposer_LoadErrorDifferentAccount}
           </Alert>
+        ) : initialEditData ? (
+          renderComposer(initialEditData)
         ) : mode === "edit" ? (
-          <EditPostLoader did={routeDid} rkey={routeRkey}>
+          <EditPostLoader did={routeDid} rkey={routeRkey} onBack={exitToConsole}>
             {(initialData) => renderComposer(initialData)}
           </EditPostLoader>
         ) : (

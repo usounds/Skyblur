@@ -6,27 +6,20 @@ type SensitiveDraftData = {
   additional: string;
   password: string;
   encryptKey: string;
-  unlockedBlurUri: string;
-  unlockedText: string;
-  unlockedAdditional: string;
-  unlockedPassword: string;
   updatedAt?: number;
-  unlockedUpdatedAt?: number;
 };
+
+type PersistedSensitiveDraftData = Pick<
+  SensitiveDraftData,
+  'text' | 'additional' | 'password' | 'encryptKey' | 'updatedAt'
+>;
 
 type SensitiveDraftAction = {
   setSensitiveText: (text: string) => void;
   setSensitiveAdditional: (additional: string) => void;
   setSensitivePassword: (password: string) => void;
   setSensitiveDraft: (draft: Partial<SensitiveDraftData>) => void;
-  setUnlockedPasswordPost: (draft: {
-    blurUri: string;
-    text: string;
-    additional: string;
-    password: string;
-  }) => void;
   clearSensitiveDraft: () => void;
-  clearUnlockedPasswordPost: () => void;
 };
 
 const emptySensitiveDraft: SensitiveDraftData = {
@@ -34,14 +27,10 @@ const emptySensitiveDraft: SensitiveDraftData = {
   additional: '',
   password: '',
   encryptKey: '',
-  unlockedBlurUri: '',
-  unlockedText: '',
-  unlockedAdditional: '',
-  unlockedPassword: '',
 };
 
 export const useSensitiveDraftStore = create(
-  persist<SensitiveDraftData & SensitiveDraftAction, [], [], SensitiveDraftData>(
+  persist<SensitiveDraftData & SensitiveDraftAction, [], [], PersistedSensitiveDraftData>(
     (set) => ({
       ...emptySensitiveDraft,
       setSensitiveText: (text) => set({ text, updatedAt: Date.now() }),
@@ -54,35 +43,27 @@ export const useSensitiveDraftStore = create(
         password: draft.password ?? draft.encryptKey ?? state.password,
         updatedAt: Date.now(),
       })),
-      setUnlockedPasswordPost: (draft) => set({
-        unlockedBlurUri: draft.blurUri,
-        unlockedText: draft.text,
-        unlockedAdditional: draft.additional,
-        unlockedPassword: draft.password,
-        unlockedUpdatedAt: Date.now(),
-      }),
-      clearUnlockedPasswordPost: () => set({
-        unlockedBlurUri: '',
-        unlockedText: '',
-        unlockedAdditional: '',
-        unlockedPassword: '',
-        unlockedUpdatedAt: undefined,
-      }),
       clearSensitiveDraft: () => set({ ...emptySensitiveDraft, updatedAt: undefined }),
     }),
     {
       name: 'zustand.sensitive-post-draft',
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<SensitiveDraftData> | undefined;
+        return {
+          ...currentState,
+          text: persisted?.text ?? '',
+          additional: persisted?.additional ?? '',
+          password: persisted?.password ?? '',
+          encryptKey: persisted?.encryptKey ?? persisted?.password ?? '',
+          updatedAt: persisted?.updatedAt,
+        };
+      },
       partialize: (state) => ({
         text: state.text,
         additional: state.additional,
         password: state.password,
         encryptKey: state.encryptKey,
-        unlockedBlurUri: state.unlockedBlurUri,
-        unlockedText: state.unlockedText,
-        unlockedAdditional: state.unlockedAdditional,
-        unlockedPassword: state.unlockedPassword,
         updatedAt: state.updatedAt,
-        unlockedUpdatedAt: state.unlockedUpdatedAt,
       }),
     },
   ),

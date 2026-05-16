@@ -19,7 +19,6 @@ export function StartButton() {
     const [isSessionRetryReady, setIsSessionRetryReady] = useState(false);
     const [isSessionRetryWaiting, setIsSessionRetryWaiting] = useState(false);
     const [sessionCheckSecondsLeft, setSessionCheckSecondsLeft] = useState(SESSION_CHECK_RETRY_SECONDS);
-    const [shouldOpenConsole, setShouldOpenConsole] = useState(false);
     const sessionCheckAttemptRef = useRef(0);
     const initialSessionCheckStartedRef = useRef(false);
     const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -92,12 +91,6 @@ export function StartButton() {
         };
     }, [clearSessionCheckTimers, runSessionCheck]);
 
-    useEffect(() => {
-        if (!shouldOpenConsole || !did) return;
-        setShouldOpenConsole(false);
-        router.push('/console');
-    }, [did, router, shouldOpenConsole]);
-
     const handleStart = async () => {
         setIsLoading(true);
 
@@ -132,7 +125,7 @@ export function StartButton() {
             const result = await runSessionCheck({ force: true });
 
             if (result?.did) {
-                setShouldOpenConsole(true);
+                router.push('/console');
                 return;
             }
 

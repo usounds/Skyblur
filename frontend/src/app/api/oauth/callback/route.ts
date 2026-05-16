@@ -2,8 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getOAuthClient } from "@/logic/oauth/client";
-import { OAUTH_CALLBACK_COOKIE, OAUTH_DID_COOKIE, signDid } from "@/logic/oauth/cookies";
+import { OAUTH_CALLBACK_COOKIE, OAUTH_DID_COOKIE, signDid, verifySignedDid } from "@/logic/oauth/cookies";
 import { SESSION_TTL_SECONDS } from "@/logic/oauth/constants";
+import { isInvalidGrantInvalidCodeError } from "@/logic/oauth/errors";
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
 function clearOAuthCallbackCookie(response: NextResponse) {
@@ -20,7 +21,9 @@ export async function GET(request: Request) {
   const origin = getRequestOrigin(request);
   const client = await getOAuthClient(origin);
   const url = new URL(request.url);
-  const callbackCookie = (await cookies()).get(OAUTH_CALLBACK_COOKIE)?.value;
+  const cookieStore = await cookies();
+  const callbackCookie = cookieStore.get(OAUTH_CALLBACK_COOKIE)?.value;
+  const existingDid = verifySignedDid(cookieStore.get(OAUTH_DID_COOKIE)?.value);
   const redirectTo = callbackCookie ? decodeURIComponent(callbackCookie) : `${origin}/`;
 
   try {
@@ -43,6 +46,8 @@ export async function GET(request: Request) {
 
     if (callbackError === "access_denied") {
       redirectUrl.searchParams.set("loginError", "rejected");
+    } else if (existingDid && isInvalidGrantInvalidCodeError(error)) {
+      console.warn("OAuth Callback reused or expired after an active session was established.");
     } else {
       console.error("OAuth Callback Error:", error);
       redirectUrl.searchParams.set("loginError", "callback_failed");

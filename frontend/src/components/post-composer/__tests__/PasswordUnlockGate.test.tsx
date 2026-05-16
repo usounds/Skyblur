@@ -8,8 +8,6 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { PasswordUnlockGate } from "../PasswordUnlockGate";
 
-const setSensitiveDraft = vi.fn();
-
 vi.mock("@/state/Locale", () => ({
   useLocale: () => ({
     localeData: {
@@ -23,10 +21,6 @@ vi.mock("@/state/Locale", () => ({
       Post_Restricted_ListCheckFailed: "Could not decrypt the post.",
     },
   }),
-}));
-
-vi.mock("@/state/SensitiveDraft", () => ({
-  useSensitiveDraftStore: (selector: (state: { setSensitiveDraft: typeof setSensitiveDraft }) => unknown) => selector({ setSensitiveDraft }),
 }));
 
 beforeAll(() => {
@@ -58,7 +52,6 @@ describe("PasswordUnlockGate", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-    setSensitiveDraft.mockClear();
   });
 
   it("shows a password error when decrypting is rejected", async () => {
@@ -72,10 +65,9 @@ describe("PasswordUnlockGate", () => {
     await userEvent.click(screen.getByRole("button", { name: "Unlock" }));
 
     expect(await screen.findByText("Wrong password.")).toBeVisible();
-    expect(setSensitiveDraft).not.toHaveBeenCalled();
   });
 
-  it("stores decrypted content and calls onUnlocked after successful decrypt", async () => {
+  it("calls onUnlocked after successful decrypt without persisting an edit unlock draft", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -96,12 +88,6 @@ describe("PasswordUnlockGate", () => {
         password: "p@ssword",
       }),
     }));
-    expect(setSensitiveDraft).toHaveBeenCalledWith({
-      text: "Decrypted text",
-      additional: "Decrypted additional",
-      password: "p@ssword",
-      encryptKey: "p@ssword",
-    });
     expect(onUnlocked).toHaveBeenCalledWith({
       text: "Decrypted text",
       additional: "Decrypted additional",

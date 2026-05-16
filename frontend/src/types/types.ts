@@ -61,6 +61,7 @@ export type ThreadGateValue =
 export type PostListItem = {
     blur: UkSkyblurPost.Record;
     blurATUri: string;
+    blurCid?: string;
     postURL?: string;
     blurURL?: string;
     modal: boolean;

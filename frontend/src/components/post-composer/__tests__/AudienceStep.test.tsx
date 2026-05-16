@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getGateControlsEditable, getPasswordWhitespaceError, getReplyTargetEditable, getVisibilityOutcomeCopy } from "../AudienceStep";
+import { getGateControlsEditable, getPasswordWhitespaceError, getReplyTargetEditable, getVisibilityOptionDisabled, getVisibilityOutcomeCopy } from "../AudienceStep";
 import type { PostComposerState } from "@/types/postComposer";
 import { getPostTextWarning } from "../WriteStep";
 
@@ -79,6 +79,32 @@ describe("AudienceStep helpers", () => {
 
     expect(getReplyTargetEditable(state)).toBe(true);
     expect(getReplyTargetEditable({ ...state, mode: "edit" })).toBe(false);
+  });
+
+  it("locks visibility options for password boundary changes while editing", () => {
+    const editState: PostComposerState = {
+      mode: "edit",
+      step: "audience",
+      text: "hello",
+      textForRecord: "hello",
+      textForBluesky: "hello",
+      blurredText: "hello",
+      additional: "",
+      simpleMode: false,
+      limitConsecutive: false,
+      visibility: "public",
+      password: "",
+      threadGate: [],
+      postGate: { allowQuote: true },
+      dirty: false,
+      submitting: false,
+    };
+
+    expect(getVisibilityOptionDisabled(editState, "password", { mode: "edit", authorDid: "did:plc:abc", originalVisibility: "public" })).toBe(true);
+    expect(getVisibilityOptionDisabled(editState, "followers", { mode: "edit", authorDid: "did:plc:abc", originalVisibility: "public" })).toBe(false);
+    expect(getVisibilityOptionDisabled(editState, "password", { mode: "edit", authorDid: "did:plc:abc", originalVisibility: "password" })).toBe(false);
+    expect(getVisibilityOptionDisabled(editState, "login", { mode: "edit", authorDid: "did:plc:abc", originalVisibility: "password" })).toBe(true);
+    expect(getVisibilityOptionDisabled({ ...editState, mode: "create" }, "password", { mode: "create", authorDid: "did:plc:abc", originalVisibility: "public" })).toBe(false);
   });
 });
 

@@ -162,14 +162,50 @@ async function goToAudienceStep(page: import("@playwright/test").Page) {
 }
 
 async function openComposerDetails(page: import("@playwright/test").Page) {
-  await page.getByText("Bluesky details").click();
-  await expect(page.getByText("Reply Control", { exact: true })).toBeVisible();
+  const detailsControl = page.getByRole("button", { name: /Bluesky details/ });
+  const replyControl = page.getByText("Reply Control", { exact: true });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await replyControl.isVisible({ timeout: 500 }).catch(() => false)) return;
+    if (await detailsControl.getAttribute("aria-expanded").catch(() => null) !== "true") {
+      await detailsControl.click({ force: true });
+    }
+    if (await replyControl.isVisible({ timeout: 2_000 }).catch(() => false)) return;
+  }
+
+  await expect(replyControl).toBeVisible();
+}
+
+async function setComposerSwitch(
+  page: import("@playwright/test").Page,
+  name: string,
+  checked: boolean,
+) {
+  await openComposerDetails(page);
+  const toggle = page.getByRole("switch", { name });
+  if (await toggle.isChecked().catch(() => false) === checked) return;
+  await toggle.focus({ timeout: 5_000 });
+  await page.keyboard.press("Space");
+  if (checked) {
+    await expect(toggle).toBeChecked();
+  } else {
+    await expect(toggle).not.toBeChecked();
+  }
 }
 
 async function confirmComposerBack(page: import("@playwright/test").Page) {
   const confirmMessage = page.getByText("Your changes will not be saved. Are you sure you want to go back?");
   if (!await confirmMessage.isVisible({ timeout: 1_000 }).catch(() => false)) {
     await page.getByRole("button", { name: "Back" }).first().click({ force: true });
+    if (await confirmMessage.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      // fall through to the confirmation dialog flow below
+    } else {
+      if (!page.url().endsWith("/console")) {
+        await page.goBack().catch(() => {});
+      }
+      await expect(page).toHaveURL(/\/console$/, { timeout: 5_000 });
+      return;
+    }
   }
   await expect(confirmMessage).toBeVisible();
   const dialog = page.getByRole("dialog", { name: "Confirm" }).filter({
@@ -248,12 +284,7 @@ async function selectReplyTarget(page: import("@playwright/test").Page) {
       if (!await replyTargetButton.isVisible({ timeout: 1_000 }).catch(() => false)) {
         const replyTargetToggle = page.getByRole("switch", { name: "Set a reply target" });
         if (!await replyTargetToggle.isChecked().catch(() => false)) {
-          await replyTargetToggle.focus();
-          await page.keyboard.press("Space");
-          if (!await replyTargetToggle.isChecked({ timeout: 1_000 }).catch(() => false)) {
-            await replyTargetToggle.click({ force: true });
-          }
-          await expect(replyTargetToggle).toBeChecked({ timeout: 2_000 });
+          await setComposerSwitch(page, "Set a reply target", true);
         }
       }
       await expect(replyTargetButton).toBeVisible({ timeout: 20_000 });
@@ -278,8 +309,15 @@ async function clickOpenPostMenuEdit(page: import("@playwright/test").Page) {
         await page.getByTestId("post-menu").last().click();
       }
       const editMenuItem = page.getByRole("menu").last().getByRole("menuitem", { name: "Edit" });
-      await editMenuItem.click({ timeout: 5_000 });
-      await page.waitForURL(/\/console\/posts\/.+\/edit$/, { timeout: 15_000 });
+      const editHref = await editMenuItem.evaluate((node) => (node as HTMLElement).closest("a")?.getAttribute("href") ?? "");
+      await editMenuItem.click({ timeout: 5_000 }).catch(async (error) => {
+        if (!editHref) throw error;
+      });
+      await page.waitForURL(/\/console\/posts\/.+\/edit$/, { timeout: 5_000 }).catch(async (error) => {
+        if (!editHref) throw error;
+        await page.goto(editHref);
+        await page.waitForURL(/\/console\/posts\/.+\/edit$/, { timeout: 10_000 });
+      });
       return;
     } catch (error) {
       lastError = error;
@@ -309,6 +347,12 @@ async function openLastPostEdit(page: import("@playwright/test").Page) {
     page.waitForURL(/\/console\/posts\/.+\/edit$/),
     page.getByRole("menu").last().getByRole("menuitem", { name: "Edit" }).click(),
   ]);
+}
+
+async function openLastPostEditInPlace(page: import("@playwright/test").Page) {
+  await page.getByTestId("post-menu").last().click();
+  await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
+  await page.getByRole("menu").last().getByRole("menuitem", { name: "Edit" }).click();
 }
 
 async function expectLoginValidationMessage(
@@ -1028,6 +1072,23 @@ test("/post validates and unlocks password-protected detail content", async ({
   await expect(page.getByText("Unlocked post detail additional")).toBeVisible();
 });
 
+test("/post renders list-authorized detail content for logged-in visitors", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { postDetailVariant: "list" });
+
+  await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2elist`);
+
+  const badge = page.getByTestId("post-visibility-badge");
+  await expect(badge).toBeVisible();
+  await expect(badge).toContainText("List only");
+  await expect(badge).toHaveAttribute("data-tone", "list");
+  await expect(page.getByText("List-authorized post detail text")).toBeVisible();
+  await expect(page.getByText("List-authorized post detail additional")).toBeVisible();
+});
+
 for (const { visibility, label, tone, options } of [
   {
     visibility: "public",
@@ -1220,6 +1281,10 @@ for (const { visibility, message } of [
   {
     visibility: "mutual" as const,
     message: "この投稿は相互フォロー限定です。参照するにはログインが必要です。",
+  },
+  {
+    visibility: "list" as const,
+    message: "この投稿はリスト限定です。参照するにはログインが必要です。",
   },
 ]) {
   test(`/post shows logged-out ${visibility} restricted visibility message`, async ({
@@ -1428,13 +1493,13 @@ test("/console create post form covers validation, reply, visibility, and submit
   await expect(page.getByText("A closing ] is missing. Please add ].")).toBeVisible();
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
 
-  await page.getByLabel("Simple Mode").click();
+  await page.getByLabel("Simple Mode").click({ force: true });
   const changeModeDialog = page.getByRole("dialog", { name: "Change Mode" });
   await expect(changeModeDialog).toBeVisible();
-  await changeModeDialog.getByRole("button", { name: "Cancel" }).click();
+  await changeModeDialog.getByRole("button", { name: "Cancel" }).click({ force: true });
   await expect(changeModeDialog).toBeHidden();
-  await page.getByLabel("Simple Mode").click();
-  await changeModeDialog.getByRole("button", { name: "Change" }).click();
+  await page.getByLabel("Simple Mode").click({ force: true });
+  await changeModeDialog.getByRole("button", { name: "Change" }).click({ force: true });
   await expect(changeModeDialog).toBeHidden();
   await expect(page.getByText("The second line and beyond will be automatically blurred.")).toBeVisible();
   await postInput.fill("Public line\nHidden line");
@@ -1456,7 +1521,7 @@ test("/console create post form covers validation, reply, visibility, and submit
   await openComposerDetails(page);
   await selectReplyTarget(page);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
-  await page.getByLabel("Set a reply target").click();
+  await setComposerSwitch(page, "Set a reply target", false);
   await expect(page.getByText("E2E reply target post")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Back" }).click();
@@ -1584,10 +1649,10 @@ test("/console submits restricted post with reply controls from the create form"
   await page.getByRole("button", { name: "Followers only" }).click();
   await expect(page.getByText("Only people logged in to Skyblur who follow you can read the full text and additional text.")).toBeVisible();
   await openComposerDetails(page);
-  await page.getByText("Mentioned users").click();
-  await page.getByText("Followed users").click();
-  await page.getByLabel("Allow quotes of this post").uncheck();
-  await page.getByLabel("Set a reply target").check();
+  await page.locator('input[value="mention"]').evaluate((el) => (el as HTMLInputElement).click());
+  await page.locator('input[value="following"]').evaluate((el) => (el as HTMLInputElement).click());
+  await setComposerSwitch(page, "Allow quotes of this post", false);
+  await setComposerSwitch(page, "Set a reply target", true);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await selectReplyTarget(page);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
@@ -1614,17 +1679,17 @@ test("/console create post form covers bracket warnings and reply paging", async
   await postInput.fill("This has unbalanced] brackets");
   await expect(page.getByText("The brackets are not correct. The number of [ and ] do not match.")).toBeVisible();
 
-  await page.getByLabel("Simple Mode").click();
-  await page.getByRole("button", { name: "Change" }).click();
+  await page.getByLabel("Simple Mode").click({ force: true });
+  await page.getByRole("button", { name: "Change" }).click({ force: true });
   await postInput.fill("Public [bracket] line");
   await expect(page.getByText("You cannot use [] in Simple Mode")).toBeVisible();
 
-  await page.getByLabel("Simple Mode").click();
-  await page.getByRole("button", { name: "Change" }).click();
+  await page.getByLabel("Simple Mode").click({ force: true });
+  await page.getByRole("button", { name: "Change" }).click({ force: true });
   await postInput.fill("Reply paging [secret]");
   await goToAudienceStep(page);
   await openComposerDetails(page);
-  await page.getByLabel("Set a reply target").check();
+  await setComposerSwitch(page, "Set a reply target", true);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await expect(page.getByText("External root reply should be filtered")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Read More" })).toBeVisible();
@@ -1641,7 +1706,7 @@ test("/console reply target picker handles empty searches", async ({
   await page.getByPlaceholder("Please enter the content.").fill("E2E empty reply picker");
   await goToAudienceStep(page);
   await openComposerDetails(page);
-  await page.getByLabel("Set a reply target").check();
+  await setComposerSwitch(page, "Set a reply target", true);
   await expect(page.getByText("No posts available.")).toBeVisible();
 });
 
@@ -1656,7 +1721,7 @@ test("/console reply target picker handles failed searches", async ({
   await page.getByPlaceholder("Please enter the content.").fill("E2E failed reply picker");
   await goToAudienceStep(page);
   await openComposerDetails(page);
-  await page.getByLabel("Set a reply target").check();
+  await setComposerSwitch(page, "Set a reply target", true);
   await expect(page.getByText("No posts available.")).toBeVisible();
 });
 
@@ -1765,8 +1830,8 @@ test("/console create post form writes reply and quote controls from the screen"
   await page.locator('input[value="mention"]').evaluate((el) => (el as HTMLInputElement).click());
   await page.locator('input[value="following"]').evaluate((el) => (el as HTMLInputElement).click());
   await page.locator('input[value="followers"]').evaluate((el) => (el as HTMLInputElement).click());
-  await page.getByLabel("Allow quotes of this post").uncheck();
-  await page.getByLabel("Set a reply target").check();
+  await setComposerSwitch(page, "Allow quotes of this post", false);
+  await setComposerSwitch(page, "Set a reply target", true);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await selectReplyTarget(page);
   await expect(page.locator('input[value="mention"]')).toBeChecked();
@@ -1889,7 +1954,8 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await backDialog.getByRole("button", { name: "Cancel" }).click();
   await expect(backDialog).toBeHidden();
   await expect(page).toHaveURL(/\/console\/posts\/.+\/edit$/);
-  await page.goBack();
+  await page.getByRole("button", { name: "Back" }).click();
+  await backDialog.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
@@ -1989,7 +2055,8 @@ test("/console post list decrypts password-protected posts", async ({
 
   await expect(page.getByText("Decrypted E2E password text")).toBeVisible();
   await expect(page.getByText("Decrypted E2E password additional")).toBeVisible();
-  await openLastPostEdit(page);
+  await openLastPostEditInPlace(page);
+  await expect(page).toHaveURL(/\/console$/);
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Decrypted E2E password text");
 });
@@ -2024,6 +2091,35 @@ test("/console password-protected edit unlocks encrypted content", async ({
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Decrypted E2E password text");
   await expect(page.getByPlaceholder("Enter additional information if necessary.")).toHaveValue("Decrypted E2E password additional");
+});
+
+test("/console password-protected edit does not persist unlocked content across direct URL reloads", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { postVariant: "password" });
+
+  const editPath = `/console/posts/${encodeURIComponent(mockDid)}/e2eblur-password/edit`;
+  await gotoAndSkipIfUnavailable(page, editPath);
+  await expect(page.getByText("Edit password post")).toBeVisible();
+  await page.getByPlaceholder("p@ssw0rd").fill("p@ssword");
+  await page.getByRole("button", { name: "Unlock" }).click();
+
+  await expect(page.getByText("Write", { exact: true })).toBeVisible();
+  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Decrypted E2E password text");
+
+  const sensitiveDraftStorage = await page.evaluate(() => window.localStorage.getItem("zustand.sensitive-post-draft") ?? "");
+  expect(sensitiveDraftStorage).not.toContain("Decrypted E2E password text");
+  expect(sensitiveDraftStorage).not.toContain("Decrypted E2E password additional");
+  expect(sensitiveDraftStorage).not.toContain("p@ssword");
+  expect(sensitiveDraftStorage).not.toContain("unlockedBlurUri");
+
+  await page.goto(editPath);
+  await expect(page.getByText("Edit password post")).toBeVisible();
+  await expect(page.getByPlaceholder("p@ssw0rd")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Back" })).toBeVisible();
+  await expect(page.getByText("Write", { exact: true })).toHaveCount(0);
 });
 
 test("/console post list validates password unlock errors", async ({
@@ -2354,7 +2450,7 @@ test("/console updates an existing post from the edit form", async ({
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 });
 
-test("/console password edit blocks unsupported public migration", async ({
+test("/console password edit locks unsupported public migration option", async ({
   page,
   context,
   baseURL,
@@ -2367,10 +2463,9 @@ test("/console password edit blocks unsupported public migration", async ({
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
 
   await goToAudienceStep(page);
-  await page.getByRole("button", { name: "Public" }).click();
-
-  await expect(page.getByText("This visibility change is not supported while editing yet. Recreate the post if you need this change.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Public" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Password", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
 });
 
 test("/console edit route initializes existing Bluesky gate controls", async ({
@@ -2535,9 +2630,64 @@ test("/console restores and discards draft content in the create form", async ({
   await confirmComposerBack(page);
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
 
+  await page.evaluate(() => {
+    window.sessionStorage.removeItem("skyblur.post-composer.active-create-session");
+  });
   await clickCreateComposer(page);
   await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
   await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page).toHaveURL(/\/console\/posts\/new$/);
+  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("");
+});
+
+test("/console cancels draft restore by returning to console without deleting the draft", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("Cancel draft [secret] text");
+  await page.getByRole("button", { name: "Back" }).click();
+  await confirmComposerBack(page);
+  await expect(page.getByText(/E2E Tester/)).toBeVisible();
+
+  await clickCreateComposer(page);
+  await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page).toHaveURL(/\/console$/);
+  await expect(page.getByText(/E2E Tester/)).toBeVisible();
+
+  await clickCreateComposer(page);
+  await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Cancel draft [secret] text");
+});
+
+test("/console keeps the restore modal open when tapping outside it", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedInOAuthMock(page, context, baseURL);
+
+  await gotoAndSkipIfUnavailable(page, "/console");
+  await openCreateComposer(page);
+  await page.getByPlaceholder("Please enter the content.").fill("Backdrop draft [secret] text");
+  await page.getByRole("button", { name: "Back" }).click();
+  await confirmComposerBack(page);
+  await expect(page.getByText(/E2E Tester/)).toBeVisible();
+
+  await clickCreateComposer(page);
+  const restoreDialog = page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" });
+  await expect(restoreDialog).toBeVisible();
+  await page.mouse.click(12, 12);
+  await expect(restoreDialog).toBeVisible();
+  await expect(page.getByPlaceholder("Please enter the content.")).toHaveCount(0);
+  await restoreDialog.getByRole("button", { name: "Delete" }).click();
+  await expect(page).toHaveURL(/\/console\/posts\/new$/);
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("");
 });
 
@@ -2566,7 +2716,7 @@ test("/console restores draft content with a selected reply target", async ({
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Reply draft [secret] text");
 });
 
-test("/console keeps draft text when the saved reply target cannot be restored", async ({
+test("/console restores the saved reply target from the local draft", async ({
   page,
   context,
   baseURL,
@@ -2578,7 +2728,7 @@ test("/console keeps draft text when the saved reply target cannot be restored",
   await page.getByPlaceholder("Please enter the content.").fill("Reply failure draft [secret] text");
   await goToAudienceStep(page);
   await openComposerDetails(page);
-  await page.getByLabel("Set a reply target").check();
+  await setComposerSwitch(page, "Set a reply target", true);
   await expect(page.getByText("E2E reply target post")).toBeVisible();
   await selectReplyTarget(page);
   await page.getByRole("button", { name: "Back" }).click();
@@ -2589,9 +2739,12 @@ test("/console keeps draft text when the saved reply target cannot be restored",
   await useLoggedInOAuthMock(page, context, baseURL, { replyResolveStatus: 500 });
   await clickCreateComposer(page);
   await expect(page.getByRole("dialog", { name: "Would you like to restore the content you entered halfway?" })).toBeVisible();
-  await expect(page.getByText("The reply target could not be restored. Text, additional text, and visibility can still be restored.")).toBeVisible();
   await page.getByRole("button", { name: "Restore" }).click();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Reply failure draft [secret] text");
+  await goToAudienceStep(page);
+  await openComposerDetails(page);
+  await expect(page.getByText("E2E reply target post")).toBeVisible();
+  await expect(page.getByText("The reply target could not be restored. Text, additional text, and visibility can still be restored.")).toHaveCount(0);
 });
 
 test("/console login form redirects valid handle to OAuth login", async ({

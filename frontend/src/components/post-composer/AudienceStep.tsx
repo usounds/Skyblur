@@ -6,6 +6,7 @@ import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { isListVisibility, type OwnedListOption } from "@/logic/listVisibility";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { useTempPostStore } from "@/state/TempPost";
 import type { PostComposerInitialData, PostComposerState } from "@/types/postComposer";
 import {
   THREADGATE_FOLLOWERS,
@@ -81,11 +82,26 @@ export function getReplyTargetEditable(state: PostComposerState) {
   return state.mode === "create";
 }
 
+export function getVisibilityOptionDisabled(
+  state: PostComposerState,
+  optionVisibility: VisibilityValue,
+  initialData?: PostComposerInitialData,
+) {
+  if (state.mode !== "edit") return false;
+  const originalVisibility = initialData?.originalVisibility;
+  if (!originalVisibility) return false;
+
+  const originalIsPassword = originalVisibility === VISIBILITY_PASSWORD;
+  const optionIsPassword = optionVisibility === VISIBILITY_PASSWORD;
+  return originalIsPassword ? !optionIsPassword : optionIsPassword;
+}
+
 export function AudienceStep({ state, setState, initialData, stepError, stepErrorMessage }: AudienceStepProps) {
   const { localeData: locale } = useLocale();
   const did = useXrpcAgentStore((store) => store.did);
   const agent = useXrpcAgentStore((store) => store.agent);
   const [replyPickerOpened, setReplyPickerOpened] = useState(!!state.replyPost);
+  const setReplyPostDraft = useTempPostStore((store) => store.setReplyPost);
 
   const setVisibility = (visibility: VisibilityValue) => {
     setState({
@@ -133,6 +149,7 @@ export function AudienceStep({ state, setState, initialData, stepError, stepErro
               fullWidth
               fw="normal"
               px={2}
+              disabled={getVisibilityOptionDisabled(state, option.value, initialData)}
               onClick={() => setVisibility(option.value)}
               styles={{
                 label: {
@@ -250,7 +267,10 @@ export function AudienceStep({ state, setState, initialData, stepError, stepErro
                   onChange={(event) => {
                     const checked = event.currentTarget.checked;
                     setReplyPickerOpened(checked);
-                    if (!checked) setState({ replyPost: undefined });
+                    if (!checked) {
+                      setState({ replyPost: undefined });
+                      setReplyPostDraft(undefined);
+                    }
                   }}
                   label={locale.PostComposer_ReplyTargetToggle}
                 />
@@ -265,13 +285,19 @@ export function AudienceStep({ state, setState, initialData, stepError, stepErro
                         <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>{state.replyPost.record.text}</Text>
                         <Group justify="space-between" mt="sm">
                           <Text size="xs" c="dimmed">{formatDateToLocale(state.replyPost.record.createdAt)}</Text>
-                          <Button size="compact-sm" variant="default" onClick={() => setState({ replyPost: undefined })}>
+                          <Button size="compact-sm" variant="default" onClick={() => {
+                            setState({ replyPost: undefined });
+                            setReplyPostDraft(undefined);
+                          }}>
                             {locale.PostComposer_ChangeReplyTarget}
                           </Button>
                         </Group>
                       </Paper>
                     ) : (
-                      <ReplyList handleSetPost={(replyPost) => setState({ replyPost })} did={did} />
+                      <ReplyList handleSetPost={(replyPost) => {
+                        setState({ replyPost });
+                        setReplyPostDraft(replyPost);
+                      }} did={did} />
                     )}
                   </div>
                 )}
