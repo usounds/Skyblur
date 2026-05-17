@@ -168,7 +168,8 @@ async function openComposerDetails(page: import("@playwright/test").Page) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (await replyControl.isVisible({ timeout: 500 }).catch(() => false)) return;
     if (await detailsControl.getAttribute("aria-expanded").catch(() => null) !== "true") {
-      await detailsControl.click({ force: true });
+      await detailsControl.scrollIntoViewIfNeeded();
+      await detailsControl.click();
     }
     if (await replyControl.isVisible({ timeout: 2_000 }).catch(() => false)) return;
   }
