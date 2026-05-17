@@ -1,6 +1,26 @@
 import { UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur'
 import { getDecrypt } from '@/logic/CryptHandler'
+import { fetchServiceEndpoint } from '@/logic/JWTTokenHandler'
 import { Context } from 'hono'
+
+function normalizeServiceEndpoint(endpoint: unknown): string | null {
+    if (typeof endpoint === 'string') {
+        return endpoint;
+    }
+
+    if (Array.isArray(endpoint) && typeof endpoint[0] === 'string') {
+        return endpoint[0];
+    }
+
+    return null;
+}
+
+function getAtprotoPdsEndpoint(didDoc: any): string | null {
+    const service = didDoc?.service?.find((s: any) =>
+        s.id === '#atproto_pds' || s.type === 'AtprotoPersonalDataServer'
+    );
+    return normalizeServiceEndpoint(service?.serviceEndpoint);
+}
 
 export const handle = async (c: Context) => {
     let { pds, repo, cid, password } = await c.req.json() as UkSkyblurPostDecryptByCid.Input
@@ -40,14 +60,18 @@ export const handle = async (c: Context) => {
             }
 
             if (didDoc) {
-                const service = didDoc.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
-                if (service) {
-                    pds = service.serviceEndpoint;
-
-                }
+                pds = getAtprotoPdsEndpoint(didDoc) || pds;
             }
         } catch (e) {
             console.error('Failed to resolve PDS from cache/directory in decryptByCid:', e);
+        }
+    }
+
+    if (!pds && repo) {
+        try {
+            pds = normalizeServiceEndpoint(await fetchServiceEndpoint(repo)) || pds;
+        } catch (e) {
+            console.error('Failed to resolve PDS from DID resolver in decryptByCid:', e);
         }
     }
 

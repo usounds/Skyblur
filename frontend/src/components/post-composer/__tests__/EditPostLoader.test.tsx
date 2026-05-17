@@ -50,6 +50,11 @@ describe("EditPostLoader helpers", () => {
       ok: false,
       reason: "invalid-text",
     });
+    const { $type, ...recordWithoutType } = baseRecord;
+    expect(validateEditableRecord(recordWithoutType)).toMatchObject({
+      ok: true,
+      visibility: "public",
+    });
     expect(validateEditableRecord(baseRecord)).toMatchObject({
       ok: true,
       visibility: "public",

@@ -349,12 +349,6 @@ async function openLastPostEdit(page: import("@playwright/test").Page) {
   ]);
 }
 
-async function openLastPostEditInPlace(page: import("@playwright/test").Page) {
-  await page.getByTestId("post-menu").last().click();
-  await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
-  await page.getByRole("menu").last().getByRole("menuitem", { name: "Edit" }).click();
-}
-
 async function expectLoginValidationMessage(
   page: import("@playwright/test").Page,
   handle: string,
@@ -2055,8 +2049,11 @@ test("/console post list decrypts password-protected posts", async ({
 
   await expect(page.getByText("Decrypted E2E password text")).toBeVisible();
   await expect(page.getByText("Decrypted E2E password additional")).toBeVisible();
-  await openLastPostEditInPlace(page);
-  await expect(page).toHaveURL(/\/console$/);
+  await openLastPostEdit(page);
+  await expect(page).toHaveURL(/\/console\/posts\/.+\/edit$/);
+  await expect(page.getByText("Edit password post")).toBeVisible();
+  await page.getByPlaceholder("p@ssw0rd").fill("p@ssword");
+  await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Please enter the content.")).toHaveValue("Decrypted E2E password text");
 });

@@ -40,8 +40,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
     const blurUriParts = post.blurATUri.split('/');
     const editDid = blurUriParts[2];
     const editRkey = blurUriParts[4];
-    const shouldUseInlinePasswordEdit = post.blur.visibility === VISIBILITY_PASSWORD && post.isDecrypt && !!handleEdit;
-    const editHref = editDid && editRkey && !shouldUseInlinePasswordEdit
+    const editHref = editDid && editRkey
         ? `/console/posts/${encodeURIComponent(editDid)}/${encodeURIComponent(editRkey)}/edit`
         : "";
     const visibility = post.blur.visibility || VISIBILITY_PUBLIC;

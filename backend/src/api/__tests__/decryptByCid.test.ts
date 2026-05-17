@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handle } from '../decryptByCid';
 import * as CryptHandler from '@/logic/CryptHandler';
+import * as JWTTokenHandler from '@/logic/JWTTokenHandler';
 
 vi.mock('@/logic/CryptHandler');
+vi.mock('@/logic/JWTTokenHandler');
 
 describe('decryptByCid API', () => {
     let mockFetch: any;
@@ -13,6 +15,8 @@ describe('decryptByCid API', () => {
         vi.resetAllMocks();
         mockFetch = vi.fn();
         global.fetch = mockFetch;
+        // @ts-ignore
+        JWTTokenHandler.fetchServiceEndpoint.mockRejectedValue(new Error('Resolver unavailable'));
 
         mockDOFetch = vi.fn();
         mockDONamespace = {
@@ -121,6 +125,30 @@ describe('decryptByCid API', () => {
         expect(CryptHandler.getDecrypt).toHaveBeenCalledWith(
             'https://plc.pds',
             'did:plc:123',
+            expect.anything(),
+            expect.anything()
+        );
+    });
+
+    it('should resolve PDS from DID resolver when cache and PLC fallback miss', async () => {
+        const c = createCtx({
+            repo: 'did:web:example.com',
+            cid: 'bafy...',
+            password: 'pass'
+        });
+
+        mockDOFetch.mockResolvedValue({ ok: false });
+        // @ts-ignore
+        JWTTokenHandler.fetchServiceEndpoint.mockResolvedValue('https://resolver.pds');
+        // @ts-ignore
+        CryptHandler.getDecrypt.mockResolvedValue({ text: 'Decrypted' });
+
+        await handle(c);
+
+        expect(JWTTokenHandler.fetchServiceEndpoint).toHaveBeenCalledWith('did:web:example.com');
+        expect(CryptHandler.getDecrypt).toHaveBeenCalledWith(
+            'https://resolver.pds',
+            'did:web:example.com',
             expect.anything(),
             expect.anything()
         );

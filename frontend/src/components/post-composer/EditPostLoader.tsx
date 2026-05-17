@@ -80,7 +80,7 @@ export function normalizeEncryptCid(record: UkSkyblurPost.Record) {
 export function validateEditableRecord(value: unknown): { ok: true; record: UkSkyblurPost.Record; visibility: VisibilityValue } | { ok: false; reason: string } {
   const record = value as Partial<UkSkyblurPost.Record> | null | undefined;
 
-  if (!record || record.$type !== SKYBLUR_POST_COLLECTION) {
+  if (!record || (record.$type && record.$type !== SKYBLUR_POST_COLLECTION)) {
     return { ok: false, reason: "invalid-record-type" };
   }
   if (!record.visibility || !visibilityValues.has(record.visibility as VisibilityValue)) {

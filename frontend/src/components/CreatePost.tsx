@@ -557,6 +557,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     }
 
                     postObject = {
+                        $type: SKYBLUR_POST_COLLECTION,
                         uri: localPrevPostAturi,
                         text: postTextBlur,
                         additional: '',
@@ -614,6 +615,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
                 if (response.ok) {
                     postObject = {
+                        $type: SKYBLUR_POST_COLLECTION,
                         uri: localPrevPostAturi,
                         text: postTextBlur,
                         createdAt: prevBlur?.blur.createdAt || new Date().toISOString(),
@@ -642,6 +644,7 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
 
             } else {
                 postObject = {
+                    $type: SKYBLUR_POST_COLLECTION,
                     uri: localPrevPostAturi,
                     text: postTextForRecord,
                     additional: addText,

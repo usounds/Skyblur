@@ -418,6 +418,7 @@ async function buildSkyblurRecordValue(input: PostComposerSaveInput & { rkey: st
     return {
       ok: true as const,
       value: {
+        $type: SKYBLUR_POST_COLLECTION,
         uri: `at://${input.did}/app.bsky.feed.post/${input.rkey}`,
         text: state.blurredText || state.textForBluesky,
         additional: "",
@@ -442,6 +443,7 @@ async function buildSkyblurRecordValue(input: PostComposerSaveInput & { rkey: st
     return {
       ok: true as const,
       value: {
+        $type: SKYBLUR_POST_COLLECTION,
         uri: `at://${input.did}/app.bsky.feed.post/${input.rkey}`,
         text: state.blurredText || state.textForBluesky,
         createdAt,
@@ -454,6 +456,7 @@ async function buildSkyblurRecordValue(input: PostComposerSaveInput & { rkey: st
   return {
     ok: true as const,
     value: {
+      $type: SKYBLUR_POST_COLLECTION,
       uri: `at://${input.did}/app.bsky.feed.post/${input.rkey}`,
       text: state.textForRecord,
       additional: state.additional,

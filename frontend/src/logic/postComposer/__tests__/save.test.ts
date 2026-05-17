@@ -188,6 +188,7 @@ describe("postComposerSave", () => {
             collection: "uk.skyblur.post",
             rkey: "3test-rkey",
             value: {
+              $type: "uk.skyblur.post",
               uri: "at://did:plc:example/app.bsky.feed.post/3test-rkey",
               text: "本文[伏せたい文字]",
               additional: "Blueskyには反映されずSkyblurでのみ表示されます",
@@ -289,10 +290,12 @@ describe("postComposerSave", () => {
       }),
     ]);
     const writes = agent.post.mock.calls[1][1].input.writes;
+    expect(writes[0].value.embed.external.uri).toBe("https://skyblur.uk/post/did:plc:example/3test-rkey");
     expect(writes[0].value.embed.external.description).toBe("伏せていない投稿を参照する。パスワードが必要です。");
     expect(writes[1]).toEqual(expect.objectContaining({
       collection: "uk.skyblur.post",
       value: expect.objectContaining({
+        $type: "uk.skyblur.post",
         text: "本文○○",
         additional: "",
         encryptBody: { ref: { $link: "bafy-encrypted" }, mimeType: "text/plain", size: 12 },
@@ -348,6 +351,7 @@ describe("postComposerSave", () => {
     expect(writes[1]).toEqual(expect.objectContaining({
       collection: "uk.skyblur.post",
       value: expect.objectContaining({
+        $type: "uk.skyblur.post",
         text: "本文○○",
         visibility: "list",
         listUri: "at://did:plc:example/app.bsky.graph.list/3list",
@@ -510,6 +514,7 @@ describe("postComposerSave", () => {
             collection: "uk.skyblur.post",
             rkey: "3edit-rkey",
             value: expect.objectContaining({
+              $type: "uk.skyblur.post",
               text: "hello [secret]",
               additional: "additional",
               visibility: "public",
