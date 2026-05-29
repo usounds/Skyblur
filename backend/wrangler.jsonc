@@ -151,12 +151,6 @@
 				},
 				{
 					"tag": "v3"
-				},
-				{
-					"tag": "v4",
-					"deleted_classes": [
-						"AirglowPostDO"
-					]
 				}
 			],
 			"r2_buckets": [
