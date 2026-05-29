@@ -13,6 +13,7 @@ import { BlueskyIcon, GithubIcon } from "@/components/Icons";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { Viewport } from "next";
+import { detectLocaleFromAcceptLanguage, resolveLocale } from "@/logic/locale";
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
@@ -26,21 +27,10 @@ export async function generateMetadata() {
   const cookieStore = await cookies();
   const headersList = await headers();
 
-  // 1. クッキーを優先
-  // 2. クッキーがない場合はAccept-Languageヘッダーで判定（SNSクローラー対応）
-  let lang = cookieStore.get('lang')?.value;
-  let isHybridFallback = false;
-
-  if (!lang) {
-    const acceptLanguage = headersList.get('accept-language');
-    if (acceptLanguage) {
-      lang = acceptLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
-    } else {
-      // 3. どちらもない場合は日英併記（一部のクローラー、ブラウザ設定不明時）
-      isHybridFallback = true;
-      lang = 'ja'; // デフォルトのベース言語
-    }
-  }
+  const langCookie = cookieStore.get('lang')?.value;
+  const acceptLanguage = headersList.get('accept-language');
+  const lang = resolveLocale(langCookie, acceptLanguage);
+  const isHybridFallback = !langCookie && !detectLocaleFromAcceptLanguage(acceptLanguage);
 
   const locale = lang === 'en' ? en : ja;
   const description = isHybridFallback
@@ -74,7 +64,8 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
-  const lang = cookieStore.get('lang')?.value || 'ja';
+  const headersList = await headers();
+  const lang = resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
 
   return (
     <html {...mantineHtmlProps} lang={lang} className="notranslate" suppressHydrationWarning>
