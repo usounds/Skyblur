@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { normalizeLocale, resolveLocale } from '@/logic/locale';
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -30,10 +31,9 @@ export function proxy(request: NextRequest) {
 
     const response = NextResponse.next();
 
-    // クッキーがない場合にセット（ただし、accept-languageがある場合のみ）
-    if (!langCookie && acceptLanguage) {
-        const browserLang = acceptLanguage.startsWith('en') ? 'en' : 'ja';
-        response.cookies.set('lang', browserLang, {
+    // クッキーがない、または不正な場合は、SSR と同じ判定で言語を保存する
+    if (!normalizeLocale(langCookie)) {
+        response.cookies.set('lang', resolveLocale(langCookie, acceptLanguage), {
             path: '/',
             maxAge: 60 * 60 * 24 * 365, // 1 year
             sameSite: 'lax',

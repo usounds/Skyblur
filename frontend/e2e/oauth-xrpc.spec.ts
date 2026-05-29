@@ -407,7 +407,7 @@ test.describe("home start session flows", () => {
     await expect(page.getByText("Post contents from Skyblur")).toBeVisible();
     await expect(page.getByText("Bluesky shows the blurred text")).toBeVisible();
     await expect(page.getByText("Skyblur shows the unblurred text")).toBeVisible();
-    await expect(page.getByText("These recommended clients offer a seamless viewing experience")).toBeVisible();
+    await expect(page.getByText("These clients make Skyblur posts easy to read")).toBeVisible();
 
     await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
     await page.getByRole("button", { name: "Start" }).click();
@@ -444,7 +444,7 @@ test.describe("home start session flows", () => {
     await gotoAndSkipIfUnavailable(page, "/");
 
     await expect(page.getByRole("heading", { name: "Skyblurへようこそ" })).toBeVisible();
-    await expect(page.getByText("Skyblurの投稿を快適にチェックできる、おすすめクライアント")).toBeVisible();
+    await expect(page.getByText("Skyblurの投稿を快適に読めるおすすめクライアント")).toBeVisible();
     await expect(page.getByRole("link", { name: "羽衣" })).toHaveAttribute("href", "https://hagoromo.relog.tech/ja/");
   });
 

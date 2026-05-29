@@ -1,15 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { Container } from '@mantine/core';
 import TermsContent from './TermsContent';
+import { resolveLocale } from '@/logic/locale';
 
 export default async function Home() {
   const cookieStore = await cookies();
-  const locale = cookieStore.get('lang')?.value || 'ja';
-
-  // Decide which file to load. Safe to default to 'ja' if unknown.
-  const lang = (locale === 'en' || locale === 'ja') ? locale : 'ja';
+  const headersList = await headers();
+  const lang = resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
   const filePath = path.join(process.cwd(), 'src', 'locales', 'terms', `${lang}.md`);
 
   let content = '';
