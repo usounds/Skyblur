@@ -435,6 +435,15 @@ export async function GET(
     return publicSkyblurResponse(request, method);
   }
 
+  // Reject GET requests to custom uk.skyblur.* methods (which are exclusively POST procedures)
+  // to prevent circular request deadlocks and unnecessary PDS proxying.
+  if (method.startsWith("uk.skyblur.")) {
+    return NextResponse.json(
+      { error: "MethodNotAllowed", message: `GET is not allowed for ${method}` },
+      { status: 405 }
+    );
+  }
+
   const optionalSession = optionalSessionSkyblurMethods.has(method);
   const params = getXrpcQueryParams(request);
   let response;
