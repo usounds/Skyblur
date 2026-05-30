@@ -87,13 +87,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <footer className="flex gap-6 flex-wrap items-center justify-center py-4 mt-4 text-gray-400">
             <div className="text-center mb-4">
               <div className="mb-2">
-                <Text size="sm" c="dimmed">Developed by usounds.work</Text>
+                <Text size="sm" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>Developed by usounds.work</Text>
               </div>
               <div className="flex justify-center space-x-4 mb-4">
                 <a
                   href="https://bsky.app/profile/skyblur.uk"
                   target="_blank"
                   className="transition duration-100 "
+                  aria-label="Bluesky"
                 >
                   <BlueskyIcon size={20} />
                 </a>
@@ -101,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   href="https://github.com/usounds/Skyblur"
                   target="_blank"
                   className=" transition duration-100"
+                  aria-label="GitHub"
                 >
                   <GithubIcon size={20} />
                 </a>

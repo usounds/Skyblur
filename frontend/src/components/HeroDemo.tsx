@@ -23,13 +23,13 @@ export function HeroDemo() {
                     <Text size="sm">
                         I love <span style={{
                             background: 'light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9))',
-                            color: 'light-dark(var(--mantine-color-blue-7), var(--mantine-color-blue-3))',
+                            color: 'light-dark(var(--mantine-color-blue-9), var(--mantine-color-blue-1))',
                             padding: '1px 4px',
                             borderRadius: '4px',
                             fontFamily: 'monospace',
                         }}>[Spicy Food]</span>!
                     </Text>
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>
                         {locale.Home_HeroDemoBlurDescription}
                     </Text>
                 </Stack>
@@ -58,9 +58,9 @@ export function HeroDemo() {
                     }}
                 >
                     <Group justify="space-between">
-                        <Group gap={6}>
+                        <Group gap={6} style={{ color: 'light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-1))' }}>
                             <BlueskyIcon size={16} />
-                            <Text fw={500} size="sm" c="blue">Bluesky (Post)</Text>
+                            <Text fw={500} size="sm">Bluesky (Post)</Text>
                         </Group>
                     </Group>
                 </Card.Section>
@@ -69,7 +69,7 @@ export function HeroDemo() {
                         <Avatar size="sm" radius="xl" color="blue" />
                         <Box>
                             <Text size="sm" fw={700} lh={1}>User</Text>
-                            <Text size="xs" c="dimmed">@user.bsky.social</Text>
+                            <Text size="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>@user.bsky.social</Text>
                         </Box>
                     </Group>
                     <Text size="sm">
@@ -97,7 +97,7 @@ export function HeroDemo() {
                             />
                             <Box>
                                 <Text size="xs" fw={700}>Skyblur</Text>
-                                <Text size="xs" c="dimmed" lineClamp={1}>
+                                <Text size="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }} lineClamp={1}>
                                     {locale.CreatePost_OGPDescription}
                                 </Text>
                             </Box>
@@ -122,11 +122,11 @@ export function ResponsiveHeroDemo() {
                 <Stack align="center" gap="md">
                     {/* Input Side */}
                     <Card shadow="sm" padding="md" radius="md" withBorder w="100%">
-                        <Text size="xs" fw={700} mb="xs" c="dimmed">Skyblur Input:</Text>
+                        <Text size="xs" fw={700} mb="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>Skyblur Input:</Text>
                         <Text size="sm">
                             I love <span style={{
                                 background: 'light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9))',
-                                color: 'light-dark(var(--mantine-color-blue-7), var(--mantine-color-blue-3))',
+                                color: 'light-dark(var(--mantine-color-blue-9), var(--mantine-color-blue-1))',
                                 padding: '1px 4px',
                                 borderRadius: '4px',
                             }}>[Spicy Food]</span>!
@@ -146,8 +146,8 @@ export function ResponsiveHeroDemo() {
                             borderColor: 'light-dark(var(--mantine-color-blue-2), var(--mantine-color-blue-8))',
                         }}
                     >
-                        <Group justify="space-between" mb="xs">
-                            <Text size="xs" fw={700} c="blue">Bluesky Post:</Text>
+                        <Group justify="space-between" mb="xs" style={{ color: 'light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-1))' }}>
+                            <Text size="xs" fw={700}>Bluesky Post:</Text>
                             <BlueskyIcon size={14} />
                         </Group>
                         <Text size="sm" mb="xs">
@@ -161,7 +161,7 @@ export function ResponsiveHeroDemo() {
                                 background: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
                             }}
                         >
-                            <Text size="xs" c="dimmed">{locale.CreatePost_OGPDescription}</Text>
+                            <Text size="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>{locale.CreatePost_OGPDescription}</Text>
                         </Card>
                     </Card>
                 </Stack>

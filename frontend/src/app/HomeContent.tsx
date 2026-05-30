@@ -25,7 +25,7 @@ export function Feature({ icon: Icon, title, description }: FeatureProps) {
             <Text mt="sm" mb={7} fw={500}>
                 {title}
             </Text>
-            <Text size="sm" c="dimmed" lh={1.6}>
+            <Text size="sm" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }} lh={1.6}>
                 {description}
             </Text>
         </div>
@@ -68,23 +68,23 @@ export function HomeContent({ initialLocale }: HomeContentProps) {
 
     return (
         <Container className={classes.wrapper}>
-            <div className={classes.fadeIn} style={{ animationDelay: '0s' }}>
+            <div>
                 <Title className={classes.title}>
                     {locale.Home_WelcomeTitle}
                 </Title>
             </div>
 
-            <div className={classes.fadeIn} style={{ animationDelay: '0.1s' }}>
+            <div>
                 <Text size="sm" className={classes.description}>
                     {locale.Home_WelcomeDescription}
                 </Text>
             </div>
 
-            <div className={classes.fadeIn} style={{ animationDelay: '0.2s' }}>
+            <div>
                 <ResponsiveHeroDemo />
             </div>
 
-            <div className={classes.fadeIn} style={{ animationDelay: '0.3s' }}>
+            <div>
                 <StartButton />
             </div>
 

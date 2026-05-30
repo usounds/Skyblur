@@ -11,7 +11,7 @@
 
 .clientLink {
     position: relative;
-    color: var(--mantine-color-blue-7);
+    color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-3));
     font-weight: 500;
     text-decoration: none !important;
     transition: color 0.25s ease;
@@ -53,7 +53,7 @@
 /* Platform links styling */
 .platformLink {
     position: relative;
-    color: var(--mantine-color-dimmed);
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4));
     text-decoration: none !important;
     transition: color 0.2s ease;
     display: inline-block !important; /* Force inline-block to align baseline and enable transform */
@@ -83,7 +83,7 @@
 }
 
 .platformLink:hover {
-    color: var(--mantine-color-blue-6) !important;
+    color: var(--mantine-color-blue-8) !important;
 }
 
 .platformLink:hover::after {

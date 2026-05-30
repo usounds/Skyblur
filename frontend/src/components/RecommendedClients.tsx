@@ -56,7 +56,7 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
 
     return (
         <Box className="mt-20 sm:mt-12 mx-4 text-center">
-            <Text size="sm" c="dimmed" mb={8}>
+            <Text size="sm" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }} mb={8}>
                 {locale.Home_RecommendedClients}
             </Text>
             <Box className={classes.clientsGrid}>
@@ -80,7 +80,7 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
                             {client.name}
                         </Anchor>
                         {client.platforms.length > 0 && (
-                            <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+                            <Text size="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))', whiteSpace: "nowrap" }}>
                                 {client.platforms.map((platform, platformIndex) => (
                                     <span key={platform.label}>
                                         {platformIndex > 0 && " / "}

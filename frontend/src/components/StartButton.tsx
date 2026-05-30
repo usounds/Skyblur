@@ -142,19 +142,20 @@ export function StartButton() {
     return (
         <div className="flex justify-center items-center mt-10 mb-12" style={{ minHeight: '64px' }}>
             {isSessionRetryReady ? (
-                <Button
+                 <Button
                     variant="outline" size="md" radius="lg"
                     onClick={handleRetrySessionCheck}
                     loading={isLoading}
                     leftSection={<Sparkles size={24} />}
                     className="px-10 h-16 text-lg"
+                    color="blue.8"
                 >
                     {locale.Landing_StartRetryButton}
                 </Button>
             ) : !isSessionChecked || isSessionRetryWaiting ? (
                 <div className="flex flex-col items-center justify-center gap-2 h-16">
                     <Loader color="blue" type="dots" />
-                    <Text size="sm" c="dimmed">
+                    <Text size="sm" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>
                         {locale.Home_CheckingSessionWithTimer.replace('{1}', String(sessionCheckSecondsLeft))}
                     </Text>
                 </div>
@@ -165,6 +166,7 @@ export function StartButton() {
                     variant="filled" size="md" radius="lg"
                     leftSection={<Sparkles size={24} />}
                     className="px-10 h-16 text-lg"
+                    color="blue.8"
                 >
                     {locale.Landing_StartButton}
                 </Button>
@@ -175,6 +177,7 @@ export function StartButton() {
                     loading={isLoading}
                     leftSection={<Sparkles size={24} />}
                     className="px-10 h-16 text-lg"
+                    color="blue.8"
                 >
                     {locale.Landing_StartButton}
                 </Button>
