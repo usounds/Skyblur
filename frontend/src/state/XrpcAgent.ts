@@ -31,6 +31,7 @@ type XrpcAgentCache = {
   sessionCheckPromise: Promise<SessionCheckResult> | null;
   lastSessionResult: SessionCheckResult | null;
   profFetchPromise: Promise<void> | null;
+  sessionCheckGeneration: number;
 };
 
 type Action = {
@@ -51,6 +52,7 @@ const moduleCache: XrpcAgentCache = {
   sessionCheckPromise: null,
   lastSessionResult: null,
   profFetchPromise: null,
+  sessionCheckGeneration: 0,
 };
 
 declare global {
@@ -66,7 +68,9 @@ function getXrpcAgentCache() {
     sessionCheckPromise: null,
     lastSessionResult: null,
     profFetchPromise: null,
+    sessionCheckGeneration: 0,
   };
+  window.__skyblurXrpcAgentCache.sessionCheckGeneration ??= 0;
   return window.__skyblurXrpcAgentCache;
 }
 
@@ -148,6 +152,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     setIsSessionChecked: (isSessionChecked) => {
       if (!isSessionChecked) {
         const cache = getXrpcAgentCache();
+        cache.sessionCheckGeneration += 1;
         cache.lastSessionResult = null;
         cache.sessionCheckPromise = null;
       }
@@ -175,7 +180,8 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       }
       if (cache.sessionCheckPromise) return cache.sessionCheckPromise;
 
-      cache.sessionCheckPromise = (async () => {
+      const sessionCheckGeneration = cache.sessionCheckGeneration;
+      const sessionCheckPromise = (async () => {
         try {
           const res = await fetchWithTimeout('/api/oauth/session', {
             credentials: 'include'
@@ -185,6 +191,10 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             const pdsUrl = data.pds || 'https://bsky.social';
             const nextScope = data.scope || '';
             const missingAppBskyRpcScopes = getMissingAppBskyRpcScopes(nextScope);
+
+            if (cache.sessionCheckGeneration !== sessionCheckGeneration) {
+              return { authenticated: true, did: data.did, pds: pdsUrl, scope: nextScope, missingAppBskyRpcScopes };
+            }
 
             if (get().did && get().did !== data.did) {
               clearSensitiveDraft();
@@ -199,6 +209,9 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             void get().fetchUserProf();
             return cache.lastSessionResult;
           } else {
+            if (cache.sessionCheckGeneration !== sessionCheckGeneration) {
+              return { authenticated: false, did: "", pds: "" };
+            }
             if (get().did !== "" || get().isSessionChecked !== true) {
               if (get().did !== "") {
                 clearSensitiveDraft();
@@ -212,16 +225,22 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
           if (!isAbortError(e)) {
             console.error('Session check failed:', e);
           }
+          if (cache.sessionCheckGeneration !== sessionCheckGeneration) {
+            return { authenticated: false, did: "", pds: "", timedOut: isAbortError(e) };
+          }
           set({ isSessionChecked: !isAbortError(e) });
           const result = { authenticated: false, did: "", pds: "", timedOut: isAbortError(e) };
           if (!result.timedOut) cache.lastSessionResult = result;
           return result;
         } finally {
-          cache.sessionCheckPromise = null;
+          if (cache.sessionCheckGeneration === sessionCheckGeneration) {
+            cache.sessionCheckPromise = null;
+          }
         }
       })();
 
-      return cache.sessionCheckPromise;
+      cache.sessionCheckPromise = sessionCheckPromise;
+      return sessionCheckPromise;
     },
     fetchUserProf: async () => {
       const { did, agent, publicAgent, userProf, setUserProf, isSessionChecked } = get();

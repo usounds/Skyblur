@@ -1,0 +1,74 @@
+/* RecommendedClients – Fixed 2-column Grid and premium hover effects */
+
+.clientsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 32px;
+    justify-content: center;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.clientLink {
+    position: relative;
+    color: var(--mantine-color-blue-7);
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: color 0.25s ease;
+    display: inline-block !important; /* Force inline-block to enable transform animation and match text width */
+    vertical-align: baseline;
+}
+
+.clientLink::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    transform: scaleX(0);
+    height: 1.5px;
+    bottom: -1px;
+    left: 0;
+    background-color: var(--mantine-color-blue-5);
+    transform-origin: bottom right;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clientLink:hover {
+    color: var(--mantine-color-blue-8) !important;
+}
+
+.clientLink:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}
+
+/* Platform links styling */
+.platformLink {
+    position: relative;
+    color: var(--mantine-color-dimmed);
+    text-decoration: none !important;
+    transition: color 0.2s ease;
+    display: inline-block !important; /* Force inline-block to align baseline and enable transform */
+    vertical-align: baseline;
+}
+
+.platformLink::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    transform: scaleX(0);
+    height: 1px;
+    bottom: -1px;
+    left: 0;
+    background-color: var(--mantine-color-blue-4);
+    transform-origin: bottom right;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.platformLink:hover {
+    color: var(--mantine-color-blue-6) !important;
+}
+
+.platformLink:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}

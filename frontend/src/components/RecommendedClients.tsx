@@ -2,6 +2,7 @@ import en from "@/locales/en";
 import ja from "@/locales/ja";
 import type { Locales } from "@/state/Locale";
 import { Anchor, Box, Text } from "@mantine/core";
+import classes from "./RecommendedClients.module.css";
 
 interface RecommendedClientsProps {
     initialLocale: Locales;
@@ -58,14 +59,7 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
             <Text size="sm" c="dimmed" mb={8}>
                 {locale.Home_RecommendedClients}
             </Text>
-            <Box
-                style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    justifyContent: "center",
-                    gap: "12px 18px",
-                }}
-            >
+            <Box className={classes.clientsGrid}>
                 {clients.map((client) => (
                     <Box
                         key={client.name}
@@ -74,10 +68,15 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
                             flexDirection: "column",
                             alignItems: "center",
                             gap: 2,
-                            minWidth: 92,
                         }}
                     >
-                        <Anchor href={client.href} target="_blank" underline="hover" size="sm">
+                        <Anchor
+                            href={client.href}
+                            target="_blank"
+                            underline="never"
+                            size="sm"
+                            className={classes.clientLink}
+                        >
                             {client.name}
                         </Anchor>
                         {client.platforms.length > 0 && (
@@ -86,7 +85,13 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
                                     <span key={platform.label}>
                                         {platformIndex > 0 && " / "}
                                         {platform.href ? (
-                                            <Anchor href={platform.href} target="_blank" underline="hover" size="xs">
+                                            <Anchor
+                                                href={platform.href}
+                                                target="_blank"
+                                                underline="never"
+                                                size="xs"
+                                                className={classes.platformLink}
+                                            >
                                                 {platform.label}
                                             </Anchor>
                                         ) : (

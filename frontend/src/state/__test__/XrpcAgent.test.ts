@@ -42,6 +42,57 @@ describe("useXrpcAgentStore.checkSession", () => {
     expect(useXrpcAgentStore.getState().did).toBe("");
   });
 
+  it("does not let a stale timed-out session check overwrite a recovered retry", async () => {
+    let firstRequestSignal: AbortSignal | undefined;
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (fetchMock.mock.calls.length === 1) {
+        firstRequestSignal = init?.signal ?? undefined;
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }
+
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            authenticated: true,
+            did: "did:plc:recovered",
+            pds: "https://pds.example.test",
+            scope: "atproto repo:app.bsky.feed.post?action=create",
+          }),
+          { headers: { "content-type": "application/json" } },
+        ),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const staleSession = useXrpcAgentStore.getState().checkSession();
+    useXrpcAgentStore.getState().setIsSessionChecked(false);
+
+    await expect(useXrpcAgentStore.getState().checkSession()).resolves.toMatchObject({
+      authenticated: true,
+      did: "did:plc:recovered",
+      pds: "https://pds.example.test",
+    });
+
+    expect(useXrpcAgentStore.getState()).toMatchObject({
+      did: "did:plc:recovered",
+      serviceUrl: "https://pds.example.test",
+      isSessionChecked: true,
+    });
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await expect(staleSession).resolves.toEqual({ authenticated: false, did: "", pds: "", timedOut: true });
+    expect(firstRequestSignal?.aborted).toBe(true);
+    expect(useXrpcAgentStore.getState()).toMatchObject({
+      did: "did:plc:recovered",
+      serviceUrl: "https://pds.example.test",
+      isSessionChecked: true,
+    });
+  });
+
   it("restores a lightweight authenticated session without profile data", async () => {
     vi.stubGlobal(
       "fetch",

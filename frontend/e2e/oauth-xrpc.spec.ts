@@ -124,6 +124,7 @@ async function openCreateComposer(page: import("@playwright/test").Page) {
     window.localStorage.removeItem("zustand.sensitive-post-draft");
     window.sessionStorage.removeItem("skyblur.post-composer.active-create-session");
   });
+  await page.reload();
   await page.getByRole("link", { name: "Create a post" }).click({ force: true });
   await expect(page).toHaveURL(/\/console\/posts\/new$/);
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
