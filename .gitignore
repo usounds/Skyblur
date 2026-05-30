@@ -58,3 +58,7 @@ create_app.json
 .spec-workflow/approvals/
 .spec-workflow/archive/
 .spec-workflow/specs/*/Implementation Logs/
+
+# Antigravity CLI
+.antigravitycli/
+
