@@ -24,6 +24,7 @@ const messages = {
     Menu_Cancel: "キャンセル",
     Menu_Back: "戻る",
     Menu_TermOfUse: "利用規約",
+    Menu_Features: "機能",
     Menu_Settings: "設定",
     Menu_LoginMessage: "{1}さん、{2}！",
     Greeting_Morning: "おはようございます",

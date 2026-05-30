@@ -92,6 +92,9 @@ const DynamicHeader = () => {
   return (
     <>
       <div className="flex flex-row items-center gap-3 sm:mt-0">
+        <Link href="/features" className="flex-none text-sm mr-2">
+          {locale?.Menu_Features}
+        </Link>
         <Link href="/termofuse" className="flex-none text-sm mr-2">
           {locale?.Menu_TermOfUse}
         </Link>

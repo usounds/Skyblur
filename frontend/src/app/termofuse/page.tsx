@@ -31,6 +31,7 @@ export default async function Home() {
     "name": pageTitle,
     "url": "https://skyblur.uk/termofuse",
     "description": pageDescription,
+    "inLanguage": lang,
     "isPartOf": {
       "@type": "WebSite",
       "name": "Skyblur",

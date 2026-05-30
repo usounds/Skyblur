@@ -24,6 +24,7 @@ const messages = {
     Menu_Cancel: "Cancel",
     Menu_Back: "Back",
     Menu_TermOfUse: "Term of Use",
+    Menu_Features: "Features",
     Menu_Settings: "Settings",
     Menu_LoginMessage: "{2}, {1}!",
     Greeting_Morning: "Good morning",

@@ -13,9 +13,6 @@ export default async function Home() {
   const langDescription = locale === 'ja' ? ja.Common_OGDescription : en.Common_OGDescription;
   const langName = locale === 'ja' ? ja.Common_Title : en.Common_Title;
 
-  const welcomeTitle = locale === 'ja' ? ja.Home_WelcomeTitle : en.Home_WelcomeTitle;
-  const welcomeDesc = locale === 'ja' ? ja.Home_WelcomeDescription : en.Home_WelcomeDescription;
-
   const f1Title = locale === 'ja' ? ja.Home_Landing001Title : en.Home_Landing001Title;
   const f1Desc = locale === 'ja' ? ja.Home_Landing001Descrtption : en.Home_Landing001Descrtption;
 
@@ -25,16 +22,11 @@ export default async function Home() {
   const f3Title = locale === 'ja' ? ja.Home_Landing003Title : en.Home_Landing003Title;
   const f3Desc = locale === 'ja' ? ja.Home_Landing003Descrtption : en.Home_Landing003Descrtption;
 
-  const appDescriptionText = [
-    welcomeTitle,
-    welcomeDesc,
-    `[${f1Title}]`,
-    f1Desc,
-    `[${f2Title}]`,
-    f2Desc,
-    `[${f3Title}]`,
-    f3Desc
-  ].join('\n\n');
+  const appFeatureList = [
+    `${f1Title}: ${f1Desc}`,
+    `${f2Title}: ${f2Desc}`,
+    `${f3Title}: ${f3Desc}`
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -42,6 +34,7 @@ export default async function Home() {
     "name": langName,
     "url": "https://skyblur.uk",
     "description": langDescription,
+    "inLanguage": locale,
     "applicationCategory": "SocialNetworkingApplication",
     "operatingSystem": "All",
     "browserRequirements": "Requires JavaScript. Requires HTML5.",
@@ -55,7 +48,7 @@ export default async function Home() {
       "name": "usounds.work",
       "url": "https://bsky.app/profile/usounds.work"
     },
-    "text": appDescriptionText
+    "featureList": appFeatureList
   };
 
   return (
