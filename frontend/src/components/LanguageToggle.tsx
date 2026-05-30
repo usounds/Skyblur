@@ -4,6 +4,7 @@ import { useComposerLocaleSwitchGuardStore } from "@/state/ComposerLocaleSwitchG
 import { Locales, useLocale, useLocaleStore } from "@/state/Locale";
 import { ActionIcon, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { Languages } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 const LanguageToggle: React.FC = () => {
@@ -11,9 +12,14 @@ const LanguageToggle: React.FC = () => {
   const setLocale = useLocaleStore((state) => state.setLocale);
   const hasUnsavedComposerChanges = useComposerLocaleSwitchGuardStore((state) => state.hasUnsavedComposerChanges);
   const [pendingLocale, setPendingLocale] = useState<Locales | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const applyLocale = (newLocale: Locales) => {
     setLocale(newLocale);
+    if (!hasUnsavedComposerChanges && !pathname.startsWith("/console/posts/")) {
+      router.refresh();
+    }
   };
 
   const toggleLocale = () => {

@@ -195,6 +195,13 @@ async function setComposerSwitch(
   }
 }
 
+async function confirmSimpleModeChange(page: import("@playwright/test").Page) {
+  const changeModeDialog = page.getByRole("dialog", { name: "Change Mode" });
+  await expect(changeModeDialog).toBeVisible();
+  await changeModeDialog.getByRole("button", { name: "Change" }).click({ force: true });
+  await expect(changeModeDialog).toBeHidden();
+}
+
 async function confirmComposerBack(page: import("@playwright/test").Page) {
   const confirmMessage = page.getByText("Your changes will not be saved. Are you sure you want to go back?");
   if (!await confirmMessage.isVisible({ timeout: 1_000 }).catch(() => false)) {
@@ -1675,13 +1682,13 @@ test("/console create post form covers bracket warnings and reply paging", async
   await postInput.fill("This has unbalanced] brackets");
   await expect(page.getByText("The brackets are not correct. The number of [ and ] do not match.")).toBeVisible();
 
-  await page.getByLabel("Simple Mode").click({ force: true });
-  await page.getByRole("button", { name: "Change" }).click({ force: true });
+  await page.getByRole("switch", { name: "Simple mode" }).click({ force: true });
+  await confirmSimpleModeChange(page);
   await postInput.fill("Public [bracket] line");
   await expect(page.getByText("You cannot use [] in Simple Mode")).toBeVisible();
 
-  await page.getByLabel("Simple Mode").click({ force: true });
-  await page.getByRole("button", { name: "Change" }).click({ force: true });
+  await page.getByRole("switch", { name: "Simple mode" }).click({ force: true });
+  await confirmSimpleModeChange(page);
   await postInput.fill("Reply paging [secret]");
   await goToAudienceStep(page);
   await openComposerDetails(page);

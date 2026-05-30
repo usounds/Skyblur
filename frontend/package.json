@@ -8,30 +8,6 @@
     "node": ">=22.0.0",
     "pnpm": ">=9.0.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@atcute/time-ms",
-      "aws-sdk",
-      "esbuild",
-      "sharp",
-      "unrs-resolver"
-    ],
-    "overrides": {
-      "hono": "^4.11.7",
-      "@modelcontextprotocol/sdk": "^1.26.0",
-      "fast-xml-parser": "^5.7.1",
-      "flatted": "^3.4.2",
-      "zod": "^4.3.6",
-      "@aws-sdk/client-dynamodb": "3.1057.0",
-      "@aws-sdk/dynamodb-codec": "3.972.0",
-      "minimatch": "^10.2.1",
-      "postcss": "^8.5.13",
-      "@atcute/time-ms": "1.2.3",
-      "@atcute/util-text": "1.1.1",
-      "brace-expansion": "5.0.6",
-      "qs": "6.15.2"
-    }
-  },
   "scripts": {
     "dev": "next dev -p 4500",
     "update": "pnpm dlx npm-check-updates -u -x eslint && pnpm install",
@@ -50,6 +26,7 @@
     "test:e2e:mobile": "playwright test --project=mobile-chrome --project=mobile-safari --grep \"OAuth metadata points|public app pages render core unauthenticated content|home start button opens the console for logged-in users|/console renders logged-in dashboard\"",
     "test:e2e:all": "playwright test && node scripts/e2e-screen-coverage.mjs",
     "test:e2e:coverage": "node scripts/e2e-coverage-clean.mjs && E2E_COVERAGE=true playwright test --project=webkit --workers=1 && node scripts/e2e-screen-coverage.mjs && node scripts/e2e-coverage-report.mjs",
+    "verify:locales": "node scripts/verify-locales.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },

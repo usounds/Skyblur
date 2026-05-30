@@ -40,16 +40,16 @@
 }
 
 .preview {
-  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), rgba(148, 163, 184, 0.22));
   border-radius: 8px;
-  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+  background: light-dark(var(--mantine-color-white), #151923);
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
   overflow: hidden;
 }
 
 .previewHeader {
   align-items: center;
-  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), rgba(148, 163, 184, 0.18));
   display: flex;
   justify-content: space-between;
   padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
@@ -62,17 +62,24 @@
 }
 
 .postBox {
-  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  background: light-dark(var(--mantine-color-white), rgba(255, 255, 255, 0.035));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), rgba(148, 163, 184, 0.2));
   border-radius: 8px;
   padding: var(--mantine-spacing-md);
 }
 
 .maskedLine {
-  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+  background: light-dark(var(--mantine-color-gray-1), rgba(148, 163, 184, 0.22));
   border-radius: 999px;
   height: 10px;
   margin-top: var(--mantine-spacing-xs);
   max-width: 76%;
+}
+
+.previewFullText {
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-gray-1));
+  font-weight: 600;
+  line-height: 1.7;
 }
 
 .visibilityGrid {
@@ -90,9 +97,9 @@
 }
 
 .card {
-  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), rgba(148, 163, 184, 0.2));
   border-radius: 8px;
-  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+  background: light-dark(var(--mantine-color-white), #151923);
   padding: var(--mantine-spacing-lg);
 }
 
@@ -147,6 +154,8 @@
   display: grid;
   gap: var(--mantine-spacing-lg);
   margin-top: var(--mantine-spacing-xl);
+  margin-left: auto;
+  margin-right: auto;
   max-width: 920px;
   position: relative;
 }
@@ -169,8 +178,8 @@
 
 .step {
   align-items: flex-start;
-  background: var(--mantine-color-white);
-  border: 1px solid var(--mantine-color-gray-2);
+  background: light-dark(var(--mantine-color-white), #151923);
+  border: 1px solid light-dark(var(--mantine-color-gray-2), rgba(148, 163, 184, 0.2));
   border-radius: 8px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
   display: grid;
@@ -210,11 +219,19 @@
 }
 
 :global([data-mantine-color-scheme='dark']) .step {
-  background: var(--mantine-color-dark-6);
-  border-color: var(--mantine-color-dark-3);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 16px 32px rgba(0, 0, 0, 0.24);
+    0 0 0 1px rgba(255, 255, 255, 0.025),
+    0 14px 28px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-mantine-color-scheme='dark']) .preview {
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.workflowAction {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--mantine-spacing-xl);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -261,4 +278,5 @@
   .step {
     padding: var(--mantine-spacing-md);
   }
+
 }
