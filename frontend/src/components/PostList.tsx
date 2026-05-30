@@ -459,30 +459,20 @@ export const PostList: React.FC<PostListProps> = ({
                                         </div>
                                     ) : (
                                         <>
-                                            {handleEdit ? (
-                                                <PostTextWithBold
-                                                    postText={item.blur.text}
-                                                    isValidateBrackets
-                                                    isMask={null}
-                                                />
-                                            ) : (
-                                                <>
+                                            <PostTextWithBold
+                                                postText={item.blur.text}
+                                                isValidateBrackets
+                                                isMask={(item.isDetailDisplay || !!handleEdit) ? null : locale.CreatePost_OmmitChar}
+                                            />
+                                            {item.isDetailDisplay && item.blur.additional && (
+                                                <div className={classes.detailSection}>
+                                                    <Divider my="xs" />
                                                     <PostTextWithBold
-                                                        postText={item.blur.text}
-                                                        isValidateBrackets
-                                                        isMask={item.isDetailDisplay ? null : locale.CreatePost_OmmitChar}
+                                                        postText={item.blur.additional}
+                                                        isValidateBrackets={false}
+                                                        isMask={null}
                                                     />
-                                                    {item.isDetailDisplay && item.blur.additional && (
-                                                        <div className={classes.detailSection}>
-                                                            <Divider my="xs" />
-                                                            <PostTextWithBold
-                                                                postText={item.blur.additional}
-                                                                isValidateBrackets={false}
-                                                                isMask={null}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </>
+                                                </div>
                                             )}
                                         </>
                                     )}
