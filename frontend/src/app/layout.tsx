@@ -70,6 +70,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html {...mantineHtmlProps} lang={lang} className="notranslate" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap" rel="stylesheet" />
       </head>
       <body>
         <ServiceWorkerRegister />
@@ -104,7 +107,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div className="flex justify-center">
                 <a href="https://www.buymeacoffee.com/usounds" target="_blank" className="transition duration-100 hover:opacity-80">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style={{ height: '40px', width: 'auto' }} />
+                  <img
+                    src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+                    alt="Buy Me A Coffee"
+                    width={174}
+                    height={40}
+                    style={{ height: '40px', width: '174px' }}
+                  />
                 </a>
               </div>
             </div>
