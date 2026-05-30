@@ -19,9 +19,8 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
+
 
 export async function generateMetadata() {
   const cookieStore = await cookies();
@@ -80,9 +79,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <MantineProvider>
           <Notifications position="top-right" zIndex={1000} />
           <Header />
-          <Suspense fallback={<PageLoading />}>
-            {children}
-          </Suspense>
+          <main>
+            <Suspense fallback={<PageLoading />}>
+              {children}
+            </Suspense>
+          </main>
           <footer className="flex gap-6 flex-wrap items-center justify-center py-4 mt-4 text-gray-400">
             <div className="text-center mb-4">
               <div className="mb-2">

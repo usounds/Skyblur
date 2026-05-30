@@ -36,6 +36,15 @@
     color: var(--mantine-color-blue-8) !important;
 }
 
+.clientLink::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    bottom: -12px;
+    left: -16px;
+    right: -16px;
+}
+
 .clientLink:hover::after {
     transform: scaleX(1);
     transform-origin: bottom left;
@@ -49,6 +58,15 @@
     transition: color 0.2s ease;
     display: inline-block !important; /* Force inline-block to align baseline and enable transform */
     vertical-align: baseline;
+}
+
+.platformLink::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    bottom: -12px;
+    left: -8px;
+    right: -8px;
 }
 
 .platformLink::after {
@@ -72,3 +90,4 @@
     transform: scaleX(1);
     transform-origin: bottom left;
 }
+

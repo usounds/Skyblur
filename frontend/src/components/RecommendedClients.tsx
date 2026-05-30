@@ -67,7 +67,7 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            gap: 2,
+                            gap: 6,
                         }}
                     >
                         <Anchor
