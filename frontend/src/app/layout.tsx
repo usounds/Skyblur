@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import PageLoading from "@/components/PageLoading";
 import { Suspense } from "react";
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text } from '@mantine/core';
+import { ColorSchemeScript, mantineHtmlProps, Text } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
 import '@mantine/notifications/styles.css';
@@ -14,13 +14,13 @@ import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { Viewport } from "next";
 import { detectLocaleFromAcceptLanguage, resolveLocale } from "@/logic/locale";
+import { AppMantineProvider } from "@/components/AppMantineProvider";
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
 };
-
 
 export async function generateMetadata() {
   const cookieStore = await cookies();
@@ -76,7 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <ServiceWorkerRegister />
         <ColorSchemeScript />
-        <MantineProvider>
+        <AppMantineProvider>
           <Notifications position="top-right" zIndex={1000} />
           <Header />
           <main>
@@ -122,7 +122,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
 
           </footer>
-        </MantineProvider>
+        </AppMantineProvider>
         <Script
           src="https://static.cloudflareinsights.com/beacon.min.js"
           data-cf-beacon='{"token": "300d80e7a0bd450f823bfd0231dc3ce9"}'
