@@ -39,6 +39,16 @@
   margin-top: var(--mantine-spacing-xl);
 }
 
+.primaryAction {
+  --button-bg: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-5));
+  --button-hover: light-dark(var(--mantine-color-blue-9), var(--mantine-color-blue-4));
+  --button-color: var(--mantine-color-white);
+}
+
+.mutedText {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-3));
+}
+
 .preview {
   border: 1px solid light-dark(var(--mantine-color-gray-2), rgba(148, 163, 184, 0.22));
   border-radius: 8px;

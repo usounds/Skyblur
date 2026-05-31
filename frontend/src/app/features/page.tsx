@@ -246,7 +246,7 @@ export default async function FeaturesPage() {
               {copy.description}
             </Text>
             <div className={classes.actions}>
-              <Button component="a" href="/console/posts/new" leftSection={<Pencil size={16} />}>
+              <Button component="a" href="/console/posts/new" className={classes.primaryAction} leftSection={<Pencil size={16} />}>
                 {copy.primaryAction}
               </Button>
               <Button component="a" href="/" variant="default">
@@ -275,7 +275,7 @@ export default async function FeaturesPage() {
                   <Text size="sm" fw={700}>{copy.previewVisibilityLabel}</Text>
                 </Group>
                 <Text size="sm" className={classes.previewFullText}>{copy.previewFullText}</Text>
-                <Text size="xs" c="dimmed" mt="xs">{copy.previewVisibility}</Text>
+                <Text size="xs" className={classes.mutedText} mt="xs">{copy.previewVisibility}</Text>
               </div>
             </div>
           </div>
@@ -300,7 +300,7 @@ export default async function FeaturesPage() {
                     <item.icon size={18} strokeWidth={1.6} />
                   </ThemeIcon>
                   <Text fw={700} mb={6}>{item.title}</Text>
-                  <Text size="sm" c="dimmed" lh={1.7}>{item.description}</Text>
+                  <Text size="sm" className={classes.mutedText} lh={1.7}>{item.description}</Text>
                 </article>
               ))}
             </div>
@@ -325,13 +325,13 @@ export default async function FeaturesPage() {
                   </div>
                   <div>
                     <Text fw={700} className={classes.stepTitle}>{item.title}</Text>
-                    <Text size="sm" c="dimmed" lh={1.7} mt={4}>{item.description}</Text>
+                    <Text size="sm" className={classes.mutedText} lh={1.7} mt={4}>{item.description}</Text>
                   </div>
                 </article>
               ))}
             </div>
             <div className={classes.workflowAction}>
-              <Button component="a" href="/console/posts/new" leftSection={<Pencil size={16} />}>
+              <Button component="a" href="/console/posts/new" className={classes.primaryAction} leftSection={<Pencil size={16} />}>
                 {copy.workflowAction}
               </Button>
             </div>

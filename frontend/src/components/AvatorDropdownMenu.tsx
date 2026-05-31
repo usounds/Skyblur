@@ -28,7 +28,7 @@ export function AvatorDropdownMenu() {
                 <Menu.Target>
                     <ActionIcon variant="default" size="lg" aria-label="Account menu">
                         {(isLoggedIn && userProf?.avatar && agent) ? (
-                            <Avatar src={userProf.avatar} radius="xl" size={20} />
+                            <Avatar src={userProf.avatar} alt="" radius="xl" size={20} />
                         ) : (
                             <Users stroke="currentColor" strokeWidth={1.5} size={20} />
                         )}

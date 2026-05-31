@@ -113,9 +113,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <img
                     src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
                     alt="Buy Me A Coffee"
-                    width={174}
-                    height={40}
-                    style={{ height: '40px', width: '174px' }}
+                    width={545}
+                    height={153}
+                    style={{ height: '40px', width: 'auto' }}
                   />
                 </a>
               </div>
