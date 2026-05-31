@@ -1,6 +1,7 @@
 import { cookies, headers } from 'next/headers';
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
+import Link from 'next/link';
 import { Badge, Button, Container, Group, Text, ThemeIcon, Title } from '@mantine/core';
 import { EyeOff, KeyRound, ListChecks, LockKeyhole, LogIn, Pencil, ShieldCheck, UsersRound } from 'lucide-react';
 import { resolveLocale } from '@/logic/locale';
@@ -246,10 +247,10 @@ export default async function FeaturesPage() {
               {copy.description}
             </Text>
             <div className={classes.actions}>
-              <Button component="a" href="/console/posts/new" leftSection={<Pencil size={16} />}>
+              <Button component={Link} href="/console/posts/new" leftSection={<Pencil size={16} />}>
                 {copy.primaryAction}
               </Button>
-              <Button component="a" href="/" variant="default">
+              <Button component={Link} href="/" variant="default">
                 {copy.secondaryAction}
               </Button>
             </div>
