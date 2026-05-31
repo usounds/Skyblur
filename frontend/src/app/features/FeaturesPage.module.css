@@ -18,7 +18,6 @@
 }
 
 .title {
-  font-family: Outfit, var(--mantine-font-family);
   font-size: 44px;
   font-weight: 600;
   line-height: 1.12;
@@ -137,7 +136,6 @@
 }
 
 .sectionTitle {
-  font-family: Outfit, var(--mantine-font-family);
   font-size: 30px;
   font-weight: 600;
   margin: 0;

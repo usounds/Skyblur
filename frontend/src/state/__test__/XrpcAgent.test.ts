@@ -93,6 +93,41 @@ describe("useXrpcAgentStore.checkSession", () => {
     });
   });
 
+  it("retries instead of reusing a stale pending session check promise", async () => {
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (fetchMock.mock.calls.length === 1) {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }
+
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            authenticated: false,
+          }),
+          { headers: { "content-type": "application/json" } },
+        ),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const staleSession = useXrpcAgentStore.getState().checkSession();
+
+    await vi.advanceTimersByTimeAsync(15_001);
+
+    await expect(useXrpcAgentStore.getState().checkSession()).resolves.toEqual({
+      authenticated: false,
+      did: "",
+      pds: "",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await expect(staleSession).resolves.toEqual({ authenticated: false, did: "", pds: "", timedOut: true });
+  });
+
   it("restores a lightweight authenticated session without profile data", async () => {
     vi.stubGlobal(
       "fetch",

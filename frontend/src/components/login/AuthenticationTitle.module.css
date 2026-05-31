@@ -1,5 +1,4 @@
 .title {
-  font-family: Outfit, var(--mantine-font-family);
   font-weight: 500;
 }
 
@@ -8,4 +7,17 @@
   font-size: var(--mantine-font-size-sm);
   text-align: center;
   margin-top: 5px;
+}
+
+.authPaper {
+  padding: 22px;
+}
+
+@media (max-width: 36em) {
+  .authPaper {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
 }

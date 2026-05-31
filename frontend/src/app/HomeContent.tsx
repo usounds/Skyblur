@@ -1,109 +1,19 @@
-"use client";
-import { ResponsiveHeroDemo } from "@/components/HeroDemo";
-import { RecommendedClients } from "@/components/RecommendedClients";
-import { StartButton } from "@/components/StartButton";
-import { Locales, useLocaleStore } from "@/state/Locale";
-import { Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
-import { Eye, EyeOff, Pencil } from 'lucide-react';
-import { useEffect } from "react";
+import { HomeContentClient } from "@/app/HomeContentClient";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
-import classes from './FeaturesGrid.module.css';
-
-interface FeatureProps {
-    icon: React.FC<any>;
-    title: React.ReactNode;
-    description: React.ReactNode;
-}
-
-export function Feature({ icon: Icon, title, description }: FeatureProps) {
-    return (
-        <div>
-            <ThemeIcon variant="light" size={40} radius={40}>
-                <Icon size={18} strokeWidth={1.5} />
-            </ThemeIcon>
-            <Text mt="sm" mb={7} fw={500}>
-                {title}
-            </Text>
-            <Text size="sm" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }} lh={1.6}>
-                {description}
-            </Text>
-        </div>
-    );
-}
+import type { Locales } from "@/state/Locale";
 
 interface HomeContentProps {
     initialLocale: Locales;
 }
 
 export function HomeContent({ initialLocale }: HomeContentProps) {
-    // サーバーから渡された言語で初期描画
-    const storeLocale = useLocaleStore(state => state.locale);
-    const storeLocaleData = useLocaleStore(state => state.localeData);
-    const locale = storeLocale === initialLocale ? (initialLocale === 'en' ? en : ja) : storeLocaleData;
-    const setLocale = useLocaleStore(state => state.setLocale);
-
-    // Zustandストアを同期（クライアント側で他のコンポーネントが使えるように）
-    useEffect(() => {
-        setLocale(initialLocale);
-    }, [initialLocale, setLocale]);
-
-    const features = [
-        {
-            icon: Pencil,
-            title: locale.Home_Landing001Title,
-            description: locale.Home_Landing001Descrtption
-        },
-        {
-            icon: EyeOff,
-            title: locale.Home_Landing002Title,
-            description: locale.Home_Landing002Descrtption
-        },
-        {
-            icon: Eye,
-            title: locale.Home_Landing003Title,
-            description: locale.Home_Landing003Descrtption
-        }
-    ].map((feature, index) => <Feature {...feature} key={index} />);
+    const initialLocaleData = initialLocale === 'en' ? en : ja;
 
     return (
-        <Container className={classes.wrapper}>
-            <div>
-                <Title className={classes.title}>
-                    {locale.Home_WelcomeTitle}
-                </Title>
-            </div>
-
-            <div>
-                <Text size="sm" className={classes.description}>
-                    {locale.Home_WelcomeDescription}
-                </Text>
-            </div>
-
-            <div>
-                <ResponsiveHeroDemo />
-            </div>
-
-            <div>
-                <StartButton />
-            </div>
-
-            <div className={classes.fadeIn} style={{ animationDelay: '0.4s' }}>
-                <SimpleGrid
-                    mt={60}
-                    cols={{ base: 1, sm: 2, md: 3 }}
-                    spacing={{ base: 'xl', md: 50 }}
-                    verticalSpacing={{ base: 'xl', md: 50 }}
-                >
-                    {features}
-                </SimpleGrid>
-            </div>
-
-            <div className="h-8 sm:h-4" />
-
-            <div className={classes.fadeIn} style={{ animationDelay: '0.5s' }}>
-                <RecommendedClients initialLocale={initialLocale} />
-            </div>
-        </Container>
+        <HomeContentClient
+            initialLocale={initialLocale}
+            initialLocaleData={initialLocaleData}
+        />
     );
 }

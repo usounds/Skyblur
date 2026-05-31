@@ -1,13 +1,20 @@
 import MainPostPage from "./main";
 import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
+import { resolveLocale } from "@/logic/locale";
 
 import { Client, simpleFetchHandler } from "@atcute/client";
 
 export async function generateMetadata({ params }: { params: Promise<{ did: string; rkey: string }> }) {
   const { did } = await params;
   const decodedDid = decodeURIComponent(did);
+  const cookieStore = await cookies();
+  const headersList = await headers();
+  const lang = resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
 
-  let description = "伏せた投稿を参照 / Refer to the unblurred text.";
+  let description = lang === 'ja'
+    ? "伏せた投稿を参照"
+    : "View the unblurred Skyblur post.";
 
   try {
     const controller = new AbortController();
@@ -27,7 +34,9 @@ export async function generateMetadata({ params }: { params: Promise<{ did: stri
 
       if (response.ok) {
         const handle = response.data.handle;
-        description = `@${handle}さんの伏せた投稿を参照する`;
+        description = lang === 'ja'
+          ? `@${handle}さんの伏せた投稿を参照する`
+          : `View @${handle}'s unblurred Skyblur post`;
       }
     } finally {
       clearTimeout(timeoutId);

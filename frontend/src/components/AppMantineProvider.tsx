@@ -23,6 +23,11 @@ const variantColorResolver: VariantColorsResolver = (input) => {
 };
 
 const theme = createTheme({
+  fontFamily: 'var(--font-inter), system-ui, sans-serif',
+  headings: {
+    fontFamily: 'var(--font-inter), system-ui, sans-serif',
+    fontWeight: '700',
+  },
   primaryColor: 'blue',
   primaryShade: { light: 8, dark: 5 },
   autoContrast: true,

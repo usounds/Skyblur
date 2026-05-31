@@ -12,6 +12,7 @@ export const localeFlatMapping = {
   "Home_Landing003Title": ["home","landing","003","title"],
   "Home_Landing003Descrtption": ["home","landing","003","description"],
   "Home_HeroDemoBlurDescription": ["home","heroDemo","blurDescription"],
+  "Home_FeaturesLink": ["home","featuresLink"],
   "Menu_CreatePost": ["menu","createPost"],
   "Menu_Post": ["menu","post"],
   "Menu_Logout": ["menu","logout"],

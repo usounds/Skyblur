@@ -1,5 +1,8 @@
 "use client";
-import { useLocale } from "@/state/Locale";
+import en from "@/locales/en";
+import ja from "@/locales/ja";
+import { useLocaleStore } from "@/state/Locale";
+import type { Locales } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { Button, Loader, Text } from '@mantine/core';
 import { Sparkles } from 'lucide-react';
@@ -9,12 +12,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const SESSION_CHECK_RETRY_SECONDS = 30;
 
-export function StartButton() {
-    const { localeData: locale } = useLocale();
+export function StartButton({ initialLocale }: { initialLocale: Locales }) {
+    const storeLocale = useLocaleStore((state) => state.locale);
     const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
     const router = useRouter();
     const did = useXrpcAgentStore((state) => state.did);
     const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
+    const [isLocaleHydrated, setIsLocaleHydrated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isSessionRetryReady, setIsSessionRetryReady] = useState(false);
     const [isSessionRetryWaiting, setIsSessionRetryWaiting] = useState(false);
@@ -23,6 +27,8 @@ export function StartButton() {
     const initialSessionCheckStartedRef = useRef(false);
     const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const activeLocale = isLocaleHydrated ? storeLocale : initialLocale;
+    const locale = activeLocale === 'en' ? en : ja;
 
     const clearSessionCheckTimers = useCallback(() => {
         if (countdownTimerRef.current) {
@@ -79,6 +85,10 @@ export function StartButton() {
             throw err;
         }
     }, [clearSessionCheckTimers]);
+
+    useEffect(() => {
+        setIsLocaleHydrated(true);
+    }, []);
 
     useEffect(() => {
         if (initialSessionCheckStartedRef.current) return;

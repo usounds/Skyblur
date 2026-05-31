@@ -24,6 +24,7 @@ import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { X } from 'lucide-react';
 import { useEffect, useState, useRef } from "react";
+import styles from './AuthenticationTitle.module.css';
 
 
 
@@ -414,12 +415,17 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                     fullWidth
                     size="md"
                     radius="lg"
-                    variant="outline"
+                    px="xs"
+                    variant="default"
                     onClick={handleAtPassportLogin}
                     disabled={isAnyLoading || !agreed}
                     loading={isPassportLoading}
                     loaderProps={{ type: 'dots' }}
-                    leftSection={<AtPassportIcon size={24} />}
+                    styles={{
+                        inner: { gap: 6 },
+                        label: { fontSize: 14 },
+                    }}
+                    leftSection={<AtPassportIcon size={18} />}
                 >
                     {AtPassportUI[lang].title}
                 </Button>
@@ -447,7 +453,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
     return (
         <Container size={320} >
-            <Paper withBorder shadow="sm" p={22} mt={30} radius="md">
+            <Paper withBorder shadow="sm" mt={30} radius="md" className={styles.authPaper}>
                 {loginForm}
             </Paper>
         </Container>

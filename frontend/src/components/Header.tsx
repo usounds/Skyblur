@@ -23,8 +23,8 @@ const Header = () => {
           overflow: 'hidden',
         }}
       >
-        <nav className="px-4 md:px-8 w-full mx-auto flex justify-between items-center flex-row h-full">
-          <Link href="/" className="text-xl font-semibold">
+        <nav className="px-4 md:px-8 w-full mx-auto grid grid-cols-[1fr_auto_1fr] items-center h-full">
+          <Link href="/" className="col-start-1 justify-self-start text-xl font-semibold">
             Skyblur
           </Link>
           <DynamicHeader />

@@ -1,11 +1,11 @@
-"use client";
-import { Avatar, Box, Card, Group, Text, ThemeIcon, Stack, Code } from '@mantine/core';
+import { Avatar, Box, Card, Group, Text, ThemeIcon, Stack } from '@mantine/core';
 import { ArrowDown, ArrowRight } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
-import { useLocale } from '@/state/Locale';
+import en from '@/locales/en';
 
-export function HeroDemo() {
-    const { localeData: locale } = useLocale();
+type LocaleData = typeof en;
+
+export function HeroDemo({ locale }: { locale: LocaleData }) {
     return (
         <Group align="center" justify="center" gap="xl" my="xl" visibleFrom="sm">
             {/* Input Side (Skyblur) */}
@@ -109,13 +109,11 @@ export function HeroDemo() {
     );
 }
 
-// Mobile Version (Vertical Stack)
-export function ResponsiveHeroDemo() {
-    const { localeData: locale } = useLocale();
+export function ResponsiveHeroDemo({ locale }: { locale: LocaleData }) {
     return (
         <Box my="xl">
             {/* Desktop View */}
-            <HeroDemo />
+            <HeroDemo locale={locale} />
 
             {/* Mobile View */}
             <Box hiddenFrom="sm">

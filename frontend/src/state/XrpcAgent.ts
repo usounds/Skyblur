@@ -29,10 +29,13 @@ type SessionCheckResult = {
 
 type XrpcAgentCache = {
   sessionCheckPromise: Promise<SessionCheckResult> | null;
+  sessionCheckStartedAt: number;
   lastSessionResult: SessionCheckResult | null;
   profFetchPromise: Promise<void> | null;
   sessionCheckGeneration: number;
 };
+
+const sessionCheckStaleMs = 15_000;
 
 type Action = {
   setUserProf: (userProf: AppBskyActorDefs.ProfileViewDetailed | null) => void;
@@ -50,6 +53,7 @@ const host = typeof window !== 'undefined' ? new URL(window.location.origin).hos
 const xrpcService = typeof window !== 'undefined' ? window.location.origin : '';
 const moduleCache: XrpcAgentCache = {
   sessionCheckPromise: null,
+  sessionCheckStartedAt: 0,
   lastSessionResult: null,
   profFetchPromise: null,
   sessionCheckGeneration: 0,
@@ -64,12 +68,14 @@ declare global {
 function getXrpcAgentCache() {
   if (typeof window === 'undefined') return moduleCache;
 
-  window.__skyblurXrpcAgentCache ??= {
-    sessionCheckPromise: null,
-    lastSessionResult: null,
-    profFetchPromise: null,
-    sessionCheckGeneration: 0,
-  };
+    window.__skyblurXrpcAgentCache ??= {
+      sessionCheckPromise: null,
+      sessionCheckStartedAt: 0,
+      lastSessionResult: null,
+      profFetchPromise: null,
+      sessionCheckGeneration: 0,
+    };
+  window.__skyblurXrpcAgentCache.sessionCheckStartedAt ??= 0;
   window.__skyblurXrpcAgentCache.sessionCheckGeneration ??= 0;
   return window.__skyblurXrpcAgentCache;
 }
@@ -155,6 +161,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         cache.sessionCheckGeneration += 1;
         cache.lastSessionResult = null;
         cache.sessionCheckPromise = null;
+        cache.sessionCheckStartedAt = 0;
       }
       set({ isSessionChecked });
     },
@@ -178,9 +185,17 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         }
         return cache.lastSessionResult;
       }
-      if (cache.sessionCheckPromise) return cache.sessionCheckPromise;
+      if (cache.sessionCheckPromise) {
+        const isStale = cache.sessionCheckStartedAt > 0 && Date.now() - cache.sessionCheckStartedAt > sessionCheckStaleMs;
+        if (!isStale) return cache.sessionCheckPromise;
+
+        cache.sessionCheckGeneration += 1;
+        cache.sessionCheckPromise = null;
+        cache.sessionCheckStartedAt = 0;
+      }
 
       const sessionCheckGeneration = cache.sessionCheckGeneration;
+      cache.sessionCheckStartedAt = Date.now();
       const sessionCheckPromise = (async () => {
         try {
           const res = await fetchWithTimeout('/api/oauth/session', {
@@ -235,6 +250,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         } finally {
           if (cache.sessionCheckGeneration === sessionCheckGeneration) {
             cache.sessionCheckPromise = null;
+            cache.sessionCheckStartedAt = 0;
           }
         }
       })();

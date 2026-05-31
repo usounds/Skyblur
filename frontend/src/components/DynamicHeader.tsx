@@ -3,8 +3,9 @@ import LanguageToggle from '@/components/LanguageToggle';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
+import { ActionIcon, Box, Drawer, Group, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { Check, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from "react";
@@ -14,6 +15,7 @@ const DynamicHeader = () => {
   const did = useXrpcAgentStore(state => state.did);
   const userProf = useXrpcAgentStore((state) => state.userProf);
   const [isMounted, setIsMounted] = useState(false);
+  const [isDrawerOpened, setIsDrawerOpened] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const loginError = searchParams.get('loginError');
@@ -91,17 +93,62 @@ const DynamicHeader = () => {
 
   return (
     <>
-      <div className="flex flex-row items-center gap-3 sm:mt-0">
+      <Box visibleFrom="sm" className="col-start-2 justify-self-center">
+        <Group gap="md">
         <Link href="/features" className="flex-none text-sm mr-2">
           {locale?.Menu_Features}
         </Link>
         <Link href="/termofuse" className="flex-none text-sm mr-2">
           {locale?.Menu_TermOfUse}
         </Link>
+        </Group>
+      </Box>
+      <Box visibleFrom="sm" className="col-start-3 justify-self-end">
+        <Group gap="sm">
         <AvatorDropdownMenu />
         <LanguageToggle />
         <SwitchColorMode />
-      </div>
+        </Group>
+      </Box>
+      <ActionIcon
+        hiddenFrom="sm"
+        className="col-start-3 justify-self-end"
+        variant="default"
+        aria-label="Menu"
+        onClick={() => setIsDrawerOpened(true)}
+      >
+        <Menu size={20} />
+      </ActionIcon>
+      <Drawer
+        opened={isDrawerOpened}
+        onClose={() => setIsDrawerOpened(false)}
+        position="right"
+        size="xs"
+        title="Skyblur"
+        padding="md"
+      >
+        <Stack gap="lg">
+          <Stack gap="sm">
+            <Link href="/features" className="text-sm" onClick={() => setIsDrawerOpened(false)}>
+              {locale?.Menu_Features}
+            </Link>
+            <Link href="/termofuse" className="text-sm" onClick={() => setIsDrawerOpened(false)}>
+              {locale?.Menu_TermOfUse}
+            </Link>
+          </Stack>
+          <Stack gap="xs">
+            <Text size="xs" c="dimmed">Account</Text>
+            <AvatorDropdownMenu />
+          </Stack>
+          <Stack gap="xs">
+            <Text size="xs" c="dimmed">Display</Text>
+            <Group gap="xs">
+              <LanguageToggle />
+              <SwitchColorMode />
+            </Group>
+          </Stack>
+        </Stack>
+      </Drawer>
     </>
   );
 };

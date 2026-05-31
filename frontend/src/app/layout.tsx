@@ -13,6 +13,7 @@ import { BlueskyIcon, GithubIcon } from "@/components/Icons";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { Viewport } from "next";
+import { Inter } from "next/font/google";
 import { detectLocaleFromAcceptLanguage, resolveLocale } from "@/logic/locale";
 import { AppMantineProvider } from "@/components/AppMantineProvider";
 
@@ -21,6 +22,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
 };
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-inter",
+  display: "optional",
+});
 
 export async function generateMetadata() {
   const cookieStore = await cookies();
@@ -67,13 +75,45 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
 
   return (
-    <html {...mantineHtmlProps} lang={lang} className="notranslate" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap" rel="stylesheet" />
-      </head>
+    <html {...mantineHtmlProps} lang={lang} className={`${inter.variable} notranslate`} suppressHydrationWarning>
       <body>
+        <Script
+          id="console-back-forward-recovery"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+(function () {
+  function shouldRecoverConsoleFallback() {
+    if (!location.pathname.startsWith("/console")) return false;
+    if (!document.body || !document.body.innerText.includes("Loading...")) return false;
+    return !document.querySelector("[data-nextjs-scroll-focus-boundary]");
+  }
+
+  window.addEventListener("pageshow", function (event) {
+    var isBackForward = event.persisted;
+
+    try {
+      isBackForward = isBackForward || performance.getEntriesByType("navigation").some(function (entry) {
+        return entry.type === "back_forward";
+      });
+    } catch (_) {}
+
+    if (!isBackForward) return;
+
+    window.setTimeout(function () {
+      if (!shouldRecoverConsoleFallback()) return;
+
+      var reloadKey = "skyblur.back-forward-reload:" + location.href;
+      if (sessionStorage.getItem(reloadKey) === "1") return;
+
+      sessionStorage.setItem(reloadKey, "1");
+      location.reload();
+    }, 100);
+  });
+})();
+            `,
+          }}
+        />
         <ServiceWorkerRegister />
         <ColorSchemeScript />
         <AppMantineProvider>
@@ -84,16 +124,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {children}
             </Suspense>
           </main>
-          <footer className="flex gap-6 flex-wrap items-center justify-center py-4 mt-4 text-gray-400">
+          <footer
+            className="flex gap-6 flex-wrap items-center justify-center py-4 mt-4"
+            style={{ color: 'var(--mantine-color-dimmed)' }}
+          >
             <div className="text-center mb-4">
               <div className="mb-2">
-                <Text size="sm" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>Developed by usounds.work</Text>
+                <Text size="sm" c="inherit">Developed by usounds.work</Text>
               </div>
               <div className="flex justify-center space-x-4 mb-4">
                 <a
                   href="https://bsky.app/profile/skyblur.uk"
                   target="_blank"
-                  className="transition duration-100 "
+                  className="transition duration-100 hover:opacity-80"
                   aria-label="Bluesky"
                 >
                   <BlueskyIcon size={20} />
@@ -101,7 +144,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <a
                   href="https://github.com/usounds/Skyblur"
                   target="_blank"
-                  className=" transition duration-100"
+                  className="transition duration-100 hover:opacity-80"
                   aria-label="GitHub"
                 >
                   <GithubIcon size={20} />
