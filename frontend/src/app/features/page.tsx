@@ -281,7 +281,7 @@ export default async function FeaturesPage() {
           </div>
         </section>
 
-        <ScrollReveal>
+        <ScrollReveal resetKey={lang}>
           <section className={classes.section}>
             <Title order={2} className={classes.sectionTitle}>
               {copy.visibilityTitle}

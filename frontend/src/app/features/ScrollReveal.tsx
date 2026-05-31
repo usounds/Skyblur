@@ -5,9 +5,10 @@ import classes from './FeaturesPage.module.css';
 
 type ScrollRevealProps = {
   children: ReactNode;
+  resetKey?: string;
 };
 
-export function ScrollReveal({ children }: ScrollRevealProps) {
+export function ScrollReveal({ children, resetKey }: ScrollRevealProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -17,6 +18,8 @@ export function ScrollReveal({ children }: ScrollRevealProps) {
     root.dataset.enhanced = 'true';
 
     const items = Array.from(root.querySelectorAll<HTMLElement>(`.${classes.revealItem}`));
+    items.forEach((item) => item.classList.remove(classes.revealed));
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -35,7 +38,7 @@ export function ScrollReveal({ children }: ScrollRevealProps) {
     items.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, []);
+  }, [resetKey]);
 
   return (
     <div ref={rootRef} className={classes.revealRoot}>
