@@ -125,6 +125,14 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
     }
     router.push("/console");
   }, [mode, onExit, router, setHasUnsavedComposerChanges]);
+  const completeToConsole = useCallback(() => {
+    setActiveCreateSession(false);
+    setHasUnsavedComposerChanges(false);
+    if (onExit) {
+      onExit();
+    }
+    router.push("/console");
+  }, [onExit, router, setHasUnsavedComposerChanges]);
   useEffect(() => {
     return () => {
       suppressCreateDraftSyncRef.current = false;
@@ -408,7 +416,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
           clearSensitiveDraft();
           clearTempPost();
           setHasUnsavedComposerChanges(false);
-          exitToConsole();
+          completeToConsole();
         }
         return result;
       }}
