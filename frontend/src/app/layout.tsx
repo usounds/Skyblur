@@ -50,6 +50,9 @@ export async function generateMetadata() {
     metadataBase: new URL('https://skyblur.uk'),
     title: title,
     description: locale.Common_Description,
+    other: {
+      google: "notranslate",
+    },
     openGraph: {
       title: title,
       description: description,
@@ -75,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
 
   return (
-    <html {...mantineHtmlProps} lang={lang} className={`${inter.variable} notranslate`} suppressHydrationWarning>
+    <html {...mantineHtmlProps} lang={lang} translate="no" className={`${inter.variable} notranslate`} suppressHydrationWarning>
       <body>
         <Script
           id="console-back-forward-recovery"
