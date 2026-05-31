@@ -1,12 +1,12 @@
 import { cookies, headers } from 'next/headers';
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
-import Link from 'next/link';
-import { Badge, Button, Container, Group, Text, ThemeIcon, Title } from '@mantine/core';
+import { Badge, Container, Group, Text, ThemeIcon, Title } from '@mantine/core';
 import { EyeOff, KeyRound, ListChecks, LockKeyhole, LogIn, Pencil, ShieldCheck, UsersRound } from 'lucide-react';
 import { resolveLocale } from '@/logic/locale';
 import en from '@/locales/en';
 import ja from '@/locales/ja';
+import { FeatureActions, FeaturePrimaryAction } from './FeatureActions';
 import { ScrollReveal } from './ScrollReveal';
 import classes from './FeaturesPage.module.css';
 
@@ -246,14 +246,7 @@ export default async function FeaturesPage() {
             <Text className={classes.description}>
               {copy.description}
             </Text>
-            <div className={classes.actions}>
-              <Button component={Link} href="/console/posts/new" leftSection={<Pencil size={16} />}>
-                {copy.primaryAction}
-              </Button>
-              <Button component={Link} href="/" variant="default">
-                {copy.secondaryAction}
-              </Button>
-            </div>
+            <FeatureActions primaryAction={copy.primaryAction} secondaryAction={copy.secondaryAction} />
           </div>
 
           <div className={classes.preview} aria-label={copy.previewTitle}>
@@ -332,9 +325,7 @@ export default async function FeaturesPage() {
               ))}
             </div>
             <div className={classes.workflowAction}>
-              <Button component="a" href="/console/posts/new" leftSection={<Pencil size={16} />}>
-                {copy.workflowAction}
-              </Button>
+              <FeaturePrimaryAction label={copy.workflowAction} />
             </div>
           </section>
         </ScrollReveal>
