@@ -8,17 +8,18 @@ import classes from "./FeaturesPage.module.css";
 type FeatureActionsProps = {
   primaryAction: string;
   secondaryAction: string;
+  homeHref: string;
 };
 
 type FeaturePrimaryActionProps = {
   label: string;
 };
 
-export function FeatureActions({ primaryAction, secondaryAction }: FeatureActionsProps) {
+export function FeatureActions({ primaryAction, secondaryAction, homeHref }: FeatureActionsProps) {
   return (
     <div className={classes.actions}>
       <FeaturePrimaryAction label={primaryAction} />
-      <Button component={Link} href="/" variant="default">
+      <Button component={Link} href={homeHref} variant="default">
         {secondaryAction}
       </Button>
     </div>

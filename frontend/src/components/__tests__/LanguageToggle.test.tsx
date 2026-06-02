@@ -10,6 +10,20 @@ import LanguageToggle from "../LanguageToggle";
 import { useComposerLocaleSwitchGuardStore } from "@/state/ComposerLocaleSwitchGuard";
 import { useLocaleStore } from "@/state/Locale";
 
+const routerPushMock = vi.fn();
+const routerRefreshMock = vi.fn();
+let pathnameMock = "/";
+let searchParamsMock = "";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => pathnameMock,
+  useRouter: () => ({
+    push: routerPushMock,
+    refresh: routerRefreshMock,
+  }),
+  useSearchParams: () => new URLSearchParams(searchParamsMock),
+}));
+
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
@@ -29,6 +43,10 @@ beforeAll(() => {
 afterEach(() => {
   useLocaleStore.getState().setLocale("ja");
   useComposerLocaleSwitchGuardStore.getState().clearHasUnsavedComposerChanges();
+  pathnameMock = "/";
+  searchParamsMock = "";
+  routerPushMock.mockReset();
+  routerRefreshMock.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -48,6 +66,8 @@ describe("LanguageToggle", () => {
     await user.click(screen.getAllByRole("button", { name: "Toggle language" })[0]!);
 
     expect(useLocaleStore.getState().locale).toBe("en");
+    expect(routerPushMock).toHaveBeenCalledWith("/en");
+    expect(routerRefreshMock).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -73,5 +93,6 @@ describe("LanguageToggle", () => {
     const proceedButton = await screen.findByText("切り替える");
     await user.click(proceedButton);
     expect(useLocaleStore.getState().locale).toBe("en");
+    expect(routerPushMock).toHaveBeenCalledWith("/en");
   });
 });

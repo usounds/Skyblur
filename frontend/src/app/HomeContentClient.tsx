@@ -5,6 +5,7 @@ import { RecommendedClients } from "@/components/RecommendedClients";
 import { StartButton } from "@/components/StartButton";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
+import { getLocalizedHref } from "@/logic/localePath";
 import type { Locales } from "@/state/Locale";
 import { useLocaleStore } from "@/state/Locale";
 import { Anchor, Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
@@ -45,6 +46,7 @@ interface HomeContentClientProps {
 export function HomeContentClient({ initialLocale, initialLocaleData }: HomeContentClientProps) {
     const storeLocale = useLocaleStore((state) => state.locale);
     const [isLocaleHydrated, setIsLocaleHydrated] = useState(false);
+    const activeLocale = isLocaleHydrated ? storeLocale : initialLocale;
     const locale = isLocaleHydrated ? (storeLocale === 'en' ? en : ja) : initialLocaleData;
 
     useEffect(() => {
@@ -92,7 +94,7 @@ export function HomeContentClient({ initialLocale, initialLocaleData }: HomeCont
             </div>
 
             <div className={classes.featuresLinkWrap}>
-                <Anchor component={Link} href="/features" size="sm" className={classes.featuresLink}>
+                <Anchor component={Link} href={getLocalizedHref(activeLocale, "features")} size="sm" className={classes.featuresLink}>
                     {locale.Home_FeaturesLink}
                 </Anchor>
             </div>

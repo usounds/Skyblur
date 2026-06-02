@@ -1,10 +1,15 @@
 import { scopeList } from "./constants";
+import type { Locales } from "@/state/Locale";
 
-export function getClientMetadata(origin: string) {
+export function getClientMetadata(origin: string, locale: Locales = "ja") {
+  const termsUri = `${origin}/${locale}/termofuse`;
+
   return {
     client_id: `${origin}/oauth-client-metadata.json`,
     client_name: "Skyblur",
     client_uri: origin,
+    tos_uri: termsUri,
+    policy_uri: termsUri,
     redirect_uris: [`${origin}/api/oauth/callback`],
     jwks_uri: `${origin}/api/oauth/jwks.json`,
     scope: scopeList,

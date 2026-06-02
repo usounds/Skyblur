@@ -91,6 +91,12 @@ export function StartButton({ initialLocale }: { initialLocale: Locales }) {
     }, []);
 
     useEffect(() => {
+        if (sessionCheckSecondsLeft !== 0 || !isSessionRetryWaiting) return;
+        setIsSessionRetryWaiting(false);
+        setIsSessionRetryReady(true);
+    }, [isSessionRetryWaiting, sessionCheckSecondsLeft]);
+
+    useEffect(() => {
         if (initialSessionCheckStartedRef.current) return;
         initialSessionCheckStartedRef.current = true;
         if (useXrpcAgentStore.getState().isSessionChecked) return;

@@ -16,11 +16,6 @@ export function proxy(request: NextRequest) {
     if (routerState && routerState.length > 5120) {
         console.warn(`[Proxy] usage of x-nextjs-router-state detected with size ${routerState.length}. Stripping header.`);
         headers.delete('x-nextjs-router-state');
-        return NextResponse.next({
-            request: {
-                headers: headers,
-            },
-        });
     }
 
     // 1. クッキーから言語を取得
@@ -28,12 +23,20 @@ export function proxy(request: NextRequest) {
 
     // 2. ブラウザの言語設定を取得
     const acceptLanguage = request.headers.get('accept-language');
+    const pathLocale = normalizeLocale(pathname.split('/').filter(Boolean)[0]);
+    const resolvedLocale = pathLocale ?? resolveLocale(langCookie, acceptLanguage);
+    headers.set('x-skyblur-locale', resolvedLocale);
 
-    const response = NextResponse.next();
+    const response = NextResponse.next({
+        request: {
+            headers: headers,
+        },
+    });
 
     // クッキーがない、または不正な場合は、SSR と同じ判定で言語を保存する
-    if (!normalizeLocale(langCookie)) {
-        response.cookies.set('lang', resolveLocale(langCookie, acceptLanguage), {
+    // locale 付きURLでは、そのURLの言語を次回のUI表示にも反映する
+    if (!normalizeLocale(langCookie) || (pathLocale && langCookie !== pathLocale)) {
+        response.cookies.set('lang', resolvedLocale, {
             path: '/',
             maxAge: 60 * 60 * 24 * 365, // 1 year
             sameSite: 'lax',

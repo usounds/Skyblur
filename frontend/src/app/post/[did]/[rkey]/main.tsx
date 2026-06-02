@@ -59,6 +59,7 @@ export const PostPage = () => {
     const [isRestrictedFetching, setIsRestrictedFetching] = useState<boolean>(false);
     const postFetchRequestIdRef = useRef(0);
     const authenticatedRefetchKeyRef = useRef('');
+    const restrictedNotificationKeyRef = useRef('');
 
     const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
     const bskyPostAtUri = 'at://' + did + "/app.bsky.feed.post/" + rkey
@@ -170,7 +171,13 @@ export const PostPage = () => {
                     }
 
                     if (errorMsg) {
+                        const notificationKey = `${aturi}:${code}:${errorMsg}`;
+                        if (restrictedNotificationKeyRef.current === notificationKey) {
+                            return;
+                        }
+                        restrictedNotificationKeyRef.current = notificationKey;
                         notifications.show({
+                            id: `post-restricted-${code}-${rkey}`,
                             title: 'Error',
                             message: errorMsg,
                             color: 'red',

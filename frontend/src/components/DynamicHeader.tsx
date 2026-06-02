@@ -1,5 +1,6 @@
 import { AvatorDropdownMenu } from '@/components/AvatorDropdownMenu';
 import LanguageToggle from '@/components/LanguageToggle';
+import { getLocalizedHref, getLocalizedPublicPage } from '@/logic/localePath';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
@@ -11,7 +12,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from "react";
 
 const DynamicHeader = () => {
-  const { localeData: locale } = useLocale();
+  const { localeData: locale, locale: localeString } = useLocale();
   const did = useXrpcAgentStore(state => state.did);
   const userProf = useXrpcAgentStore((state) => state.userProf);
   const [isMounted, setIsMounted] = useState(false);
@@ -33,7 +34,7 @@ const DynamicHeader = () => {
     const syncSession = async () => {
       if (sessionSyncStartedRef.current) return;
       sessionSyncStartedRef.current = true;
-      if (pathname === '/') return;
+      if (getLocalizedPublicPage(pathname) !== null) return;
       if (useXrpcAgentStore.getState().isSessionChecked) return;
 
       const id = 'session-check';
@@ -90,15 +91,17 @@ const DynamicHeader = () => {
 
   // lang パラメータがあるのにまだ適用されていない場合…は不要になったのでブロック自体削除
   // if (langParam && !rehydrated) return null;
+  const featuresHref = getLocalizedHref(localeString, 'features');
+  const termOfUseHref = getLocalizedHref(localeString, 'termofuse');
 
   return (
     <>
       <Box visibleFrom="sm" className="col-start-2 justify-self-center">
         <Group gap="md">
-        <Link href="/features" className="flex-none text-sm mr-2">
+        <Link href={featuresHref} className="flex-none text-sm mr-2">
           {locale?.Menu_Features}
         </Link>
-        <Link href="/termofuse" className="flex-none text-sm mr-2">
+        <Link href={termOfUseHref} className="flex-none text-sm mr-2">
           {locale?.Menu_TermOfUse}
         </Link>
         </Group>
@@ -129,10 +132,10 @@ const DynamicHeader = () => {
       >
         <Stack gap="lg">
           <Stack gap="sm">
-            <Link href="/features" className="text-sm" onClick={() => setIsDrawerOpened(false)}>
+            <Link href={featuresHref} className="text-sm" onClick={() => setIsDrawerOpened(false)}>
               {locale?.Menu_Features}
             </Link>
-            <Link href="/termofuse" className="text-sm" onClick={() => setIsDrawerOpened(false)}>
+            <Link href={termOfUseHref} className="text-sm" onClick={() => setIsDrawerOpened(false)}>
               {locale?.Menu_TermOfUse}
             </Link>
           </Stack>

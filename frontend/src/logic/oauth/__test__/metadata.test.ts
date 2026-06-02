@@ -9,6 +9,8 @@ describe("getClientMetadata", () => {
       client_id: "https://skyblur.example/oauth-client-metadata.json",
       client_name: "Skyblur",
       client_uri: "https://skyblur.example",
+      tos_uri: "https://skyblur.example/ja/termofuse",
+      policy_uri: "https://skyblur.example/ja/termofuse",
       redirect_uris: ["https://skyblur.example/api/oauth/callback"],
       jwks_uri: "https://skyblur.example/api/oauth/jwks.json",
       scope: scopeList,
@@ -18,5 +20,12 @@ describe("getClientMetadata", () => {
       token_endpoint_auth_signing_alg: "ES256",
       dpop_bound_access_tokens: true,
     });
+  });
+
+  it("localizes OAuth terms and policy URLs", () => {
+    const metadata = getClientMetadata("https://skyblur.example", "en");
+
+    expect(metadata.tos_uri).toBe("https://skyblur.example/en/termofuse");
+    expect(metadata.policy_uri).toBe("https://skyblur.example/en/termofuse");
   });
 });

@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import HtmlLang from "@/components/HtmlLang";
 import PageLoading from "@/components/PageLoading";
 import { Suspense } from "react";
 import { ColorSchemeScript, mantineHtmlProps, Text } from '@mantine/core';
@@ -14,7 +15,7 @@ import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { Viewport } from "next";
 import { Inter } from "next/font/google";
-import { detectLocaleFromAcceptLanguage, resolveLocale } from "@/logic/locale";
+import { detectLocaleFromAcceptLanguage, normalizeLocale, resolveLocale } from "@/logic/locale";
 import { AppMantineProvider } from "@/components/AppMantineProvider";
 
 export const viewport: Viewport = {
@@ -36,7 +37,7 @@ export async function generateMetadata() {
 
   const langCookie = cookieStore.get('lang')?.value;
   const acceptLanguage = headersList.get('accept-language');
-  const lang = resolveLocale(langCookie, acceptLanguage);
+  const lang = normalizeLocale(headersList.get('x-skyblur-locale')) ?? resolveLocale(langCookie, acceptLanguage);
   const isHybridFallback = !langCookie && !detectLocaleFromAcceptLanguage(acceptLanguage);
 
   const locale = lang === 'en' ? en : ja;
@@ -75,7 +76,7 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const headersList = await headers();
-  const lang = resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
+  const lang = normalizeLocale(headersList.get('x-skyblur-locale')) ?? resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
 
   return (
     <html {...mantineHtmlProps} lang={lang} translate="no" className={`${inter.variable} notranslate`} suppressHydrationWarning>
@@ -118,10 +119,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
         <ServiceWorkerRegister />
+        <HtmlLang initialLocale={lang} />
         <ColorSchemeScript />
         <AppMantineProvider>
           <Notifications position="top-right" zIndex={1000} />
-          <Header />
+          <Header initialLocale={lang} />
           <main>
             <Suspense fallback={<PageLoading />}>
               {children}

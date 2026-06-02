@@ -384,6 +384,8 @@ test("OAuth metadata points to the Next.js API OAuth routes", async ({ request, 
   const metadata = await res.json();
   const oauthOrigin = expectedOAuthOrigin(baseURL);
   expect(metadata.client_id).toBe(`${oauthOrigin}/oauth-client-metadata.json`);
+  expect([`${oauthOrigin}/ja/termofuse`, `${oauthOrigin}/en/termofuse`]).toContain(metadata.tos_uri);
+  expect(metadata.policy_uri).toBe(metadata.tos_uri);
   expect(metadata.redirect_uris).toEqual([`${oauthOrigin}/api/oauth/callback`]);
   expect(metadata.jwks_uri).toBe(`${oauthOrigin}/api/oauth/jwks.json`);
   expect(metadata.grant_types).toEqual(["authorization_code", "refresh_token"]);

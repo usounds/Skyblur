@@ -1,10 +1,11 @@
 "use client";
 
 import { useComposerLocaleSwitchGuardStore } from "@/state/ComposerLocaleSwitchGuard";
+import { getAlternateLocalizedHref } from "@/logic/localePath";
 import { Locales, useLocale, useLocaleStore } from "@/state/Locale";
 import { ActionIcon, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { Languages } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 
 const LanguageToggle: React.FC = () => {
@@ -13,10 +14,18 @@ const LanguageToggle: React.FC = () => {
   const hasUnsavedComposerChanges = useComposerLocaleSwitchGuardStore((state) => state.hasUnsavedComposerChanges);
   const [pendingLocale, setPendingLocale] = useState<Locales | null>(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   const applyLocale = (newLocale: Locales) => {
     setLocale(newLocale);
+    const localizedHref = getAlternateLocalizedHref(pathname, newLocale);
+    if (localizedHref) {
+      const query = searchParams.toString();
+      router.push(query ? `${localizedHref}?${query}` : localizedHref);
+      return;
+    }
+
     if (!hasUnsavedComposerChanges && !pathname.startsWith("/console/posts/")) {
       router.refresh();
     }

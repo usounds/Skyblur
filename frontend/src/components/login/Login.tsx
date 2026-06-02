@@ -3,6 +3,7 @@ import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { AtPassport } from '@atpassport/client/core';
 import { AtPassportIcon, AtPassportUI } from '@atpassport/client/ui';
+import { getLocalizedHref } from '@/logic/localePath';
 import { getLikelyOAuthHandleTypo, normalizeOAuthHandle } from '@/logic/oauth/handle';
 import {
     Anchor,
@@ -344,7 +345,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 label={
                     <Text size="sm">
                         {locale.Login_AgreeToTerms}{' '}
-                        <Anchor href="/termofuse" target="_blank">
+                        <Anchor href={getLocalizedHref(lang, 'termofuse')} target="_blank">
                             {locale.Menu_TermOfUse}
                         </Anchor>
                     </Text>

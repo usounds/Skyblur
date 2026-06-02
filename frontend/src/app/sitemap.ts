@@ -1,21 +1,72 @@
 import type { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const alternates = {
+    home: {
+      ja: 'https://skyblur.uk/ja',
+      en: 'https://skyblur.uk/en',
+      'x-default': 'https://skyblur.uk',
+    },
+    features: {
+      ja: 'https://skyblur.uk/ja/features',
+      en: 'https://skyblur.uk/en/features',
+      'x-default': 'https://skyblur.uk/features',
+    },
+    termofuse: {
+      ja: 'https://skyblur.uk/ja/termofuse',
+      en: 'https://skyblur.uk/en/termofuse',
+      'x-default': 'https://skyblur.uk/termofuse',
+    },
+  };
+
   return [
     {
-      url: 'https://skyblur.uk',
+      url: 'https://skyblur.uk/ja',
       changeFrequency: 'monthly',
-      priority: 1
+      priority: 1,
+      alternates: {
+        languages: alternates.home,
+      },
     },
     {
-      url: 'https://skyblur.uk/features',
+      url: 'https://skyblur.uk/en',
       changeFrequency: 'monthly',
-      priority: 0.8
+      priority: 1,
+      alternates: {
+        languages: alternates.home,
+      },
     },
     {
-      url: 'https://skyblur.uk/termofuse',
+      url: 'https://skyblur.uk/ja/features',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+      alternates: {
+        languages: alternates.features,
+      },
+    },
+    {
+      url: 'https://skyblur.uk/en/features',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+      alternates: {
+        languages: alternates.features,
+      },
+    },
+    {
+      url: 'https://skyblur.uk/ja/termofuse',
       changeFrequency: 'yearly',
-      priority: 0.5
+      priority: 0.5,
+      alternates: {
+        languages: alternates.termofuse,
+      },
+    },
+    {
+      url: 'https://skyblur.uk/en/termofuse',
+      changeFrequency: 'yearly',
+      priority: 0.5,
+      alternates: {
+        languages: alternates.termofuse,
+      },
     }
   ];
 }
