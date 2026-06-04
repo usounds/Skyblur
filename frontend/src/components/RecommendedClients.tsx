@@ -26,15 +26,15 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
             name: locale.Home_TokimekiName,
             href: locale.Home_TokimekiUrl,
             platforms: [
-                { label: "Web", href: locale.Home_TokimekiUrl },
                 { label: "Android", href: locale.Home_TokimekiAndroidUrl },
+                { label: "Web", href: locale.Home_TokimekiUrl },
             ],
         },
         {
             name: locale.Home_HagoromoName,
             href: locale.Home_HagoromoUrl,
             platforms: [
-                { label: locale.Home_HagoromoPlatforms },
+                { label: locale.Home_HagoromoPlatforms, href: locale.Home_HagoromoUrl },
             ],
         },
         {
