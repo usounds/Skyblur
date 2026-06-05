@@ -2,3 +2,6 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - workerd
+
+overrides:
+  flatted: ^3.4.2
