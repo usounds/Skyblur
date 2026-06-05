@@ -507,11 +507,14 @@ test.describe("home start session flows", () => {
     });
     await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
     await gotoAndSkipIfUnavailable(page, "/");
+    await page.waitForTimeout(100);
 
     await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
     await page.clock.runFor(10_000);
+    await page.waitForTimeout(100);
     await expect(page.getByText("Checking session... retry available in 20s")).toBeVisible();
     await page.clock.runFor(20_000);
+    await page.waitForTimeout(100);
 
     await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
     await page.getByRole("button", { name: "Retry" }).click();
@@ -2014,6 +2017,7 @@ test("/console restricted post delete still completes when stored cleanup fails"
   await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("dialog", { name: "Are you sure you want to delete this post?" }).getByRole("button", { name: "Delete" }).click();
+  await page.waitForTimeout(500);
 
   await expect(page.getByText("Delete completed!")).toBeVisible();
   await expect(page.getByText("*****")).toHaveCount(0);
