@@ -1,3 +1,8 @@
+---
+name: deployment
+description: Skyblurのフロントエンド、バックエンド、およびChrome拡張機能のデプロイプロセスを完全に自動化して管理します。
+---
+
 # Deployment Skill (Full Automation)
 
 このスキルは、Skyblurのフロントエンド、バックエンド、およびChrome拡張機能のデプロイプロセスを完全に自動化して管理します。

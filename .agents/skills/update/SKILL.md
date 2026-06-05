@@ -1,3 +1,8 @@
+---
+name: update
+description: frontend および backend ディレクトリにおけるパッケージの更新と脆弱性の自動修正を管理します。
+---
+
 # Update & Security Skill (Full Automation)
 
 このスキルは、`frontend` および `backend` ディレクトリにおけるパッケージの更新と、脆弱性の自動修正を完全に自動化して管理します。
