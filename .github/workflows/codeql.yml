@@ -1,0 +1,46 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * 0' # 毎週日曜日 00:00 UTC に実行
+  workflow_dispatch: # 手動実行を可能にする
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript-typescript' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # CodeQL ツールの初期化
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        # 必要に応じてクエリパックを指定可能
+        # queries: security-extended,security-and-quality
+
+    # JavaScript/TypeScript の場合、明示的なビルドステップは不要ですが、
+    # 必要に応じて依存関係のインストール等を入れることも可能です。
+    # 通常は Autobuild またはビルドなしで分析が可能です。
+
+    # 解析の実行
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
