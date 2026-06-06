@@ -327,8 +327,16 @@ export function renderFeaturesPage(lang: Locales) {
                 </article>
               ))}
             </div>
-            <div className={classes.workflowAction}>
-              <FeaturePrimaryAction label={copy.workflowAction} />
+            <div className={`${classes.bottomCtaCard} ${classes.revealItem}`} style={{ '--reveal-delay': '280ms' } as CSSProperties}>
+              <Title order={3} className={classes.bottomCtaTitle}>
+                {locale.Home_BottomCtaTitle}
+              </Title>
+              <Text className={classes.bottomCtaDesc}>
+                {locale.Home_BottomCtaDescription}
+              </Text>
+              <div className={classes.workflowAction}>
+                <FeaturePrimaryAction label={copy.workflowAction} />
+              </div>
             </div>
           </section>
         </ScrollReveal>
