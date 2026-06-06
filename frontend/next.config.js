@@ -21,6 +21,9 @@ const nextConfig = {
     ],
   },
   allowedDevOrigins: ['dev.skyblur.uk'],
+  turbopack: {
+    root: path.resolve(process.cwd(), '..'),
+  },
   ...(isE2ECoverage
     ? {
         webpack: (config, { isServer }) => {
