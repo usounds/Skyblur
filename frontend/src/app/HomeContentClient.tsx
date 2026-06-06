@@ -115,6 +115,16 @@ export function HomeContentClient({ initialLocale, initialLocaleData }: HomeCont
             <div className={classes.fadeIn} style={{ animationDelay: '0.5s' }}>
                 <RecommendedClients initialLocale={initialLocale} />
             </div>
+
+            <div className={`${classes.fadeIn} ${classes.bottomCtaCard}`} style={{ animationDelay: '0.6s' }}>
+                <Title order={3} className={classes.bottomCtaTitle}>
+                    {locale.Home_BottomCtaTitle}
+                </Title>
+                <Text size="sm" className={classes.bottomCtaDesc}>
+                    {locale.Home_BottomCtaDescription}
+                </Text>
+                <StartButton initialLocale={initialLocale} />
+            </div>
         </Container>
     );
 }

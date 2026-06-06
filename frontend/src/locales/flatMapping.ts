@@ -204,6 +204,8 @@ export const localeFlatMapping = {
   "Home_HelicoDownloadUrl": ["home","helicoDownloadUrl"],
   "Home_HelicoPlatforms": ["home","helicoPlatforms"],
   "Home_inAuthProgress": ["home","inAuthProgress"],
+  "Home_BottomCtaTitle": ["home","bottomCtaTitle"],
+  "Home_BottomCtaDescription": ["home","bottomCtaDescription"],
   "Landing_StartButton": ["landing","startButton"],
   "Post_Restricted_FetchingAuth": ["post","restricted_FetchingAuth"],
   "Post_Restricted_NotAuthorized": ["post","restricted_NotAuthorized"],

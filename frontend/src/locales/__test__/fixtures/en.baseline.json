@@ -204,6 +204,8 @@
   "Home_HelicoDownloadUrl": "https://apps.apple.com/jp/app/helico-for-bluesky/id6744268859",
   "Home_HelicoPlatforms": "iOS / macOS",
   "Home_inAuthProgress": "Redirecting to authorization screen if necessary...",
+  "Home_BottomCtaTitle": "Start secure posting today",
+  "Home_BottomCtaDescription": "Share your posts only with the audience you choose, the way you want.",
   "Landing_StartButton": "Start",
   "Post_Restricted_FetchingAuth": "Checking authorization...",
   "Post_Restricted_NotAuthorized": "You do not have permission to view this post.",

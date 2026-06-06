@@ -32,6 +32,8 @@
     "helicoDownloadUrl": "https://apps.apple.com/jp/app/helico-for-bluesky/id6744268859",
     "helicoPlatforms": "iOS / macOS",
     "inAuthProgress": "Redirecting to authorization screen if necessary...",
+    "bottomCtaTitle": "Start secure posting today",
+    "bottomCtaDescription": "Share your posts only with the audience you choose, the way you want.",
     "checkingSession": "Checking session...",
     "checkingSessionWithTimer": "Checking session... retry available in {1}s",
     "checkSession_Title": "Checking Session",

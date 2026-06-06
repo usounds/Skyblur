@@ -32,6 +32,8 @@
     "helicoDownloadUrl": "https://apps.apple.com/jp/app/helico-for-bluesky/id6744268859",
     "helicoPlatforms": "iOS / macOS",
     "inAuthProgress": "必要に応じて認可画面へ遷移します...",
+    "bottomCtaTitle": "今すぐ安全なポストを始めましょう",
+    "bottomCtaDescription": "見せたい人だけに、届けたい形で。SkyblurでBlueskyの体験をもっと自由に。",
     "checkingSession": "セッションを確認しています...",
     "checkingSessionWithTimer": "セッションを確認しています... {1}秒後にリトライできます",
     "checkSession_Title": "セッション確認",
