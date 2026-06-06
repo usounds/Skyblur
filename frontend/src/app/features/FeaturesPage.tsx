@@ -97,7 +97,7 @@ const pageCopy: Record<Locales, FeaturePageCopy> = {
     workflowPostDescription: 'Blueskyには伏せ字にした本文が投稿され、続きはSkyblurで読めるようになります。',
     workflowAction: 'さあ始めよう',
     seoTitle: '機能紹介・限定公開の仕組み',
-    jsonLdDescription: 'Blueskyでの伏せ字投稿や、フォロワー・リスト・パスワード限定公開など、Skyblur의機能と仕組みを説明します。atprotoの仕組みを利用しています。'
+    jsonLdDescription: 'Blueskyでの伏せ字投稿や、フォロワー・リスト・パスワード限定公開など、Skyblurの機能と仕組みを説明します。atprotoの仕組みを利用しています。'
   },
   en: {
     eyebrow: 'Features',
