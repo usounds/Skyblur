@@ -132,7 +132,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/lock';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].requestLock;
+            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].requestLock;
 
             // Mock Lock Success
             mockDOFetch.mockResolvedValue({ ok: true });
@@ -158,7 +158,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/lock-retry';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].requestLock;
+            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].requestLock;
 
             mockDOFetch
                 .mockResolvedValueOnce({ status: 423, statusText: 'Locked' }) // Fail 1
@@ -176,7 +176,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/lock-fail';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].requestLock;
+            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].requestLock;
 
             // Mock Fail always
             // We need to limit the loop or mock many times. 
@@ -201,7 +201,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/uint8';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const store = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].stores.sessions;
+            const store = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].stores.sessions;
 
             const data = { buffer: new Uint8Array([1, 2, 3]) };
 
@@ -285,7 +285,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/safefetch';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const safeFetch: any = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].fetch;
+            const safeFetch: any = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].fetch;
 
             // Mock global fetch for this scope
             const originalFetch = global.fetch;
@@ -373,7 +373,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/lock-error';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].requestLock;
+            const requestLock = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].requestLock;
 
             mockDOFetch.mockResolvedValue({ ok: false, status: 500, statusText: 'Internal Error' });
 
@@ -386,7 +386,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/enc-fail';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const store = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].stores.sessions;
+            const store = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].stores.sessions;
 
             // Mock encrypt to fail
             const spyEncrypt = vi.spyOn(crypto.subtle, 'encrypt').mockRejectedValue(new Error('Encrypt fail'));
@@ -402,7 +402,7 @@ describe('ATPOauth', () => {
             const origin = 'https://api.example.com/dec-fail';
             await getOAuthClient(env, origin);
             // @ts-ignore
-            const store = OAuthClient.mock.calls.find(c => c[0].metadata.client_id.includes(origin))[0].stores.sessions;
+            const store = OAuthClient.mock.calls.find(c => c[0].metadata.client_id === `${origin}/oauth/client-metadata.json`)[0].stores.sessions;
 
             mockDOFetch.mockResolvedValue({
                 status: 200,

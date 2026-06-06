@@ -503,9 +503,9 @@ export const CreatePostForm: React.FC<CreatePostProps> = ({
                     autoClose: false
                 });
 
-                const host = new URL(window.location.origin).host;
+                const hostname = window.location.hostname;
                 let appViewUrl = 'skyblur.uk'
-                if (host?.endsWith('dev.skyblur.uk')) {
+                if (hostname === 'dev.skyblur.uk') {
                     appViewUrl = 'dev.skyblur.uk'
                 }
 

@@ -528,7 +528,7 @@ function Settings() {
                       onChange={(e) => setFeedDescription(e.target.value)}
                       maxLength={200} />
                     <div className="block text-m mt-1">{locale.Pref_CustomFeedAvatar}</div>
-                    {feedAvatarImg &&
+                    {feedAvatarImg && (feedAvatarImg.startsWith('http://') || feedAvatarImg.startsWith('https://') || feedAvatarImg.startsWith('blob:')) &&
                       <p>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />

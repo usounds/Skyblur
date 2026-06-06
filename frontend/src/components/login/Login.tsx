@@ -58,7 +58,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
 
     /* istanbul ignore next -- Production @passport host selection is covered outside localhost E2E. */
-    const isDev = typeof window !== 'undefined' && (window.location.host.includes('dev.skyblur.uk') || window.location.host.includes('localhost'));
+    const isDev = typeof window !== 'undefined' && (window.location.hostname === 'dev.skyblur.uk' || window.location.hostname === 'localhost' || window.location.hostname.endsWith('.localhost'));
     /* istanbul ignore next -- E2E exercises the client path; this fallback is for SSR safety. */
     const apiHost = typeof window !== 'undefined' ? window.location.origin : '';
     const getRedirectUrl = () => {
