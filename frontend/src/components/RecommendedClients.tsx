@@ -11,11 +11,13 @@ interface RecommendedClientsProps {
 interface ClientPlatform {
     label: string;
     href?: string;
+    ariaLabel?: string;
 }
 
 interface RecommendedClient {
     name: string;
     href: string;
+    ariaLabel?: string;
     platforms: ClientPlatform[];
 }
 
@@ -25,16 +27,18 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
         {
             name: locale.Home_TokimekiName,
             href: locale.Home_TokimekiUrl,
+            ariaLabel: `${locale.Home_TokimekiName} Web`,
             platforms: [
                 { label: "Android", href: locale.Home_TokimekiAndroidUrl },
-                { label: "Web", href: locale.Home_TokimekiUrl },
+                { label: "Web", href: locale.Home_TokimekiUrl, ariaLabel: `${locale.Home_TokimekiName} Web` },
             ],
         },
         {
             name: locale.Home_HagoromoName,
             href: locale.Home_HagoromoUrl,
+            ariaLabel: `${locale.Home_HagoromoName} Web`,
             platforms: [
-                { label: locale.Home_HagoromoPlatforms, href: locale.Home_HagoromoUrl },
+                { label: locale.Home_HagoromoPlatforms, href: locale.Home_HagoromoUrl, ariaLabel: `${locale.Home_HagoromoName} Web` },
             ],
         },
         {
@@ -76,6 +80,7 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
                             underline="never"
                             size="sm"
                             className={classes.clientLink}
+                            aria-label={client.ariaLabel}
                         >
                             {client.name}
                         </Anchor>
@@ -91,6 +96,7 @@ export const RecommendedClients = ({ initialLocale }: RecommendedClientsProps) =
                                                 underline="never"
                                                 size="xs"
                                                 className={classes.platformLink}
+                                                aria-label={platform.ariaLabel}
                                             >
                                                 {platform.label}
                                             </Anchor>

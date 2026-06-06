@@ -19,7 +19,7 @@
     "heroDemo": {
       "blurDescription": "Wrap text in [] to blur it."
     },
-    "featuresLink": "See how visibility and masking work",
+    "featuresLink": "How to use Skyblur",
     "recommendedClients": "These clients make Skyblur posts easy to read across web and mobile.",
     "tokimekiName": "TOKIMEKI",
     "tokimekiUrl": "https://tokimeki.blue/",
@@ -50,9 +50,9 @@
     }
   },
   "common": {
-    "title": "Skyblur",
-    "description": "You can post with blur",
-    "oGDescription": "An AT Protocol compatible application for posting spoiler content on Bluesky.",
+    "title": "Skyblur | Masked & Visibility-Restricted Posts for Bluesky",
+    "description": "Masked and visibility-restricted posting service for Bluesky. Securely share posts with followers, selected lists, or password protection. Powered by atproto.",
+    "oGDescription": "Masked and visibility-restricted posting service for Bluesky. Securely share posts with followers, selected lists, or password protection. Powered by atproto.",
     "systemError": "System error. Please try again later."
   },
   "menu": {

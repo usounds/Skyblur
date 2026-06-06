@@ -34,6 +34,7 @@ type FeaturePageCopy = {
   workflowPostTitle: string;
   workflowPostDescription: string;
   workflowAction: string;
+  seoTitle: string;
   jsonLdDescription: string;
 };
 
@@ -63,7 +64,8 @@ const pageCopy: Record<Locales, FeaturePageCopy> = {
     workflowPostTitle: '投稿する',
     workflowPostDescription: 'Blueskyには伏せ字にした本文が投稿され、続きはSkyblurで読めるようになります。',
     workflowAction: 'さあ始めよう',
-    jsonLdDescription: 'Skyblurの伏せ字投稿、公開範囲指定、フォロワー限定・リスト限定・パスワード付き公開などの機能紹介です。'
+    seoTitle: '機能紹介・限定公開の仕組み',
+    jsonLdDescription: 'Blueskyでの伏せ字投稿や、フォロワー・リスト・パスワード限定公開など、Skyblurの機能と仕組みを説明します。atprotoの仕組みを利用しています。'
   },
   en: {
     eyebrow: 'Features',
@@ -90,7 +92,8 @@ const pageCopy: Record<Locales, FeaturePageCopy> = {
     workflowPostTitle: 'Publish',
     workflowPostDescription: 'Skyblur posts the masked text to Bluesky, then readers can continue on Skyblur.',
     workflowAction: 'Start now',
-    jsonLdDescription: 'Features for Skyblur, including masked Bluesky posts, visibility settings, followers-only access, list-only access, and password-protected reading.'
+    seoTitle: 'Features & Visibility Settings',
+    jsonLdDescription: 'Learn about Skyblur features, including masked Bluesky posts and visibility settings (followers, lists, passwords). Powered by atproto.'
   }
 };
 
@@ -98,7 +101,7 @@ export function generateFeaturesMetadata(lang: Locales): Metadata {
   const copy = pageCopy[lang];
 
   return {
-    title: `${copy.visibilityTitle} - Skyblur`,
+    title: `${copy.seoTitle} - Skyblur`,
     description: copy.jsonLdDescription,
     alternates: {
       canonical: `/${lang}/features`,
@@ -109,7 +112,7 @@ export function generateFeaturesMetadata(lang: Locales): Metadata {
       }
     },
     openGraph: {
-      title: `${copy.visibilityTitle} - Skyblur`,
+      title: `${copy.seoTitle} - Skyblur`,
       description: copy.jsonLdDescription,
       url: `https://skyblur.uk/${lang}/features`,
       siteName: 'Skyblur',
@@ -119,7 +122,7 @@ export function generateFeaturesMetadata(lang: Locales): Metadata {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${copy.visibilityTitle} - Skyblur`,
+      title: `${copy.seoTitle} - Skyblur`,
       description: copy.jsonLdDescription,
       images: ['/ogp.png']
     }

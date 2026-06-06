@@ -156,32 +156,45 @@ export function StartButton({ initialLocale }: { initialLocale: Locales }) {
     };
 
     return (
-        <div className="flex justify-center items-center mt-10 mb-12" style={{ minHeight: '64px' }}>
+        <div className="flex justify-center items-center" style={{ minHeight: '64px' }}>
             {isSessionRetryReady ? (
                  <Button
                     variant="outline" size="md" radius="lg"
                     onClick={handleRetrySessionCheck}
                     loading={isLoading}
                     leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg"
+                    className="px-10 h-16 text-lg min-w-[180px]"
                     color="blue.8"
                 >
                     {locale.Landing_StartRetryButton}
                 </Button>
-            ) : !isSessionChecked || isSessionRetryWaiting ? (
-                <div className="flex flex-col items-center justify-center gap-2 h-16">
-                    <Loader color="blue" type="dots" />
-                    <Text size="sm" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>
-                        {locale.Home_CheckingSessionWithTimer.replace('{1}', String(sessionCheckSecondsLeft))}
-                    </Text>
-                </div>
+            ) : !isSessionChecked && !isSessionRetryWaiting ? (
+                <Button
+                    variant="filled" size="md" radius="lg"
+                    disabled={true}
+                    loading={true}
+                    leftSection={<Sparkles size={24} />}
+                    className="px-10 h-16 text-lg min-w-[180px]"
+                    color="blue.8"
+                >
+                    {locale.Landing_StartButton}
+                </Button>
+            ) : isSessionRetryWaiting ? (
+                <Button
+                    variant="filled" size="md" radius="lg"
+                    disabled={true}
+                    className="px-10 h-16 text-lg min-w-[180px]"
+                    color="blue.8"
+                >
+                    {locale.Home_CheckingSessionWithTimer.replace('{1}', String(sessionCheckSecondsLeft))}
+                </Button>
             ) : did ? (
                 <Button
                     component={Link}
                     href="/console"
                     variant="filled" size="md" radius="lg"
                     leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg"
+                    className="px-10 h-16 text-lg min-w-[180px]"
                     color="blue.8"
                 >
                     {locale.Landing_StartButton}
@@ -192,7 +205,7 @@ export function StartButton({ initialLocale }: { initialLocale: Locales }) {
                     onClick={handleStart}
                     loading={isLoading}
                     leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg"
+                    className="px-10 h-16 text-lg min-w-[180px]"
                     color="blue.8"
                 >
                     {locale.Landing_StartButton}

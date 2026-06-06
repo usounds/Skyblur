@@ -19,7 +19,7 @@
     "heroDemo": {
       "blurDescription": "[]で囲むと伏せ字になります。"
     },
-    "featuresLink": "公開範囲や伏せ字の仕組みを見る",
+    "featuresLink": "Skyblurの使い方",
     "recommendedClients": "Skyblurの投稿を快適に読めるおすすめクライアント",
     "tokimekiName": "TOKIMEKI",
     "tokimekiUrl": "https://tokimeki.blue/",
@@ -50,9 +50,9 @@
     }
   },
   "common": {
-    "title": "Skyblur",
-    "description": "伏字を使った投稿ができます",
-    "oGDescription": "ATProtocolに対応した、Blueskyに伏せ字の投稿ができるアプリケーションです。",
+    "title": "Skyblur | Blueskyの伏せ字・限定公開サービス",
+    "description": "Bluesky向けの伏せ字投稿・限定公開サービス。フォロワー・リスト・パスワード限定公開などの機能を安全に利用できます。atprotoの仕組みを利用しています。",
+    "oGDescription": "Bluesky向けの伏せ字投稿・限定公開サービス。フォロワー限定、リスト限定、パスワード保護などの機能を安全に利用できます。atprotoの仕組みを利用しています。",
     "systemError": "システムエラーです。時間をおいて再度お試しください。"
   },
   "menu": {

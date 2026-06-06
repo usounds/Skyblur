@@ -255,6 +255,19 @@ function Settings() {
     return lastSegment?.split('@')[0] || null;
   };
 
+  const sanitizeAvatarUrl = (urlStr: string): string => {
+    if (!urlStr) return '';
+    try {
+      const parsed = new URL(urlStr);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'blob:') {
+        return parsed.toString();
+      }
+    } catch (e) {
+      // ignore
+    }
+    return '';
+  };
+
   const fetchBlobFromPds = async (pdsUrl: string, didValue: string, cid: string) => {
     const blobUrl = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl);
     blobUrl.searchParams.set('did', didValue);
@@ -528,12 +541,12 @@ function Settings() {
                       onChange={(e) => setFeedDescription(e.target.value)}
                       maxLength={200} />
                     <div className="block text-m mt-1">{locale.Pref_CustomFeedAvatar}</div>
-                    {feedAvatarImg && (feedAvatarImg.startsWith('http://') || feedAvatarImg.startsWith('https://') || feedAvatarImg.startsWith('blob:')) &&
+                    {sanitizeAvatarUrl(feedAvatarImg) && (
                       <p>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={feedAvatarImg} width={50} height={50} alt="Feed Avatar Image" />
+                        <img src={sanitizeAvatarUrl(feedAvatarImg)} width={50} height={50} alt="Feed Avatar Image" />
                       </p>
-                    }
+                    )}
                     <input type="file" accept=".png, .jpg, .jpeg" className="mb-2 w-[300px] inline-block text-sm sm:text-base" onChange={changeFeedAvatar} />
                     <div className="block text-sm text-gray-600 mt-1">
                       <div className="flex flex-col items-center ">

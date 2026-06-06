@@ -1,5 +1,5 @@
 "use client";
-import { Divider } from '@mantine/core';
+import { Divider, Box, Group, Skeleton } from '@mantine/core';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
@@ -8,8 +8,29 @@ import { useLocaleStore } from '@/state/Locale';
 import type { Locales } from '@/state/Locale';
 import { getLocalizedHref } from '@/logic/localePath';
 
-// SSRを無効にしてクライアントでのみロード
-const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false });
+function HeaderPlaceholder() {
+  return (
+    <>
+      <Box visibleFrom="sm" className="col-start-2 justify-self-center" style={{ height: '20px', width: '150px' }} />
+      <Box visibleFrom="sm" className="col-start-3 justify-self-end">
+        <Group gap="sm">
+          <Skeleton height={32} width={32} radius="xl" />
+          <Skeleton height={32} width={60} radius="sm" />
+          <Skeleton height={32} width={32} radius="sm" />
+        </Group>
+      </Box>
+      <Box hiddenFrom="sm" className="col-start-3 justify-self-end">
+        <Skeleton height={32} width={32} radius="sm" />
+      </Box>
+    </>
+  );
+}
+
+// SSRを無効にしてクライアントでのみロード、ローディング中はプレースホルダーを表示してCLSを抑える
+const DynamicHeader = dynamic(() => import('./DynamicHeader'), {
+  ssr: false,
+  loading: () => <HeaderPlaceholder />
+});
 
 const Header = ({ initialLocale }: { initialLocale: Locales }) => {
   const initLocale = useLocaleStore(state => state.initLocale);

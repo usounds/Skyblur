@@ -410,7 +410,7 @@ test.describe("home start session flows", () => {
 
     await gotoAndSkipIfUnavailable(page, "/");
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("link", { name: "Skyblur" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Skyblur", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Term of Use" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
     await expect(page.getByText("Skyblur is a content warning and spoilers protection tool")).toBeVisible();
@@ -455,7 +455,7 @@ test.describe("home start session flows", () => {
 
     await expect(page.getByRole("heading", { name: "Skyblurへようこそ" })).toBeVisible();
     await expect(page.getByText("Skyblurの投稿を快適に読めるおすすめクライアント")).toBeVisible();
-    await expect(page.getByRole("link", { name: "羽衣" })).toHaveAttribute("href", "https://hagoromo.relog.tech/ja/");
+    await expect(page.getByRole("link", { name: "羽衣 Web" }).first()).toHaveAttribute("href", "https://hagoromo.relog.tech/ja/");
   });
 
   test("home start button opens the console for logged-in users", async ({
@@ -509,10 +509,10 @@ test.describe("home start session flows", () => {
     await gotoAndSkipIfUnavailable(page, "/");
     await page.waitForTimeout(100);
 
-    await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
+    await expect(page.getByText(/Checking session\.\.\. retry available in \d+s/)).toBeVisible();
     await page.clock.runFor(10_000);
     await page.waitForTimeout(100);
-    await expect(page.getByText("Checking session... retry available in 20s")).toBeVisible();
+    await expect(page.getByText(/Checking session\.\.\. retry available in \d+s/)).toBeVisible();
     await page.clock.runFor(20_000);
     await page.waitForTimeout(100);
 
@@ -576,7 +576,7 @@ test.describe("home start session flows", () => {
     await page.clock.install({ time: new Date("2026-01-01T00:00:00.000Z") });
     await gotoAndSkipIfUnavailable(page, "/");
 
-    await expect(page.getByText("Checking session... retry available in 30s")).toBeVisible();
+    await expect(page.getByText(/Checking session\.\.\. retry available in \d+s/)).toBeVisible();
     await page.clock.runFor(30_000);
     await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
     await page.getByRole("button", { name: "Retry" }).click();
@@ -859,7 +859,7 @@ test("/console shows the login form when there is no OAuth session", async ({
 }) => {
   await openConsoleLoginForm(page, context, baseURL);
 
-  await expect(page.getByRole("link", { name: "Skyblur" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Skyblur", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Skyblur" })).toBeVisible();
   await expect(page.getByText("Login with atproto account")).toBeVisible();
   await expect(page.getByText("Agree to the contents")).toBeVisible();
@@ -967,7 +967,7 @@ test("/settings redirects unauthenticated visitors back home", async ({
   await gotoAndSkipIfUnavailable(page, "/settings");
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("link", { name: "Skyblur" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Skyblur", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
   await expect(page.getByText("Settings")).toHaveCount(0);

@@ -1,0 +1,17 @@
+# Skyblur
+
+Skyblur is a web application compatible with the AT Protocol (atproto) for posting masked (spoiler) and visibility-restricted content to Bluesky.
+
+## Core Features
+
+- **Masked (Blur) Posting**: Encapsulate spoiler content in `[brackets]` to show it as masked text (e.g. `○○○○`) on Bluesky. Readers can click the link to read the full text on Skyblur.
+- **Audience & Visibility Control**: Restrict who can read the full text or additional note on Skyblur:
+  - **Public**: Anyone can read it.
+  - **Login Required**: Only logged-in Bluesky users can read it.
+  - **Followers Only**: Only your followers can read it.
+  - **Following Only**: Only users you follow can read it.
+  - **Mutuals Only**: Only mutual followers can read it.
+  - **List Only**: Only members of a selected Bluesky list can read it.
+  - **Password Protection**: Only users who enter the correct password can read it.
+- **Additional Notes**: Add optional notes up to 10,000 characters to be viewed only on Skyblur.
+- **atproto Integration**: Secure authentication and posting via atproto OAuth, without holding user passwords.

@@ -281,16 +281,25 @@
 
 .bottomCtaCard {
   margin-top: calc(var(--mantine-spacing-xl) * 3);
-  padding: calc(var(--mantine-spacing-xl) * 2);
-  border-radius: var(--mantine-radius-lg);
-  background: linear-gradient(135deg, light-dark(rgba(240, 247, 255, 0.6), rgba(17, 34, 64, 0.4)), light-dark(rgba(230, 242, 255, 0.6), rgba(10, 25, 47, 0.4)));
-  backdrop-filter: blur(8px);
-  border: 1px solid light-dark(rgba(208, 227, 255, 0.8), rgba(30, 58, 138, 0.5));
+  padding: calc(var(--mantine-spacing-xl) * 2.5);
+  border-radius: var(--mantine-radius-xl);
+  
+  /* Light mode default: soft, clean and neutral */
+  background: linear-gradient(135deg, 
+    rgba(248, 250, 252, 0.95), 
+    rgba(241, 245, 249, 0.95)
+  );
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.04);
+  
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--mantine-spacing-xl);
-  box-shadow: var(--mantine-shadow-md);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.3s ease, 
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   @media (max-width: 48em) {
     flex-direction: column;
@@ -298,6 +307,28 @@
     padding: var(--mantine-spacing-xl);
     gap: var(--mantine-spacing-md);
   }
+}
+
+/* Dark mode overrides using Mantine color scheme attribute */
+:global([data-mantine-color-scheme='dark']) .bottomCtaCard {
+  background: linear-gradient(135deg, 
+    rgba(15, 23, 42, 0.9), 
+    rgba(30, 41, 59, 0.9), 
+    rgba(17, 24, 39, 0.9)
+  );
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.35);
+}
+
+.bottomCtaCard:hover {
+  transform: translateY(-6px) scale(1.005);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.08);
+}
+
+:global([data-mantine-color-scheme='dark']) .bottomCtaCard:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 30px 60px -15px rgba(99, 102, 241, 0.5);
 }
 
 .bottomCtaTextContent {

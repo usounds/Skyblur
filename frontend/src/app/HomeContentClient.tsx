@@ -8,8 +8,8 @@ import ja from "@/locales/ja";
 import { getLocalizedHref } from "@/logic/localePath";
 import type { Locales } from "@/state/Locale";
 import { useLocaleStore } from "@/state/Locale";
-import { Anchor, Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
-import { Eye, EyeOff, Pencil } from 'lucide-react';
+import { Button, Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
+import { Eye, EyeOff, Pencil, ChevronRight } from 'lucide-react';
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import classes from './FeaturesGrid.module.css';
@@ -89,14 +89,19 @@ export function HomeContentClient({ initialLocale, initialLocaleData }: HomeCont
                 <ResponsiveHeroDemo locale={locale} />
             </div>
 
-            <div>
+            <div className={classes.actionGroup}>
                 <StartButton initialLocale={initialLocale} />
-            </div>
-
-            <div className={classes.featuresLinkWrap}>
-                <Anchor component={Link} href={getLocalizedHref(activeLocale, "features")} size="sm" className={classes.featuresLink}>
+                <Button
+                    component={Link}
+                    href={getLocalizedHref(activeLocale, "features")}
+                    variant="default"
+                    size="md"
+                    radius="lg"
+                    rightSection={<ChevronRight size={18} />}
+                    className="px-8 h-16 text-base font-medium"
+                >
                     {locale.Home_FeaturesLink}
-                </Anchor>
+                </Button>
             </div>
 
             <div className={classes.fadeIn} style={{ animationDelay: '0.4s' }}>
@@ -114,16 +119,6 @@ export function HomeContentClient({ initialLocale, initialLocaleData }: HomeCont
 
             <div className={classes.fadeIn} style={{ animationDelay: '0.5s' }}>
                 <RecommendedClients initialLocale={initialLocale} />
-            </div>
-
-            <div className={`${classes.fadeIn} ${classes.bottomCtaCard}`} style={{ animationDelay: '0.6s' }}>
-                <Title order={3} className={classes.bottomCtaTitle}>
-                    {locale.Home_BottomCtaTitle}
-                </Title>
-                <Text size="sm" className={classes.bottomCtaDesc}>
-                    {locale.Home_BottomCtaDescription}
-                </Text>
-                <StartButton initialLocale={initialLocale} />
             </div>
         </Container>
     );

@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: copy.Common_Title,
     description: copy.Common_Description,
     alternates: {
-      canonical: `/${locale}`,
+      canonical: '/',
       languages: {
         ja: '/ja',
         en: '/en',
