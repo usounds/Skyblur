@@ -38,7 +38,7 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: `rtk pnpm exec next dev --webpack -p ${e2ePort}`,
+        command: `pnpm exec next dev -p ${e2ePort}`,
         env: {
           E2E_TEST: "true",
           E2E_COVERAGE: process.env.E2E_COVERAGE || "false",

@@ -1,5 +1,6 @@
 .input {
   transition: border-color 140ms ease, box-shadow 140ms ease;
+  max-height: 400px;
 }
 
 .input:focus {
@@ -10,6 +11,16 @@
 [data-mantine-color-scheme="dark"] .input:focus {
   border-color: var(--mantine-color-blue-4) !important;
   box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2) !important;
+}
+
+.wrapper {
+  position: relative;
+}
+
+.footerInfo {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 .bracketActions {
@@ -25,3 +36,48 @@
     margin-top: 30px;
   }
 }
+
+/* Hide native scrollbar to use custom scrollbars */
+.input::-webkit-scrollbar {
+  display: none !important;
+}
+
+.input {
+  scrollbar-width: none !important;
+}
+
+/* Custom scrollbar track and thumb for normal input */
+.scrollTrack {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 6px;
+  bottom: 4px;
+  background: transparent;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.scrollThumb {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: var(--mantine-color-gray-4, #ced4da);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+
+.scrollThumb:hover {
+  background: var(--mantine-color-gray-5, #adb5bd);
+}
+
+[data-mantine-color-scheme="dark"] .scrollThumb {
+  background: var(--mantine-color-dark-4, #5c5c5c);
+}
+
+[data-mantine-color-scheme="dark"] .scrollThumb:hover {
+  background: var(--mantine-color-dark-3, #696969);
+}
+
+

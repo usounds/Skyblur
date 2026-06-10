@@ -73,6 +73,7 @@ export const localeFlatMapping = {
   "CreatePost_Additional": ["createPost","additional"],
   "CreatePost_AdditionalDescription": ["createPost","additionalDescription"],
   "CreatePost_AdditionalPlaceHolder": ["createPost","additionalPlaceHolder"],
+
   "CreatePost_Create": ["createPost","create"],
   "CreatePost_CreateDescription": ["createPost","createDescription"],
   "CreatePost_CreateButton": ["createPost","createButton"],
