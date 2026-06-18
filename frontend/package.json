@@ -45,7 +45,7 @@
     "@mantine/hooks": "^9.3.0",
     "@mantine/notifications": "^9.3.0",
     "@opennextjs/aws": "^4.0.3",
-    "dompurify": "^3.4.8",
+    "dompurify": "^3.4.9",
     "franc": "^6.2.0",
     "iso-639-3-to-1": "^1.0.0",
     "lucide-react": "^1.17.0",
