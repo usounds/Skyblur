@@ -8,7 +8,7 @@ type LocaleData = typeof en;
 interface LocaleState {
   locale: Locales;
   setLocale: (newLocale: Locales) => void;
-  initLocale: () => void;
+  initLocale: (fallbackLocale?: Locales) => void;
 }
 
 function readLocaleCookie(): Locales | undefined {
@@ -33,10 +33,10 @@ export const useLocaleStore = create<LocaleState>((set) => ({
     }
     set({ locale: newLocale });
   },
-  initLocale: () => {
-    const l = readLocaleCookie();
-    if (l) {
-      set({ locale: l });
+  initLocale: (fallbackLocale) => {
+    const locale = readLocaleCookie() ?? fallbackLocale;
+    if (locale) {
+      set({ locale });
     }
   }
 }));

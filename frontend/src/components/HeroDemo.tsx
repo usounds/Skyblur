@@ -11,27 +11,44 @@ export function HeroDemo({ locale }: { locale: LocaleData }) {
             {/* Input Side (Skyblur) */}
             <Card shadow="sm" padding="lg" radius="md" withBorder w={300}>
                 <Card.Section withBorder inheritPadding py="xs">
-                    <Group justify="space-between">
-                        <Text fw={500} size="sm">Skyblur (Input)</Text>
+                    <Group justify="space-between" wrap="nowrap">
+                        <Box
+                            w={96}
+                            h={12}
+                            style={{
+                                borderRadius: 9999,
+                                background: 'var(--mantine-color-gray-3)',
+                            }}
+                        />
                     </Group>
                 </Card.Section>
-                <Stack mt="md" gap="xs">
+                <Stack mt="md" gap="sm">
                     <Group gap="xs">
                         <Avatar size="sm" radius="xl" color="blue" />
-                        <Text size="sm" fw={700}>User</Text>
+                        <Box
+                            w={64}
+                            h={10}
+                            style={{
+                                borderRadius: 9999,
+                                background: 'var(--mantine-color-gray-3)',
+                            }}
+                        />
                     </Group>
-                    <Text size="sm">
-                        I love <span style={{
-                            background: 'light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9))',
-                            color: 'light-dark(var(--mantine-color-blue-9), var(--mantine-color-blue-1))',
-                            padding: '1px 4px',
-                            borderRadius: '4px',
-                            fontFamily: 'monospace',
-                        }}>[Spicy Food]</span>!
-                    </Text>
-                    <Text size="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>
-                        {locale.Home_HeroDemoBlurDescription}
-                    </Text>
+                    <Box
+                        h={18}
+                        style={{
+                            borderRadius: 6,
+                            background: 'linear-gradient(90deg, var(--mantine-color-gray-2), var(--mantine-color-gray-3))',
+                        }}
+                    />
+                    <Box
+                        w={132}
+                        h={10}
+                        style={{
+                            borderRadius: 9999,
+                            background: 'var(--mantine-color-gray-3)',
+                        }}
+                    />
                 </Stack>
             </Card>
 
@@ -120,15 +137,24 @@ export function ResponsiveHeroDemo({ locale }: { locale: LocaleData }) {
                 <Stack align="center" gap="md">
                     {/* Input Side */}
                     <Card shadow="sm" padding="md" radius="md" withBorder w="100%">
-                        <Text size="xs" fw={700} mb="xs" style={{ color: 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))' }}>Skyblur Input:</Text>
-                        <Text size="sm">
-                            I love <span style={{
-                                background: 'light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9))',
-                                color: 'light-dark(var(--mantine-color-blue-9), var(--mantine-color-blue-1))',
-                                padding: '1px 4px',
-                                borderRadius: '4px',
-                            }}>[Spicy Food]</span>!
-                        </Text>
+                        <Group gap="xs" mb="xs">
+                            <Avatar size="sm" radius="xl" color="blue" />
+                            <Box
+                                w={72}
+                                h={10}
+                                style={{
+                                    borderRadius: 9999,
+                                    background: 'var(--mantine-color-gray-3)',
+                                }}
+                            />
+                        </Group>
+                        <Box
+                            h={18}
+                            style={{
+                                borderRadius: 6,
+                                background: 'linear-gradient(90deg, var(--mantine-color-gray-2), var(--mantine-color-gray-3))',
+                            }}
+                        />
                     </Card>
 
                     <ArrowDown size={24} style={{ color: 'var(--mantine-color-dimmed)' }} />

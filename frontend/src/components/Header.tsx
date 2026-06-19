@@ -39,9 +39,9 @@ const Header = ({ initialLocale }: { initialLocale: Locales }) => {
   const activeLocale = isLocaleHydrated ? storeLocale : initialLocale;
 
   useEffect(() => {
-    initLocale();
+    initLocale(initialLocale);
     setIsLocaleHydrated(true);
-  }, [initLocale]);
+  }, [initLocale, initialLocale]);
   return (
     <>
       <div

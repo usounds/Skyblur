@@ -45,13 +45,15 @@ interface HomeContentClientProps {
 
 export function HomeContentClient({ initialLocale, initialLocaleData }: HomeContentClientProps) {
     const storeLocale = useLocaleStore((state) => state.locale);
+    const initLocale = useLocaleStore((state) => state.initLocale);
     const [isLocaleHydrated, setIsLocaleHydrated] = useState(false);
     const activeLocale = isLocaleHydrated ? storeLocale : initialLocale;
     const locale = isLocaleHydrated ? (storeLocale === 'en' ? en : ja) : initialLocaleData;
 
     useEffect(() => {
+        initLocale(initialLocale);
         setIsLocaleHydrated(true);
-    }, []);
+    }, [initLocale, initialLocale]);
 
     const features = [
         {

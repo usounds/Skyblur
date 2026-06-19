@@ -14,6 +14,7 @@ const SESSION_CHECK_RETRY_SECONDS = 30;
 
 export function StartButton({ initialLocale }: { initialLocale: Locales }) {
     const storeLocale = useLocaleStore((state) => state.locale);
+    const initLocale = useLocaleStore((state) => state.initLocale);
     const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
     const router = useRouter();
     const did = useXrpcAgentStore((state) => state.did);
@@ -87,8 +88,9 @@ export function StartButton({ initialLocale }: { initialLocale: Locales }) {
     }, [clearSessionCheckTimers]);
 
     useEffect(() => {
+        initLocale(initialLocale);
         setIsLocaleHydrated(true);
-    }, []);
+    }, [initLocale, initialLocale]);
 
     useEffect(() => {
         if (sessionCheckSecondsLeft !== 0 || !isSessionRetryWaiting) return;

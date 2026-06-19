@@ -15,7 +15,6 @@ const DynamicHeader = () => {
   const { localeData: locale, locale: localeString } = useLocale();
   const did = useXrpcAgentStore(state => state.did);
   const userProf = useXrpcAgentStore((state) => state.userProf);
-  const [isMounted, setIsMounted] = useState(false);
   const [isDrawerOpened, setIsDrawerOpened] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -28,8 +27,6 @@ const DynamicHeader = () => {
   const checkSessionTimeoutTitle = locale.Home_CheckSession_Timeout_Title;
 
   useEffect(() => {
-    setIsMounted(true);
-
     // セッションを確認
     const syncSession = async () => {
       if (sessionSyncStartedRef.current) return;
@@ -64,7 +61,7 @@ const DynamicHeader = () => {
 
 
   useEffect(() => {
-    if (loginError && isMounted) {
+    if (loginError) {
       if (loginError === 'rejected') {
         notifications.show({
           title: 'Login',
@@ -75,7 +72,7 @@ const DynamicHeader = () => {
       }
       setIsLoginModalOpened(true);
     }
-  }, [loginError, isMounted, setIsLoginModalOpened, locale.Login_Rejected]);
+  }, [loginError, setIsLoginModalOpened, locale.Login_Rejected]);
 
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
 
@@ -86,8 +83,6 @@ const DynamicHeader = () => {
       useXrpcAgentStore.getState().fetchUserProf();
     }
   }, [did, isSessionChecked, userProf]);
-
-  if (!isMounted) return null;
 
   // lang パラメータがあるのにまだ適用されていない場合…は不要になったのでブロック自体削除
   // if (langParam && !rehydrated) return null;
