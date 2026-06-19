@@ -10,7 +10,10 @@ async function getLocale() {
 
 export async function generateMetadata() {
   const lang = await getLocale();
-  return generateTermsMetadata(lang);
+  return generateTermsMetadata(lang, {
+    canonical: '/termofuse',
+    url: 'https://skyblur.uk/termofuse',
+  });
 }
 
 export default async function Home() {

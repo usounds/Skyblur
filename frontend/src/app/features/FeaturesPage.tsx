@@ -145,14 +145,21 @@ const pageCopy: Record<Locales, FeaturePageCopy> = {
   }
 };
 
-export function generateFeaturesMetadata(lang: Locales): Metadata {
+type FeaturesMetadataOptions = {
+  canonical?: string;
+  url?: string;
+};
+
+export function generateFeaturesMetadata(lang: Locales, options: FeaturesMetadataOptions = {}): Metadata {
   const copy = pageCopy[lang];
+  const canonical = options.canonical ?? `/${lang}/features`;
+  const url = options.url ?? `https://skyblur.uk/${lang}/features`;
 
   return {
     title: `${copy.seoTitle} - Skyblur`,
     description: copy.jsonLdDescription,
     alternates: {
-      canonical: `/${lang}/features`,
+      canonical,
       languages: {
         ja: '/ja/features',
         en: '/en/features',
@@ -162,7 +169,7 @@ export function generateFeaturesMetadata(lang: Locales): Metadata {
     openGraph: {
       title: `${copy.seoTitle} - Skyblur`,
       description: copy.jsonLdDescription,
-      url: `https://skyblur.uk/${lang}/features`,
+      url,
       siteName: 'Skyblur',
       locale: lang === 'ja' ? 'ja_JP' : 'en_US',
       type: 'website',

@@ -10,7 +10,10 @@ async function getLocale() {
 
 export async function generateMetadata() {
   const lang = await getLocale();
-  return generateFeaturesMetadata(lang);
+  return generateFeaturesMetadata(lang, {
+    canonical: '/features',
+    url: 'https://skyblur.uk/features',
+  });
 }
 
 export default async function FeaturesPage() {

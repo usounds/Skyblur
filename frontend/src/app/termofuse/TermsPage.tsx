@@ -14,14 +14,21 @@ function getTermsCopy(lang: Locales) {
   };
 }
 
-export function generateTermsMetadata(lang: Locales): Metadata {
+type TermsMetadataOptions = {
+  canonical?: string;
+  url?: string;
+};
+
+export function generateTermsMetadata(lang: Locales, options: TermsMetadataOptions = {}): Metadata {
   const { pageTitle, pageDescription } = getTermsCopy(lang);
+  const canonical = options.canonical ?? `/${lang}/termofuse`;
+  const url = options.url ?? `https://skyblur.uk/${lang}/termofuse`;
 
   return {
     title: pageTitle,
     description: pageDescription,
     alternates: {
-      canonical: `/${lang}/termofuse`,
+      canonical,
       languages: {
         ja: '/ja/termofuse',
         en: '/en/termofuse',
@@ -31,7 +38,7 @@ export function generateTermsMetadata(lang: Locales): Metadata {
     openGraph: {
       title: pageTitle,
       description: pageDescription,
-      url: `https://skyblur.uk/${lang}/termofuse`,
+      url,
       siteName: 'Skyblur',
       locale: lang === 'ja' ? 'ja_JP' : 'en_US',
       type: 'website',

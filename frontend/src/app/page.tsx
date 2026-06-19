@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: copy.Common_Title,
     description: copy.Common_Description,
     alternates: {
-      canonical: `/${locale}`,
+      canonical: '/',
       languages: {
         ja: '/ja',
         en: '/en',
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: copy.Common_Title,
       description: copy.Common_OGDescription,
-      url: `https://skyblur.uk/${locale}`,
+      url: 'https://skyblur.uk',
       siteName: 'Skyblur',
       locale: locale === 'ja' ? 'ja_JP' : 'en_US',
       type: 'website',
