@@ -1,13 +1,25 @@
 .actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
 .compact {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.actionButton {
+  min-height: 2.75rem;
 }
 
 .copyButton {
   border-color: color-mix(in srgb, var(--mantine-color-blue-5), transparent 55%);
+}
+
+@media (max-width: 36em) {
+  .actions:not(.compact) {
+    grid-template-columns: 1fr;
+  }
 }

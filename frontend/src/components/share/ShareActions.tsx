@@ -40,6 +40,16 @@ export function buildShareTextForX(text: string, fallbackText: string) {
   return truncateGraphemes(source, X_POST_CHARACTER_LIMIT - X_URL_CHARACTER_RESERVE);
 }
 
+export function buildNativeShareData(title: string | undefined, text: string, url: string): ShareData {
+  return {
+    title,
+    // Bluesky may ignore ShareData.url, while X can use it separately. Supplying
+    // both keeps the URL available across share-target implementations.
+    text: `${text}\n\n${url}`,
+    url,
+  };
+}
+
 async function copyToClipboard(value: string) {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value);
@@ -74,7 +84,7 @@ export function ShareActions({ url, text, fallbackText, title, compact = false, 
     if (typeof navigator === "undefined" || typeof navigator.share !== "function") return;
 
     try {
-      await navigator.share({ title, text: shareText, url });
+      await navigator.share(buildNativeShareData(title, shareText, url));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       console.warn("Failed to share post", error);
@@ -92,15 +102,16 @@ export function ShareActions({ url, text, fallbackText, title, compact = false, 
 
   return (
     <div className={`${classes.actions} ${compact ? classes.compact : ""} ${className ?? ""}`}>
-      {canNativeShare && (
-        <Button variant="light" leftSection={<Share2 size={16} />} onClick={handleNativeShare}>
+      {canNativeShare ? (
+        <Button className={classes.actionButton} variant="filled" leftSection={<Share2 size={18} />} onClick={handleNativeShare}>
           {locale.Share_NativeLabel}
         </Button>
+      ) : (
+        <Button className={classes.actionButton} component="a" href={xIntentUrl} target="_blank" rel="noopener noreferrer" variant="filled" leftSection={<ExternalLink size={18} />}>
+          {locale.Share_OnX}
+        </Button>
       )}
-      <Button component="a" href={xIntentUrl} target="_blank" rel="noopener noreferrer" variant="filled" leftSection={<ExternalLink size={16} />}>
-        {locale.Share_OnX}
-      </Button>
-      <Button className={classes.copyButton} variant="default" leftSection={<Copy size={16} />} onClick={handleCopy}>
+      <Button className={`${classes.actionButton} ${classes.copyButton}`} variant="default" leftSection={<Copy size={18} />} onClick={handleCopy}>
         {locale.Share_CopyUrl}
       </Button>
     </div>

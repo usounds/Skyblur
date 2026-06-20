@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildShareTextForX } from "../ShareActions";
+import { buildNativeShareData, buildShareTextForX } from "../ShareActions";
 
 describe("buildShareTextForX", () => {
   it("uses the masked post text when available", () => {
@@ -16,5 +16,15 @@ describe("buildShareTextForX", () => {
 
     expect(result).toHaveLength(256);
     expect(result.endsWith("…")).toBe(true);
+  });
+});
+
+describe("buildNativeShareData", () => {
+  it("includes the post URL in the text for share targets that ignore the url field", () => {
+    expect(buildNativeShareData("Skyblur", "I love ○○○○○!", "https://skyblur.uk/post/example/1")).toEqual({
+      title: "Skyblur",
+      text: "I love ○○○○○!\n\nhttps://skyblur.uk/post/example/1",
+      url: "https://skyblur.uk/post/example/1",
+    });
   });
 });

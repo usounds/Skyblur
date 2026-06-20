@@ -22,7 +22,7 @@ const nextConfig = {
   },
   allowedDevOrigins: ['dev.skyblur.uk'],
   turbopack: {
-    root: path.resolve(process.cwd(), '..'),
+    root: process.cwd(),
   },
   ...(isE2ECoverage
     ? {

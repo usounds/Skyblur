@@ -6,9 +6,9 @@ import { ScopeReloginNotice } from "@/components/ScopeReloginNotice";
 import { ShareActions } from "@/components/share/ShareActions";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { Alert, Button, Group, Modal, Stack, Text } from "@mantine/core";
+import { Alert, Button, Group, Modal, Paper, Stack, Text, ThemeIcon } from "@mantine/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check } from "lucide-react";
 import { EditPostLoader } from "./EditPostLoader";
 import { PostComposerScreen } from "./PostComposerScreen";
 import { WriteStep } from "./WriteStep";
@@ -496,18 +496,28 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
       <Modal
         opened={!!postedShare}
         onClose={completeToConsole}
-        title={locale.Share_PostedTitle}
         centered
+        radius="lg"
+        size="md"
       >
         {postedShare && (
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">{locale.Share_PostedDescription}</Text>
+          <Stack gap="lg">
+            <Stack align="center" gap="xs">
+              <ThemeIcon size={52} radius="xl" variant="light" color="blue">
+                <Check size={28} strokeWidth={2.5} />
+              </ThemeIcon>
+              <Text size="xl" fw={700}>{locale.Share_PostedTitle}</Text>
+              <Text size="sm" c="dimmed" ta="center">{locale.Share_PostedDescription}</Text>
+            </Stack>
+            <Paper p="md" radius="md" bg="var(--mantine-color-default-hover)">
+              <Text size="sm" lineClamp={3}>{postedShare.text || locale.Share_DefaultText}</Text>
+            </Paper>
             <ShareActions url={postedShare.url} text={postedShare.text} fallbackText={locale.Share_DefaultText} title={locale.Common_Title} />
-            <Group justify="space-between">
-              <Button variant="light" onClick={() => router.push(postedShare.path)}>
+            <Group justify="center" gap="xs">
+              <Button variant="subtle" onClick={() => router.push(postedShare.path)}>
                 {locale.Share_OpenSkyblur}
               </Button>
-              <Button variant="default" onClick={completeToConsole}>
+              <Button variant="subtle" color="gray" onClick={completeToConsole}>
                 {locale.Share_BackToConsole}
               </Button>
             </Group>

@@ -9,12 +9,9 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import Link from 'next/link';
 import { useState } from "react";
-import { Ellipsis } from 'lucide-react';
-import { SquarePen } from 'lucide-react';
-import { Check, X } from 'lucide-react';
-import { ClipboardCopy } from 'lucide-react';
-import { Trash2 } from 'lucide-react';
+import { Check, Copy, Ellipsis, Share2, SquarePen, Trash2, X } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
+import { buildNativeShareData, buildShareTextForX } from './share/ShareActions';
 
 const editablePostVisibilities = new Set([
     VISIBILITY_PUBLIC,
@@ -48,22 +45,43 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
         ? post.isDecrypt
         : editablePostVisibilities.has(visibility);
 
-    const handleCopyToClipboard = async (item: PostListItem) => {
-        console.log('handleCopyToClipboard')
+    const handleShare = async (item: PostListItem) => {
+        if (!item.blurURL) {
+            console.error('URLが無効です');
+            return;
+        }
+
         try {
-            if (item.blurURL) {
-                notifications.show({
-                    title: 'Success',
-                    message: locale.DeleteList_URLCopy,
-                    color: 'teal',
-                    icon: <Check />
-                });
-                await navigator.clipboard.writeText(item.blurURL);
-            } else {
-                console.error('URLが無効です');
+            const shareText = buildShareTextForX(post.blur.text, locale.Share_DefaultText);
+            if (typeof navigator.share === 'function') {
+                await navigator.share(buildNativeShareData(locale.Common_Title, shareText, item.blurURL));
+                return;
             }
+
+            await navigator.clipboard.writeText(item.blurURL);
+            notifications.show({
+                title: locale.Share_CopiedTitle,
+                message: locale.Share_CopiedMessage,
+                color: 'blue',
+            });
         } catch (error) {
-            console.error('クリップボードへのコピーに失敗しました', error);
+            if (error instanceof DOMException && error.name === 'AbortError') return;
+            console.error('共有に失敗しました', error);
+        }
+    };
+
+    const handleCopyUrl = async (item: PostListItem) => {
+        if (!item.blurURL) return;
+
+        try {
+            await navigator.clipboard.writeText(item.blurURL);
+            notifications.show({
+                title: locale.Share_CopiedTitle,
+                message: locale.Share_CopiedMessage,
+                color: 'blue',
+            });
+        } catch (error) {
+            console.error('URLのコピーに失敗しました', error);
         }
     };
 
@@ -207,10 +225,16 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
                     ))
                 }
                 <Menu.Item
-                    leftSection={<ClipboardCopy size={18} />}
-                    onClick={() => handleCopyToClipboard(post)}
+                    leftSection={<Share2 size={18} />}
+                    onClick={() => handleShare(post)}
                 >
-                    {locale.DeleteList_CopySkylurURL}
+                    {locale.Share_Button}
+                </Menu.Item>
+                <Menu.Item
+                    leftSection={<Copy size={18} />}
+                    onClick={() => handleCopyUrl(post)}
+                >
+                    {locale.Share_CopyUrl}
                 </Menu.Item>
 
                 <Menu.Item

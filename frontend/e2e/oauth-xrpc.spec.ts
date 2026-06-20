@@ -1931,6 +1931,26 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
+  await page.evaluate(() => {
+    const state = window as typeof window & {
+      __e2eSharedData?: ShareData;
+      __e2eClipboardText?: string;
+    };
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => {
+        state.__e2eSharedData = data;
+      },
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          state.__e2eClipboardText = value;
+        },
+      },
+    });
+  });
   await expect(page.getByText("Visible E2E")).toBeVisible();
   await page.getByText("Visible E2E").click();
 
@@ -1943,9 +1963,23 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   const postMenuIcon = page.getByTestId("post-menu").last();
   await postMenuIcon.click();
   await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: "Copy Skyblur URL" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Share", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Copy URL", exact: true })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "View in Bluesky" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Share", exact: true }).click();
+  const sharedData = await page.evaluate(() => {
+    return (window as typeof window & { __e2eSharedData?: ShareData }).__e2eSharedData;
+  });
+  expect(sharedData?.url).toMatch(/\/post\//);
+  expect(sharedData?.text).toContain(sharedData?.url);
+  await postMenuIcon.click();
+  await page.getByRole("menuitem", { name: "Copy URL", exact: true }).click();
+  const clipboardText = await page.evaluate(() => {
+    return (window as typeof window & { __e2eClipboardText?: string }).__e2eClipboardText;
+  });
+  expect(clipboardText).toBe(sharedData?.url);
+  await postMenuIcon.click();
   await clickOpenPostMenuEdit(page);
 
   await expect(page).toHaveURL(/\/console\/posts\/.+\/edit$/);
@@ -1968,9 +2002,6 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   await expect(page.getByText("Post List")).toBeVisible();
   await expect(page.getByText("Visible E2E")).toBeVisible();
 
-  await page.getByTestId("post-menu").last().click();
-  await page.getByRole("menuitem", { name: "Copy Skyblur URL" }).click();
-  await expect(page.getByText("URL has been copied!")).toBeVisible();
   await page.getByTestId("post-menu").last().click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByRole("dialog", { name: "Are you sure you want to delete this post?" })).toBeVisible();
