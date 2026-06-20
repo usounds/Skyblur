@@ -36,8 +36,8 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       hono:
-        specifier: ^4.12.23
-        version: 4.12.23
+        specifier: ^4.12.25
+        version: 4.12.25
       web-did-resolver:
         specifier: ^2.0.32
         version: 2.0.32
@@ -147,6 +147,9 @@ packages:
 
   '@atcute/multibase@1.2.0':
     resolution: {integrity: sha512-ZK2GRra+qIYq9nNuQB52m2ul0hOmCQEtPobGfTSUxm7pF0OGEkWGkWHugFhNEDVzHzTwPxHp6VGotdZFue4lYQ==}
+
+  '@atcute/multibase@1.2.3':
+    resolution: {integrity: sha512-hliOXcgYS3x0afs8JsjSvA5c15Zf36ggCcxIHspSM7wrae3zhwaTigYRU6NvghkPMAal4tRRbhv98AuP5YzJ6w==}
 
   '@atcute/oauth-crypto@1.0.0':
     resolution: {integrity: sha512-2UC1msk4PyUArk/5Pl8zgtz1T8O+LZdFfB8ENLHjQVYitpqzGj2ZpDJaWZvCF3Y8lly4KoeUHLpFPDzbP+3u+g==}
@@ -1047,8 +1050,8 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
-  hono@4.12.23:
-    resolution: {integrity: sha512-eIaZ9qDgu7XV0pxOCrg7/WhnQ6Ivm22UcxhXx/A3dcbqbbYgBEkc6e/J/s7j2tS96zoB0S9VBdLwQNCWwUo4LA==}
+  hono@4.12.25:
+    resolution: {integrity: sha512-2NFaIyNVgJmBs/ecmtGzlmluTFs5cHEWGTdu0t1HBwYzoGXOL5nUQBRMXsXWla5i4KkG//QMzVP88m1+I3fdAQ==}
     engines: {node: '>=16.9.0'}
 
   html-escaper@2.0.2:
@@ -1459,12 +1462,12 @@ snapshots:
   '@atcute/cbor@2.3.2':
     dependencies:
       '@atcute/cid': 2.4.1
-      '@atcute/multibase': 1.2.0
+      '@atcute/multibase': 1.2.3
       '@atcute/uint8array': 1.1.2
 
   '@atcute/cid@2.4.1':
     dependencies:
-      '@atcute/multibase': 1.2.0
+      '@atcute/multibase': 1.2.3
       '@atcute/uint8array': 1.1.2
 
   '@atcute/client@5.0.0(@atcute/lexicons@2.0.0)':
@@ -1552,6 +1555,10 @@ snapshots:
       '@atcute/uint8array': 1.1.2
 
   '@atcute/multibase@1.2.0':
+    dependencies:
+      '@atcute/uint8array': 1.1.2
+
+  '@atcute/multibase@1.2.3':
     dependencies:
       '@atcute/uint8array': 1.1.2
 
@@ -2254,7 +2261,7 @@ snapshots:
 
   has-flag@4.0.0: {}
 
-  hono@4.12.23: {}
+  hono@4.12.25: {}
 
   html-escaper@2.0.2: {}
 

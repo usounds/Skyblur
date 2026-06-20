@@ -19,7 +19,7 @@
     "@atcute/oauth-node-client": "^2.0.0",
     "did-jwt": "^8.0.18",
     "did-resolver": "^5.0.1",
-    "hono": "^4.12.23",
+    "hono": "^4.12.25",
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
