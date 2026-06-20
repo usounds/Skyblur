@@ -16,8 +16,7 @@ type ShareActionsProps = {
   className?: string;
 };
 
-const X_POST_CHARACTER_LIMIT = 280;
-const X_URL_CHARACTER_RESERVE = 24;
+const X_SHARE_TEXT_LIMIT = 128;
 
 function truncateGraphemes(value: string, maxLength: number) {
   if (maxLength <= 0) return "";
@@ -37,7 +36,7 @@ function truncateGraphemes(value: string, maxLength: number) {
 
 export function buildShareTextForX(text: string, fallbackText: string) {
   const source = text.trim() ? text : fallbackText;
-  return truncateGraphemes(source, X_POST_CHARACTER_LIMIT - X_URL_CHARACTER_RESERVE);
+  return truncateGraphemes(source, X_SHARE_TEXT_LIMIT);
 }
 
 export function buildNativeShareData(title: string | undefined, text: string, url: string): ShareData {
