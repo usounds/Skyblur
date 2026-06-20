@@ -1,6 +1,5 @@
 "use client";
 
-import { ResponsiveHeroDemo } from "@/components/HeroDemo";
 import { RecommendedClients } from "@/components/RecommendedClients";
 import { StartButton } from "@/components/StartButton";
 import en from "@/locales/en";
@@ -85,10 +84,6 @@ export function HomeContentClient({ initialLocale, initialLocaleData }: HomeCont
                 <Text size="sm" className={classes.description}>
                     {locale.Home_WelcomeDescription}
                 </Text>
-            </div>
-
-            <div>
-                <ResponsiveHeroDemo locale={locale} />
             </div>
 
             <div className={classes.actionGroup}>
