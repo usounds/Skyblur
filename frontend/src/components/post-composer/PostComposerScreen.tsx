@@ -79,6 +79,7 @@ export function createInitialComposerState(initialData?: PostComposerInitialData
     replyPost: initialData?.replyPost,
     threadGate: initialData?.threadGate ?? [],
     postGate: initialData?.postGate ?? { allowQuote: true },
+    showShareAfterPost: false,
     dirty: false,
     submitting: false,
   };

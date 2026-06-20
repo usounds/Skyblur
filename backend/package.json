@@ -12,27 +12,27 @@
   },
   "dependencies": {
     "@atcute/atproto": "^4.0.2",
-    "@atcute/client": "^5.0.0",
+    "@atcute/client": "^5.1.0",
     "@atcute/identity-resolver": "^2.0.0",
-    "@atcute/lexicons": "^2.0.0",
+    "@atcute/lexicons": "^2.0.1",
     "@atcute/oauth-crypto": "^1.0.0",
     "@atcute/oauth-node-client": "^2.0.0",
     "did-jwt": "^8.0.18",
     "did-resolver": "^5.0.1",
-    "hono": "^4.12.23",
+    "hono": "^4.12.26",
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
-    "@atcute/bluesky": "^4.0.6",
+    "@atcute/bluesky": "^4.0.10",
     "@atcute/lex-cli": "^3.1.0",
     "@cloudflare/unenv-preset": "^2.16.1",
-    "@cloudflare/workers-types": "^4.20260605.1",
-    "@types/node": "^25.9.1",
-    "@vitest/coverage-v8": "^4.1.8",
-    "@vitest/ui": "^4.1.8",
+    "@cloudflare/workers-types": "^4.20260620.1",
+    "@types/node": "^26.0.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/ui": "^4.1.9",
     "unenv": "2.0.0-rc.24",
     "vite": "^8.0.16",
-    "vitest": "^4.1.8",
-    "wrangler": "^4.98.0"
+    "vitest": "^4.1.9",
+    "wrangler": "^4.103.0"
   }
 }

@@ -40,6 +40,14 @@
     box-shadow: 0 5px 13px var(--badge-glow);
 }
 
+.postActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
 .visibilityBadge[data-tone='public'] {
     --badge-accent: #0f766e;
     --badge-glow: rgba(15, 118, 110, 0.18);

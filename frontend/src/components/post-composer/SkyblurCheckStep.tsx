@@ -3,14 +3,16 @@
 import PostTextWithBold from "@/components/PostTextWithBold";
 import type { ComposerFixTarget, SkyblurCheckSummary } from "@/types/postComposer";
 import { useLocale } from "@/state/Locale";
-import { Badge, Button, Group, Stack, Tabs, Text } from "@mantine/core";
-import { AlertTriangle, CornerDownRight, Eye, EyeOff, MessageCircle, Quote, Users } from "lucide-react";
+import { Badge, Button, Checkbox, Group, Stack, Tabs, Text } from "@mantine/core";
+import { AlertTriangle, CornerDownRight, Eye, EyeOff, MessageCircle, Quote, Share2, Users } from "lucide-react";
 import { useState } from "react";
 import classes from "./SkyblurCheckStep.module.css";
 
 type SkyblurCheckStepProps = {
   summary: SkyblurCheckSummary;
   requiresRelogin?: boolean;
+  showShareAfterPost?: boolean;
+  onShowShareAfterPostChange?: (checked: boolean) => void;
   onFix: (target: ComposerFixTarget) => void;
 };
 
@@ -40,7 +42,7 @@ function joinLabels(values: string[], mapper: (value: string) => string, fallbac
   return values.length > 0 ? values.map(mapper).join(", ") : fallback;
 }
 
-export function SkyblurCheckStep({ summary, requiresRelogin, onFix }: SkyblurCheckStepProps) {
+export function SkyblurCheckStep({ summary, requiresRelogin, showShareAfterPost = false, onShowShareAfterPostChange, onFix }: SkyblurCheckStepProps) {
   const { localeData: locale } = useLocale();
   const isEditMode = summary.savePlan.mode === "edit";
   const [skyblurPreviewAudience, setSkyblurPreviewAudience] = useState<string | null>("allowed");
@@ -195,6 +197,21 @@ export function SkyblurCheckStep({ summary, requiresRelogin, onFix }: SkyblurChe
           </div>
         </section>
       </div>
+
+      {!isEditMode && (
+        <div className={classes.shareOption}>
+          <Checkbox
+            checked={showShareAfterPost}
+            onChange={(event) => onShowShareAfterPostChange?.(event.currentTarget.checked)}
+            label={locale.Share_AfterPostLabel}
+            description={locale.Share_AfterPostDescription}
+          />
+          <Group gap={6} wrap="nowrap" className={classes.shareNotice}>
+            <Share2 size={15} />
+            <Text size="xs" c="dimmed">{locale.Share_RestrictedNotice}</Text>
+          </Group>
+        </div>
+      )}
 
     </div>
   );

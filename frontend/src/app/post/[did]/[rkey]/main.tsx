@@ -4,10 +4,12 @@ import Loading from "@/components/Loading";
 import PostLoading, { AvatarLoading, PostBodyLoading } from "@/components/PostLoading";
 import PostTextWithBold from "@/components/PostTextWithBold";
 import Reaction from "@/components/Reaction";
+import { ShareActions } from "@/components/share/ShareActions";
 import { UkSkyblurPost, UkSkyblurPostDecryptByCid } from '@/lexicon/UkSkyblur';
 import { getPreference } from "@/logic/HandleBluesky";
 import { formatDateToLocale } from "@/logic/LocaledDatetime";
 import { isRestrictedVisibility as isRestrictedVisibilityScope } from "@/logic/listVisibility";
+import { transformPostText } from "@/logic/postComposer/text";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from '@/types/types';
@@ -323,6 +325,13 @@ export const PostPage = () => {
         return { label: locale.Visibility_Public, Icon: Globe, tone: 'public' };
     })();
     const VisibilityIcon = visibilityBadge.Icon;
+    const shareUrl = `${window.location.origin}/post/${did}/${rkey}`;
+    const shareText = transformPostText({
+        text: postText,
+        simpleMode: false,
+        limitConsecutive: false,
+        omitChar: locale.CreatePost_OmmitChar,
+    }).blurredText;
 
     return (
         <>
@@ -440,8 +449,9 @@ export const PostPage = () => {
                                                 <div className="text-sm text-gray-400 mr-2">{postDate}</div>
                                                 <Reaction atUriPost={postAtUri} atUriBlur={aturi} />
                                             </div>
-                                            <div className="flex">
-                                                <a className="text-sm text-gray-500" href={bskyUrl} target="_blank">
+                                            <div className={classes.postActions}>
+                                                <ShareActions url={shareUrl} text={shareText} fallbackText={locale.Share_DefaultText} title={locale.Common_Title} compact />
+                                                <a className="text-sm text-gray-500" href={bskyUrl} target="_blank" rel="noopener noreferrer" aria-label="Bluesky">
                                                     <BlueskyIcon size={22} />
                                                 </a>
                                             </div>

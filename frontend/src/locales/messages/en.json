@@ -303,6 +303,22 @@
     "message": "Skyblur has added a new feature. Press Log in again on the right to start using it.",
     "button": "Log in again"
   },
+  "share": {
+    "button": "Share",
+    "nativeLabel": "Share",
+    "onX": "Share on X",
+    "copyUrl": "Copy URL",
+    "copiedTitle": "Copied",
+    "copiedMessage": "The post URL was copied.",
+    "openSkyblur": "Open on Skyblur",
+    "backToConsole": "Back to console",
+    "postedTitle": "Posted",
+    "postedDescription": "Choose how to share this post.",
+    "afterPostLabel": "Show share options after posting",
+    "afterPostDescription": "After posting, choose X sharing, URL copy, or opening the post page.",
+    "restrictedNotice": "Only the Skyblur post URL is shared. Restricted text is not included in the share message.",
+    "defaultText": "Read this masked post on Skyblur"
+  },
   "postComposer": {
     "stepWrite": "Write",
     "stepAudience": "Audience",

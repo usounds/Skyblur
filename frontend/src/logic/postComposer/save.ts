@@ -118,6 +118,10 @@ function getAppOrigin() {
   return "https://skyblur.uk";
 }
 
+function buildSkyblurPostUrl(did: string, rkey: string) {
+  return `${getAppOrigin()}/post/${did}/${rkey}`;
+}
+
 async function buildBlueskyPostValue(input: PostComposerSaveInput & { rkey: string; blurUri: string }) {
   const text = input.state.textForBluesky || input.state.blurredText || input.state.text;
   const facets = await buildFacets(text);
@@ -133,7 +137,7 @@ async function buildBlueskyPostValue(input: PostComposerSaveInput & { rkey: stri
     embed: {
       $type: "app.bsky.embed.external",
       external: {
-        uri: `${getAppOrigin()}/post/${input.did}/${input.rkey}`,
+        uri: buildSkyblurPostUrl(input.did, input.rkey),
         title: input.locale?.CreatePost_OGPTitle || "Skyblur",
         description: `${input.locale?.CreatePost_OGPDescription || "Refer to the unblurred text."}${input.state.visibility === "password" ? input.locale?.CreatePost_OGPDescriptionPassword || "" : ""}`,
       },
@@ -600,6 +604,7 @@ export async function postComposerSave(input: PostComposerSaveInput): Promise<Sa
     blurUri,
     blurCid: (response.data as any)?.commit?.cid,
     blueskyPostUri: `at://${did}/app.bsky.feed.post/${rkey}`,
+    skyblurUrl: buildSkyblurPostUrl(did, rkey),
     writes: plan.writeTargets,
     ...(cleanupWarning ? { warning: cleanupWarning } : {}),
   };

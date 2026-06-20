@@ -37,6 +37,7 @@ export type PostComposerState = {
     replyPost?: PostView;
     threadGate: ThreadGateValue[];
     postGate: PostGateState;
+    showShareAfterPost?: boolean;
     dirty: boolean;
     submitting: boolean;
 };
@@ -173,6 +174,7 @@ export type SaveResult =
         blurUri: string;
         blurCid?: string;
         blueskyPostUri?: string;
+        skyblurUrl?: string;
         writes: SavePlanWriteTarget[];
         warning?: {
             reason: SaveWarningReason;

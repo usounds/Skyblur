@@ -3,9 +3,10 @@
 import { AuthenticationTitle } from "@/components/login/Login";
 import PageLoading from "@/components/PageLoading";
 import { ScopeReloginNotice } from "@/components/ScopeReloginNotice";
+import { ShareActions } from "@/components/share/ShareActions";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { Alert, Button, Group, Modal, Text } from "@mantine/core";
+import { Alert, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { EditPostLoader } from "./EditPostLoader";
@@ -33,6 +34,12 @@ type PostComposerRouteScaffoldProps = {
 
 const activeCreateSessionKey = "skyblur.post-composer.active-create-session";
 
+type PostedShareState = {
+  path: string;
+  url: string;
+  text: string;
+};
+
 function hasActiveCreateSession() {
   return typeof window !== "undefined" && window.sessionStorage.getItem(activeCreateSessionKey) === "1";
 }
@@ -54,6 +61,11 @@ function safeDecode(value?: string) {
   } catch {
     return "";
   }
+}
+
+function buildPostPath(did: string, blurUri: string) {
+  const rkey = blurUri.split("/").pop() || "";
+  return `/post/${did}/${rkey}`;
 }
 
 function syncCreateDraft(state: PostComposerState) {
@@ -105,6 +117,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   const [restoredReplyPost, setRestoredReplyPost] = useState<PostView | undefined>();
   const [isTempReplyResolved, setIsTempReplyResolved] = useState(mode !== "create");
   const [restoreReplyWarning, setRestoreReplyWarning] = useState("");
+  const [postedShare, setPostedShare] = useState<PostedShareState | null>(null);
 
   const routeDid = useMemo(() => safeDecode(didParam), [didParam]);
   const commitRestoreDecision = useCallback((decision: "pending" | "restored" | "fresh") => {
@@ -415,7 +428,17 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
           suppressCreateDraftSyncRef.current = true;
           clearSensitiveDraft();
           clearTempPost();
+          setActiveCreateSession(false);
           setHasUnsavedComposerChanges(false);
+          if (mode === "create" && state.showShareAfterPost) {
+            const path = buildPostPath(did, result.blurUri);
+            setPostedShare({
+              path,
+              url: result.skyblurUrl ?? `${window.location.origin}${path}`,
+              text: state.textForBluesky || state.blurredText,
+            });
+            return result;
+          }
           completeToConsole();
         }
         return result;
@@ -440,6 +463,8 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
           <SkyblurCheckStep
             summary={buildSkyblurCheckSummary(state, planResult as SavePlan)}
             requiresRelogin={missingScopes.length > 0}
+            showShareAfterPost={state.showShareAfterPost}
+            onShowShareAfterPostChange={(checked) => setState({ showShareAfterPost: checked, dirty: state.dirty })}
             onFix={(target) => goToStep(target.step)}
           />
         );
@@ -468,6 +493,27 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
           renderComposer()
         )}
       </main>
+      <Modal
+        opened={!!postedShare}
+        onClose={completeToConsole}
+        title={locale.Share_PostedTitle}
+        centered
+      >
+        {postedShare && (
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">{locale.Share_PostedDescription}</Text>
+            <ShareActions url={postedShare.url} text={postedShare.text} fallbackText={locale.Share_DefaultText} title={locale.Common_Title} />
+            <Group justify="space-between">
+              <Button variant="light" onClick={() => router.push(postedShare.path)}>
+                {locale.Share_OpenSkyblur}
+              </Button>
+              <Button variant="default" onClick={completeToConsole}>
+                {locale.Share_BackToConsole}
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
     </div>
   );
 }
