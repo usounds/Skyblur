@@ -16,7 +16,7 @@ type ShareActionsProps = {
   className?: string;
 };
 
-const X_SHARE_TEXT_LIMIT = 128;
+const X_SHARE_TEXT_LIMIT = 124;
 
 function truncateGraphemes(value: string, maxLength: number) {
   if (maxLength <= 0) return "";

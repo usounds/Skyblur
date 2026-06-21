@@ -14,7 +14,7 @@ describe("buildShareTextForX", () => {
   it("fits double-weight text alongside the X URL and truncates with an ellipsis", () => {
     const result = buildShareTextForX("a".repeat(300), "fallback");
 
-    expect(result).toHaveLength(128);
+    expect(result).toHaveLength(124);
     expect(result.endsWith("…")).toBe(true);
   });
 });

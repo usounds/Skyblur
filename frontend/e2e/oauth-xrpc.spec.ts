@@ -1973,7 +1973,7 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   });
   expect(sharedData?.url).toMatch(/\/post\//);
   expect(sharedData?.text).toContain(sharedData?.url);
-  expect(Array.from(sharedData?.text?.split("\n")[0] ?? "").length).toBeLessThanOrEqual(128);
+  expect(Array.from(sharedData?.text?.split("\n")[0] ?? "").length).toBeLessThanOrEqual(124);
   await postMenuIcon.click();
   await page.getByRole("menuitem", { name: "Copy URL", exact: true }).click();
   const clipboardText = await page.evaluate(() => {
