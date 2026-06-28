@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Check, Copy, Ellipsis, Share2, SquarePen, Trash2, X } from 'lucide-react';
 import { BlueskyIcon } from './Icons';
 import { buildNativeShareData, buildShareTextForX } from './share/ShareActions';
+import { transformPostText } from "@/logic/postComposer/text";
 
 const editablePostVisibilities = new Set([
     VISIBILITY_PUBLIC,
@@ -52,7 +53,13 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
         }
 
         try {
-            const shareText = buildShareTextForX(post.blur.text, locale.Share_DefaultText, item.blurURL);
+            const blurredText = transformPostText({
+                text: post.blur.text,
+                simpleMode: false,
+                limitConsecutive: false,
+                omitChar: locale.CreatePost_OmmitChar || '○',
+            }).blurredText;
+            const shareText = buildShareTextForX(blurredText, locale.Share_DefaultText, item.blurURL);
             if (typeof navigator.share === 'function') {
                 await navigator.share(buildNativeShareData(locale.Common_Title, shareText, item.blurURL));
                 return;

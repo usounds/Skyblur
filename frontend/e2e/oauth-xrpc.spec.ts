@@ -2000,6 +2000,8 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   });
   expect(sharedData?.url).toMatch(/\/post\//);
   expect(sharedData?.text).toContain(sharedData?.url);
+  expect(sharedData?.text).not.toContain("[secret]");
+  expect(sharedData?.text).toContain("******");
   expect(twitterText.parseTweet(sharedData?.text ?? "").weightedLength).toBeLessThanOrEqual(256);
   await postMenuIcon.click();
   await page.getByRole("menuitem", { name: "Copy URL", exact: true }).click();
