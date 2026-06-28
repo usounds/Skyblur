@@ -74,12 +74,17 @@ export function ConsoleContent() {
             return;
         }
 
-        const checkSession = async () => {
-            const result = await useXrpcAgentStore.getState().checkSession();
-            setIsAuthenticated(result.authenticated);
-        };
+        let isActive = true;
 
-        checkSession();
+        void useXrpcAgentStore.getState().checkSession().then((result) => {
+            if (isActive) setIsAuthenticated(result.authenticated);
+        }).catch(() => {
+            if (isActive) setIsAuthenticated(false);
+        });
+
+        return () => {
+            isActive = false;
+        };
     }, [did, isSessionChecked, serviceUrl]);
 
     // ログアウト等で DID がクリアされた場合、認証状態も未認証に戻す

@@ -5,6 +5,7 @@ import { Button } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { Copy, ExternalLink, Share2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import twitterText from "twitter-text";
 import classes from "./ShareActions.module.css";
 
 type ShareActionsProps = {
@@ -16,13 +17,17 @@ type ShareActionsProps = {
   className?: string;
 };
 
-const X_SHARE_TEXT_LIMIT = 124;
+const SHARE_SEPARATOR = "\n\n";
+// X's composer can exceed twitter-text's result; keep a conservative margin.
+const X_SHARE_WEIGHT_LIMIT = 256;
 
-function truncateGraphemes(value: string, maxLength: number) {
-  if (maxLength <= 0) return "";
+function fitsXShareLimit(value: string) {
+  return twitterText.parseTweet(value).weightedLength <= X_SHARE_WEIGHT_LIMIT;
+}
 
+function truncateForX(value: string, url: string) {
   const normalized = value.replace(/\s+/g, " ").trim();
-  if ([...normalized].length <= maxLength) return normalized;
+  if (fitsXShareLimit(`${normalized}${SHARE_SEPARATOR}${url}`)) return normalized;
 
   const segmenter = typeof Intl !== "undefined" && "Segmenter" in Intl
     ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
@@ -31,12 +36,24 @@ function truncateGraphemes(value: string, maxLength: number) {
     ? Array.from(segmenter.segment(normalized), (segment) => segment.segment)
     : Array.from(normalized);
 
-  return `${graphemes.slice(0, Math.max(0, maxLength - 1)).join("").trimEnd()}…`;
+  let low = 0;
+  let high = graphemes.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    const candidate = `${graphemes.slice(0, middle).join("").trimEnd()}…`;
+    if (fitsXShareLimit(`${candidate}${SHARE_SEPARATOR}${url}`)) {
+      low = middle;
+    } else {
+      high = middle - 1;
+    }
+  }
+
+  return low > 0 ? `${graphemes.slice(0, low).join("").trimEnd()}…` : "";
 }
 
-export function buildShareTextForX(text: string, fallbackText: string) {
+export function buildShareTextForX(text: string, fallbackText: string, url: string) {
   const source = text.trim() ? text : fallbackText;
-  return truncateGraphemes(source, X_SHARE_TEXT_LIMIT);
+  return truncateForX(source, url);
 }
 
 export function buildNativeShareData(title: string | undefined, text: string, url: string): ShareData {
@@ -44,7 +61,7 @@ export function buildNativeShareData(title: string | undefined, text: string, ur
     title,
     // Bluesky may ignore ShareData.url, while X can use it separately. Supplying
     // both keeps the URL available across share-target implementations.
-    text: `${text}\n\n${url}`,
+    text: text ? `${text}${SHARE_SEPARATOR}${url}` : url,
     url,
   };
 }
@@ -69,7 +86,7 @@ async function copyToClipboard(value: string) {
 export function ShareActions({ url, text, fallbackText, title, compact = false, className }: ShareActionsProps) {
   const { localeData: locale } = useLocale();
   const [canNativeShare, setCanNativeShare] = useState(false);
-  const shareText = useMemo(() => buildShareTextForX(text, fallbackText ?? locale.Share_DefaultText), [fallbackText, locale.Share_DefaultText, text]);
+  const shareText = useMemo(() => buildShareTextForX(text, fallbackText ?? locale.Share_DefaultText, url), [fallbackText, locale.Share_DefaultText, text, url]);
   const xIntentUrl = useMemo(() => {
     const params = new URLSearchParams({ text: shareText, url });
     return `https://twitter.com/intent/tweet?${params.toString()}`;

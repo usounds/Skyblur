@@ -23,6 +23,7 @@ loadBaseUrlFromDotenv();
 const e2ePort = process.env.E2E_PORT || "4501";
 const e2eBaseURL = process.env.E2E_BASE_URL || `http://localhost:${e2ePort}`;
 const e2eWebServerOutput = process.env.E2E_WEB_SERVER_LOGS === "true" ? "pipe" : "ignore";
+const reuseExistingE2EServer = process.env.E2E_REUSE_SERVER === "true";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -41,10 +42,11 @@ export default defineConfig({
         command: `pnpm exec next dev -p ${e2ePort}`,
         env: {
           E2E_TEST: "true",
+          NEXT_PUBLIC_E2E_SESSION_RETRY_SECONDS: "1",
           E2E_COVERAGE: process.env.E2E_COVERAGE || "false",
         },
         url: e2eBaseURL,
-        reuseExistingServer: true,
+        reuseExistingServer: reuseExistingE2EServer,
         timeout: 120_000,
         stdout: e2eWebServerOutput,
         stderr: e2eWebServerOutput,

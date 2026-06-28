@@ -33,6 +33,7 @@ type AudienceStepProps = {
   initialData?: PostComposerInitialData;
   stepError?: ComposerFixTarget;
   stepErrorMessage?: string;
+  defaultDetailsOpened?: boolean;
 };
 
 export function getPasswordWhitespaceError(password: string) {
@@ -96,7 +97,14 @@ export function getVisibilityOptionDisabled(
   return originalIsPassword ? !optionIsPassword : optionIsPassword;
 }
 
-export function AudienceStep({ state, setState, initialData, stepError, stepErrorMessage }: AudienceStepProps) {
+export function AudienceStep({
+  state,
+  setState,
+  initialData,
+  stepError,
+  stepErrorMessage,
+  defaultDetailsOpened = false,
+}: AudienceStepProps) {
   const { localeData: locale } = useLocale();
   const did = useXrpcAgentStore((store) => store.did);
   const agent = useXrpcAgentStore((store) => store.agent);
@@ -212,7 +220,7 @@ export function AudienceStep({ state, setState, initialData, stepError, stepErro
         </div>
       )}
 
-      <Accordion variant="separated" mt="lg">
+      <Accordion variant="separated" mt="lg" defaultValue={defaultDetailsOpened ? "details" : undefined}>
         <Accordion.Item value="details">
           <Accordion.Control icon={<MessageCircle size={16} />}>
             <div>

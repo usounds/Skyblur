@@ -52,7 +52,7 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
         }
 
         try {
-            const shareText = buildShareTextForX(post.blur.text, locale.Share_DefaultText);
+            const shareText = buildShareTextForX(post.blur.text, locale.Share_DefaultText, item.blurURL);
             if (typeof navigator.share === 'function') {
                 await navigator.share(buildNativeShareData(locale.Common_Title, shareText, item.blurURL));
                 return;
@@ -71,7 +71,10 @@ function DropdownMenu({ post, handleEdit, agent, did, setDeleteList }: DropsownM
     };
 
     const handleCopyUrl = async (item: PostListItem) => {
-        if (!item.blurURL) return;
+        if (!item.blurURL) {
+            console.error('URLが無効です');
+            return;
+        }
 
         try {
             await navigator.clipboard.writeText(item.blurURL);

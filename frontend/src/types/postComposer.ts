@@ -37,7 +37,6 @@ export type PostComposerState = {
     replyPost?: PostView;
     threadGate: ThreadGateValue[];
     postGate: PostGateState;
-    showShareAfterPost?: boolean;
     dirty: boolean;
     submitting: boolean;
 };

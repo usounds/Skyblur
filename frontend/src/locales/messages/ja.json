@@ -314,9 +314,6 @@
     "backToConsole": "一覧に戻る",
     "postedTitle": "投稿しました",
     "postedDescription": "共有方法を選んでください。",
-    "afterPostLabel": "投稿後に共有メニューを表示する",
-    "afterPostDescription": "投稿後に、Xで共有・URLコピー・投稿ページ表示を選べます。",
-    "restrictedNotice": "共有されるのはSkyblurの投稿URLです。限定公開の本文は共有文に含めません。",
     "defaultText": "Skyblurで伏せ字の投稿を読む"
   },
   "postComposer": {

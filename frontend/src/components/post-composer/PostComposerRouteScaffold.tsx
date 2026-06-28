@@ -430,7 +430,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
           clearTempPost();
           setActiveCreateSession(false);
           setHasUnsavedComposerChanges(false);
-          if (mode === "create" && state.showShareAfterPost) {
+          if (mode === "create") {
             const path = buildPostPath(did, result.blurUri);
             setPostedShare({
               path,
@@ -450,6 +450,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
             state={state}
             setState={setState}
             initialData={initialData}
+            defaultDetailsOpened={mode === "create"}
             stepError={stepError}
             stepErrorMessage={stepErrorMessage}
           />
@@ -463,8 +464,6 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
           <SkyblurCheckStep
             summary={buildSkyblurCheckSummary(state, planResult as SavePlan)}
             requiresRelogin={missingScopes.length > 0}
-            showShareAfterPost={state.showShareAfterPost}
-            onShowShareAfterPostChange={(checked) => setState({ showShareAfterPost: checked, dirty: state.dirty })}
             onFix={(target) => goToStep(target.step)}
           />
         );

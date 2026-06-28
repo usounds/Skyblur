@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const SESSION_CHECK_RETRY_SECONDS = 30;
+const SESSION_CHECK_RETRY_SECONDS = Number(process.env.NEXT_PUBLIC_E2E_SESSION_RETRY_SECONDS || 30);
 
 export function StartButton({ initialLocale }: { initialLocale: Locales }) {
     const storeLocale = useLocaleStore((state) => state.locale);

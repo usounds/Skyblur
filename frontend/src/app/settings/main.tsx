@@ -168,10 +168,13 @@ function Settings() {
     let imgObject = e.target.files[0];
 
     if (imgObject.size > 900 * 1024) {
+      setIsLoading(true);
       try {
         imgObject = await compressImage(imgObject);
       } catch (e) {
         console.error("Compression failed", e);
+      } finally {
+        setIsLoading(false);
       }
     }
 

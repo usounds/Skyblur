@@ -84,20 +84,6 @@
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
-.shareOption {
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--mantine-color-blue-4), transparent 65%);
-  border-radius: 12px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--mantine-color-blue-0), transparent 25%), transparent),
-    var(--mantine-color-white);
-}
-
-.shareNotice {
-  margin-top: 10px;
-  padding-left: 30px;
-}
-
 [data-mantine-color-scheme="dark"] .statusIcon {
   color: var(--mantine-color-blue-3);
   background: rgba(25, 113, 194, 0.18);
@@ -115,12 +101,6 @@
 
 [data-mantine-color-scheme="dark"] .panel {
   background: var(--mantine-color-dark-7);
-}
-
-[data-mantine-color-scheme="dark"] .shareOption {
-  background:
-    linear-gradient(135deg, rgba(25, 113, 194, 0.14), transparent),
-    var(--mantine-color-dark-7);
 }
 
 [data-mantine-color-scheme="dark"] .quietNotice {
