@@ -15,7 +15,6 @@ const homeAlternates = {
   languages: {
     ja: "/ja",
     en: "/en",
-    "x-default": "/",
   },
 };
 

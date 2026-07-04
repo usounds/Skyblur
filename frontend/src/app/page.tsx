@@ -20,7 +20,6 @@ export async function generateMetadata(): Promise<Metadata> {
       languages: {
         ja: '/ja',
         en: '/en',
-        'x-default': '/'
       }
     },
     openGraph: {

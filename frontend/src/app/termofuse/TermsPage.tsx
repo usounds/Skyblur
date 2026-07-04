@@ -32,7 +32,6 @@ export function generateTermsMetadata(lang: Locales, options: TermsMetadataOptio
       languages: {
         ja: '/ja/termofuse',
         en: '/en/termofuse',
-        'x-default': '/termofuse'
       }
     },
     openGraph: {

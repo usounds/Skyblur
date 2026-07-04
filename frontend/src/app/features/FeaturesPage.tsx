@@ -163,7 +163,6 @@ export function generateFeaturesMetadata(lang: Locales, options: FeaturesMetadat
       languages: {
         ja: '/ja/features',
         en: '/en/features',
-        'x-default': '/features'
       }
     },
     openGraph: {

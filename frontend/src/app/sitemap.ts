@@ -5,17 +5,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     home: {
       ja: 'https://skyblur.uk/ja',
       en: 'https://skyblur.uk/en',
-      'x-default': 'https://skyblur.uk',
     },
     features: {
       ja: 'https://skyblur.uk/ja/features',
       en: 'https://skyblur.uk/en/features',
-      'x-default': 'https://skyblur.uk/features',
     },
     termofuse: {
       ja: 'https://skyblur.uk/ja/termofuse',
       en: 'https://skyblur.uk/en/termofuse',
-      'x-default': 'https://skyblur.uk/termofuse',
     },
   };
 

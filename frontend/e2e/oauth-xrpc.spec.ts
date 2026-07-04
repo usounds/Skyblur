@@ -688,6 +688,23 @@ test("public metadata endpoints expose app identity documents", async ({ request
   const didDocument = await did.json();
   expect(didDocument.id).toMatch(/^did:web:/);
   expect(JSON.stringify(didDocument.service)).toContain("#skyblur_api");
+
+  const robots = await request.get("/robots.txt");
+  await skipIfUnavailable(robots);
+  expect(robots.ok(), await responseText(robots)).toBe(true);
+  const robotsText = await robots.text();
+  expect(robotsText).toContain("Disallow: /");
+  expect(robotsText).toContain("Allow: /ja$");
+  expect(robotsText).toContain("Allow: /ja/termofuse$");
+  expect(robotsText).not.toContain("Allow: /$");
+
+  const sitemap = await request.get("/sitemap.xml");
+  await skipIfUnavailable(sitemap);
+  expect(sitemap.ok(), await responseText(sitemap)).toBe(true);
+  const sitemapText = await sitemap.text();
+  expect(sitemapText).toContain("https://skyblur.uk/ja");
+  expect(sitemapText).toContain("https://skyblur.uk/ja/termofuse");
+  expect(sitemapText).not.toContain("x-default");
 });
 
 test("OAuth JWKS endpoint returns JSON and cache semantics", async ({ request }) => {
