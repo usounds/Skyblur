@@ -54,6 +54,7 @@ function Settings() {
   const [feedUpdateMessage, setFeedUpdateMessage] = useState<string>('')
   const [feedAvatarImg, setFeedAvatarImg] = useState('')
   const [feedAvatar, setFeedAvatar] = useState<File>()
+  const [hasInvalidFeedAvatar, setHasInvalidFeedAvatar] = useState(false)
   const [initialCustomFeed, setInitialCustomFeed] = useState<CustomFeedSnapshot>({
     enabled: false,
     displayName: '',
@@ -166,6 +167,20 @@ function Settings() {
     if (!e.target.files) return;
 
     let imgObject = e.target.files[0];
+    const isSupportedAvatar =
+      imgObject.name.endsWith('png') ||
+      imgObject.name.endsWith('jpg') ||
+      imgObject.name.endsWith('jpeg');
+
+    if (!isSupportedAvatar) {
+      setFeedAvatar(undefined)
+      setFeedAvatarImg('')
+      setHasInvalidFeedAvatar(true)
+      return;
+    }
+
+    setHasInvalidFeedAvatar(false)
+    setFeedUpdateMessage('')
 
     if (imgObject.size > 900 * 1024) {
       setIsLoading(true);
@@ -292,6 +307,7 @@ function Settings() {
     if (!isCustomFeed) return false;
     if (feedName !== initialCustomFeed.displayName) return true;
     if (feedDescription !== initialCustomFeed.description) return true;
+    if (hasInvalidFeedAvatar) return true;
     if (feedAvatar) return true;
 
     const currentAvatarCid = feedAvatarImg ? getCidFromAvatarUrl(feedAvatarImg) : null;
@@ -317,10 +333,10 @@ function Settings() {
       encoding = 'image/png'
     } else if (feedAvatar?.name.endsWith('jpg') || feedAvatar?.name.endsWith('jpeg')) {
       encoding = 'image/jpeg'
-    } else if (feedAvatar !== undefined) {
+    } else if (feedAvatar !== undefined || hasInvalidFeedAvatar) {
       setFeedUpdateMessage(locale.Pref_FileType)
       setIsLoading(false)
-      return
+      throw new Error(locale.Pref_FileType)
     }
 
     try {

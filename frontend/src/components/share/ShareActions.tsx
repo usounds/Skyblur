@@ -20,6 +20,7 @@ type ShareActionsProps = {
 const SHARE_SEPARATOR = "\n\n";
 // X's composer can exceed twitter-text's result; keep a conservative margin.
 const X_SHARE_WEIGHT_LIMIT = 256;
+const SHARE_TRUNCATION_GRAPHEME_MARGIN = 10;
 
 function fitsXShareLimit(value: string) {
   return twitterText.parseTweet(value).weightedLength <= X_SHARE_WEIGHT_LIMIT;
@@ -48,7 +49,8 @@ function truncateForX(value: string, url: string) {
     }
   }
 
-  return low > 0 ? `${graphemes.slice(0, low).join("").trimEnd()}…` : "";
+  const truncatedLength = Math.max(0, low - SHARE_TRUNCATION_GRAPHEME_MARGIN);
+  return truncatedLength > 0 ? `${graphemes.slice(0, truncatedLength).join("").trimEnd()}…` : "";
 }
 
 export function buildShareTextForX(text: string, fallbackText: string, url: string) {
@@ -57,12 +59,11 @@ export function buildShareTextForX(text: string, fallbackText: string, url: stri
 }
 
 export function buildNativeShareData(title: string | undefined, text: string, url: string): ShareData {
+  void title;
   return {
-    title,
-    // Bluesky may ignore ShareData.url, while X can use it separately. Supplying
-    // both keeps the URL available across share-target implementations.
+    // Keep title and URL fields out of native share data. Some desktop share
+    // targets copy title/text/url together, which duplicates metadata and URLs.
     text: text ? `${text}${SHARE_SEPARATOR}${url}` : url,
-    url,
   };
 }
 

@@ -35,7 +35,6 @@ type PostComposerRouteScaffoldProps = {
 const activeCreateSessionKey = "skyblur.post-composer.active-create-session";
 
 type PostedShareState = {
-  path: string;
   url: string;
   text: string;
 };
@@ -433,7 +432,6 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
           if (mode === "create") {
             const path = buildPostPath(did, result.blurUri);
             setPostedShare({
-              path,
               url: result.skyblurUrl ?? `${window.location.origin}${path}`,
               text: state.textForBluesky || state.blurredText,
             });
@@ -513,9 +511,6 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
             </Paper>
             <ShareActions url={postedShare.url} text={postedShare.text} fallbackText={locale.Share_DefaultText} title={locale.Common_Title} />
             <Group justify="center" gap="xs">
-              <Button variant="subtle" onClick={() => router.push(postedShare.path)}>
-                {locale.Share_OpenSkyblur}
-              </Button>
               <Button variant="subtle" color="gray" onClick={completeToConsole}>
                 {locale.Share_BackToConsole}
               </Button>

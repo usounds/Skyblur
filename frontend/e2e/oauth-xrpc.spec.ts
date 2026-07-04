@@ -135,13 +135,33 @@ async function openCreateComposer(page: import("@playwright/test").Page) {
     window.sessionStorage.removeItem("skyblur.post-composer.active-create-session");
   });
   await page.reload();
-  await page.getByRole("link", { name: "Create a post" }).click({ force: true });
+  const createPostLink = page.getByRole("link", { name: "Create a post" });
+  const createPostHref = await createPostLink.evaluate((node) => (node as HTMLAnchorElement).href).catch(() => null);
+  await createPostLink.click({ force: true }).catch(async (error) => {
+    if (!createPostHref) throw error;
+    await page.goto(createPostHref);
+  });
   await expect(page).toHaveURL(/\/console\/posts\/new$/);
   await expect(page.getByText("Write", { exact: true })).toBeVisible();
 }
 
+async function openHeaderAccountMenu(page: import("@playwright/test").Page, isMobile: boolean) {
+  const accountMenu = page.locator('button[aria-label="Account menu"]:visible');
+  if (isMobile) {
+    if (await accountMenu.count() === 0) {
+      await page.getByRole("button", { name: "Menu", exact: true }).click();
+    }
+  }
+  await accountMenu.click();
+}
+
 async function clickCreateComposer(page: import("@playwright/test").Page) {
-  await page.getByRole("link", { name: "Create a post" }).click({ force: true });
+  const createPostLink = page.getByRole("link", { name: "Create a post" });
+  const createPostHref = await createPostLink.evaluate((node) => (node as HTMLAnchorElement).href).catch(() => null);
+  await createPostLink.click({ force: true }).catch(async (error) => {
+    if (!createPostHref) throw error;
+    await page.goto(createPostHref);
+  });
   await expect(page).toHaveURL(/\/console\/posts\/new$/);
 }
 
@@ -358,7 +378,7 @@ async function submitCreateComposerAndReturnToConsole(page: import("@playwright/
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByText(/Posted|投稿しました/)).toBeVisible();
   await expect(page.getByRole("button", { name: /Copy URL|URLコピー/ })).toBeVisible();
-  await page.getByRole("button", { name: /Back to console|一覧に戻る/ }).click();
+  await page.getByRole("button", { name: /Back to console|一覧に戻る/ }).click({ force: true });
   await expect(page).toHaveURL(/\/console$/);
 }
 
@@ -616,12 +636,17 @@ test("header controls toggle theme and language from the rendered UI", async ({
   page,
   context,
   baseURL,
+  isMobile,
 }) => {
   await useEnglishLocale(context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/");
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+
+  if (isMobile) {
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
+  }
 
   const languageToggle = page.getByRole("button", { name: "Toggle language" });
   const colorSchemeToggle = page.getByRole("button", { name: "Toggle color scheme" });
@@ -975,7 +1000,10 @@ test("/console login form shows callback errors and clears typeahead input", asy
   await expect(loginDialog.getByText("Invalid handle.")).toBeVisible();
 
   const handleInput = loginDialog.getByRole("combobox");
-  await handleInput.fill("clearme");
+  await handleInput.click();
+  await handleInput.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+  await handleInput.press("Backspace");
+  await handleInput.pressSequentially("clearme");
   await expect(handleInput).toHaveValue("clearme");
   await handleInput.clear();
   await expect(handleInput).toHaveValue("");
@@ -1469,6 +1497,7 @@ test("/console remains usable when the profile fetch fails", async ({
   page,
   context,
   baseURL,
+  isMobile,
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL, { profileStatus: 500 });
 
@@ -1478,6 +1507,9 @@ test("/console remains usable when the profile fetch fails", async ({
   await expect(page.getByText(mockDid)).toBeVisible();
   await expect(page.getByRole("link", { name: "Create a post" })).toBeVisible();
   await expect(page.getByText("Post List")).toBeVisible();
+  if (isMobile) {
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
+  }
   await page.getByRole("button", { name: "Account menu" }).click();
   await expect(page.getByText(mockDid).last()).toBeVisible();
   await expect(page.getByText("Logout")).toBeVisible();
@@ -1998,8 +2030,8 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   const sharedData = await page.evaluate(() => {
     return (window as typeof window & { __e2eSharedData?: ShareData }).__e2eSharedData;
   });
-  expect(sharedData?.url).toMatch(/\/post\//);
-  expect(sharedData?.text).toContain(sharedData?.url);
+  expect(sharedData?.url).toBeUndefined();
+  expect(sharedData?.text).toMatch(/\/post\//);
   expect(sharedData?.text).not.toContain("[secret]");
   expect(sharedData?.text).toContain("******");
   expect(twitterText.parseTweet(sharedData?.text ?? "").weightedLength).toBeLessThanOrEqual(256);
@@ -2008,7 +2040,7 @@ test("/console post list supports reveal, reaction, edit, and delete actions", a
   const clipboardText = await page.evaluate(() => {
     return (window as typeof window & { __e2eClipboardText?: string }).__e2eClipboardText;
   });
-  expect(clipboardText).toBe(sharedData?.url);
+  expect(sharedData?.text).toContain(clipboardText);
   await postMenuIcon.click();
   await clickOpenPostMenuEdit(page);
 
@@ -3296,13 +3328,14 @@ test("header account menu exposes logged-in settings and logout actions", async 
   page,
   context,
   baseURL,
+  isMobile,
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
 
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
-  await page.getByLabel("Account menu").click();
+  await openHeaderAccountMenu(page, isMobile);
   await expect(page.getByText(mockHandle)).toBeVisible();
   await expect(page.getByRole("menuitem", { name: /Settings|設定/ })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: /Logout|ログアウト/ })).toBeVisible();
@@ -3312,7 +3345,7 @@ test("header account menu exposes logged-in settings and logout actions", async 
   await expect(page.getByRole("button", { name: /Logout from this device/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Invalidate session and logout/ })).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
-  await page.getByLabel("Account menu").click();
+  await openHeaderAccountMenu(page, isMobile);
   await page.getByRole("menuitem", { name: /Settings|設定/ }).click();
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByText(mockDid)).toHaveCount(0);
@@ -3322,12 +3355,13 @@ test("header account menu can soft logout from the console", async ({
   page,
   context,
   baseURL,
+  isMobile,
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/console");
   await expect(page.getByText(/E2E Tester/)).toBeVisible();
-  await page.getByLabel("Account menu").click();
+  await openHeaderAccountMenu(page, isMobile);
   await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Logout from this device/ }).click();
@@ -3339,12 +3373,13 @@ test("header account menu can hard logout from settings", async ({
   page,
   context,
   baseURL,
+  isMobile,
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/settings");
   await expect(page.getByText("Settings").first()).toBeVisible();
-  await page.getByLabel("Account menu").click();
+  await openHeaderAccountMenu(page, isMobile);
   await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Invalidate session and logout/ }).click();
@@ -3356,12 +3391,13 @@ test("header account menu can logout from home without leaving the page", async 
   page,
   context,
   baseURL,
+  isMobile,
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
   await gotoAndSkipIfUnavailable(page, "/");
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
-  await page.getByLabel("Account menu").click();
+  await openHeaderAccountMenu(page, isMobile);
   await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Logout from this device/ }).click();

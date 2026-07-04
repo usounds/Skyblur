@@ -12,13 +12,14 @@ describe("buildShareTextForX", () => {
     expect(buildShareTextForX("   ", "Read on Skyblur", "https://skyblur.uk/post/example/1")).toBe("Read on Skyblur");
   });
 
-  it("uses X weighted counting and keeps a conservative composer margin", () => {
+  it("uses X weighted counting and keeps a 10-character truncation margin", () => {
     const url = "https://skyblur.uk/post/example/1";
     const result = buildShareTextForX("あ".repeat(300), "fallback", url);
     const completeText = `${result}\n\n${url}`;
 
     expect(twitterText.parseTweet(completeText).weightedLength).toBeLessThanOrEqual(256);
-    expect(twitterText.parseTweet(`${result.slice(0, -1)}あ…\n\n${url}`).weightedLength).toBeGreaterThan(256);
+    expect(twitterText.parseTweet(`${result.slice(0, -1)}${"あ".repeat(10)}…\n\n${url}`).weightedLength).toBeLessThanOrEqual(256);
+    expect(twitterText.parseTweet(`${result.slice(0, -1)}${"あ".repeat(11)}…\n\n${url}`).weightedLength).toBeGreaterThan(256);
     expect(result.endsWith("…")).toBe(true);
   });
 
@@ -41,11 +42,9 @@ describe("buildShareTextForX", () => {
 });
 
 describe("buildNativeShareData", () => {
-  it("includes the post URL in the text for share targets that ignore the url field", () => {
+  it("shares only text with the post URL embedded", () => {
     expect(buildNativeShareData("Skyblur", "I love ○○○○○!", "https://skyblur.uk/post/example/1")).toEqual({
-      title: "Skyblur",
       text: "I love ○○○○○!\n\nhttps://skyblur.uk/post/example/1",
-      url: "https://skyblur.uk/post/example/1",
     });
   });
 });

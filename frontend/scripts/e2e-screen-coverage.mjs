@@ -13,7 +13,8 @@ const screenScenarios = [
   {
     id: "home start opens login modal",
     evidence: [
-      "getByRole(\"button\", { name: \"Start\" }).click()",
+      "const startButton = page.getByRole(\"button\", { name: \"Start\" })",
+      "startButton.click()",
       "getByRole(\"dialog\", { name: \"Login\" })",
       "Agree to the contents",
     ],
