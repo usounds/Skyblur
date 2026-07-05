@@ -1,3 +1,10 @@
+allowBuilds:
+  '@atcute/time-ms': true
+  core-js: true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+
 onlyBuiltDependencies:
   - '@atcute/time-ms'
   - aws-sdk

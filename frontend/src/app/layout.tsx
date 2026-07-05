@@ -163,7 +163,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     alt="Buy Me A Coffee"
                     width={545}
                     height={153}
-                    style={{ height: '40px', width: 'auto' }}
+                    style={{ width: '143px', height: '40px', aspectRatio: '545 / 153', display: 'block' }}
                   />
                 </a>
               </div>
