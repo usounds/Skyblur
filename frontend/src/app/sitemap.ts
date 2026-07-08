@@ -18,6 +18,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
+      url: 'https://skyblur.uk',
+      changeFrequency: 'monthly',
+      priority: 1,
+      alternates: {
+        languages: alternates.home,
+      },
+    },
+    {
       url: 'https://skyblur.uk/ja',
       changeFrequency: 'monthly',
       priority: 1,
