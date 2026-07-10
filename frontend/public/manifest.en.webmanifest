@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "lang": "en",
+  "name": "Skyblur",
+  "short_name": "Skyblur",
+  "description": "Masked and visibility-restricted posting service for Bluesky. Securely share posts with followers, selected lists, or password protection. Powered by atproto.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/skyblur.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create post",
+      "short_name": "Post",
+      "description": "Create a new Skyblur post",
+      "url": "/console/posts/new"
+    }
+  ]
+}

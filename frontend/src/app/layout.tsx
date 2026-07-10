@@ -51,6 +51,7 @@ export async function generateMetadata() {
     metadataBase: new URL('https://skyblur.uk'),
     title: title,
     description: locale.Common_Description,
+    manifest: lang === 'ja' ? '/manifest.ja.webmanifest' : '/manifest.en.webmanifest',
     other: {
       google: "notranslate",
     },

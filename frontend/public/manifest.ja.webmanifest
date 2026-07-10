@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "lang": "ja",
+  "name": "Skyblur",
+  "short_name": "Skyblur",
+  "description": "Bluesky向けの伏せ字投稿・限定公開サービス。フォロワー・リスト・パスワード限定公開などの機能を安全に利用できます。atprotoの仕組みを利用しています。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/skyblur.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新規投稿",
+      "short_name": "投稿",
+      "description": "Skyblurで新しい投稿を作成します",
+      "url": "/console/posts/new"
+    }
+  ]
+}

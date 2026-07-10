@@ -672,15 +672,66 @@ test("not found screen renders a clear 404 message", async ({ page }) => {
 });
 
 test("public metadata endpoints expose app identity documents", async ({ request }) => {
-  const manifest = await request.get("/manifest.webmanifest");
-  await skipIfUnavailable(manifest);
-  expect(manifest.ok(), await responseText(manifest)).toBe(true);
-  await expect(manifest.json()).resolves.toMatchObject({
+  const legacyManifest = await request.get("/manifest.webmanifest");
+  await skipIfUnavailable(legacyManifest);
+  expect(legacyManifest.ok(), await responseText(legacyManifest)).toBe(true);
+  await expect(legacyManifest.json()).resolves.toMatchObject({
+    id: "/",
+    lang: "en",
+    shortcuts: [{ url: "/console/posts/new" }],
+  });
+
+  const englishManifest = await request.get("/manifest.en.webmanifest");
+  await skipIfUnavailable(englishManifest);
+  expect(englishManifest.ok(), await responseText(englishManifest)).toBe(true);
+  expect(englishManifest.headers()["content-type"]).toContain("application/manifest+json");
+  await expect(englishManifest.json()).resolves.toMatchObject({
+    id: "/",
+    lang: "en",
     name: "Skyblur",
     short_name: "Skyblur",
     start_url: "/",
+    scope: "/",
     display: "standalone",
+    shortcuts: [
+      {
+        name: "Create post",
+        short_name: "Post",
+        description: "Create a new Skyblur post",
+        url: "/console/posts/new",
+      },
+    ],
   });
+
+  const japaneseManifest = await request.get("/manifest.ja.webmanifest");
+  await skipIfUnavailable(japaneseManifest);
+  expect(japaneseManifest.ok(), await responseText(japaneseManifest)).toBe(true);
+  expect(japaneseManifest.headers()["content-type"]).toContain("application/manifest+json");
+  await expect(japaneseManifest.json()).resolves.toMatchObject({
+    id: "/",
+    lang: "ja",
+    name: "Skyblur",
+    short_name: "Skyblur",
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    shortcuts: [
+      {
+        name: "新規投稿",
+        short_name: "投稿",
+        description: "Skyblurで新しい投稿を作成します",
+        url: "/console/posts/new",
+      },
+    ],
+  });
+
+  const englishHome = await request.get("/en");
+  await skipIfUnavailable(englishHome);
+  expect(await englishHome.text()).toContain('rel="manifest" href="/manifest.en.webmanifest"');
+
+  const japaneseHome = await request.get("/ja");
+  await skipIfUnavailable(japaneseHome);
+  expect(await japaneseHome.text()).toContain('rel="manifest" href="/manifest.ja.webmanifest"');
 
   const did = await request.get("/.well-known/did.json");
   await skipIfUnavailable(did);
