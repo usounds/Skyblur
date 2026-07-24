@@ -68,8 +68,8 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3(next@16.2.10(@babel/core@7.29.7)(@playwright/test@1.61.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       dompurify:
-        specifier: ^3.4.11
-        version: 3.4.11
+        specifier: ^3.4.12
+        version: 3.4.12
       franc:
         specifier: ^6.2.0
         version: 6.2.0
@@ -180,7 +180,7 @@ importers:
         specifier: ^29.1.1
         version: 29.1.1
       postcss:
-        specifier: ^8.5.16
+        specifier: ^8.5.13
         version: 8.5.16
       postcss-preset-mantine:
         specifier: ^1.18.0
@@ -198,7 +198,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       vite:
-        specifier: ^8.1.3
+        specifier: ^8.0.16
         version: 8.1.3(@types/node@26.1.0)(jiti@2.7.0)(sugarss@5.0.1(postcss@8.5.16))(terser@5.16.9)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.9
@@ -372,6 +372,9 @@ packages:
   '@atcute/multibase@1.2.4':
     resolution: {integrity: sha512-WeX12hvFZEim6C+cyv7Eqd93w6DzubNWQGmTFBghjsEuXvMe4HbBCYvsti0OUnbA5qLBPlsTyssQUJeLlHCzIw==}
 
+  '@atcute/multibase@1.2.5':
+    resolution: {integrity: sha512-cReTONgYpQo/VHD3ZmzPNoyBKJgSk1J4h//cvvdVVJBMar+SjlQ/sUXeTjQfuyfmDKv+TLKhmutLcvbMcQ9Rvw==}
+
   '@atcute/oauth-crypto@1.0.1':
     resolution: {integrity: sha512-ghC8ceFx0r6pi5X3dNoET1K6PNg8afeAOZLD4PKLhrpVYdRtRrgY4uqAe3ojtSIjoS6GXmVm063CoJ2xtg/MoQ==}
 
@@ -402,6 +405,9 @@ packages:
 
   '@atcute/uint8array@1.1.3':
     resolution: {integrity: sha512-2KLcMQHUFtntY3tEjdyqqq1tR9hvPFndluWFCa637QY0cMyvq0fHSnhmZeWaSRIXMCwVDY3TLLWHNOHEWFb11g==}
+
+  '@atcute/uint8array@1.1.5':
+    resolution: {integrity: sha512-1SFCXOtjE3ismP92CqzbOfYSwJmPPPFbj798wLXSpLv2hSd5OIaUrTh6EqRVR1VZ3ZhR+vaBmd3kxAN0wkw+gQ==}
 
   '@atcute/util-fetch@2.0.1':
     resolution: {integrity: sha512-ugWTOLemA8OxSOj7c8q6ncRmBGFDHSwwE1YinO+PCtaw6WLQFGBfHn+yikQ0e3wTK2t4IPjQ5PxZcRXm961ZVA==}
@@ -2405,8 +2411,8 @@ packages:
   dom-helpers@5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
+  dompurify@3.4.12:
+    resolution: {integrity: sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -4622,13 +4628,13 @@ snapshots:
   '@atcute/cbor@2.3.2':
     dependencies:
       '@atcute/cid': 2.4.1
-      '@atcute/multibase': 1.2.4
-      '@atcute/uint8array': 1.1.3
+      '@atcute/multibase': 1.2.5
+      '@atcute/uint8array': 1.1.5
 
   '@atcute/cid@2.4.1':
     dependencies:
-      '@atcute/multibase': 1.2.4
-      '@atcute/uint8array': 1.1.3
+      '@atcute/multibase': 1.2.5
+      '@atcute/uint8array': 1.1.5
 
   '@atcute/client@5.1.1(@atcute/lexicons@2.0.2)(typescript@6.0.3)':
     dependencies:
@@ -4726,6 +4732,10 @@ snapshots:
     dependencies:
       '@atcute/uint8array': 1.1.3
 
+  '@atcute/multibase@1.2.5':
+    dependencies:
+      '@atcute/uint8array': 1.1.5
+
   '@atcute/oauth-crypto@1.0.1(typescript@6.0.3)':
     dependencies:
       '@atcute/multibase': 1.2.4
@@ -4785,6 +4795,8 @@ snapshots:
       node-gyp-build: 4.8.4
 
   '@atcute/uint8array@1.1.3': {}
+
+  '@atcute/uint8array@1.1.5': {}
 
   '@atcute/util-fetch@2.0.1(typescript@6.0.3)':
     dependencies:
@@ -7002,7 +7014,7 @@ snapshots:
       '@babel/runtime': 7.29.7
       csstype: 3.2.3
 
-  dompurify@3.4.11:
+  dompurify@3.4.12:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
