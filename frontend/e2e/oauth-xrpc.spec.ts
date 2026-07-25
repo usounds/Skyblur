@@ -475,7 +475,7 @@ test.describe("home start session flows", () => {
     await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
 
     await gotoAndSkipIfUnavailable(page, "/termofuse");
-    await expect(page).toHaveURL(/\/termofuse$/);
+    await expect(page).toHaveURL(/\/(ja|en)\/termofuse$/);
     await expect(page.getByRole("heading", { name: "Privacy Policy & Terms of Service" })).toBeVisible();
     await expect(page.getByText("Collection and Use of Personal Information")).toBeVisible();
     await expect(page.getByText("Provision of Data to Third Parties")).toBeVisible();
@@ -746,8 +746,19 @@ test("public metadata endpoints expose app identity documents", async ({ request
   const robotsText = await robots.text();
   expect(robotsText).toContain("Disallow: /");
   expect(robotsText).toContain("Allow: /$");
+  expect(robotsText).toContain("Allow: /features$");
+  expect(robotsText).toContain("Allow: /termofuse$");
   expect(robotsText).toContain("Allow: /ja$");
   expect(robotsText).toContain("Allow: /ja/termofuse$");
+
+  for (const [path, location] of [["/features", "/en/features"], ["/termofuse", "/en/termofuse"]]) {
+    const redirectResponse = await request.get(path, {
+      headers: { "Accept-Language": "en-US,en;q=0.9" },
+      maxRedirects: 0,
+    });
+    expect(redirectResponse.status(), await responseText(redirectResponse)).toBe(308);
+    expect(redirectResponse.headers().location).toBe(location);
+  }
 
   const sitemap = await request.get("/sitemap.xml");
   await skipIfUnavailable(sitemap);

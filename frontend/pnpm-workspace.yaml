@@ -5,6 +5,44 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 
+minimumReleaseAgeExclude:
+  - '@atcute/lexicons@2.0.3'
+  - '@atcute/tid@1.1.4'
+  - '@atcute/uint8array@1.1.5'
+  - '@aws-sdk/client-lambda@3.1088.0'
+  - '@aws-sdk/core@3.975.3'
+  - '@aws-sdk/credential-provider-env@3.972.59'
+  - '@aws-sdk/credential-provider-http@3.972.61'
+  - '@aws-sdk/credential-provider-ini@3.973.3'
+  - '@aws-sdk/credential-provider-login@3.972.65'
+  - '@aws-sdk/credential-provider-node@3.972.69'
+  - '@aws-sdk/credential-provider-process@3.972.59'
+  - '@aws-sdk/credential-provider-sso@3.973.3'
+  - '@aws-sdk/credential-provider-web-identity@3.972.65'
+  - '@aws-sdk/nested-clients@3.997.33'
+  - '@aws-sdk/signature-v4-multi-region@3.996.41'
+  - '@aws-sdk/token-providers@3.1088.0'
+  - '@aws-sdk/types@3.974.2'
+  - '@aws-sdk/xml-builder@3.972.36'
+  - '@tailwindcss/node@4.3.3'
+  - '@tailwindcss/oxide-android-arm64@4.3.3'
+  - '@tailwindcss/oxide-darwin-arm64@4.3.3'
+  - '@tailwindcss/oxide-darwin-x64@4.3.3'
+  - '@tailwindcss/oxide-freebsd-x64@4.3.3'
+  - '@tailwindcss/oxide-linux-arm-gnueabihf@4.3.3'
+  - '@tailwindcss/oxide-linux-arm64-gnu@4.3.3'
+  - '@tailwindcss/oxide-linux-arm64-musl@4.3.3'
+  - '@tailwindcss/oxide-linux-x64-gnu@4.3.3'
+  - '@tailwindcss/oxide-linux-x64-musl@4.3.3'
+  - '@tailwindcss/oxide-wasm32-wasi@4.3.3'
+  - '@tailwindcss/oxide-win32-arm64-msvc@4.3.3'
+  - '@tailwindcss/oxide-win32-x64-msvc@4.3.3'
+  - '@tailwindcss/oxide@4.3.3'
+  - '@tailwindcss/postcss@4.3.3'
+  - autoprefixer@10.5.4
+  - caniuse-lite@1.0.30001806
+  - tailwindcss@4.3.3
+
 onlyBuiltDependencies:
   - '@atcute/time-ms'
   - aws-sdk
