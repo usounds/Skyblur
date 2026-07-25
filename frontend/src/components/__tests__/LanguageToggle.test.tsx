@@ -92,6 +92,9 @@ describe("LanguageToggle", () => {
     await user.click(screen.getAllByRole("button", { name: "Toggle language" })[0]!);
     const proceedButton = await screen.findByText("切り替える");
     await user.click(proceedButton);
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
     expect(useLocaleStore.getState().locale).toBe("en");
     expect(routerPushMock).toHaveBeenCalledWith("/en");
   });
