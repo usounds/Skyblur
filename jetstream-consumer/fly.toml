@@ -1,0 +1,20 @@
+app = "skyblur-jetstream"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+kill_timeout = "15s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  SKYBLUR_STATE_URL = "https://previewapi.skyblur.uk/internal/jetstream/state"
+  SKYBLUR_INGEST_URL = "https://previewapi.skyblur.uk/internal/jetstream/ingest"
+  GOMEMLIMIT = "192MiB"
+  GOGC = "50"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[[restart]]
+  policy = "always"
