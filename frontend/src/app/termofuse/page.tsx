@@ -1,10 +1,22 @@
 import { cookies, headers } from 'next/headers';
-import { permanentRedirect } from 'next/navigation';
 import { resolveLocale } from '@/logic/locale';
+import { generateTermsMetadata, renderTermsPage } from './TermsPage';
 
-export default async function TermsOfUsePage() {
+async function getLocale() {
   const cookieStore = await cookies();
   const headersList = await headers();
-  const locale = resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
-  permanentRedirect(`/${locale}/termofuse`);
+  return resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
+}
+
+export async function generateMetadata() {
+  const lang = await getLocale();
+  return generateTermsMetadata(lang, {
+    canonical: '/termofuse',
+    url: 'https://skyblur.uk/termofuse',
+  });
+}
+
+export default async function Home() {
+  const lang = await getLocale();
+  return renderTermsPage(lang);
 }

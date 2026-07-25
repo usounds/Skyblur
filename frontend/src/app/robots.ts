@@ -8,8 +8,6 @@ export default function robots(): MetadataRoute.Robots {
         '/robots.txt$',
         '/sitemap.xml$',
         '/$',
-        '/features$',
-        '/termofuse$',
         '/ja$',
         '/ja/features$',
         '/ja/termofuse$',
