@@ -8,6 +8,7 @@ import { type ActorIdentifier } from '@atcute/lexicons'
 import { checkListMembership, isValidListUri } from './listVisibility'
 
 import { getAuthenticatedDid } from '@/logic/AuthUtils'
+import type { Env } from '@/index'
 
 function normalizeServiceEndpoint(endpoint: unknown): string | null {
     if (typeof endpoint === 'string') {
@@ -53,6 +54,26 @@ async function getSkyblurRecord(repo: string, rkey: string) {
     return await getRecordFromEndpoint(pdsUrl, repo, rkey);
 }
 
+async function shadowCompareRecord(c: Context, repo: string, rkey: string, pdsValue: unknown) {
+    const env = c.env as Env;
+    if (env.MIRROR_SHADOW_READ !== 'true') return;
+    try {
+        const namespace = env.SKYBLUR_DO_POST_MIRROR;
+        const stub = namespace.get(namespace.idFromName(repo));
+        const response = await stub.fetch(`https://mirror/record?repo=${encodeURIComponent(repo)}&rkey=${encodeURIComponent(rkey)}`);
+        if (!response.ok) {
+            console.warn(`[mirror-shadow] missing local record repo=${repo} rkey=${rkey}`);
+            return;
+        }
+        const mirror = await response.json() as { value?: unknown };
+        if (JSON.stringify(mirror.value) !== JSON.stringify(pdsValue)) {
+            console.warn(`[mirror-shadow] record mismatch repo=${repo} rkey=${rkey}`);
+        }
+    } catch (error) {
+        console.warn('[mirror-shadow] comparison failed', error);
+    }
+}
+
 async function getRestrictedContent(c: Context, repo: string, rkey: string) {
     const doNamespace = (c.env as any).SKYBLUR_DO_RESTRICTED as DurableObjectNamespace;
     const doId = doNamespace.idFromName(repo);
@@ -95,6 +116,9 @@ export const handle = async (c: Context) => {
     try {
         const jsonResult = await getSkyblurRecord(repo, rkey);
         recordObj = jsonResult.value as UkSkyblurPost.Record;
+        const executionCtx = (c as Context & { executionCtx?: ExecutionContext }).executionCtx;
+        const shadow = shadowCompareRecord(c, repo, rkey, jsonResult.value);
+        if (executionCtx) executionCtx.waitUntil(shadow);
     } catch (e) {
         console.error(`[getPost] Record Fetch Error: ${e}`);
         return c.json({ message: `Cannot getRecord[${decodedUri}]` }, 500);

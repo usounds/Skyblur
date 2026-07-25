@@ -25,6 +25,14 @@
 			{
 				"name": "SKYBLUR_DO_RESTRICTED",
 				"class_name": "RestrictedPostDO"
+			},
+			{
+				"name": "SKYBLUR_DO_POST_MIRROR",
+				"class_name": "PostMirrorDO"
+			},
+			{
+				"name": "SKYBLUR_DO_JETSTREAM_INGEST",
+				"class_name": "JetstreamIngestDO"
 			}
 		]
 	},
@@ -43,6 +51,14 @@
 		},
 		{
 			"tag": "v3"
+		},
+		{
+			"tag": "v4",
+			"new_sqlite_classes": ["PostMirrorDO"]
+		},
+		{
+			"tag": "v5",
+			"new_sqlite_classes": ["JetstreamIngestDO"]
 		}
 	],
 	"env": {
@@ -66,6 +82,14 @@
 					{
 						"name": "SKYBLUR_DO_RESTRICTED",
 						"class_name": "RestrictedPostDO"
+					},
+					{
+						"name": "SKYBLUR_DO_POST_MIRROR",
+						"class_name": "PostMirrorDO"
+					},
+					{
+						"name": "SKYBLUR_DO_JETSTREAM_INGEST",
+						"class_name": "JetstreamIngestDO"
 					}
 				]
 			},
@@ -77,7 +101,7 @@
 			],
 			"observability": {
 				"enabled": true,
-				"head_sampling_rate": 0.3
+				"head_sampling_rate": 1.0
 			},
 			"migrations": [
 				{
@@ -94,6 +118,14 @@
 				},
 				{
 					"tag": "v3"
+				},
+				{
+					"tag": "v4",
+					"new_sqlite_classes": ["PostMirrorDO"]
+				},
+				{
+					"tag": "v5",
+					"new_sqlite_classes": ["JetstreamIngestDO"]
 				}
 			],
 			"r2_buckets": [
@@ -123,6 +155,14 @@
 					{
 						"name": "SKYBLUR_DO_RESTRICTED",
 						"class_name": "RestrictedPostDO"
+					},
+					{
+						"name": "SKYBLUR_DO_POST_MIRROR",
+						"class_name": "PostMirrorDO"
+					},
+					{
+						"name": "SKYBLUR_DO_JETSTREAM_INGEST",
+						"class_name": "JetstreamIngestDO"
 					}
 				]
 			},
@@ -151,6 +191,14 @@
 				},
 				{
 					"tag": "v3"
+				},
+				{
+					"tag": "v4",
+					"new_sqlite_classes": ["PostMirrorDO"]
+				},
+				{
+					"tag": "v5",
+					"new_sqlite_classes": ["JetstreamIngestDO"]
 				}
 			],
 			"r2_buckets": [

@@ -7,7 +7,10 @@ import { handle as resolveHandle } from "@/api/resolveHandle"
 import { handle as uploadBlobHandle } from "@/api/uploadBlob"
 import { handle as storeHandle } from "@/api/store"
 import { handle as deleteStoredHandle } from "@/api/deleteStored"
+import { ingest as jetstreamIngest, state as jetstreamState, inspectRecord as inspectMirrorRecord, inspectRecords as inspectMirrorRecords, inspectStatus as inspectMirrorStatus, requeueMirrorFailures, resolveQuarantinedFrame } from "@/api/jetstream"
 import { RestrictedPostDO } from "@/api/RestrictedPostDO"
+import { PostMirrorDO } from "@/api/PostMirrorDO"
+import { JetstreamIngestDO } from "@/api/JetstreamIngestDO"
 import { Hono, type Context } from 'hono'
 import { cors } from 'hono/cors'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
@@ -17,8 +20,9 @@ import type { OAuthSession } from "@atcute/oauth-node-client";
 
 // 1. DOクラスの定義
 export { RestrictedPostDO } from "@/api/RestrictedPostDO"
-// Legacy compatibility: older preview/prod Durable Objects were created from AirglowPostDO.
-// Keep exporting the old class name so existing objects remain deployable.
+export { PostMirrorDO } from "@/api/PostMirrorDO"
+export { JetstreamIngestDO } from "@/api/JetstreamIngestDO"
+// Deployment compatibility only: an older Durable Object migration used this class name.
 export class AirglowPostDO extends RestrictedPostDO {}
 
 // 1. DOクラスの定義
@@ -88,6 +92,8 @@ export class OAuthStoreDO extends DurableObject {
 export interface Env {
   SKYBLUR_DO: DurableObjectNamespace<OAuthStoreDO>;
   SKYBLUR_DO_RESTRICTED: DurableObjectNamespace<RestrictedPostDO>;
+  SKYBLUR_DO_POST_MIRROR: DurableObjectNamespace<PostMirrorDO>;
+  SKYBLUR_DO_JETSTREAM_INGEST: DurableObjectNamespace<JetstreamIngestDO>;
   SKYBLUR_KV_CACHE: KVNamespace;
   APPVIEW_HOST?: string;
   OAUTH_PRIVATE_KEY_JWK?: string;
@@ -96,6 +102,9 @@ export interface Env {
   SKYBLUR_BACKUP: R2Bucket;
   CLOUDFLARE_ACCOUNT_ID?: string;
   CLOUDFLARE_API_TOKEN?: string;
+  JETSTREAM_INGEST_SECRET?: string;
+  MIRROR_SHADOW_READ?: string;
+  MIRROR_INSPECT_TOKEN?: string;
 }
 
 import { handleBackup } from "@/scheduled/backup";
@@ -162,6 +171,11 @@ app.use('*', async (c, next) => {
   ];
 
   if (readOnlyPaths.includes(path)) {
+    return next();
+  }
+
+  // The Jetstream consumer is server-to-server and authenticates the raw body with HMAC.
+  if (path === '/internal/jetstream/ingest' || path === '/internal/mirror/requeue' || path === '/internal/mirror/quarantine/resolve') {
     return next();
   }
 
@@ -492,6 +506,14 @@ app.post('/xrpc/uk.skyblur.post.decryptByCid', (c) => {
 app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
   return getPostHandler(c)
 })
+
+app.post('/internal/jetstream/ingest', (c) => jetstreamIngest(c))
+app.get('/internal/jetstream/state', (c) => jetstreamState(c))
+app.get('/internal/mirror/record', (c) => inspectMirrorRecord(c))
+app.get('/internal/mirror/records', (c) => inspectMirrorRecords(c))
+app.get('/internal/mirror/status', (c) => inspectMirrorStatus(c))
+app.post('/internal/mirror/requeue', (c) => requeueMirrorFailures(c))
+app.post('/internal/mirror/quarantine/resolve', (c) => resolveQuarantinedFrame(c))
 
 app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
   const origin = c.req.header('origin') || '';
