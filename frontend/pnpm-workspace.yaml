@@ -42,6 +42,24 @@ minimumReleaseAgeExclude:
   - autoprefixer@10.5.4
   - caniuse-lite@1.0.30001806
   - tailwindcss@4.3.3
+  - '@atcute/bluesky@4.0.16'
+  - '@aws-sdk/client-lambda@3.1095.0'
+  - '@aws-sdk/core@3.977.0'
+  - '@aws-sdk/credential-provider-env@3.972.61'
+  - '@aws-sdk/credential-provider-http@3.972.63'
+  - '@aws-sdk/credential-provider-ini@3.973.6'
+  - '@aws-sdk/credential-provider-login@3.972.68'
+  - '@aws-sdk/credential-provider-node@3.972.72'
+  - '@aws-sdk/credential-provider-process@3.972.61'
+  - '@aws-sdk/credential-provider-sso@3.973.5'
+  - '@aws-sdk/credential-provider-web-identity@3.972.67'
+  - '@aws-sdk/nested-clients@3.997.35'
+  - '@aws-sdk/signature-v4-multi-region@3.996.42'
+  - '@aws-sdk/token-providers@3.1095.0'
+  - '@aws-sdk/xml-builder@3.972.37'
+  - '@playwright/test@1.62.0'
+  - playwright-core@1.62.0
+  - playwright@1.62.0
 
 onlyBuiltDependencies:
   - '@atcute/time-ms'
@@ -51,6 +69,7 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  '@atcute/bluesky': 4.0.14
   hono: ^4.12.23
   '@modelcontextprotocol/sdk': ^1.26.0
   fast-xml-parser: ^5.7.1
@@ -62,7 +81,14 @@ overrides:
   postcss: ^8.5.13
   '@atcute/time-ms': 1.2.3
   '@atcute/util-text': 1.1.1
-  brace-expansion: 5.0.6
+  '@aws-sdk/core': <=3.976.0
+  '@aws-sdk/middleware-endpoint-discovery': <=3.972.0
+  '@aws-sdk/xml-builder': <=3.972.0
+  '@emnapi/runtime': 1.11.2
+  '@smithy/core': <=3.29.0
+  '@smithy/signature-v4': <=5.6.9
+  brace-expansion: '>=5.0.8'
   qs: 6.15.2
   vite: ^8.0.16
   js-yaml: ^4.2.0
+  sharp: 0.35.2
