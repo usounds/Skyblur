@@ -7,9 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: [
         '/robots.txt$',
         '/sitemap.xml$',
-        '/$',
-        '/features$',
-        '/termofuse$',
         '/ja$',
         '/ja/features$',
         '/ja/termofuse$',

@@ -447,8 +447,8 @@ test.describe("home start session flows", () => {
   }) => {
     await useLoggedOutOAuthMock(page, context, baseURL);
 
-    await gotoAndSkipIfUnavailable(page, "/");
-    await expect(page).toHaveURL(/\/$/);
+    await gotoAndSkipIfUnavailable(page, "/en");
+    await expect(page).toHaveURL(/\/en$/);
     await expect(page.getByRole("link", { name: "Skyblur", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
     await expect(page.getByText("Skyblur is a content warning and spoilers protection tool")).toBeVisible();
@@ -492,6 +492,7 @@ test.describe("home start session flows", () => {
     await useJapaneseLocale(context, baseURL);
 
     await gotoAndSkipIfUnavailable(page, "/");
+    await expect(page).toHaveURL(/\/ja$/);
 
     await expect(page.getByRole("heading", { name: "Skyblurへようこそ" })).toBeVisible();
     await expect(page.getByText("Skyblurの投稿を快適に読めるおすすめクライアント")).toBeVisible();
@@ -745,26 +746,39 @@ test("public metadata endpoints expose app identity documents", async ({ request
   expect(robots.ok(), await responseText(robots)).toBe(true);
   const robotsText = await robots.text();
   expect(robotsText).toContain("Disallow: /");
-  expect(robotsText).toContain("Allow: /$");
-  expect(robotsText).toContain("Allow: /features$");
-  expect(robotsText).toContain("Allow: /termofuse$");
+  expect(robotsText).not.toContain("Allow: /$");
+  expect(robotsText).not.toContain("Allow: /features$");
+  expect(robotsText).not.toContain("Allow: /termofuse$");
   expect(robotsText).toContain("Allow: /ja$");
   expect(robotsText).toContain("Allow: /ja/termofuse$");
 
+  const rootRedirect = await request.get("/", { maxRedirects: 0 });
+  expect(rootRedirect.status(), await responseText(rootRedirect)).toBe(308);
+  expect(rootRedirect.headers().location).toBe("/ja");
+
   for (const [path, location] of [["/features", "/en/features"], ["/termofuse", "/en/termofuse"]]) {
     const redirectResponse = await request.get(path, {
-      headers: { "Accept-Language": "en-US,en;q=0.9" },
+        headers: {
+          "Accept-Language": "en-US,en;q=0.9",
+          Cookie: "lang=en",
+        },
       maxRedirects: 0,
     });
     expect(redirectResponse.status(), await responseText(redirectResponse)).toBe(308);
     expect(redirectResponse.headers().location).toBe(location);
   }
 
+  const japaneseCanonical = await request.get("/ja");
+  await skipIfUnavailable(japaneseCanonical);
+  expect(await japaneseCanonical.text()).toContain(
+    'rel="canonical" href="https://skyblur.uk/ja"',
+  );
+
   const sitemap = await request.get("/sitemap.xml");
   await skipIfUnavailable(sitemap);
   expect(sitemap.ok(), await responseText(sitemap)).toBe(true);
   const sitemapText = await sitemap.text();
-  expect(sitemapText).toContain("https://skyblur.uk");
+  expect(sitemapText).not.toContain("<loc>https://skyblur.uk</loc>");
   expect(sitemapText).toContain("https://skyblur.uk/ja");
   expect(sitemapText).toContain("https://skyblur.uk/ja/termofuse");
   expect(sitemapText).not.toContain("x-default");
