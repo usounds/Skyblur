@@ -7,7 +7,7 @@ import { handle as resolveHandle } from "@/api/resolveHandle"
 import { handle as uploadBlobHandle } from "@/api/uploadBlob"
 import { handle as storeHandle } from "@/api/store"
 import { handle as deleteStoredHandle } from "@/api/deleteStored"
-import { ingest as jetstreamIngest, state as jetstreamState, publicCursor as jetstreamPublicCursor, inspectRecord as inspectMirrorRecord, inspectRecords as inspectMirrorRecords, inspectStatus as inspectMirrorStatus, resolveQuarantinedFrame } from "@/api/jetstream"
+import { ingest as jetstreamIngest, state as jetstreamState, publicCursor as jetstreamPublicCursor, publicMirrorSource, inspectRecord as inspectMirrorRecord, inspectRecords as inspectMirrorRecords, inspectStatus as inspectMirrorStatus, resolveQuarantinedFrame } from "@/api/jetstream"
 import { RestrictedPostDO } from "@/api/RestrictedPostDO"
 import { PostMirrorDO } from "@/api/PostMirrorDO"
 import { JetstreamIngestDO } from "@/api/JetstreamIngestDO"
@@ -511,6 +511,7 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
 app.post('/internal/jetstream/ingest', (c) => jetstreamIngest(c))
 app.get('/internal/jetstream/state', (c) => jetstreamState(c))
 app.get('/status/jetstream/cursor', (c) => jetstreamPublicCursor(c))
+app.get('/status/jetstream/source', (c) => publicMirrorSource(c))
 app.get('/internal/mirror/record', (c) => inspectMirrorRecord(c))
 app.get('/internal/mirror/records', (c) => inspectMirrorRecords(c))
 app.get('/internal/mirror/status', (c) => inspectMirrorStatus(c))
