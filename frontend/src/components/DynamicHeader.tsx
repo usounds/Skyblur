@@ -35,18 +35,23 @@ const DynamicHeader = () => {
       if (useXrpcAgentStore.getState().isSessionChecked) return;
 
       const id = 'session-check';
-      notifications.show({
-        id,
-        loading: true,
-        title: checkSessionTitle,
-        message: checkSessionMessage,
-        autoClose: false,
-        withCloseButton: false,
-      });
+      const postDetailOwnsNotification = pathname.startsWith('/post/');
+      if (!postDetailOwnsNotification) {
+        notifications.show({
+          id,
+          loading: true,
+          title: checkSessionTitle,
+          message: checkSessionMessage,
+          autoClose: false,
+          withCloseButton: false,
+        });
+      }
 
       const result = await useXrpcAgentStore.getState().checkSession();
 
-      notifications.hide(id);
+      if (!postDetailOwnsNotification) {
+        notifications.hide(id);
+      }
       if (result.timedOut) {
         notifications.show({
           title: checkSessionTimeoutTitle,

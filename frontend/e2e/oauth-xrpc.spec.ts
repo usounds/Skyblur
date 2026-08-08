@@ -1493,9 +1493,14 @@ test("/post refetches restricted detail after the session resolves authenticated
   });
 
   let getPostRequests = 0;
+  let resolveInitialPost = () => {};
+  let resolveAuthenticatedPost = () => {};
   await page.route("**/xrpc/uk.skyblur.post.getPost", async (route) => {
     getPostRequests += 1;
     if (getPostRequests === 1) {
+      await new Promise<void>((resolve) => {
+        resolveInitialPost = resolve;
+      });
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -1510,6 +1515,10 @@ test("/post refetches restricted detail after the session resolves authenticated
       return;
     }
 
+    await new Promise<void>((resolve) => {
+      resolveAuthenticatedPost = resolve;
+    });
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -1523,15 +1532,52 @@ test("/post refetches restricted detail after the session resolves authenticated
   });
 
   await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erefetch`);
-  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
+  const initialLoading = page.getByTestId("post-initial-loading");
+  const bodyLoading = page.getByTestId("post-body-loading");
+  const visibilityBadge = page.getByTestId("post-visibility-badge");
+  const authFetchingNotification = page.locator('[role="alert"]').filter({
+    hasText: /Checking authorization|認証情報を確認しています/,
+  });
+  const allNotifications = page.locator('[data-mantine-shared-portal-node] [role="alert"]');
+  const transientLoginNotification = page.locator('[role="alert"]').filter({
+    hasText: "この投稿を表示するにはログインしてください。",
+  });
+  await expect.poll(() => getPostRequests).toBe(1);
+  await expect(initialLoading).toBeVisible();
+  await expect(visibilityBadge).toHaveCount(0);
+  await expect(authFetchingNotification).toHaveCount(1);
+  await expect(allNotifications).toHaveCount(1);
+  resolveInitialPost();
+
+  await expect(bodyLoading).toBeVisible();
+  await expect(visibilityBadge).toHaveAttribute("data-tone", "followers");
+  await expect(authFetchingNotification).toHaveCount(1);
+  await expect(allNotifications).toHaveCount(1);
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
+  await expect(transientLoginNotification).toHaveCount(0);
   expect(getPostRequests).toBe(1);
 
   await expect.poll(() => sessionRequests).toBe(1);
   resolveSession();
 
+  await expect.poll(() => getPostRequests).toBe(2);
+  await expect(bodyLoading).toBeVisible();
+  await expect(visibilityBadge).toHaveAttribute("data-tone", "followers");
+  await expect(authFetchingNotification).toHaveCount(1);
+  await expect(allNotifications).toHaveCount(1);
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
+  await expect(page.getByText("*****", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Authenticated restricted post detail text")).toHaveCount(0);
+  resolveAuthenticatedPost();
+
   await expect(page.getByText("Authenticated restricted post detail text")).toBeVisible();
   await expect(page.getByText("Authenticated restricted post detail additional")).toBeVisible();
+  await expect(bodyLoading).toHaveCount(0);
+  await expect(visibilityBadge).toHaveAttribute("data-tone", "followers");
+  await expect(authFetchingNotification).toHaveCount(0);
+  await expect(allNotifications).toHaveCount(0);
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
+  await expect(transientLoginNotification).toHaveCount(0);
   expect(sessionRequests).toBe(1);
   expect(getPostRequests).toBe(2);
 });
@@ -1613,6 +1659,7 @@ for (const [restrictedErrorCode, message] of [
     await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erestricted-${restrictedErrorCode}`);
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText(message)).toBeVisible();
+    await expect(page.locator('[data-mantine-shared-portal-node] [role="alert"]')).toHaveCount(1);
   });
 }
 

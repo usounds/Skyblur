@@ -30,6 +30,8 @@ describe('getPost API', () => {
     // Define mocks variables but init them in beforeEach logic effectively or just keep refs
     let mockDOFetch: any;
     let mockDONamespace: any;
+    let mockMirrorFetch: any;
+    let mockMirrorNamespace: any;
     let baseEnv: any;
 
     const validRecord = {
@@ -57,8 +59,19 @@ describe('getPost API', () => {
             idFromName: vi.fn().mockReturnValue('do-id'),
             get: vi.fn().mockReturnValue({ fetch: mockDOFetch })
         };
+        mockMirrorFetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => Promise.resolve(
+            init?.method === 'POST'
+                ? Response.json({ accepted: true, projected: true, duplicate: false, stale: false })
+                : new Response(null, { status: 404 })
+        ));
+        mockMirrorNamespace = {
+            idFromName: vi.fn().mockReturnValue('mirror-do-id'),
+            get: vi.fn().mockReturnValue({ fetch: mockMirrorFetch })
+        };
         baseEnv = {
-            SKYBLUR_DO_RESTRICTED: mockDONamespace
+            SKYBLUR_DO_RESTRICTED: mockDONamespace,
+            SKYBLUR_DO_POST_MIRROR: mockMirrorNamespace,
+            PDS_READ_THROUGH_CACHE: 'true',
         };
 
         // Default Logic Mocks
@@ -126,6 +139,170 @@ describe('getPost API', () => {
 
         await handle(c);
         expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Cannot getRecord') }), 500);
+    });
+
+    it('should use the mirror without requesting the PDS when the record exists', async () => {
+        mockMirrorFetch.mockResolvedValueOnce(Response.json({
+            value: { text: 'mirror content', visibility: 'public', createdAt: '2024-01-01' },
+            cid: 'mirror-cid',
+            timeUs: 1_704_067_200_000_000,
+            source: 'jetstream',
+        }));
+        baseEnv.PDS_READ_THROUGH_CACHE = 'false';
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'mirror content' }));
+        expect(JWTTokenHandler.fetchServiceEndpoint).not.toHaveBeenCalled();
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockMirrorFetch).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+        ['unset', undefined],
+        ['false', 'false'],
+    ])('should bypass an existing PDS-sourced mirror record while caching is %s', async (_label, flag) => {
+        if (flag === undefined) {
+            delete baseEnv.PDS_READ_THROUGH_CACHE;
+        } else {
+            baseEnv.PDS_READ_THROUGH_CACHE = flag;
+        }
+        mockMirrorFetch.mockResolvedValueOnce(Response.json({
+            value: { text: 'stale cached PDS content', visibility: 'public', createdAt: '2024-01-01' },
+            cid: 'stale-pds-cid',
+            source: 'pds',
+        }));
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                cid: 'current-pds-cid',
+                value: { text: 'current PDS content', visibility: 'public', createdAt: '2024-01-02' },
+            }),
+        });
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'current PDS content' }));
+        expect(mockFetch).toHaveBeenCalledOnce();
+        expect(mockMirrorFetch).toHaveBeenCalledOnce();
+    });
+
+    it('should use an existing PDS-sourced mirror record while caching is enabled', async () => {
+        mockMirrorFetch.mockResolvedValueOnce(Response.json({
+            value: { text: 'cached PDS content', visibility: 'public', createdAt: '2024-01-01' },
+            cid: 'pds-cid',
+            source: 'pds',
+            pdsGeneration: 'v2',
+        }));
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'cached PDS content' }));
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockMirrorFetch).toHaveBeenCalledOnce();
+    });
+
+    it('should store a PDS fallback in the mirror before returning it', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                cid: 'pds-cid',
+                value: { text: 'pds content', visibility: 'public', createdAt: '2024-01-01T00:00:00.000Z' },
+            }),
+        });
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'pds content' }));
+        const write = mockMirrorFetch.mock.calls.find(([, init]: [unknown, RequestInit?]) => init?.method === 'POST');
+        expect(write).toBeDefined();
+        expect(JSON.parse(write![1].body as string)).toEqual(expect.objectContaining({
+            eventId: 'pds:v2:did:repo:123:pds-cid',
+            did: 'did:repo',
+            timeUs: 1_800_000_000_000_000,
+            source: 'pds',
+            commit: expect.objectContaining({
+                operation: 'create', collection: 'uk.skyblur.post', rkey: '123', cid: 'pds-cid',
+            }),
+        }));
+    });
+
+    it.each([
+        ['unset', undefined],
+        ['false', 'false'],
+    ])('should not store a PDS fallback while read-through caching is %s', async (_label, flag) => {
+        if (flag === undefined) {
+            delete baseEnv.PDS_READ_THROUGH_CACHE;
+        } else {
+            baseEnv.PDS_READ_THROUGH_CACHE = flag;
+        }
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                cid: 'pds-cid',
+                value: { text: 'uncached PDS content', visibility: 'public', createdAt: '2024-01-01' },
+            }),
+        });
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'uncached PDS content' }));
+        expect(mockMirrorFetch).toHaveBeenCalledOnce();
+        expect(mockMirrorFetch).toHaveBeenCalledWith(expect.stringContaining('/record?'));
+    });
+
+    it('should still return the PDS record when mirror storage fails', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ value: { text: 'available', visibility: 'public', createdAt: '2024-01-01' } }),
+        });
+        mockMirrorFetch
+            .mockResolvedValueOnce(new Response(null, { status: 404 }))
+            .mockResolvedValueOnce(Response.json({ error: 'unavailable' }, { status: 503 }));
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'available' }));
+    });
+
+    it('should re-read the mirror when a concurrent projection rejects the PDS snapshot', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ value: { text: 'stale PDS', visibility: 'public', createdAt: '2024-01-01' } }),
+        });
+        mockMirrorFetch
+            .mockResolvedValueOnce(new Response(null, { status: 404 }))
+            .mockResolvedValueOnce(Response.json({ accepted: true, projected: false, duplicate: false, stale: true }))
+            .mockResolvedValueOnce(Response.json({
+                value: { text: 'concurrent mirror update', visibility: 'public', createdAt: '2024-01-02' },
+            }));
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'concurrent mirror update' }));
+        expect(mockMirrorFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('should not revive a mirror tombstone from the PDS', async () => {
+        baseEnv.PDS_READ_THROUGH_CACHE = 'false';
+        mockMirrorFetch.mockResolvedValueOnce(new Response(null, { status: 410 }));
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
+
+        await handle(c);
+
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(c.json).toHaveBeenCalledWith(
+            expect.objectContaining({ message: expect.stringContaining('Cannot getRecord') }),
+            500,
+        );
     });
 
     // --- Visibility Tests ---
