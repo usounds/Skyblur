@@ -56,7 +56,6 @@ export const PostPage = () => {
     const [visibility, setVisibility] = useState<string>('');
     const [debugStatus, setDebugStatus] = useState<string>('Idle');
     const [isRestrictedFetchDone, setIsRestrictedFetchDone] = useState<boolean>(false);
-    const [isRestrictedFetching, setIsRestrictedFetching] = useState<boolean>(false);
     const [authenticatedFetchCompletedKey, setAuthenticatedFetchCompletedKey] = useState('');
     const [initialFetchCompletedKey, setInitialFetchCompletedKey] = useState('');
     const postFetchRequestIdRef = useRef(0);
@@ -75,9 +74,7 @@ export const PostPage = () => {
         const requestId = postFetchRequestIdRef.current + 1;
         postFetchRequestIdRef.current = requestId;
         console.log(`[PostPage] getPostData called for ${aturi}, pass=${!!passwordArg}`);
-        if (useAuthenticatedSession) {
-            setIsRestrictedFetching(true);
-        } else if (!passwordArg) {
+        if (!useAuthenticatedSession && !passwordArg) {
             setIsLoading(true);
             setErrorMessage('');
             setIsRestrictedFetchDone(false);
@@ -218,7 +215,6 @@ export const PostPage = () => {
                 setIsLoading(false);
                 setIsRestrictedFetchDone(true);
                 if (useAuthenticatedSession) {
-                    setIsRestrictedFetching(false);
                     setAuthenticatedFetchCompletedKey(`${did}/${rkey}/${loginDid}`);
                 }
                 if (!useAuthenticatedSession) {
@@ -288,6 +284,34 @@ export const PostPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, rkey, isSessionChecked, loginDid, isRestrictedFetchDone, initialFetchCompletedKey, visibility, isDecrypt, encryptKey, encryptCid]);
 
+    const isRestrictedVisibility = isRestrictedVisibilityScope(visibility) || visibility === 'UNKNOWN';
+    const isMaskedText = /^([○◯]+)$/.test(postText.trim());
+    const isRestrictedTarget = isRestrictedVisibility || (isMaskedText && !visibility);
+    const authenticatedFetchKey = loginDid ? `${did}/${rkey}/${loginDid}` : '';
+    const isWaitingForRestrictedAuth = isRestrictedTarget
+        && (!isSessionChecked || (!!loginDid && authenticatedFetchCompletedKey !== authenticatedFetchKey));
+    const restrictedAuthNotificationId = `post-restricted-auth-fetch-${rkey}`;
+
+    useEffect(() => {
+        if (isWaitingForRestrictedAuth) {
+            notifications.show({
+                id: restrictedAuthNotificationId,
+                title: 'Loading',
+                loading: true,
+                message: locale.Post_Restricted_FetchingAuth,
+                autoClose: false,
+                withCloseButton: false,
+            });
+            return;
+        }
+
+        notifications.hide(restrictedAuthNotificationId);
+    }, [isWaitingForRestrictedAuth, locale.Post_Restricted_FetchingAuth, restrictedAuthNotificationId]);
+
+    useEffect(() => () => {
+        notifications.hide(restrictedAuthNotificationId);
+    }, [restrictedAuthNotificationId]);
+
 
 
     async function getPreferenceProcess(repo: string) {
@@ -323,15 +347,10 @@ export const PostPage = () => {
         );
     }
 
-    const isRestrictedVisibility = isRestrictedVisibilityScope(visibility) || visibility === 'UNKNOWN';
-    const isMaskedText = /^([○◯]+)$/.test(postText.trim());
-    const isRestrictedTarget = isRestrictedVisibility || (isMaskedText && !visibility);
-
     const isMasked = isMaskedText;
-    const shouldShowLoading = isLoading || (isRestrictedTarget && loginDid && !isRestrictedFetchDone);
-    const authenticatedFetchKey = loginDid ? `${did}/${rkey}/${loginDid}` : '';
+    const shouldShowLoading = isLoading || isWaitingForRestrictedAuth;
     const shouldShowRestrictedNotice = (visibility === VISIBILITY_LOGIN || isRestrictedVisibilityScope(visibility))
-        && (!loginDid || isRestrictedFetching || authenticatedFetchCompletedKey !== authenticatedFetchKey);
+        && isSessionChecked && !loginDid;
     console.log(`PostPage Render: postText='${postText}', isMasked=${isMasked}, shouldShowLoading=${shouldShowLoading}, loginDid=${!!loginDid}, isSessionChecked=${isSessionChecked}`);
 
     const visibilityKey = visibility || (encryptCid ? VISIBILITY_PASSWORD : VISIBILITY_PUBLIC);
@@ -379,7 +398,7 @@ export const PostPage = () => {
                     )}
 
                     {shouldShowLoading ?
-                        <div className="">
+                        <div className="" data-testid="post-body-loading">
                             <PostBodyLoading />
                         </div>
                         :

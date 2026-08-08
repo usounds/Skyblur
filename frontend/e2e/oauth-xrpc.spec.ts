@@ -1528,10 +1528,16 @@ test("/post refetches restricted detail after the session resolves authenticated
   });
 
   await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erefetch`);
-  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
+  const bodyLoading = page.getByTestId("post-body-loading");
+  const authFetchingNotification = page.locator('[role="alert"]').filter({
+    hasText: /Checking authorization|認証情報を確認しています/,
+  });
   const transientLoginNotification = page.locator('[role="alert"]').filter({
     hasText: "この投稿を表示するにはログインしてください。",
   });
+  await expect(bodyLoading).toBeVisible();
+  await expect(authFetchingNotification).toBeVisible();
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
   await expect(transientLoginNotification).toHaveCount(0);
   expect(getPostRequests).toBe(1);
 
@@ -1539,13 +1545,17 @@ test("/post refetches restricted detail after the session resolves authenticated
   resolveSession();
 
   await expect.poll(() => getPostRequests).toBe(2);
-  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
+  await expect(bodyLoading).toBeVisible();
+  await expect(authFetchingNotification).toBeVisible();
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
   await expect(page.getByText("*****", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Authenticated restricted post detail text")).toHaveCount(0);
   resolveAuthenticatedPost();
 
   await expect(page.getByText("Authenticated restricted post detail text")).toBeVisible();
   await expect(page.getByText("Authenticated restricted post detail additional")).toBeVisible();
+  await expect(bodyLoading).toHaveCount(0);
+  await expect(authFetchingNotification).toHaveCount(0);
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
   await expect(transientLoginNotification).toHaveCount(0);
   expect(sessionRequests).toBe(1);
