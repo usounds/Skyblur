@@ -2,7 +2,7 @@ import { DurableObject } from 'cloudflare:workers';
 import type { JetstreamEvent } from './jetstream';
 import type { Env } from '@/index';
 
-type ProjectionSource = 'jetstream' | 'backfill';
+type ProjectionSource = 'jetstream' | 'pds' | 'backfill';
 type MirrorEvent = JetstreamEvent & { source?: ProjectionSource };
 type RecordOrder = {
   source: ProjectionSource;
@@ -29,7 +29,12 @@ type LegacyRecordOrder = {
 };
 
 export function compareProjectionOrder(incoming: RecordOrder, current: RecordOrder): number {
-  if (incoming.source !== current.source) return incoming.source === 'jetstream' ? 1 : -1;
+  if (incoming.source !== current.source) {
+    if (incoming.source === 'backfill') return -1;
+    if (current.source === 'backfill') return 1;
+    if (incoming.time_us !== current.time_us) return incoming.time_us > current.time_us ? 1 : -1;
+    return incoming.source === 'jetstream' ? 1 : -1;
+  }
   if (incoming.time_us !== current.time_us) return incoming.time_us > current.time_us ? 1 : -1;
   if (incoming.rev !== current.rev) return incoming.rev > current.rev ? 1 : -1;
   const priority: Record<string, number> = { create: 1, update: 2, delete: 3 };
@@ -41,6 +46,8 @@ export function compareProjectionOrder(incoming: RecordOrder, current: RecordOrd
 }
 
 export class PostMirrorDO extends DurableObject<Env> {
+  private readonly initializedAt = performance.now();
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.ctx.storage.sql.exec(`
@@ -86,22 +93,37 @@ export class PostMirrorDO extends DurableObject<Env> {
       return Response.json(this.project(event));
     }
 
+
     if (request.method === 'GET' && url.pathname === '/record') {
+      const startedAt = performance.now();
       const repo = url.searchParams.get('repo');
       const rkey = url.searchParams.get('rkey');
       if (!repo || !rkey) return new Response('Missing repo or rkey', { status: 400 });
       const row = this.ctx.storage.sql.exec<{
         operation: string; cid?: string; rev?: string; event_time?: number;
-        received_at: string; value_json?: string | null;
+        received_at: string; value_json?: string | null; source?: ProjectionSource | null; event_id?: string;
       }>(
-        'SELECT operation, cid, rev, event_time, received_at, value_json FROM records WHERE repo = ? AND collection = ? AND rkey = ?',
+        `SELECT r.operation, r.cid, r.rev, r.event_time, r.received_at, r.value_json, o.source, o.event_id
+         FROM records AS r
+         LEFT JOIN record_order AS o
+           ON o.repo = r.repo AND o.collection = r.collection AND o.rkey = r.rkey
+         WHERE r.repo = ? AND r.collection = ? AND r.rkey = ?`,
         repo, 'uk.skyblur.post', rkey,
       ).toArray()[0];
-      if (!row || row.operation === 'delete' || !row.value_json) return new Response(null, { status: 404 });
+      if (!row) return new Response(null, { status: 404 });
+      if (row.operation === 'delete') return new Response(null, { status: 410 });
+      if (!row.value_json) return new Response(null, { status: 404 });
+      const timing = {
+        sqlMs: Number((performance.now() - startedAt).toFixed(1)),
+        durationMs: Number((performance.now() - startedAt).toFixed(1)),
+        instanceAgeMs: Number((performance.now() - this.initializedAt).toFixed(1)),
+      };
+      console.info('[PostMirrorDO] record', { repo, rkey, ...timing });
       return Response.json({
         value: JSON.parse(row.value_json), cid: row.cid, rev: row.rev,
-        timeUs: row.event_time, receivedAt: row.received_at,
-      });
+        timeUs: row.event_time, receivedAt: row.received_at, source: row.source ?? undefined,
+        pdsGeneration: row.source === 'pds' && row.event_id?.startsWith('pds:v2:') ? 'v2' : undefined,
+      }, { headers: { 'X-Skyblur-Mirror-DO-Timing': JSON.stringify(timing) } });
     }
 
     if (request.method === 'GET' && url.pathname === '/records') return this.records(url);
@@ -133,7 +155,7 @@ export class PostMirrorDO extends DurableObject<Env> {
         || event.commit.record === null
         || !('$type' in event.commit.record)
         || event.commit.record.$type === 'uk.skyblur.post')
-      && (!event.source || event.source === 'jetstream' || event.source === 'backfill');
+      && (!event.source || ['jetstream', 'pds', 'backfill'].includes(event.source));
   }
 
   private project(event: MirrorEvent) {
@@ -196,7 +218,7 @@ export class PostMirrorDO extends DurableObject<Env> {
           event.timeUs, event.commit.rev ?? '', event.commit.operation, event.eventId,
         );
         const watermark = this.watermark();
-        if (!watermark || event.timeUs > watermark.timeUs) {
+        if (source === 'jetstream' && (!watermark || event.timeUs > watermark.timeUs)) {
           this.ctx.storage.sql.exec(
             "INSERT INTO meta (key, value) VALUES ('watermark', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             JSON.stringify({ timeUs: event.timeUs, eventId: event.eventId, receivedAt }),
@@ -233,6 +255,7 @@ export class PostMirrorDO extends DurableObject<Env> {
       })),
     });
   }
+
 
   private status() {
     const counts = this.ctx.storage.sql.exec<{

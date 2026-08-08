@@ -1,12 +1,14 @@
 # Skyblur Jetstream consumer
 
 Small, stateless Go worker that reads `uk.skyblur.post` commits from Bluesky's
-public Jetstream instances and forwards durably acknowledged batches to the
-Skyblur API.
+public Jetstream instances and forwards batches to the Skyblur API. A batch is
+acknowledged only after the backend has synchronously applied every event and
+durably committed its cursor.
 
 The worker never stores its cursor on local disk. On startup and before every
 reconnection it reads the committed cursor from Skyblur. Reconnection rewinds
-that cursor by five seconds, so the backend must deduplicate `eventId` values.
+that cursor by five seconds, so replayed batches are expected and the backend
+deduplicates their deterministic `eventId` values.
 
 ## Required environment variables
 

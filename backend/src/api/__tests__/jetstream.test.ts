@@ -4,7 +4,7 @@ import {
   ingest,
   inspectRecord,
   inspectRecords,
-  requeueMirrorFailures,
+  publicCursor,
   resolveQuarantinedFrame,
   state,
   verifySignedRequest,
@@ -104,6 +104,22 @@ describe('Jetstream ingest authentication', () => {
     expect(stub.fetch).toHaveBeenCalledWith('https://jetstream-ingest/ingest', expect.objectContaining({ method: 'POST' }));
   });
 
+  it('preserves a retryable projection failure for the Go consumer', async () => {
+    const item = await event();
+    const body = JSON.stringify({ cursor: item.timeUs, events: [item] });
+    const request = await signedRequest('https://api.skyblur.uk/internal/jetstream/ingest', 'POST', body);
+    const stub = { fetch: vi.fn().mockResolvedValue(
+      Response.json({ error: 'Failed to apply Jetstream batch' }, { status: 503 }),
+    ) };
+    const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(stub) };
+    const response = await ingest(context(request, {
+      JETSTREAM_INGEST_SECRET: secret,
+      SKYBLUR_DO_JETSTREAM_INGEST: namespace,
+    }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'Failed to apply Jetstream batch' });
+  });
+
   it('rejects a forged event ID without touching storage', async () => {
     const item = await event({ eventId: 'jetstream:forged' });
     item.eventId = 'jetstream:forged';
@@ -182,6 +198,22 @@ describe('Jetstream ingest authentication', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ committedCursor: 123 });
   });
+
+  it('returns only the current cursor through the public status endpoint', async () => {
+    const request = new Request('https://api.skyblur.uk/status/jetstream/cursor');
+    const stub = { fetch: vi.fn().mockResolvedValue(Response.json({
+      committedCursor: 456,
+      lastIngestedAt: 789,
+      projectionHealthy: true,
+    })) };
+    const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(stub) };
+    const response = await publicCursor(context(request, {
+      SKYBLUR_DO_JETSTREAM_INGEST: namespace,
+    }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ cursor: 456, lastIngestedAt: 789 });
+    expect(response.headers.get('cache-control')).toBe('no-store');
+  });
 });
 
 describe('mirror ordering', () => {
@@ -195,6 +227,14 @@ describe('mirror ordering', () => {
 
   it('never lets backfill replace a live projection', () => {
     expect(compareProjectionOrder({ ...base, source: 'backfill', time_us: 200 }, base)).toBeLessThan(0);
+  });
+
+  it('orders fallback sources below Jetstream and PDS above historical backfill', () => {
+    const pds = { ...base, source: 'pds' as const, time_us: 200 };
+    expect(compareProjectionOrder(pds, base)).toBeGreaterThan(0);
+    expect(compareProjectionOrder(base, pds)).toBeLessThan(0);
+    expect(compareProjectionOrder({ ...base, time_us: 300 }, pds)).toBeGreaterThan(0);
+    expect(compareProjectionOrder(pds, { ...base, source: 'backfill' })).toBeGreaterThan(0);
   });
 
   it('keeps delete ahead of update when time and revision are equal', () => {
@@ -236,21 +276,16 @@ describe('mirror inspection', () => {
     expect(await response.json()).toEqual(payload);
   });
 
-  it('requires the inspector token for requeue and quarantine resolution', async () => {
-    const stub = { fetch: vi.fn().mockResolvedValue(Response.json({ accepted: true, requeued: 1 })) };
+  it('requires the inspector token for quarantine resolution', async () => {
+    const stub = { fetch: vi.fn().mockResolvedValue(Response.json({ accepted: true, resolved: 1 })) };
     const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(stub) };
-    const unauthorized = context(new Request('https://api.skyblur.uk/internal/mirror/requeue', { method: 'POST' }), {
+    const unauthorized = context(new Request('https://api.skyblur.uk/internal/mirror/quarantine/resolve', { method: 'POST' }), {
       MIRROR_INSPECT_TOKEN: 'inspect-secret', SKYBLUR_DO_JETSTREAM_INGEST: namespace,
     });
-    expect((await requeueMirrorFailures(unauthorized)).status).toBe(401);
+    unauthorized.req.json = () => unauthorized.req.raw.json();
+    expect((await resolveQuarantinedFrame(unauthorized)).status).toBe(401);
     expect(stub.fetch).not.toHaveBeenCalled();
 
-    const authorized = context(new Request('https://api.skyblur.uk/internal/mirror/requeue', {
-      method: 'POST', headers: { Authorization: 'Bearer inspect-secret' },
-    }), { MIRROR_INSPECT_TOKEN: 'inspect-secret', SKYBLUR_DO_JETSTREAM_INGEST: namespace });
-    expect((await requeueMirrorFailures(authorized)).status).toBe(200);
-
-    stub.fetch.mockResolvedValueOnce(Response.json({ accepted: true, resolved: 1 }));
     const resolve = context(new Request('https://api.skyblur.uk/internal/mirror/quarantine/resolve', {
       method: 'POST',
       headers: { Authorization: 'Bearer inspect-secret', 'Content-Type': 'application/json' },

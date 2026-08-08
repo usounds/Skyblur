@@ -2,35 +2,12 @@ import { DurableObject } from 'cloudflare:workers';
 import type { Env } from '@/index';
 import type { JetstreamBatch, JetstreamEvent } from './jetstream';
 
-type InboxRow = {
-  event_id: string;
-  event_json: string;
-  time_us: number;
-  attempts: number;
-};
-
 const MAX_FUTURE_CURSOR_US = 5 * 60 * 1_000_000;
 
 export class JetstreamIngestDO extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.ctx.storage.sql.exec(`
-      CREATE TABLE IF NOT EXISTS inbox (
-        event_id TEXT PRIMARY KEY,
-        did TEXT NOT NULL,
-        collection TEXT NOT NULL,
-        rkey TEXT NOT NULL,
-        operation TEXT NOT NULL,
-        time_us INTEGER NOT NULL,
-        event_json TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending',
-        attempts INTEGER NOT NULL DEFAULT 0,
-        next_attempt_at INTEGER NOT NULL DEFAULT 0,
-        last_error TEXT,
-        created_at INTEGER NOT NULL,
-        projected_at INTEGER
-      );
-      CREATE INDEX IF NOT EXISTS inbox_status_time ON inbox(status, time_us, event_id);
       CREATE TABLE IF NOT EXISTS quarantined_frames (
         hash TEXT PRIMARY KEY,
         time_us INTEGER NOT NULL,
@@ -45,13 +22,6 @@ export class JetstreamIngestDO extends DurableObject<Env> {
       );
       CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     `);
-    if (this.metaNumber('storageModelVersion') < 2) {
-      this.ctx.storage.transactionSync(() => {
-        this.ctx.storage.sql.exec("DELETE FROM inbox WHERE status = 'projected'");
-        this.ctx.storage.sql.exec('DROP INDEX IF EXISTS inbox_status_projected');
-        this.setMetaNumber('storageModelVersion', 2);
-      });
-    }
     this.ensureQuarantineSchema();
   }
 
@@ -68,25 +38,19 @@ export class JetstreamIngestDO extends DurableObject<Env> {
         return Response.json({ error: 'Invalid batch' }, { status: 400 });
       }
 
+      let projection: { projected: number; duplicates: number; stale: number };
+      try {
+        projection = await this.projectEvents(batch.events);
+      } catch (error) {
+        console.error(JSON.stringify({
+          event: 'jetstream_projection_failed',
+          message: error instanceof Error ? error.message.slice(0, 512) : 'projection_failed',
+        }));
+        return Response.json({ error: 'Failed to apply Jetstream batch' }, { status: 503 });
+      }
+
       const result = this.ctx.storage.transactionSync(() => {
         const stored = this.metaNumber('committedCursor');
-        let inserted = 0;
-        for (const event of batch.events) {
-          const write = this.ctx.storage.sql.exec(
-            `INSERT OR IGNORE INTO inbox
-              (event_id, did, collection, rkey, operation, time_us, event_json, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            event.eventId,
-            event.did,
-            event.commit.collection,
-            event.commit.rkey,
-            event.commit.operation,
-            event.timeUs,
-            JSON.stringify(event),
-            Date.now(),
-          );
-          inserted += write.rowsWritten;
-        }
         let quarantined = 0;
         for (const item of batch.quarantined ?? []) {
           const write = this.ctx.storage.sql.exec(
@@ -103,35 +67,26 @@ export class JetstreamIngestDO extends DurableObject<Env> {
         this.setMetaNumber('lastIngestedAt', Date.now());
         return {
           committedCursor,
-          inserted,
-          duplicates: batch.events.length - inserted,
           quarantined,
           quarantineDuplicates: (batch.quarantined?.length ?? 0) - quarantined,
         };
       });
 
-      if (batch.events.length > 0) await this.ctx.storage.setAlarm(Date.now());
       console.info(JSON.stringify({
         event: 'jetstream_ingest',
         committedCursor: result.committedCursor,
         events: batch.events.length,
-        inserted: result.inserted,
-        duplicates: result.duplicates,
+        projected: projection.projected,
+        duplicates: projection.duplicates,
+        stale: projection.stale,
         quarantined: result.quarantined,
         quarantineDuplicates: result.quarantineDuplicates,
       }));
-      return Response.json({ accepted: true, ...result });
+      return Response.json({ accepted: true, ...result, ...projection });
     }
 
     if (request.method === 'GET' && url.pathname === '/state') {
       return Response.json(this.state());
-    }
-    if (request.method === 'POST' && url.pathname === '/requeue') {
-      const result = this.ctx.storage.sql.exec(
-        "UPDATE inbox SET status = 'pending', next_attempt_at = 0, last_error = NULL WHERE status = 'dead_letter'",
-      );
-      if (result.rowsWritten > 0) await this.ctx.storage.setAlarm(Date.now());
-      return Response.json({ accepted: true, requeued: result.rowsWritten });
     }
     if (request.method === 'POST' && url.pathname === '/quarantine/resolve') {
       const body = await request.json() as {
@@ -161,66 +116,7 @@ export class JetstreamIngestDO extends DurableObject<Env> {
     return new Response('Not found', { status: 404 });
   }
 
-  async alarm(): Promise<void> {
-    try {
-      const rows = this.ctx.storage.sql.exec<InboxRow>(
-        `SELECT event_id, event_json, time_us, attempts
-         FROM inbox WHERE status = 'pending' AND next_attempt_at <= ?
-         ORDER BY time_us ASC, event_id ASC LIMIT 25`,
-        Date.now(),
-      ).toArray();
-
-      for (const row of rows) {
-        const event = JSON.parse(row.event_json) as JetstreamEvent;
-        try {
-          const namespace = this.env.SKYBLUR_DO_POST_MIRROR;
-          const stub = namespace.get(namespace.idFromName(event.did));
-          const response = await stub.fetch('https://mirror/event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(event),
-          });
-          if (!response.ok) throw new Error(`mirror_${response.status}`);
-          const result = await response.json() as { accepted?: boolean };
-          if (result.accepted !== true) throw new Error('mirror_not_accepted');
-          this.ctx.storage.transactionSync(() => {
-            this.ctx.storage.sql.exec(
-              'DELETE FROM inbox WHERE event_id = ?',
-              row.event_id,
-            );
-            const projected = this.metaNumber('projectedTimeUs');
-            if (row.time_us > projected) this.setMetaNumber('projectedTimeUs', row.time_us);
-          });
-        } catch (error) {
-          const message = error instanceof Error ? error.message.slice(0, 512) : 'projection_failed';
-          const delay = Math.min(2 ** Math.min(row.attempts + 1, 8) * 1_000, 5 * 60 * 1_000);
-          this.ctx.storage.sql.exec(
-            'UPDATE inbox SET attempts = attempts + 1, next_attempt_at = ?, last_error = ? WHERE event_id = ?',
-            Date.now() + delay, message, row.event_id,
-          );
-        }
-      }
-    } finally {
-      const nextAlarm = this.nextMaintenanceAlarm();
-      if (nextAlarm !== null) await this.ctx.storage.setAlarm(nextAlarm);
-    }
-  }
-
   private state() {
-    const counts = this.ctx.storage.sql.exec<{ pending: number; dead_letters: number }>(
-      `SELECT
-        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
-        SUM(CASE WHEN status = 'dead_letter' THEN 1 ELSE 0 END) AS dead_letters
-       FROM inbox`,
-    ).toArray()[0] ?? { pending: 0, dead_letters: 0 };
-    const oldest = this.ctx.storage.sql.exec<{ oldest_pending: number | null; oldest_dead_letter: number | null }>(
-      `SELECT
-        MIN(CASE WHEN status = 'pending' THEN time_us END) AS oldest_pending,
-        MIN(CASE WHEN status = 'dead_letter' THEN time_us END) AS oldest_dead_letter
-       FROM inbox`,
-    ).toArray()[0];
-    const pending = Number(counts.pending ?? 0);
-    const deadLetters = Number(counts.dead_letters ?? 0);
     const quarantineCounts = this.ctx.storage.sql.exec<{
       total: number; unresolved: number; ignored: number;
     }>(
@@ -241,9 +137,9 @@ export class JetstreamIngestDO extends DurableObject<Env> {
     const unhealthyQuarantines = Number(quarantineCounts.unresolved ?? 0) + Number(quarantineCounts.ignored ?? 0);
     return {
       committedCursor: this.metaNumber('committedCursor'),
-      projectedTimeUs: this.metaNumber('projectedTimeUs'),
       lastIngestedAt: this.metaNumber('lastIngestedAt') || null,
-      projectionHealthy: pending === 0 && deadLetters === 0 && unhealthyQuarantines === 0,
+      projectionMode: 'synchronous',
+      projectionHealthy: unhealthyQuarantines === 0,
       quarantinedFrames: Number(quarantineCounts.total ?? 0),
       unresolvedQuarantines: Number(quarantineCounts.unresolved ?? 0),
       ignoredQuarantines: Number(quarantineCounts.ignored ?? 0),
@@ -252,32 +148,31 @@ export class JetstreamIngestDO extends DurableObject<Env> {
         did: row.did, collection: row.collection, rkey: row.rkey, createdAt: row.created_at,
         resolution: row.resolution, resolvedAt: row.resolved_at, remediatedBy: row.remediated_by,
       })),
-      queue: {
-        pending,
-        deadLetters,
-        oldestPendingTimeUs: oldest?.oldest_pending ?? null,
-        oldestDeadLetterTimeUs: oldest?.oldest_dead_letter ?? null,
-      },
     };
   }
 
-  private pendingCount(): number {
-    const row = this.ctx.storage.sql.exec<{ count: number }>(
-      "SELECT COUNT(*) AS count FROM inbox WHERE status = 'pending'",
-    ).toArray()[0];
-    return Number(row?.count ?? 0);
-  }
-
-  private nextPendingAt(): number {
-    const row = this.ctx.storage.sql.exec<{ next_attempt_at: number }>(
-      "SELECT MIN(next_attempt_at) AS next_attempt_at FROM inbox WHERE status = 'pending'",
-    ).toArray()[0];
-    return Number(row?.next_attempt_at ?? Date.now() + 2_000);
-  }
-
-  private nextMaintenanceAlarm(): number | null {
-    const now = Date.now();
-    return this.pendingCount() > 0 ? Math.max(now + 100, this.nextPendingAt()) : null;
+  private async projectEvents(events: JetstreamEvent[]) {
+    let projected = 0;
+    let duplicates = 0;
+    let stale = 0;
+    for (const event of events) {
+      const namespace = this.env.SKYBLUR_DO_POST_MIRROR;
+      const stub = namespace.get(namespace.idFromName(event.did));
+      const response = await stub.fetch('https://mirror/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event),
+      });
+      if (!response.ok) throw new Error(`mirror_${response.status}:${event.eventId}`);
+      const result = await response.json() as {
+        accepted?: boolean; projected?: boolean; duplicate?: boolean; stale?: boolean;
+      };
+      if (result.accepted !== true) throw new Error(`mirror_not_accepted:${event.eventId}`);
+      if (result.projected === true) projected += 1;
+      if (result.duplicate === true) duplicates += 1;
+      if (result.stale === true) stale += 1;
+    }
+    return { projected, duplicates, stale };
   }
 
   private metaNumber(key: string): number {

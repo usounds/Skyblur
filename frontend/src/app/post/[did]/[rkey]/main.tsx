@@ -15,7 +15,7 @@ import { AppBskyActorDefs } from '@atcute/bluesky';
 import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { Button, Divider, Group, Input } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { notifications, notificationsStore } from '@mantine/notifications';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from "react";
@@ -61,9 +61,11 @@ export const PostPage = () => {
     const postFetchRequestIdRef = useRef(0);
     const authenticatedRefetchKeyRef = useRef('');
     const restrictedNotificationKeyRef = useRef('');
+    const restrictedAuthNotificationHasOutcomeRef = useRef(false);
 
     const aturi = 'at://' + did + "/" + SKYBLUR_POST_COLLECTION + "/" + rkey
     const bskyPostAtUri = 'at://' + did + "/app.bsky.feed.post/" + rkey
+    const restrictedAuthNotificationId = `post-restricted-auth-fetch-${rkey}`;
 
 
 
@@ -74,6 +76,9 @@ export const PostPage = () => {
         const requestId = postFetchRequestIdRef.current + 1;
         postFetchRequestIdRef.current = requestId;
         console.log(`[PostPage] getPostData called for ${aturi}, pass=${!!passwordArg}`);
+        if (!passwordArg) {
+            restrictedAuthNotificationHasOutcomeRef.current = false;
+        }
         if (!useAuthenticatedSession && !passwordArg) {
             setIsLoading(true);
             setErrorMessage('');
@@ -191,14 +196,31 @@ export const PostPage = () => {
                             return;
                         }
                         restrictedNotificationKeyRef.current = notificationKey;
-                        notifications.show({
-                            id: `post-restricted-${code}-${rkey}`,
-                            title: 'Error',
-                            message: errorMsg,
-                            color: 'red',
-                            icon: <X />,
-                            autoClose: 10000,
-                        });
+                        if (!passwordArg) {
+                            restrictedAuthNotificationHasOutcomeRef.current = true;
+                            notifications.updateState(notificationsStore, (currentNotifications) => [
+                                ...currentNotifications.filter(({ id }) => id !== restrictedAuthNotificationId),
+                                {
+                                    id: restrictedAuthNotificationId,
+                                    title: 'Error',
+                                    message: errorMsg,
+                                    color: 'red',
+                                    icon: <X />,
+                                    loading: false,
+                                    autoClose: 10000,
+                                    withCloseButton: true,
+                                },
+                            ]);
+                        } else {
+                            notifications.show({
+                                id: `post-restricted-${code}-${rkey}`,
+                                title: 'Error',
+                                message: errorMsg,
+                                color: 'red',
+                                icon: <X />,
+                                autoClose: 10000,
+                            });
+                        }
                     }
                 }
 
@@ -272,7 +294,8 @@ export const PostPage = () => {
         if (initialFetchCompletedKey !== `${did}/${rkey}`) return;
         const requiresAuthenticatedRefetch = visibility === VISIBILITY_LOGIN
             || isRestrictedVisibilityScope(visibility)
-            || visibility === 'UNKNOWN';
+            || visibility === 'UNKNOWN'
+            || (!visibility && /^(?:[○◯]+|\*+)$/.test(postText.trim()));
         if (!requiresAuthenticatedRefetch) return;
         if (isDecrypt || encryptKey || encryptCid) return;
 
@@ -282,18 +305,18 @@ export const PostPage = () => {
 
         getPostData(undefined, true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [did, rkey, isSessionChecked, loginDid, isRestrictedFetchDone, initialFetchCompletedKey, visibility, isDecrypt, encryptKey, encryptCid]);
+    }, [did, rkey, isSessionChecked, loginDid, isRestrictedFetchDone, initialFetchCompletedKey, visibility, postText, isDecrypt, encryptKey, encryptCid]);
 
     const isRestrictedVisibility = isRestrictedVisibilityScope(visibility) || visibility === 'UNKNOWN';
-    const isMaskedText = /^([○◯]+)$/.test(postText.trim());
+    const isMaskedText = /^(?:[○◯]+|\*+)$/.test(postText.trim());
     const isRestrictedTarget = isRestrictedVisibility || (isMaskedText && !visibility);
     const authenticatedFetchKey = loginDid ? `${did}/${rkey}/${loginDid}` : '';
     const isWaitingForRestrictedAuth = isRestrictedTarget
         && (!isSessionChecked || (!!loginDid && authenticatedFetchCompletedKey !== authenticatedFetchKey));
-    const restrictedAuthNotificationId = `post-restricted-auth-fetch-${rkey}`;
+    const isAuthCheckPending = isLoading || isWaitingForRestrictedAuth;
 
     useEffect(() => {
-        if (isWaitingForRestrictedAuth) {
+        if (isAuthCheckPending) {
             notifications.show({
                 id: restrictedAuthNotificationId,
                 title: 'Loading',
@@ -305,10 +328,13 @@ export const PostPage = () => {
             return;
         }
 
-        notifications.hide(restrictedAuthNotificationId);
-    }, [isWaitingForRestrictedAuth, locale.Post_Restricted_FetchingAuth, restrictedAuthNotificationId]);
+        if (!restrictedAuthNotificationHasOutcomeRef.current) {
+            notifications.hide(restrictedAuthNotificationId);
+        }
+    }, [isAuthCheckPending, locale.Post_Restricted_FetchingAuth, restrictedAuthNotificationId]);
 
     useEffect(() => () => {
+        restrictedAuthNotificationHasOutcomeRef.current = false;
         notifications.hide(restrictedAuthNotificationId);
     }, [restrictedAuthNotificationId]);
 
@@ -348,10 +374,9 @@ export const PostPage = () => {
     }
 
     const isMasked = isMaskedText;
-    const shouldShowLoading = isLoading || isWaitingForRestrictedAuth;
     const shouldShowRestrictedNotice = (visibility === VISIBILITY_LOGIN || isRestrictedVisibilityScope(visibility))
         && isSessionChecked && !loginDid;
-    console.log(`PostPage Render: postText='${postText}', isMasked=${isMasked}, shouldShowLoading=${shouldShowLoading}, loginDid=${!!loginDid}, isSessionChecked=${isSessionChecked}`);
+    console.log(`PostPage Render: postText='${postText}', isMasked=${isMasked}, isLoading=${isLoading}, isWaitingForRestrictedAuth=${isWaitingForRestrictedAuth}, loginDid=${!!loginDid}, isSessionChecked=${isSessionChecked}`);
 
     const visibilityKey = visibility || (encryptCid ? VISIBILITY_PASSWORD : VISIBILITY_PUBLIC);
     const visibilityBadge = (() => {
@@ -379,6 +404,20 @@ export const PostPage = () => {
         return { label: locale.Visibility_Public, Icon: Globe, tone: 'public' };
     })();
     const VisibilityIcon = visibilityBadge.Icon;
+    const visibilityBadgeElement = (
+        <div className={classes.visibilityBadgeWrap}>
+            <div
+                className={classes.visibilityBadge}
+                data-testid="post-visibility-badge"
+                data-tone={visibilityBadge.tone}
+            >
+                <span className={classes.visibilityIcon}>
+                    <VisibilityIcon size={15} strokeWidth={2.4} />
+                </span>
+                <span>{visibilityBadge.label}</span>
+            </div>
+        </div>
+    );
 
     return (
         <>
@@ -397,10 +436,17 @@ export const PostPage = () => {
                         </div>
                     )}
 
-                    {shouldShowLoading ?
-                        <div className="" data-testid="post-body-loading">
+                    {isLoading ?
+                        <div className="" data-testid="post-initial-loading">
                             <PostBodyLoading />
                         </div>
+                        : isWaitingForRestrictedAuth ?
+                            <div className="p-2 mx-2 max-w-screen-sm">
+                                {visibilityBadgeElement}
+                                <div data-testid="post-body-loading">
+                                    <PostBodyLoading />
+                                </div>
+                            </div>
                         :
                         <>
                             {!errorMessage &&
@@ -409,18 +455,7 @@ export const PostPage = () => {
                                     {/* DEBUG BANNER REMOVED */}
 
                                     <div className="p-2 mx-2 max-w-screen-sm">
-                                        <div className={classes.visibilityBadgeWrap}>
-                                            <div
-                                                className={classes.visibilityBadge}
-                                                data-testid="post-visibility-badge"
-                                                data-tone={visibilityBadge.tone}
-                                            >
-                                                <span className={classes.visibilityIcon}>
-                                                    <VisibilityIcon size={15} strokeWidth={2.4} />
-                                                </span>
-                                                <span>{visibilityBadge.label}</span>
-                                            </div>
-                                        </div>
+                                        {visibilityBadgeElement}
 
                                         {shouldShowRestrictedNotice ? (
                                             <div className="flex flex-col items-center justify-center m-4 gap-4">

@@ -182,6 +182,12 @@ async function authenticatedBody(c: Context<{ Bindings: Env }>): Promise<Uint8Ar
   const body = new Uint8Array(await c.req.raw.arrayBuffer());
   if (body.byteLength > MAX_INGEST_BODY_BYTES) return c.json({ error: 'Payload too large' }, 413);
   if (!(await verifySignedRequest(c.req.raw, body, c.env.JETSTREAM_INGEST_SECRET))) {
+    console.warn('[jetstream] signed request rejected', {
+      path: new URL(c.req.url, 'http://localhost').pathname,
+      hasSecret: Boolean(c.env.JETSTREAM_INGEST_SECRET),
+      timestampPresent: Boolean(c.req.header('x-skyblur-timestamp')),
+      signaturePresent: Boolean(c.req.header('x-skyblur-signature')),
+    });
     return c.json({ error: 'Unauthorized' }, 401);
   }
   return body;
@@ -237,6 +243,25 @@ export async function state(c: Context<{ Bindings: Env }>) {
   }
 }
 
+/** Public, read-only health signal for StatusCheck. */
+export async function publicCursor(c: Context<{ Bindings: Env }>) {
+  const namespace = c.env.SKYBLUR_DO_JETSTREAM_INGEST;
+  const stub = namespace.get(namespace.idFromName('uk.skyblur.post'));
+  try {
+    const response = await stub.fetch('https://jetstream-ingest/state');
+    if (!response.ok) {
+      return c.json({ error: 'Failed to load Jetstream cursor' }, 503);
+    }
+    const payload = await response.json() as { committedCursor?: unknown; lastIngestedAt?: unknown };
+    return Response.json({
+      cursor: typeof payload.committedCursor === 'number' ? payload.committedCursor : null,
+      lastIngestedAt: typeof payload.lastIngestedAt === 'number' ? payload.lastIngestedAt : null,
+    }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch {
+    return c.json({ error: 'Failed to load Jetstream cursor' }, 503);
+  }
+}
+
 function isInspectorAuthorized(c: Context<{ Bindings: Env }>): boolean {
   const token = c.env.MIRROR_INSPECT_TOKEN;
   return !!token && c.req.header('authorization') === `Bearer ${token}`;
@@ -264,6 +289,7 @@ export async function inspectRecords(c: Context<{ Bindings: Env }>) {
   return new Response(await response.text(), { status: response.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 }
 
+
 export async function inspectStatus(c: Context<{ Bindings: Env }>) {
   if (!isInspectorAuthorized(c)) return c.json({ error: 'Unauthorized' }, 401);
   const repo = c.req.query('repo');
@@ -271,18 +297,6 @@ export async function inspectStatus(c: Context<{ Bindings: Env }>) {
   const namespace = c.env.SKYBLUR_DO_POST_MIRROR;
   const response = await namespace.get(namespace.idFromName(repo)).fetch('https://mirror/status');
   return new Response(await response.text(), { status: response.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-}
-
-export async function requeueMirrorFailures(c: Context<{ Bindings: Env }>) {
-  if (!isInspectorAuthorized(c)) return c.json({ error: 'Unauthorized' }, 401);
-  const namespace = c.env.SKYBLUR_DO_JETSTREAM_INGEST;
-  const response = await namespace.get(namespace.idFromName('uk.skyblur.post')).fetch('https://jetstream-ingest/requeue', {
-    method: 'POST',
-  });
-  return new Response(await response.text(), {
-    status: response.status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
 }
 
 export async function resolveQuarantinedFrame(c: Context<{ Bindings: Env }>) {

@@ -2,6 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 import { Env } from "@/index";
 
 export class RestrictedPostDO extends DurableObject {
+    private readonly initializedAt = performance.now();
+
     constructor(ctx: DurableObjectState, env: Env) {
         super(ctx, env);
         // Initialize SQLite table
@@ -20,12 +22,12 @@ export class RestrictedPostDO extends DurableObject {
                 value TEXT
             );
         `);
-        try {
+        const tableInfo = this.ctx.storage.sql.exec<{ name?: string }>("PRAGMA table_info(posts)");
+        const columns = typeof (tableInfo as any)?.toArray === 'function'
+            ? (tableInfo as any).toArray() as Array<{ name?: string }>
+            : [];
+        if (!columns.some((column) => column.name === 'list_uri')) {
             this.ctx.storage.sql.exec("ALTER TABLE posts ADD COLUMN list_uri TEXT");
-        } catch (e) {
-            if (!String(e).toLowerCase().includes("duplicate")) {
-                console.warn("[RestrictedPostDO] list_uri migration skipped", e);
-            }
         }
     }
 
@@ -35,6 +37,7 @@ export class RestrictedPostDO extends DurableObject {
         const key = url.searchParams.get("key");
 
         if (request.method === "GET") {
+            const startedAt = performance.now();
             if (url.pathname === "/dump") {
                 const postsResult = this.ctx.storage.sql.exec("SELECT * FROM posts");
                 const posts = [...postsResult];
@@ -53,15 +56,37 @@ export class RestrictedPostDO extends DurableObject {
             }
 
             const result = this.ctx.storage.sql.exec("SELECT text, additional, visibility, list_uri as listUri FROM posts WHERE rkey = ?", key);
+            const sqlDurationMs = Number((performance.now() - startedAt).toFixed(1));
             // .one() returns the first row or null if no results
             const row = result.one();
+            const instanceAgeMs = Number((performance.now() - this.initializedAt).toFixed(1));
+            const timingHeaders = {
+                "Content-Type": "application/json",
+                "X-Skyblur-Restricted-DO-Timing": JSON.stringify({
+                    sqlMs: sqlDurationMs,
+                    instanceAgeMs,
+                    found: Boolean(row),
+                }),
+            };
 
             if (!row) {
-                return new Response(null, { status: 404 });
+                console.info('[RestrictedPostDO] get', {
+                    key,
+                    durationMs: Number((performance.now() - startedAt).toFixed(1)),
+                    sqlMs: sqlDurationMs,
+                    instanceAgeMs,
+                    found: false,
+                });
+                return new Response(null, { status: 404, headers: timingHeaders });
             }
-            return new Response(JSON.stringify(row), {
-                headers: { "Content-Type": "application/json" },
+            console.info('[RestrictedPostDO] get', {
+                key,
+                durationMs: Number((performance.now() - startedAt).toFixed(1)),
+                sqlMs: sqlDurationMs,
+                instanceAgeMs,
+                found: true,
             });
+            return new Response(JSON.stringify(row), { headers: timingHeaders });
         }
 
         if (request.method === "PUT") {

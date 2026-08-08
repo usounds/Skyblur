@@ -7,7 +7,7 @@ import { handle as resolveHandle } from "@/api/resolveHandle"
 import { handle as uploadBlobHandle } from "@/api/uploadBlob"
 import { handle as storeHandle } from "@/api/store"
 import { handle as deleteStoredHandle } from "@/api/deleteStored"
-import { ingest as jetstreamIngest, state as jetstreamState, inspectRecord as inspectMirrorRecord, inspectRecords as inspectMirrorRecords, inspectStatus as inspectMirrorStatus, requeueMirrorFailures, resolveQuarantinedFrame } from "@/api/jetstream"
+import { ingest as jetstreamIngest, state as jetstreamState, publicCursor as jetstreamPublicCursor, inspectRecord as inspectMirrorRecord, inspectRecords as inspectMirrorRecords, inspectStatus as inspectMirrorStatus, resolveQuarantinedFrame } from "@/api/jetstream"
 import { RestrictedPostDO } from "@/api/RestrictedPostDO"
 import { PostMirrorDO } from "@/api/PostMirrorDO"
 import { JetstreamIngestDO } from "@/api/JetstreamIngestDO"
@@ -104,6 +104,7 @@ export interface Env {
   CLOUDFLARE_API_TOKEN?: string;
   JETSTREAM_INGEST_SECRET?: string;
   MIRROR_SHADOW_READ?: string;
+  PDS_READ_THROUGH_CACHE?: string;
   MIRROR_INSPECT_TOKEN?: string;
 }
 
@@ -175,7 +176,7 @@ app.use('*', async (c, next) => {
   }
 
   // The Jetstream consumer is server-to-server and authenticates the raw body with HMAC.
-  if (path === '/internal/jetstream/ingest' || path === '/internal/mirror/requeue' || path === '/internal/mirror/quarantine/resolve') {
+  if (path === '/internal/jetstream/ingest' || path === '/internal/mirror/quarantine/resolve') {
     return next();
   }
 
@@ -509,10 +510,10 @@ app.post('/xrpc/uk.skyblur.post.getPost', (c) => {
 
 app.post('/internal/jetstream/ingest', (c) => jetstreamIngest(c))
 app.get('/internal/jetstream/state', (c) => jetstreamState(c))
+app.get('/status/jetstream/cursor', (c) => jetstreamPublicCursor(c))
 app.get('/internal/mirror/record', (c) => inspectMirrorRecord(c))
 app.get('/internal/mirror/records', (c) => inspectMirrorRecords(c))
 app.get('/internal/mirror/status', (c) => inspectMirrorStatus(c))
-app.post('/internal/mirror/requeue', (c) => requeueMirrorFailures(c))
 app.post('/internal/mirror/quarantine/resolve', (c) => resolveQuarantinedFrame(c))
 
 app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {

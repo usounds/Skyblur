@@ -20,24 +20,12 @@ class IngestSQL {
     collection: string | null; rkey: string | null; created_at: number;
     resolution: string | null; resolved_at: number | null; remediated_by: string | null;
   }>();
-  inbox = new Map<string, {
-    event_id: string; event_json: string; time_us: number; attempts: number;
-    status: string; next_attempt_at: number; last_error?: string; projected_at?: number;
-  }>();
-
   exec<T extends object>(query: string, ...args: unknown[]): Cursor<T> {
     const sql = query.replace(/\s+/g, ' ').trim();
     if (
       sql.startsWith('CREATE TABLE')
       || sql.startsWith('CREATE INDEX')
-      || sql.startsWith('DROP INDEX')
     ) return new Cursor<T>();
-    if (sql.startsWith("DELETE FROM inbox WHERE status = 'projected'")) {
-      for (const [id, row] of this.inbox) {
-        if (row.status === 'projected') this.inbox.delete(id);
-      }
-      return new Cursor<T>();
-    }
     if (sql === 'PRAGMA table_info(quarantined_frames)') {
       return new Cursor<T>([...this.quarantineColumns].map((name) => ({ name }) as T));
     }
@@ -53,19 +41,6 @@ class IngestSQL {
       this.meta.set(String(args[0]), String(args[1]));
       return new Cursor<T>([], 1);
     }
-    if (sql.startsWith('INSERT OR IGNORE INTO inbox')) {
-      const id = String(args[0]);
-      if (this.inbox.has(id)) return new Cursor<T>([], 0);
-      this.inbox.set(id, {
-        event_id: id,
-        event_json: String(args[6]),
-        time_us: Number(args[5]),
-        attempts: 0,
-        status: 'pending',
-        next_attempt_at: 0,
-      });
-      return new Cursor<T>([], 1);
-    }
     if (sql.startsWith('INSERT OR IGNORE INTO quarantined_frames')) {
       const hash = String(args[0]);
       if (this.quarantines.has(hash)) return new Cursor<T>([], 0);
@@ -77,63 +52,6 @@ class IngestSQL {
         created_at: Number(args[6]), resolution: null, resolved_at: null, remediated_by: null,
       });
       return new Cursor<T>([], 1);
-    }
-    if (sql.includes("FROM inbox WHERE status = 'pending'") && sql.startsWith('SELECT event_id')) {
-      const rows = [...this.inbox.values()]
-        .filter((row) => row.status === 'pending')
-        .sort((a, b) => a.time_us - b.time_us || a.event_id.localeCompare(b.event_id))
-        .slice(0, 25);
-      return new Cursor<T>(rows as T[]);
-    }
-    if (sql === 'DELETE FROM inbox WHERE event_id = ?') {
-      const deleted = this.inbox.delete(String(args[0]));
-      return new Cursor<T>([], deleted ? 1 : 0);
-    }
-    if (sql.startsWith("UPDATE inbox SET status = 'dead_letter'")) {
-      const row = this.inbox.get(String(args[1]));
-      if (row) {
-        row.status = 'dead_letter';
-        row.attempts += 1;
-        row.last_error = String(args[0]);
-      }
-      return new Cursor<T>([], row ? 1 : 0);
-    }
-    if (sql.startsWith("UPDATE inbox SET status = 'pending'")) {
-      let changed = 0;
-      for (const row of this.inbox.values()) {
-        if (row.status === 'dead_letter') {
-          row.status = 'pending';
-          row.next_attempt_at = 0;
-          row.last_error = undefined;
-          changed += 1;
-        }
-      }
-      return new Cursor<T>([], changed);
-    }
-    if (sql.startsWith('UPDATE inbox SET attempts = attempts + 1')) {
-      const row = this.inbox.get(String(args[2]));
-      if (row) {
-        row.attempts += 1;
-        row.next_attempt_at = Number(args[0]);
-        row.last_error = String(args[1]);
-      }
-      return new Cursor<T>([], row ? 1 : 0);
-    }
-    if (sql.startsWith('SELECT SUM(CASE')) {
-      const values = [...this.inbox.values()];
-      return new Cursor<T>([{
-        pending: values.filter((row) => row.status === 'pending').length,
-        dead_letters: values.filter((row) => row.status === 'dead_letter').length,
-      } as T]);
-    }
-    if (sql.startsWith('SELECT MIN(CASE')) {
-      const values = [...this.inbox.values()];
-      const pending = values.filter((row) => row.status === 'pending').map((row) => row.time_us);
-      const dead = values.filter((row) => row.status === 'dead_letter').map((row) => row.time_us);
-      return new Cursor<T>([{
-        oldest_pending: pending.length > 0 ? Math.min(...pending) : null,
-        oldest_dead_letter: dead.length > 0 ? Math.min(...dead) : null,
-      } as T]);
     }
     if (sql.startsWith('SELECT COUNT(*) AS total')) {
       const rows = [...this.quarantines.values()];
@@ -153,14 +71,6 @@ class IngestSQL {
       row.resolved_at = Number(args[1]);
       row.remediated_by = String(args[2]);
       return new Cursor<T>([], 1);
-    }
-    if (sql.startsWith('SELECT COUNT(*) AS count')) {
-      return new Cursor<T>([{ count: [...this.inbox.values()].filter((row) => row.status === 'pending').length } as T]);
-    }
-    if (sql.startsWith('SELECT MIN(next_attempt_at)')) {
-      const pending = [...this.inbox.values()].filter((row) => row.status === 'pending');
-      const next = pending.length > 0 ? Math.min(...pending.map((row) => row.next_attempt_at)) : 0;
-      return new Cursor<T>([{ next_attempt_at: next } as T]);
     }
     throw new Error(`Unsupported ingest SQL: ${sql}`);
   }
@@ -219,9 +129,11 @@ class MirrorSQL {
       this.meta.set(String(args[0]), String(args[1]));
       return new Cursor<T>([], 1);
     }
-    if (sql.startsWith('SELECT operation, cid, rev')) {
-      const row = this.records.get(`${args[0]}/${args[1]}/${args[2]}`);
-      return new Cursor<T>(row ? [row as T] : []);
+    if (sql.startsWith('SELECT r.operation, r.cid, r.rev')) {
+      const key = `${args[0]}/${args[1]}/${args[2]}`;
+      const row = this.records.get(key);
+      const order = this.orders.get(key);
+      return new Cursor<T>(row ? [{ ...row, source: order?.source ?? null } as T] : []);
     }
     if (sql.startsWith('SELECT repo, collection, rkey, operation')) {
       const rows = [...this.records.values()].filter((row) => row.repo === args[0]);
@@ -251,7 +163,6 @@ function state(sql: IngestSQL | MirrorSQL) {
     storage: {
       sql,
       transactionSync: vi.fn((callback: () => unknown) => callback()),
-      setAlarm: vi.fn().mockResolvedValue(undefined),
     },
   } as any;
 }
@@ -279,10 +190,12 @@ describe('JetstreamIngestDO', () => {
     ]));
   });
 
-  it('atomically stores the inbox and monotonically advances the durable cursor', async () => {
+  it('projects every event before monotonically advancing the durable cursor', async () => {
     const sql = new IngestSQL();
     const durableState = state(sql);
-    const mirrorStub = { fetch: vi.fn().mockResolvedValue(Response.json({ accepted: true })) };
+    const mirrorStub = { fetch: vi.fn()
+      .mockResolvedValueOnce(Response.json({ accepted: true, projected: true, duplicate: false, stale: false }))
+      .mockResolvedValueOnce(Response.json({ accepted: true, projected: false, duplicate: true, stale: false })) };
     const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(mirrorStub) };
     const object = new JetstreamIngestDO(durableState, { SKYBLUR_DO_POST_MIRROR: namespace } as any);
     const item = await makeEvent('create', 200, 'rev-1');
@@ -290,12 +203,57 @@ describe('JetstreamIngestDO', () => {
     const first = await object.fetch(new Request('https://do/ingest', {
       method: 'POST', body: JSON.stringify({ cursor: 200, events: [item] }),
     }));
-    expect(await first.json()).toEqual(expect.objectContaining({ committedCursor: 200, inserted: 1, duplicates: 0 }));
+    expect(await first.json()).toEqual(expect.objectContaining({
+      committedCursor: 200, projected: 1, duplicates: 0, stale: 0,
+    }));
     const replay = await object.fetch(new Request('https://do/ingest', {
       method: 'POST', body: JSON.stringify({ cursor: 190, events: [item] }),
     }));
-    expect(await replay.json()).toEqual(expect.objectContaining({ committedCursor: 200, inserted: 0, duplicates: 1 }));
-    expect(durableState.storage.transactionSync).toHaveBeenCalledTimes(3);
+    expect(await replay.json()).toEqual(expect.objectContaining({
+      committedCursor: 200, projected: 0, duplicates: 1, stale: 0,
+    }));
+    expect(mirrorStub.fetch).toHaveBeenCalledTimes(2);
+    expect(sql.meta.get('committedCursor')).toBe('200');
+  });
+
+  it('returns a retryable error and leaves the cursor unchanged after a partial projection', async () => {
+    const sql = new IngestSQL();
+    const first = await makeEvent('create', 100, 'rev-1');
+    const second = await makeEvent('update', 200, 'rev-2');
+    const mirrorStub = { fetch: vi.fn()
+      .mockResolvedValueOnce(Response.json({ accepted: true, projected: true }))
+      .mockResolvedValueOnce(Response.json({ error: 'invalid' }, { status: 400 }))
+      .mockImplementation(() => Promise.resolve(Response.json({ accepted: true, duplicate: true }))) };
+    const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(mirrorStub) };
+    const object = new JetstreamIngestDO(state(sql), { SKYBLUR_DO_POST_MIRROR: namespace } as any);
+    const quarantine = { cursor: 200, hash: 'b'.repeat(64), reason: 'invalid_record' };
+    const request = () => new Request('https://do/ingest', {
+      method: 'POST', body: JSON.stringify({ cursor: 200, events: [first, second], quarantined: [quarantine] }),
+    });
+
+    const failed = await object.fetch(request());
+    expect(failed.status).toBe(503);
+    expect(sql.meta.has('committedCursor')).toBe(false);
+    expect(sql.quarantines.size).toBe(0);
+
+    const retried = await object.fetch(request());
+    expect(retried.status).toBe(200);
+    expect(sql.meta.get('committedCursor')).toBe('200');
+    expect(sql.quarantines.has(quarantine.hash)).toBe(true);
+    expect(mirrorStub.fetch).toHaveBeenCalledTimes(4);
+  });
+
+  it('treats an unaccepted mirror response as retryable and does not commit', async () => {
+    const sql = new IngestSQL();
+    const item = await makeEvent('create', 200, 'rev-1');
+    const mirrorStub = { fetch: vi.fn().mockResolvedValue(Response.json({ accepted: false })) };
+    const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(mirrorStub) };
+    const object = new JetstreamIngestDO(state(sql), { SKYBLUR_DO_POST_MIRROR: namespace } as any);
+    const response = await object.fetch(new Request('https://do/ingest', {
+      method: 'POST', body: JSON.stringify({ cursor: 200, events: [item] }),
+    }));
+    expect(response.status).toBe(503);
+    expect(sql.meta.has('committedCursor')).toBe(false);
   });
 
   it('defends against a future cursor even if the public handler is bypassed', async () => {
@@ -323,7 +281,9 @@ describe('JetstreamIngestDO', () => {
 
     const stateResponse = await object.fetch(new Request('https://do/state'));
     const current = await stateResponse.json() as any;
-    expect(current).toEqual(expect.objectContaining({ projectionHealthy: false, quarantinedFrames: 1 }));
+    expect(current).toEqual(expect.objectContaining({
+      projectionMode: 'synchronous', projectionHealthy: false, quarantinedFrames: 1,
+    }));
     expect(current.recentQuarantines[0]).toEqual(expect.objectContaining({ hash: quarantine.hash, timeUs: 200 }));
 
     const resolve = await object.fetch(new Request('https://do/quarantine/resolve', {
@@ -338,90 +298,6 @@ describe('JetstreamIngestDO', () => {
     expect(healthy.projectionHealthy).toBe(true);
   });
 
-  it('removes projected events immediately after the latest state is durable', async () => {
-    const sql = new IngestSQL();
-    const durableState = state(sql);
-    const mirrorStub = { fetch: vi.fn().mockResolvedValue(Response.json({ accepted: true })) };
-    const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(mirrorStub) };
-    const object = new JetstreamIngestDO(durableState, { SKYBLUR_DO_POST_MIRROR: namespace } as any);
-    const item = await makeEvent('create', 200, 'rev-1');
-    await object.fetch(new Request('https://do/ingest', {
-      method: 'POST', body: JSON.stringify({ cursor: 200, events: [item] }),
-    }));
-    await object.alarm();
-    expect(sql.inbox.has(item.eventId)).toBe(false);
-    expect(mirrorStub.fetch).toHaveBeenCalledOnce();
-    expect(durableState.storage.setAlarm).toHaveBeenCalledOnce();
-  });
-
-  it('removes legacy projected Inbox history without touching pending work', () => {
-    const sql = new IngestSQL();
-    sql.inbox.set('projected', {
-      event_id: 'projected', event_json: '{}', time_us: 1, attempts: 0,
-      status: 'projected', next_attempt_at: 0, projected_at: Date.now(),
-    });
-    sql.inbox.set('pending', {
-      event_id: 'pending', event_json: '{}', time_us: 2, attempts: 0,
-      status: 'pending', next_attempt_at: 0,
-    });
-    new JetstreamIngestDO(state(sql), { SKYBLUR_DO_POST_MIRROR: {} } as any);
-    expect(sql.inbox.size).toBe(1);
-    expect(sql.inbox.has('pending')).toBe(true);
-  });
-
-  it('keeps a rejected projection pending instead of creating a permanent mirror gap', async () => {
-    const sql = new IngestSQL();
-    const durableState = state(sql);
-    const mirrorStub = { fetch: vi.fn().mockResolvedValue(Response.json({ error: 'invalid' }, { status: 400 })) };
-    const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(mirrorStub) };
-    const object = new JetstreamIngestDO(durableState, { SKYBLUR_DO_POST_MIRROR: namespace } as any);
-    const item = await makeEvent('create', 200, 'rev-1');
-    await object.fetch(new Request('https://do/ingest', {
-      method: 'POST', body: JSON.stringify({ cursor: 200, events: [item] }),
-    }));
-    await object.alarm();
-    expect(sql.inbox.get(item.eventId)?.status).toBe('pending');
-    expect(sql.inbox.get(item.eventId)?.last_error).toBe('mirror_400');
-    expect(sql.inbox.get(item.eventId)?.next_attempt_at).toBeGreaterThan(Date.now());
-  });
-
-  it('keeps transient projection failures pending with bounded backoff', async () => {
-    const sql = new IngestSQL();
-    const durableState = state(sql);
-    const mirrorStub = { fetch: vi.fn().mockResolvedValue(Response.json({ error: 'temporary' }, { status: 503 })) };
-    const namespace = { idFromName: vi.fn().mockReturnValue('id'), get: vi.fn().mockReturnValue(mirrorStub) };
-    const object = new JetstreamIngestDO(durableState, { SKYBLUR_DO_POST_MIRROR: namespace } as any);
-    const item = await makeEvent('create', 200, 'rev-1');
-    await object.fetch(new Request('https://do/ingest', {
-      method: 'POST', body: JSON.stringify({ cursor: 200, events: [item] }),
-    }));
-    await object.alarm();
-    const pending = sql.inbox.get(item.eventId);
-    expect(pending?.status).toBe('pending');
-    expect(pending?.attempts).toBe(1);
-    expect(pending?.next_attempt_at).toBeGreaterThan(Date.now());
-    expect(durableState.storage.setAlarm).toHaveBeenCalledTimes(2);
-  });
-
-  it('reports the oldest projection gap and can requeue legacy dead letters', async () => {
-    const sql = new IngestSQL();
-    sql.inbox.set('dead', {
-      event_id: 'dead', event_json: '{}', time_us: 123, attempts: 1,
-      status: 'dead_letter', next_attempt_at: 0, last_error: 'legacy_failure',
-    });
-    const durableState = state(sql);
-    const namespace = { idFromName: vi.fn(), get: vi.fn() };
-    const object = new JetstreamIngestDO(durableState, { SKYBLUR_DO_POST_MIRROR: namespace } as any);
-
-    const before = await (await object.fetch(new Request('https://do/state'))).json() as any;
-    expect(before).toEqual(expect.objectContaining({ projectionHealthy: false }));
-    expect(before.queue).toEqual(expect.objectContaining({ deadLetters: 1, oldestDeadLetterTimeUs: 123 }));
-
-    const response = await object.fetch(new Request('https://do/requeue', { method: 'POST' }));
-    expect(await response.json()).toEqual({ accepted: true, requeued: 1 });
-    expect(sql.inbox.get('dead')?.status).toBe('pending');
-    expect(durableState.storage.setAlarm).toHaveBeenCalledOnce();
-  });
 });
 
 describe('PostMirrorDO', () => {
@@ -440,7 +316,60 @@ describe('PostMirrorDO', () => {
     expect(await (await object.fetch(new Request('https://do/event', { method: 'POST', body: JSON.stringify(staleUpdate) }))).json())
       .toEqual(expect.objectContaining({ projected: false, stale: true }));
     expect(sql.records.get('did:plc:author/uk.skyblur.post/post')?.operation).toBe('delete');
+    expect((await object.fetch(
+      new Request('https://do/record?repo=did:plc:author&rkey=post'),
+    )).status).toBe(410);
     expect(durableState.storage.transactionSync).toHaveBeenCalledTimes(4);
+  });
+
+  it('uses snapshot time between PDS fallback and Jetstream projections', async () => {
+    const sql = new MirrorSQL();
+    const object = new PostMirrorDO(state(sql), {} as any);
+    const fallback = {
+      ...await makeEvent('create', 300, 'pds'),
+      eventId: 'pds:did:plc:author:post:cid-pds',
+      source: 'pds' as const,
+    };
+    const delayed = await makeEvent('update', 100, 'rev-delayed');
+    const live = await makeEvent('update', 400, 'rev-live');
+
+    expect(await (await object.fetch(new Request('https://do/event', {
+      method: 'POST', body: JSON.stringify(fallback),
+    }))).json()).toEqual(expect.objectContaining({ projected: true }));
+    expect(sql.meta.has('watermark')).toBe(false);
+    expect(await (await object.fetch(new Request('https://do/event', {
+      method: 'POST', body: JSON.stringify(delayed),
+    }))).json()).toEqual(expect.objectContaining({ projected: false, stale: true }));
+    expect(await (await object.fetch(new Request('https://do/event', {
+      method: 'POST', body: JSON.stringify(live),
+    }))).json()).toEqual(expect.objectContaining({ projected: true, stale: false }));
+    expect(sql.records.get('did:plc:author/uk.skyblur.post/post')?.value_json)
+      .toBe(JSON.stringify({ text: 'rev-live' }));
+    expect(sql.orders.get('did:plc:author/uk.skyblur.post/post')?.source).toBe('jetstream');
+    expect(JSON.parse(sql.meta.get('watermark') ?? '{}')).toEqual(expect.objectContaining({ timeUs: 400 }));
+  });
+
+  it('returns the projection source with an active record', async () => {
+    const sql = new MirrorSQL();
+    const object = new PostMirrorDO(state(sql), {} as any);
+    const fallback = {
+      ...await makeEvent('create', 300, 'pds'),
+      eventId: 'pds:did:plc:author:post:cid-pds',
+      source: 'pds' as const,
+    };
+    await object.fetch(new Request('https://do/event', {
+      method: 'POST', body: JSON.stringify(fallback),
+    }));
+
+    const response = await object.fetch(
+      new Request('https://do/record?repo=did:plc:author&rkey=post'),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(expect.objectContaining({
+      source: 'pds',
+      value: { text: 'pds' },
+    }));
   });
 
   it('does not retain cumulative event history and deduplicates against the latest order', async () => {
