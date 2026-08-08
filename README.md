@@ -12,29 +12,36 @@ flowchart LR
     Browser["Web Browser"]
 
     subgraph Skyblur["Skyblur"]
-        direction LR
-        Frontend["Frontend<br/>Next.js"]
-        Backend["Backend<br/>Cloudflare Workers / Hono"]
-        Consumer["Jetstream Consumer<br/>Fly.io / Go"]
-        DO[("Durable Object storage")]
+        direction TB
+        Frontend["Frontend / Next.js"]
+        Backend["Backend / Cloudflare Workers / Hono"]
+        Consumer["Jetstream Consumer / Fly.io / Go"]
+        Storage[("Durable Object storage")]
+
+        Frontend -->|"anonymous XRPC"| Backend
+        Consumer <-->|"HMAC batch / committed cursor"| Backend
+        Backend <--> Storage
     end
 
     subgraph ATProtocol["AT Protocol / Bluesky"]
-        direction LR
+        direction TB
         PDS["User PDS"]
+        Relay["Relay"]
         Jetstream["Public Jetstream"]
-        PublicAPI["Bluesky Public API"]
+        PublicAPI["Bluesky AppView / public.api.bsky.app"]
+
+        PDS -->|"repo commits"| Relay
+        Relay -->|"firehose"| Jetstream
+        Relay -->|"firehose / indexing"| PublicAPI
     end
 
-    Lexicons["uk.skyblur.*<br/>Lexicon schemas"]
+    Lexicons["uk.skyblur.* Lexicon schemas"]
 
     Browser --> Frontend
     Frontend <-->|"OAuth / XRPC"| PDS
     PDS -->|"withProxy"| Backend
-    Backend <--> DO
     Backend -->|"relationship check"| PublicAPI
     Jetstream --> Consumer
-    Consumer -->|"HMAC batch ingest"| Backend
     Lexicons -.-> Frontend
     Lexicons -.-> Backend
 ```
