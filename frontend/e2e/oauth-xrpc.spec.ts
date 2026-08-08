@@ -1233,6 +1233,71 @@ test("/post renders public detail content with profile and reaction metadata", a
   await expect(page.getByText("4", { exact: true })).toBeVisible();
 });
 
+for (const { variant, visibleContent } of [
+  {
+    variant: "public" as const,
+    visibleContent: "Public post detail secret text",
+  },
+  {
+    variant: "password" as const,
+    visibleContent: "○○○○○",
+  },
+]) {
+  test(`/post displays ${variant} detail before OAuth session restoration completes`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, { postDetailVariant: variant });
+
+    let resolveSession = () => {};
+    let sessionRequests = 0;
+    await page.unroute("**/api/oauth/session");
+    await page.route("**/api/oauth/session", async (route) => {
+      sessionRequests += 1;
+      await new Promise<void>((resolve) => {
+        resolveSession = resolve;
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "Cache-Control": "no-store",
+          Vary: "Cookie",
+        },
+        body: JSON.stringify({
+          authenticated: true,
+          did: mockDid,
+          pds: "https://e2e-pds.skyblur.test",
+          scope: mockCurrentSessionScope,
+        }),
+      });
+    });
+
+    let getPostRequests = 0;
+    let getPostCookie = "";
+    page.on("request", (request) => {
+      if (!request.url().includes("/xrpc/uk.skyblur.post.getPost")) return;
+      getPostRequests += 1;
+      getPostCookie = request.headers()["cookie"] || "";
+    });
+
+    await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2e-${variant}-before-session`);
+    await expect(page.getByText(visibleContent)).toBeVisible();
+    if (variant === "password") {
+      await expect(page.getByRole("button", { name: "Unlock" })).toBeVisible();
+    }
+    await expect.poll(() => sessionRequests).toBe(1);
+    expect(getPostRequests).toBe(1);
+    expect(getPostCookie).toBe("");
+
+    resolveSession();
+    await expect(page.locator('button[aria-label="Account menu"]:visible')).toBeVisible();
+    await expect(page.getByText(visibleContent)).toBeVisible();
+    expect(getPostRequests).toBe(1);
+  });
+}
+
 test("/post hides reaction metadata when reaction fetches fail", async ({
   page,
   context,

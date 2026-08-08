@@ -57,6 +57,7 @@ export const PostPage = () => {
     const [debugStatus, setDebugStatus] = useState<string>('Idle');
     const [isRestrictedFetchDone, setIsRestrictedFetchDone] = useState<boolean>(false);
     const [isRestrictedFetching, setIsRestrictedFetching] = useState<boolean>(false);
+    const [initialFetchCompletedKey, setInitialFetchCompletedKey] = useState('');
     const postFetchRequestIdRef = useRef(0);
     const authenticatedRefetchKeyRef = useRef('');
     const restrictedNotificationKeyRef = useRef('');
@@ -66,7 +67,7 @@ export const PostPage = () => {
 
 
 
-    const getPostData = async (passwordArg?: string) => {
+    const getPostData = async (passwordArg?: string, useAuthenticatedSession = false) => {
         /* istanbul ignore next -- The route cannot render without both dynamic segments. */
         if (!did || !rkey) return;
 
@@ -84,16 +85,22 @@ export const PostPage = () => {
             let repo = did;
             repo = repo.replace(/%3A/g, ':');
 
-            // Unify fetch: user uk.skyblur.post.getPost directly
-            // This handles both public and restricted content in one go
-
-            // We use apiProxyAgent which should handle Auth header if user is logged in
-            const res = await apiProxyAgent.post('uk.skyblur.post.getPost', {
-                input: {
-                    uri: aturi as ResourceUri,
-                    password: passwordArg || '' // Password logic handled separately or initially empty
-                }
-            });
+            const input = {
+                uri: aturi as ResourceUri,
+                password: passwordArg || ''
+            };
+            const res = useAuthenticatedSession
+                ? await apiProxyAgent.post('uk.skyblur.post.getPost', { input })
+                : await (async () => {
+                    const response = await fetch('/xrpc/uk.skyblur.post.getPost', {
+                        method: 'POST',
+                        credentials: 'omit',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(input),
+                    });
+                    const data = await response.json();
+                    return { ok: response.ok, status: response.status, data };
+                })();
 
             console.log("[PostPage] getPost response:", res.status);
             if (postFetchRequestIdRef.current !== requestId) return;
@@ -199,6 +206,9 @@ export const PostPage = () => {
             if (postFetchRequestIdRef.current === requestId) {
                 setIsLoading(false);
                 setIsRestrictedFetchDone(true);
+                if (!useAuthenticatedSession) {
+                    setInitialFetchCompletedKey(`${did}/${rkey}`);
+                }
             }
         }
     };
@@ -247,16 +257,21 @@ export const PostPage = () => {
     }, [did, rkey]);
 
     useEffect(() => {
-        if (!did || !rkey || !isSessionChecked || !loginDid) return;
+        if (!did || !rkey || !isSessionChecked || !loginDid || !isRestrictedFetchDone) return;
+        if (initialFetchCompletedKey !== `${did}/${rkey}`) return;
+        const requiresAuthenticatedRefetch = visibility === VISIBILITY_LOGIN
+            || isRestrictedVisibilityScope(visibility)
+            || visibility === 'UNKNOWN';
+        if (!requiresAuthenticatedRefetch) return;
         if (isDecrypt || encryptKey || encryptCid) return;
 
         const refetchKey = `${did}/${rkey}/${loginDid}`;
         if (authenticatedRefetchKeyRef.current === refetchKey) return;
         authenticatedRefetchKeyRef.current = refetchKey;
 
-        getPostData();
+        getPostData(undefined, true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [did, rkey, isSessionChecked, loginDid, isDecrypt, encryptKey, encryptCid]);
+    }, [did, rkey, isSessionChecked, loginDid, isRestrictedFetchDone, initialFetchCompletedKey, visibility, isDecrypt, encryptKey, encryptCid]);
 
 
 
