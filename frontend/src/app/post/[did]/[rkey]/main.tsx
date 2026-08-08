@@ -236,9 +236,13 @@ export const PostPage = () => {
 
     useEffect(() => {
         setIsMounted(true);
-        if (did && rkey) {
-            getPostData();
-        }
+        if (!did || !rkey) return;
+
+        const initialFetchTimer = setTimeout(() => {
+            void getPostData();
+        }, 0);
+
+        return () => clearTimeout(initialFetchTimer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [did, rkey]);
 
