@@ -262,6 +262,30 @@ export async function publicCursor(c: Context<{ Bindings: Env }>) {
   }
 }
 
+/** Public read-only projection source check for StatusCheck/debugging. */
+export async function publicMirrorSource(c: Context<{ Bindings: Env }>) {
+  const repo = c.req.query('repo');
+  const rkey = c.req.query('rkey');
+  if (!repo?.startsWith('did:') || !rkey) return c.json({ error: 'repo and rkey are required' }, 400);
+  const namespace = c.env.SKYBLUR_DO_POST_MIRROR;
+  try {
+    const response = await namespace.get(namespace.idFromName(repo)).fetch(
+      `https://mirror/record?repo=${encodeURIComponent(repo)}&rkey=${encodeURIComponent(rkey)}`,
+    );
+    if (response.status === 404) return c.json({ source: null }, 404);
+    if (!response.ok) return c.json({ error: 'Failed to load mirror record' }, 503);
+    const record = await response.json() as { source?: unknown; pdsGeneration?: unknown; cid?: unknown; timeUs?: unknown };
+    return Response.json({
+      source: record.source ?? null,
+      pdsGeneration: record.pdsGeneration ?? null,
+      cid: typeof record.cid === 'string' ? record.cid : null,
+      timeUs: typeof record.timeUs === 'number' ? record.timeUs : null,
+    }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch {
+    return c.json({ error: 'Failed to load mirror record' }, 503);
+  }
+}
+
 function isInspectorAuthorized(c: Context<{ Bindings: Env }>): boolean {
   const token = c.env.MIRROR_INSPECT_TOKEN;
   return !!token && c.req.header('authorization') === `Bearer ${token}`;
