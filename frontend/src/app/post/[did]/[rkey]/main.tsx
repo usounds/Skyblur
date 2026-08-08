@@ -129,6 +129,10 @@ export const PostPage = () => {
                 setPostAtUri(bskyPostAtUri);
 
                 // Handle Content
+                if (useAuthenticatedSession) {
+                    notifications.hide(`post-restricted-AuthRequired-${rkey}`);
+                    restrictedNotificationKeyRef.current = '';
+                }
                 if (!data.errorCode) {
                     setPostText(data.text);
                     setAddText(data.additional || '');
@@ -161,7 +165,11 @@ export const PostPage = () => {
                     } else if (code === 'ListMembershipCheckFailed') {
                         errorMsg = locale.Post_Restricted_ListCheckFailed;
                     } else if (code === 'AuthRequired') {
-                        errorMsg = locale.Post_Restricted_LoginRequired;
+                        // The anonymous probe determines visibility before OAuth restoration completes.
+                        // Do not surface a transient login error until the session state is final.
+                        errorMsg = isSessionChecked && (!loginDid || useAuthenticatedSession)
+                            ? locale.Post_Restricted_LoginRequired
+                            : '';
                     } else if (code === 'ContentMissing') {
                         errorMsg = locale.Post_Restricted_ContentMissing;
                     } else if (code === 'PasswordRequired') {
