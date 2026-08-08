@@ -16,7 +16,7 @@ flowchart LR
         Frontend["Frontend<br/>Next.js"]
         Backend["Backend<br/>Cloudflare Workers / Hono"]
         Consumer["Jetstream Consumer<br/>Fly.io / Go"]
-        DO[("Durable Objects")]
+        DO[("Durable Object storage")]
     end
 
     subgraph ATProtocol["AT Protocol / Bluesky"]
@@ -50,11 +50,18 @@ sequenceDiagram
     participant API as Hono API
     participant Content as RestrictedPostDO
 
-    User->>App: Create a post
-    App->>PDS: Write uk.skyblur.post record
-    App->>PDS: Write restricted content (withProxy)
-    PDS->>API: Proxy store request
-    API->>Content: Store content
+    User->>App: Create or update a post
+    opt Restricted visibility
+        App->>PDS: uk.skyblur.post.store (withProxy)
+        PDS->>API: Proxy store procedure
+        API->>Content: Store original restricted content
+        Content-->>API: Stored
+        API-->>PDS: Success
+        PDS-->>App: Success
+    end
+    App->>PDS: com.atproto.repo.applyWrites
+    Note over App,PDS: Create or update collection=uk.skyblur.post
+    Note over App,PDS: Also writes app.bsky.feed.post and optional gate records
 ```
 
 ### Post read / 投稿の取得
@@ -66,19 +73,21 @@ sequenceDiagram
     participant App as Next.js App
     participant PDS as User PDS
     participant API as Hono API
-    participant Mirror as PostMirrorDO
+    participant MirrorDB as uk.skyblur.post mirror DB
     participant Access as Access checks
     participant Content as RestrictedPostDO
 
+    Note over MirrorDB: Durable Object storage: PostMirrorDO
     User->>App: Open a post
-    App->>PDS: Read request (withProxy)
-    PDS->>API: Proxy read request
-    API->>Mirror: Read mirrored record
-    opt Mirror cache miss
-        API->>PDS: Fetch source record
-        opt Read-through cache enabled
-            API->>Mirror: Cache source snapshot
-        end
+    App->>PDS: uk.skyblur.post.getPost (withProxy)
+    PDS->>API: Proxy read procedure
+    API->>MirrorDB: Query record projection
+    alt Record found
+        MirrorDB-->>API: Projected uk.skyblur.post record
+    else Record missing or DB read failed
+        API->>PDS: com.atproto.repo.getRecord
+        Note over API,PDS: collection=uk.skyblur.post
+        PDS-->>API: Source Repo record
     end
     alt Restricted visibility
         API->>Access: Verify relationship or list
@@ -105,14 +114,15 @@ sequenceDiagram
     participant Consumer as Go Consumer
     participant API as Internal Ingest API
     participant Ingest as JetstreamIngestDO
-    participant Mirror as PostMirrorDO
+    participant MirrorDB as uk.skyblur.post mirror DB
 
-    PDS->>Relay: Commit event
+    Note over MirrorDB: Durable Object storage: PostMirrorDO
+    PDS->>Relay: uk.skyblur.post commit
     Relay->>Jetstream: Firehose stream
     Jetstream->>Consumer: uk.skyblur.post event
     Consumer->>API: HMAC-signed batch
     API->>Ingest: Process batch and cursor
-    Ingest->>Mirror: Project records synchronously
+    Ingest->>MirrorDB: Persist record projection
     API-->>Consumer: Committed cursor
 ```
 
