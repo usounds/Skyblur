@@ -5,6 +5,15 @@ import { normalizeLocale, resolveLocale } from '@/logic/locale';
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    // Public marketing pages have one indexable URL per language.  Keeping the
+    // unprefixed home page locale-adaptive created a second Japanese page at
+    // `/`, competing with `/ja` for Google's canonical selection.
+    if (pathname === '/') {
+        const localizedUrl = request.nextUrl.clone();
+        localizedUrl.pathname = '/ja';
+        return NextResponse.redirect(localizedUrl, 308);
+    }
+
     // 静的ファイルなどは即時復帰
     if (pathname.includes('.')) {
         return NextResponse.next();

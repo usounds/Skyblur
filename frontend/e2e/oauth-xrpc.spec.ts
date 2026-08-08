@@ -447,8 +447,8 @@ test.describe("home start session flows", () => {
   }) => {
     await useLoggedOutOAuthMock(page, context, baseURL);
 
-    await gotoAndSkipIfUnavailable(page, "/");
-    await expect(page).toHaveURL(/\/$/);
+    await gotoAndSkipIfUnavailable(page, "/en");
+    await expect(page).toHaveURL(/\/en$/);
     await expect(page.getByRole("link", { name: "Skyblur", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
     await expect(page.getByText("Skyblur is a content warning and spoilers protection tool")).toBeVisible();
@@ -475,7 +475,7 @@ test.describe("home start session flows", () => {
     await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
 
     await gotoAndSkipIfUnavailable(page, "/termofuse");
-    await expect(page).toHaveURL(/\/termofuse$/);
+    await expect(page).toHaveURL(/\/(ja|en)\/termofuse$/);
     await expect(page.getByRole("heading", { name: "Privacy Policy & Terms of Service" })).toBeVisible();
     await expect(page.getByText("Collection and Use of Personal Information")).toBeVisible();
     await expect(page.getByText("Provision of Data to Third Parties")).toBeVisible();
@@ -492,6 +492,7 @@ test.describe("home start session flows", () => {
     await useJapaneseLocale(context, baseURL);
 
     await gotoAndSkipIfUnavailable(page, "/");
+    await expect(page).toHaveURL(/\/ja$/);
 
     await expect(page.getByRole("heading", { name: "Skyblurへようこそ" })).toBeVisible();
     await expect(page.getByText("Skyblurの投稿を快適に読めるおすすめクライアント")).toBeVisible();
@@ -505,101 +506,108 @@ test.describe("home start session flows", () => {
   }) => {
     await useLoggedInOAuthMock(page, context, baseURL);
 
-    await gotoAndSkipIfUnavailable(page, "/");
-    await page.getByRole("link", { name: "Start" }).click();
+    await gotoAndSkipIfUnavailable(page, "/en");
+    await page.getByRole("button", { name: "Start" }).click();
 
     await expect(page).toHaveURL(/\/console$/);
     await expect(page.getByText(/E2E Tester/)).toBeVisible();
   });
 
-  test("home start session check shows a timed retry button after timeout", async ({
+  test("home login requests the console as its OAuth callback destination", async ({
     page,
     context,
     baseURL,
-  }, testInfo) => {
-    testInfo.annotations.push({ type: "session-request-budget", description: "2" });
-    await useEnglishLocale(context, baseURL);
+  }) => {
+    await useLoggedOutOAuthMock(page, context, baseURL);
+    await useJapaneseLocale(context, baseURL);
+    const origin = new URL(baseURL || "http://127.0.0.1:4500").origin;
 
-    let sessionRequests = 0;
-    let retrySessionRequestNumber = 0;
-    let stalledSessionRoute: import("@playwright/test").Route | null = null;
-    let releaseStalledSessionRequest: (() => void) | null = null;
-    await page.route("**/api/oauth/session", async (route) => {
-      sessionRequests += 1;
-
-      if (sessionRequests === 1) {
-        stalledSessionRoute = route;
-        await new Promise<void>((resolve) => {
-          releaseStalledSessionRequest = resolve;
-        });
-        return;
-      }
-
-      if (retrySessionRequestNumber === 0) {
-        retrySessionRequestNumber = sessionRequests;
-      }
+    await page.route("**/api/oauth/login?**", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        headers: {
-          "Cache-Control": "no-store",
-          Vary: "Cookie",
-        },
-        body: JSON.stringify({
-          authenticated: false,
-        }),
+        body: JSON.stringify({ url: `${origin}/oauth-authorize-e2e` }),
       });
     });
-    await gotoAndSkipIfUnavailable(page, "/");
 
-    await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
-    await page.getByRole("button", { name: "Retry" }).click();
+    await gotoAndSkipIfUnavailable(page, "/ja");
+    await page.getByRole("button", { name: "始める" }).click();
+    await expect(page.getByRole("dialog", { name: "ログイン" })).toBeVisible();
+    await page.getByLabel("内容に合意する").check();
+    await page.getByRole("combobox", { name: "ハンドル" }).fill("alice.bsky.social");
 
-    await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
-    expect(retrySessionRequestNumber).toBe(2);
-    await stalledSessionRoute?.abort("failed").catch(() => {});
-    releaseStalledSessionRequest?.();
+    const loginRequest = page.waitForRequest(/\/api\/oauth\/login\?handle=alice\.bsky\.social/);
+    await page.getByRole("button", { name: "ログイン", exact: true }).click();
+
+    const loginUrl = new URL((await loginRequest).url());
+    expect(loginUrl.searchParams.get("redirect_uri")).toBe(`${origin}/console`);
   });
 
-  test("home start session retry opens the console when the session recovers", async ({
+  test("home start button shows session restoration while the background check is pending", async ({
     page,
     context,
     baseURL,
   }, testInfo) => {
-    testInfo.annotations.push({ type: "session-request-budget", description: "2" });
+    testInfo.annotations.push({ type: "session-request-budget", description: "1" });
     await useEnglishLocale(context, baseURL);
 
     let sessionRequests = 0;
-    let recoveredSessionRequestNumber = 0;
-    let stalledSessionRoute: import("@playwright/test").Route | null = null;
-    let releaseStalledSessionRequest: (() => void) | null = null;
+    const stalledSessionRequest: {
+      route: import("@playwright/test").Route | null;
+      release: (() => void) | null;
+    } = { route: null, release: null };
     await page.route("**/api/oauth/session", async (route) => {
       sessionRequests += 1;
 
-      if (sessionRequests === 1) {
-        stalledSessionRoute = route;
-        await new Promise<void>((resolve) => {
-          releaseStalledSessionRequest = resolve;
-        });
-        return;
-      }
+      stalledSessionRequest.route = route;
+      await new Promise<void>((resolve) => {
+        stalledSessionRequest.release = resolve;
+      });
+    });
+    await gotoAndSkipIfUnavailable(page, "/en");
+    await expect.poll(() => stalledSessionRequest.route !== null).toBe(true);
 
-      if (recoveredSessionRequestNumber === 0) {
-        recoveredSessionRequestNumber = sessionRequests;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        headers: {
-          "Cache-Control": "no-store",
-          Vary: "Cookie",
-        },
-        body: JSON.stringify({
-          authenticated: true,
-          did: mockDid,
-          pds: "https://e2e-pds.skyblur.test",
-          scope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
-        }),
+    const startButton = page.getByRole("button", { name: "Start" });
+    await expect(startButton).toBeVisible();
+    await expect(startButton).toBeEnabled();
+    await startButton.click();
+    await expect(page.getByRole("dialog", { name: "Restoring session" })).toBeVisible();
+
+    await stalledSessionRequest.route?.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: {
+        "Cache-Control": "no-store",
+        Vary: "Cookie",
+      },
+      body: JSON.stringify({ authenticated: false }),
+    });
+    stalledSessionRequest.release?.();
+
+    await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Restoring session" })).toBeHidden();
+    expect(sessionRequests).toBe(1);
+  });
+
+  test("home start button opens the console when the pending session check recovers", async ({
+    page,
+    context,
+    baseURL,
+  }, testInfo) => {
+    testInfo.annotations.push({ type: "session-request-budget", description: "1" });
+    await useEnglishLocale(context, baseURL);
+
+    let sessionRequests = 0;
+    const stalledSessionRequest: {
+      route: import("@playwright/test").Route | null;
+      release: (() => void) | null;
+    } = { route: null, release: null };
+    await page.route("**/api/oauth/session", async (route) => {
+      sessionRequests += 1;
+
+      stalledSessionRequest.route = route;
+      await new Promise<void>((resolve) => {
+        stalledSessionRequest.release = resolve;
       });
     });
     await page.route("https://public.api.bsky.app/**", async (route) => {
@@ -616,19 +624,34 @@ test.describe("home start session flows", () => {
       });
     });
 
-    await gotoAndSkipIfUnavailable(page, "/");
+    await gotoAndSkipIfUnavailable(page, "/en");
+    await expect.poll(() => stalledSessionRequest.route !== null).toBe(true);
 
-    const retryButton = page.getByRole("button", { name: "Retry" });
-    await expect(retryButton).toBeVisible();
-    await expect(retryButton).toBeEnabled();
-    await retryButton.click();
-    await expect.poll(() => recoveredSessionRequestNumber).toBe(2);
+    const startButton = page.getByRole("button", { name: "Start" });
+    await expect(startButton).toBeVisible();
+    await expect(startButton).toBeEnabled();
+    await startButton.click();
+    await expect(page.getByRole("dialog", { name: "Restoring session" })).toBeVisible();
+
+    await stalledSessionRequest.route?.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: {
+        "Cache-Control": "no-store",
+        Vary: "Cookie",
+      },
+      body: JSON.stringify({
+        authenticated: true,
+        did: mockDid,
+        pds: "https://e2e-pds.skyblur.test",
+        scope: "atproto repo:app.bsky.feed.post?action=create&action=delete",
+      }),
+    });
+    stalledSessionRequest.release?.();
 
     await expect(page).toHaveURL(/\/console$/);
     await expect(page.getByText(/E2E Tester/)).toBeVisible();
-    expect(recoveredSessionRequestNumber).toBe(2);
-    await stalledSessionRoute?.abort("failed").catch(() => {});
-    releaseStalledSessionRequest?.();
+    expect(sessionRequests).toBe(1);
   });
 });
 
@@ -640,7 +663,7 @@ test("header controls toggle theme and language from the rendered UI", async ({
 }) => {
   await useEnglishLocale(context, baseURL);
 
-  await gotoAndSkipIfUnavailable(page, "/");
+  await gotoAndSkipIfUnavailable(page, "/en");
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
 
@@ -745,15 +768,46 @@ test("public metadata endpoints expose app identity documents", async ({ request
   expect(robots.ok(), await responseText(robots)).toBe(true);
   const robotsText = await robots.text();
   expect(robotsText).toContain("Disallow: /");
-  expect(robotsText).toContain("Allow: /$");
+  expect(robotsText).not.toContain("Allow: /$");
+  expect(robotsText).not.toContain("Allow: /features$");
+  expect(robotsText).not.toContain("Allow: /termofuse$");
   expect(robotsText).toContain("Allow: /ja$");
   expect(robotsText).toContain("Allow: /ja/termofuse$");
+
+  const rootRedirect = await request.get("/", { maxRedirects: 0 });
+  expect(rootRedirect.status(), await responseText(rootRedirect)).toBe(308);
+  expect(rootRedirect.headers().location).toBe("/ja");
+
+  for (const [path, location] of [["/features", "/en/features"], ["/termofuse", "/en/termofuse"]]) {
+    const redirectResponse = await request.get(path, {
+      headers: {
+        "Accept-Language": "en-US,en;q=0.9",
+        Cookie: "lang=en",
+      },
+      maxRedirects: 0,
+    });
+    const redirectBody = await responseText(redirectResponse);
+    if (redirectResponse.status() === 308) {
+      expect(redirectResponse.headers().location).toBe(location);
+    } else {
+      expect(redirectResponse.status(), redirectBody).toBe(200);
+      expect(redirectBody).toContain(
+        `http-equiv="refresh" content="0;url=${location}"`,
+      );
+    }
+  }
+
+  const japaneseCanonical = await request.get("/ja");
+  await skipIfUnavailable(japaneseCanonical);
+  expect(await japaneseCanonical.text()).toContain(
+    'rel="canonical" href="https://skyblur.uk/ja"',
+  );
 
   const sitemap = await request.get("/sitemap.xml");
   await skipIfUnavailable(sitemap);
   expect(sitemap.ok(), await responseText(sitemap)).toBe(true);
   const sitemapText = await sitemap.text();
-  expect(sitemapText).toContain("https://skyblur.uk");
+  expect(sitemapText).not.toContain("<loc>https://skyblur.uk</loc>");
   expect(sitemapText).toContain("https://skyblur.uk/ja");
   expect(sitemapText).toContain("https://skyblur.uk/ja/termofuse");
   expect(sitemapText).not.toContain("x-default");
@@ -806,7 +860,7 @@ test("OAuth logout succeeds without a signed DID cookie and expires the DID cook
   expect(res.headers()["set-cookie"]).toContain("Max-Age=0");
 });
 
-test("OAuth callback failure redirects home with a login error", async ({ request }) => {
+test("OAuth callback failure redirects to the console with a login error", async ({ request }) => {
   const res = await request.get("/api/oauth/callback?state=bad&code=bad", {
     maxRedirects: 0,
   });
@@ -818,7 +872,9 @@ test("OAuth callback failure redirects home with a login error", async ({ reques
 
   expect(res.status(), await responseText(res)).toBe(307);
   expect(res.headers()["cache-control"]).toBe("no-store");
-  expect(res.headers()["location"]).toContain("loginError=callback_failed");
+  const redirectUrl = new URL(res.headers()["location"]);
+  expect(redirectUrl.pathname).toBe("/console");
+  expect(redirectUrl.searchParams.get("loginError")).toBe("callback_failed");
 });
 
 test("OAuth callback user rejection redirects without server error logging", async ({ request }) => {
@@ -833,7 +889,9 @@ test("OAuth callback user rejection redirects without server error logging", asy
 
   expect(res.status(), await responseText(res)).toBe(307);
   expect(res.headers()["cache-control"]).toBe("no-store");
-  expect(res.headers()["location"]).toContain("loginError=rejected");
+  const redirectUrl = new URL(res.headers()["location"]);
+  expect(redirectUrl.pathname).toBe("/console");
+  expect(redirectUrl.searchParams.get("loginError")).toBe("rejected");
 });
 
 test("OAuth login rejects cross-host callback redirects", async ({ request, baseURL }) => {
@@ -1079,6 +1137,24 @@ test("/console login form shows callback errors and clears typeahead input", asy
   await expect(loginDialog.getByRole("button", { name: "Login", exact: true })).toBeDisabled();
 });
 
+test("/console login form explains OAuth callback failures", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await useLoggedOutOAuthMock(page, context, baseURL);
+
+  for (const [error, message] of [
+    ["callback_failed", "Login could not be completed. Please try again."],
+    ["rejected", "Login was cancelled"],
+  ] as const) {
+    await gotoAndSkipIfUnavailable(page, `/console?loginError=${error}`);
+    const loginDialog = page.getByRole("dialog", { name: "Login" });
+    await expect(loginDialog).toBeVisible();
+    await expect(loginDialog.getByText(message)).toBeVisible();
+  }
+});
+
 test("/settings redirects unauthenticated visitors back home", async ({
   page,
   context,
@@ -1088,10 +1164,10 @@ test("/settings redirects unauthenticated visitors back home", async ({
 
   await gotoAndSkipIfUnavailable(page, "/settings");
 
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/(?:ja|en)?$/);
   await expect(page.getByRole("link", { name: "Skyblur", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^(Welcome to Skyblur|Skyblurへようこそ)$/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^(Start|始める)$/ })).toBeVisible();
   await expect(page.getByText("Settings")).toHaveCount(0);
 });
 
@@ -1156,6 +1232,71 @@ test("/post renders public detail content with profile and reaction metadata", a
   await expect(page.getByRole("button", { name: "Go to My Page" })).toBeVisible();
   await expect(page.getByText("4", { exact: true })).toBeVisible();
 });
+
+for (const { variant, visibleContent } of [
+  {
+    variant: "public" as const,
+    visibleContent: "Public post detail secret text",
+  },
+  {
+    variant: "password" as const,
+    visibleContent: "○○○○○",
+  },
+]) {
+  test(`/post displays ${variant} detail before OAuth session restoration completes`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await useLoggedInOAuthMock(page, context, baseURL, { postDetailVariant: variant });
+
+    let resolveSession = () => {};
+    let sessionRequests = 0;
+    await page.unroute("**/api/oauth/session");
+    await page.route("**/api/oauth/session", async (route) => {
+      sessionRequests += 1;
+      await new Promise<void>((resolve) => {
+        resolveSession = resolve;
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "Cache-Control": "no-store",
+          Vary: "Cookie",
+        },
+        body: JSON.stringify({
+          authenticated: true,
+          did: mockDid,
+          pds: "https://e2e-pds.skyblur.test",
+          scope: mockCurrentSessionScope,
+        }),
+      });
+    });
+
+    let getPostRequests = 0;
+    let getPostCookie = "";
+    page.on("request", (request) => {
+      if (!request.url().includes("/xrpc/uk.skyblur.post.getPost")) return;
+      getPostRequests += 1;
+      getPostCookie = request.headers()["cookie"] || "";
+    });
+
+    await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2e-${variant}-before-session`);
+    await expect(page.getByText(visibleContent)).toBeVisible();
+    if (variant === "password") {
+      await expect(page.getByRole("button", { name: "Unlock" })).toBeVisible();
+    }
+    await expect.poll(() => sessionRequests).toBe(1);
+    expect(getPostRequests).toBe(1);
+    expect(getPostCookie).toBe("");
+
+    resolveSession();
+    await expect(page.locator('button[aria-label="Account menu"]:visible')).toBeVisible();
+    await expect(page.getByText(visibleContent)).toBeVisible();
+    expect(getPostRequests).toBe(1);
+  });
+}
 
 test("/post hides reaction metadata when reaction fetches fail", async ({
   page,
@@ -3435,7 +3576,7 @@ test("header account menu can soft logout from the console", async ({
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Logout from this device/ }).click();
 
-  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^(Welcome to Skyblur|Skyblurへようこそ)$/ })).toBeVisible();
 });
 
 test("header account menu can hard logout from settings", async ({
@@ -3453,7 +3594,7 @@ test("header account menu can hard logout from settings", async ({
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Invalidate session and logout/ }).click();
 
-  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^(Welcome to Skyblur|Skyblurへようこそ)$/ })).toBeVisible();
 });
 
 test("header account menu can logout from home without leaving the page", async ({
@@ -3464,13 +3605,13 @@ test("header account menu can logout from home without leaving the page", async 
 }) => {
   await useLoggedInOAuthMock(page, context, baseURL);
 
-  await gotoAndSkipIfUnavailable(page, "/");
+  await gotoAndSkipIfUnavailable(page, "/en");
   await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
   await openHeaderAccountMenu(page, isMobile);
   await page.getByRole("menuitem", { name: /Logout|ログアウト/ }).click();
   await expect(page.getByRole("dialog", { name: /Logout|ログアウト/ })).toBeVisible();
   await page.getByRole("button", { name: /Logout from this device/ }).click();
 
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("heading", { name: "Welcome to Skyblur" })).toBeVisible();
+  await expect(page).toHaveURL(/\/(?:ja|en)?$/);
+  await expect(page.getByRole("heading", { name: /^(Welcome to Skyblur|Skyblurへようこそ)$/ })).toBeVisible();
 });

@@ -1,6 +1,7 @@
 {
   "name": "skyblurapi",
   "type": "module",
+  "packageManager": "pnpm@11.5.0",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production --minify",
@@ -11,7 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@atcute/atproto": "^4.0.3",
+    "@atcute/atproto": "^4.0.4",
     "@atcute/client": "^5.1.1",
     "@atcute/identity-resolver": "^2.0.1",
     "@atcute/lexicons": "^2.0.3",
@@ -19,20 +20,20 @@
     "@atcute/oauth-node-client": "^2.0.1",
     "did-jwt": "^8.0.18",
     "did-resolver": "^5.0.1",
-    "hono": "^4.12.30",
+    "hono": "^4.13.1",
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
-    "@atcute/bluesky": "^4.0.14",
+    "@atcute/bluesky": "4.0.14",
     "@atcute/lex-cli": "^3.2.1",
     "@cloudflare/unenv-preset": "^2.16.1",
-    "@cloudflare/workers-types": "^5.20260716.1",
-    "@types/node": "^26.1.1",
+    "@cloudflare/workers-types": "^5.20260804.1",
+    "@types/node": "^26.1.2",
     "@vitest/coverage-v8": "^4.1.10",
     "@vitest/ui": "^4.1.10",
     "unenv": "2.0.0-rc.24",
-    "vite": "^8.1.5",
+    "vite": "8.1.5",
     "vitest": "^4.1.10",
-    "wrangler": "^4.111.0"
+    "wrangler": "^4.120.0"
   }
 }

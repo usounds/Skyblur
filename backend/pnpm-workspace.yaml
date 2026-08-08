@@ -3,6 +3,8 @@ allowBuilds:
   sharp: true
   workerd: true
 
+minimumReleaseAge: 1440
+
 minimumReleaseAgeExclude:
   - '@cloudflare/workers-types@5.20260705.1'
   - '@atcute/lexicons@2.0.3'
@@ -17,4 +19,15 @@ onlyBuiltDependencies:
   - workerd
 
 overrides:
+  '@atcute/bluesky': 4.0.14
+  '@atcute/time-ms': 1.2.0
+  '@aws-sdk/core': <=3.976.0
+  '@aws-sdk/dynamodb-codec': <=3.972.0
+  '@aws-sdk/middleware-endpoint-discovery': <=3.972.0
+  '@aws-sdk/xml-builder': <=3.972.0
+  '@emnapi/runtime': 1.11.2
+  '@smithy/core': <=3.29.0
+  '@smithy/signature-v4': <=5.6.9
   flatted: ^3.4.2
+  postcss: 8.5.26
+  vite: 8.1.5

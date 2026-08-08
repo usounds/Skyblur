@@ -1,91 +1,37 @@
 "use client";
+
 import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { useLocaleStore } from "@/state/Locale";
 import type { Locales } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
-import { Button, Loader, Text } from '@mantine/core';
+import { Button, Group, Loader, Modal, Text } from '@mantine/core';
 import { Sparkles } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import classes from './StartButton.module.css';
 
-const SESSION_CHECK_RETRY_SECONDS = Number(process.env.NEXT_PUBLIC_E2E_SESSION_RETRY_SECONDS || 30);
+const RESTORE_MODAL_DELAY_MS = 180;
 
 export function StartButton({ initialLocale }: { initialLocale: Locales }) {
     const storeLocale = useLocaleStore((state) => state.locale);
     const initLocale = useLocaleStore((state) => state.initLocale);
     const setIsLoginModalOpened = useXrpcAgentStore((state) => state.setIsLoginModalOpened);
     const router = useRouter();
-    const did = useXrpcAgentStore((state) => state.did);
-    const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
     const [isLocaleHydrated, setIsLocaleHydrated] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isSessionRetryReady, setIsSessionRetryReady] = useState(false);
-    const [isSessionRetryWaiting, setIsSessionRetryWaiting] = useState(false);
-    const [sessionCheckSecondsLeft, setSessionCheckSecondsLeft] = useState(SESSION_CHECK_RETRY_SECONDS);
-    const sessionCheckAttemptRef = useRef(0);
+    const [isStartPending, setIsStartPending] = useState(false);
+    const [isRestoreModalOpened, setIsRestoreModalOpened] = useState(false);
     const initialSessionCheckStartedRef = useRef(false);
-    const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const startAttemptRef = useRef(0);
+    const restoreModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const activeLocale = isLocaleHydrated ? storeLocale : initialLocale;
     const locale = activeLocale === 'en' ? en : ja;
 
-    const clearSessionCheckTimers = useCallback(() => {
-        if (countdownTimerRef.current) {
-            clearInterval(countdownTimerRef.current);
-            countdownTimerRef.current = null;
-        }
-        if (retryTimerRef.current) {
-            clearTimeout(retryTimerRef.current);
-            retryTimerRef.current = null;
-        }
-    }, []);
-
-    const runSessionCheck = useCallback(async ({ force = false } = {}) => {
-        const attemptId = sessionCheckAttemptRef.current + 1;
-        sessionCheckAttemptRef.current = attemptId;
-        clearSessionCheckTimers();
-        setIsSessionRetryReady(false);
-        setIsSessionRetryWaiting(false);
-        setSessionCheckSecondsLeft(SESSION_CHECK_RETRY_SECONDS);
-
-        if (force) {
-            useXrpcAgentStore.getState().setIsSessionChecked(false);
-        }
-
-        countdownTimerRef.current = setInterval(() => {
-            setSessionCheckSecondsLeft((secondsLeft) => Math.max(0, secondsLeft - 1));
-        }, 1000);
-
-        retryTimerRef.current = setTimeout(() => {
-            if (sessionCheckAttemptRef.current !== attemptId) return;
-            setIsSessionRetryWaiting(false);
-            setIsSessionRetryReady(true);
-            setSessionCheckSecondsLeft(0);
-        }, SESSION_CHECK_RETRY_SECONDS * 1000);
-
-        try {
-            const result = await useXrpcAgentStore.getState().checkSession();
-            if (sessionCheckAttemptRef.current !== attemptId) return result;
-
-            if (!result.timedOut) {
-                clearSessionCheckTimers();
-                setIsSessionRetryWaiting(false);
-                setIsSessionRetryReady(false);
-            } else {
-                setIsSessionRetryWaiting(true);
-            }
-            return result;
-        } catch (err) {
-            if (sessionCheckAttemptRef.current === attemptId) {
-                clearSessionCheckTimers();
-                setIsSessionRetryWaiting(false);
-                setIsSessionRetryReady(true);
-            }
-            throw err;
-        }
-    }, [clearSessionCheckTimers]);
+    const clearRestoreModalTimer = () => {
+        if (!restoreModalTimerRef.current) return;
+        clearTimeout(restoreModalTimerRef.current);
+        restoreModalTimerRef.current = null;
+    };
 
     useEffect(() => {
         initLocale(initialLocale);
@@ -93,126 +39,118 @@ export function StartButton({ initialLocale }: { initialLocale: Locales }) {
     }, [initLocale, initialLocale]);
 
     useEffect(() => {
-        if (sessionCheckSecondsLeft !== 0 || !isSessionRetryWaiting) return;
-        setIsSessionRetryWaiting(false);
-        setIsSessionRetryReady(true);
-    }, [isSessionRetryWaiting, sessionCheckSecondsLeft]);
-
-    useEffect(() => {
         if (initialSessionCheckStartedRef.current) return;
         initialSessionCheckStartedRef.current = true;
         if (useXrpcAgentStore.getState().isSessionChecked) return;
-        runSessionCheck();
-        return () => {
-            sessionCheckAttemptRef.current += 1;
-            clearSessionCheckTimers();
-        };
-    }, [clearSessionCheckTimers, runSessionCheck]);
+
+        void useXrpcAgentStore.getState().checkSession();
+    }, []);
+
+    useEffect(() => () => {
+        startAttemptRef.current += 1;
+        if (restoreModalTimerRef.current) {
+            clearTimeout(restoreModalTimerRef.current);
+            restoreModalTimerRef.current = null;
+        }
+    }, []);
 
     const handleStart = async () => {
-        setIsLoading(true);
+        const currentSession = useXrpcAgentStore.getState();
 
-        try {
-            // セッションチェックが終わっていない場合はまずチェック
-            const currentSession = useXrpcAgentStore.getState();
-            let currentDid = currentSession.did;
-            if (!currentSession.isSessionChecked) {
-                const result = await runSessionCheck();
-                currentDid = result.did;
-            }
-
-            if (currentDid) {
-                // 認証済みならコンソールへ
+        if (currentSession.isSessionChecked) {
+            if (currentSession.did) {
                 router.push('/console');
             } else {
-                // 未認証ならログインモーダルを表示
+                setIsLoginModalOpened(true);
+            }
+            return;
+        }
+
+        const attemptId = startAttemptRef.current + 1;
+        startAttemptRef.current = attemptId;
+        setIsStartPending(true);
+        clearRestoreModalTimer();
+        restoreModalTimerRef.current = setTimeout(() => {
+            if (startAttemptRef.current === attemptId) {
+                setIsRestoreModalOpened(true);
+            }
+        }, RESTORE_MODAL_DELAY_MS);
+
+        try {
+            const result = await useXrpcAgentStore.getState().checkSession();
+            if (startAttemptRef.current !== attemptId) return;
+
+            clearRestoreModalTimer();
+            setIsRestoreModalOpened(false);
+
+            if (result.did) {
+                router.push('/console');
+            } else if (!result.timedOut) {
                 setIsLoginModalOpened(true);
             }
         } catch (err) {
+            if (startAttemptRef.current !== attemptId) return;
             console.error("Failed to check session", err);
+            clearRestoreModalTimer();
+            setIsRestoreModalOpened(false);
             setIsLoginModalOpened(true);
         } finally {
-            setIsLoading(false);
+            if (startAttemptRef.current === attemptId) {
+                setIsStartPending(false);
+            }
         }
     };
 
-    const handleRetrySessionCheck = async () => {
-        setIsLoading(true);
-
-        try {
-            const result = await runSessionCheck({ force: true });
-
-            if (result?.did) {
-                router.push('/console');
-                return;
-            }
-
-            if (result && !result.timedOut) {
-                setIsLoginModalOpened(true);
-            }
-        } catch (err) {
-            console.error("Failed to retry session check", err);
-        } finally {
-            setIsLoading(false);
-        }
+    const handleRestoreModalClose = () => {
+        startAttemptRef.current += 1;
+        clearRestoreModalTimer();
+        setIsRestoreModalOpened(false);
+        setIsStartPending(false);
     };
 
     return (
         <div className="flex justify-center items-center" style={{ minHeight: '64px' }}>
-            {isSessionRetryReady ? (
-                 <Button
-                    variant="outline" size="md" radius="lg"
-                    onClick={handleRetrySessionCheck}
-                    loading={isLoading}
-                    leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg min-w-[180px]"
-                    color="blue.8"
+            <Button
+                variant="filled" size="md" radius="lg"
+                onClick={handleStart}
+                disabled={isStartPending}
+                leftSection={<Sparkles size={24} />}
+                className="px-10 h-16 text-lg min-w-[180px]"
+                color="blue.8"
+            >
+                {locale.Landing_StartButton}
+            </Button>
+
+            <Modal.Root
+                opened={isRestoreModalOpened}
+                onClose={handleRestoreModalClose}
+                centered
+                radius="xl"
+                size={320}
+                transitionProps={{ transition: 'fade-up', duration: 180 }}
+            >
+                <Modal.Overlay backgroundOpacity={0.24} blur={3} />
+                <Modal.Content
+                    aria-label={locale.Home_CheckingSession}
+                    className={classes.restoreModal}
                 >
-                    {locale.Landing_StartRetryButton}
-                </Button>
-            ) : !isSessionChecked && !isSessionRetryWaiting ? (
-                <Button
-                    variant="filled" size="md" radius="lg"
-                    disabled={true}
-                    loading={true}
-                    leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg min-w-[180px]"
-                    color="blue.8"
-                >
-                    {locale.Landing_StartButton}
-                </Button>
-            ) : isSessionRetryWaiting ? (
-                <Button
-                    variant="filled" size="md" radius="lg"
-                    disabled={true}
-                    className="px-10 h-16 text-lg min-w-[180px]"
-                    color="blue.8"
-                >
-                    {locale.Home_CheckingSessionWithTimer.replace('{1}', String(sessionCheckSecondsLeft))}
-                </Button>
-            ) : did ? (
-                <Button
-                    component={Link}
-                    href="/console"
-                    variant="filled" size="md" radius="lg"
-                    leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg min-w-[180px]"
-                    color="blue.8"
-                >
-                    {locale.Landing_StartButton}
-                </Button>
-            ) : (
-                <Button
-                    variant="filled" size="md" radius="lg"
-                    onClick={handleStart}
-                    loading={isLoading}
-                    leftSection={<Sparkles size={24} />}
-                    className="px-10 h-16 text-lg min-w-[180px]"
-                    color="blue.8"
-                >
-                    {locale.Landing_StartButton}
-                </Button>
-            )}
+                    <Modal.Body className={classes.restoreModalBody}>
+                        <Group gap="md" wrap="nowrap">
+                            <div className={classes.restoreIndicator} aria-hidden="true">
+                                <Loader size={20} color="blue.6" />
+                            </div>
+                            <Text
+                                className={classes.restoreMessage}
+                                role="status"
+                                aria-live="polite"
+                                aria-atomic="true"
+                            >
+                                {locale.Home_CheckingSession}
+                            </Text>
+                        </Group>
+                    </Modal.Body>
+                </Modal.Content>
+            </Modal.Root>
         </div>
     );
 }
