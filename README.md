@@ -17,6 +17,10 @@ flowchart LR
         Backend["Backend / Cloudflare Workers / Hono"]
         Consumer["Jetstream Consumer / Fly.io / Go"]
         Storage[("Durable Object storage")]
+
+        Frontend -->|"anonymous XRPC"| Backend
+        Consumer <-->|"HMAC batch / committed cursor"| Backend
+        Backend <--> Storage
     end
 
     subgraph ATProtocol["AT Protocol / Bluesky"]
@@ -25,24 +29,19 @@ flowchart LR
         Relay["Relay"]
         Jetstream["Public Jetstream"]
         PublicAPI["Bluesky AppView / public.api.bsky.app"]
+
+        PDS -->|"repo commits"| Relay
+        Relay -->|"firehose"| Jetstream
+        Relay -->|"firehose / indexing"| PublicAPI
     end
 
-    Constellation["Constellation"]
     Lexicons["uk.skyblur.* Lexicon schemas"]
 
     Browser --> Frontend
-    Frontend -->|"anonymous XRPC"| Backend
-    Frontend <-->|"OAuth / Repo writes / authenticated XRPC"| PDS
-    PDS -->|"Skyblur service proxy"| Backend
-    Backend -->|"Repo fallback"| PDS
-    Backend <--> Storage
-    Backend -->|"relationship checks"| PublicAPI
-    Backend -->|"list membership checks"| Constellation
-    PDS -->|"repo commits"| Relay
-    Relay -->|"firehose"| Jetstream
-    Relay -->|"firehose / indexing"| PublicAPI
-    Jetstream -->|"uk.skyblur.post events"| Consumer
-    Consumer <-->|"HMAC batch / committed cursor"| Backend
+    Frontend <-->|"OAuth / XRPC"| PDS
+    PDS -->|"withProxy"| Backend
+    Backend -->|"relationship check"| PublicAPI
+    Jetstream --> Consumer
     Lexicons -.-> Frontend
     Lexicons -.-> Backend
 ```
