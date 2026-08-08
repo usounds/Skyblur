@@ -5,15 +5,23 @@ export type ListAuthorizationResult = {
     errorCode?: 'NotListMember' | 'ListMembershipCheckFailed' | 'InvalidListUri' | 'ListUriMissing';
 };
 
-type BacklinksRecord = {
+type ManyToManyItem = {
+    linkRecord: {
+        did: string;
+        collection: string;
+        rkey: string;
+    };
+    otherSubject: string;
+};
+
+type ManyToManyResponse = {
+    items: ManyToManyItem[];
+};
+
+type RecordReference = {
     did: string;
     collection: string;
     rkey: string;
-};
-
-type BacklinksResponse = {
-    total: number;
-    records: BacklinksRecord[];
 };
 
 function normalizeServiceEndpoint(endpoint: unknown): string | null {
@@ -63,20 +71,29 @@ export async function assertListOwnedByRepo(listUri: string, repoDid: string): P
     }
 }
 
-function parseBacklinksResponse(value: unknown): BacklinksResponse | null {
+function parseManyToManyResponse(value: unknown): ManyToManyResponse | null {
     if (!value || typeof value !== 'object') return null;
-    const data = value as { total?: unknown; records?: unknown };
-    if (typeof data.total !== 'number' || !Array.isArray(data.records)) return null;
+    const data = value as { items?: unknown };
+    if (!Array.isArray(data.items)) return null;
 
-    const records: BacklinksRecord[] = [];
-    for (const record of data.records) {
-        if (!record || typeof record !== 'object') return null;
-        const item = record as { did?: unknown; collection?: unknown; rkey?: unknown };
-        if (typeof item.did !== 'string' || typeof item.collection !== 'string' || typeof item.rkey !== 'string') return null;
-        records.push({ did: item.did, collection: item.collection, rkey: item.rkey });
+    const items: ManyToManyItem[] = [];
+    for (const item of data.items) {
+        if (!item || typeof item !== 'object') return null;
+        const candidate = item as { linkRecord?: unknown; otherSubject?: unknown };
+        if (!candidate.linkRecord || typeof candidate.linkRecord !== 'object' || typeof candidate.otherSubject !== 'string') return null;
+        const linkRecord = candidate.linkRecord as Partial<RecordReference>;
+        if (typeof linkRecord.did !== 'string' || typeof linkRecord.collection !== 'string' || typeof linkRecord.rkey !== 'string') return null;
+        items.push({
+            linkRecord: {
+                did: linkRecord.did,
+                collection: linkRecord.collection,
+                rkey: linkRecord.rkey,
+            },
+            otherSubject: candidate.otherSubject,
+        });
     }
 
-    return { total: data.total, records };
+    return { items };
 }
 
 export async function checkListMembership(params: {
@@ -89,12 +106,13 @@ export async function checkListMembership(params: {
     if (!isValidListUri(listUri, authorDid)) return { ok: false, errorCode: 'InvalidListUri' };
 
     try {
-        const url = new URL('https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks');
+        const url = new URL('https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getManyToMany');
         url.searchParams.set('subject', requesterDid);
         url.searchParams.set('source', 'app.bsky.graph.listitem:subject');
-        url.searchParams.append('did', authorDid);
-        url.searchParams.set('limit', '100');
-        url.searchParams.set('reverse', 'false');
+        url.searchParams.set('pathToOther', 'list');
+        url.searchParams.append('linkDid', authorDid);
+        url.searchParams.append('otherSubject', listUri);
+        url.searchParams.set('limit', '1');
 
         const response = await fetch(url.toString(), {
             headers: {
@@ -105,28 +123,18 @@ export async function checkListMembership(params: {
 
         if (!response.ok) return { ok: false, errorCode: 'ListMembershipCheckFailed' };
 
-        const backlinks = parseBacklinksResponse(await response.json());
-        if (!backlinks) return { ok: false, errorCode: 'ListMembershipCheckFailed' };
+        const result = parseManyToManyResponse(await response.json());
+        if (!result) return { ok: false, errorCode: 'ListMembershipCheckFailed' };
 
-        for (const record of backlinks.records) {
-            if (record.did !== authorDid || record.collection !== 'app.bsky.graph.listitem') continue;
+        const isMember = result.items.some(({ linkRecord, otherSubject }) => (
+            linkRecord.did === authorDid &&
+            linkRecord.collection === 'app.bsky.graph.listitem' &&
+            otherSubject === listUri
+        ));
 
-            const candidate = await getRecord(record.did, record.collection, record.rkey);
-            const value = candidate.value || {};
-            if (
-                (!value.$type || value.$type === 'app.bsky.graph.listitem') &&
-                value.subject === requesterDid &&
-                value.list === listUri
-            ) {
-                return { ok: true };
-            }
-        }
-
-        if (backlinks.total > backlinks.records.length) {
-            return { ok: false, errorCode: 'ListMembershipCheckFailed' };
-        }
-
-        return { ok: false, errorCode: 'NotListMember' };
+        return isMember
+            ? { ok: true }
+            : { ok: false, errorCode: 'NotListMember' };
     } catch (e) {
         console.error('[listVisibility] membership check failed', e);
         return { ok: false, errorCode: 'ListMembershipCheckFailed' };
