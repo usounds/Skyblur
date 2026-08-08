@@ -48,20 +48,16 @@ sequenceDiagram
     participant App as Next.js App
     participant PDS as User PDS
     participant API as Hono API
-    participant Content as RestrictedPostDO
+    participant RestrictedDB@{ "type": "database" } as Restricted content<br/>RestrictedPostDO
 
     User->>App: Create or update a post
-    opt Restricted visibility
-        App->>PDS: uk.skyblur.post.store (withProxy)
-        PDS->>API: Proxy store procedure
-        API->>Content: Store original restricted content
-        Content-->>API: Stored
-        API-->>PDS: Success
-        PDS-->>App: Success
-    end
-    App->>PDS: com.atproto.repo.applyWrites
-    Note over App,PDS: Create or update collection=uk.skyblur.post
-    Note over App,PDS: Also writes app.bsky.feed.post and optional gate records
+    App->>PDS: Restricted only: uk.skyblur.post.store (withProxy)
+    PDS->>API: Proxy store procedure
+    API->>RestrictedDB: Store original restricted content
+    RestrictedDB-->>API: Stored
+    API-->>PDS: Success
+    PDS-->>App: Success
+    App->>PDS: com.atproto.repo.applyWrites<br/>uk.skyblur.post + app.bsky.feed.post + optional gates
 ```
 
 ### Post read / 投稿の取得
@@ -73,32 +69,26 @@ sequenceDiagram
     participant App as Next.js App
     participant PDS as User PDS
     participant API as Hono API
-    participant MirrorDB as uk.skyblur.post mirror DB
-    participant Access as Access checks
-    participant Content as RestrictedPostDO
+    participant RecordsDB@{ "type": "database" } as uk.skyblur.post<br/>PostMirrorDO
+    participant PublicAPI as public.api.bsky.app
+    participant Constellation as Constellation
+    participant RestrictedDB@{ "type": "database" } as Restricted content<br/>RestrictedPostDO
 
-    Note over MirrorDB: Durable Object storage: PostMirrorDO
     User->>App: Open a post
     App->>PDS: uk.skyblur.post.getPost (withProxy)
     PDS->>API: Proxy read procedure
-    API->>MirrorDB: Query record projection
-    alt Record found
-        MirrorDB-->>API: Projected uk.skyblur.post record
-    else Record missing or DB read failed
-        API->>PDS: com.atproto.repo.getRecord
-        Note over API,PDS: collection=uk.skyblur.post
-        PDS-->>API: Source Repo record
-    end
-    alt Restricted visibility
-        API->>Access: Verify relationship or list
-        Access-->>API: Access result
-        opt Authorized
-            API->>Content: Fetch restricted content
-            Content-->>API: Post content
-        end
-    else Public visibility
-        Note over API: Use content from the record
-    end
+    API->>RecordsDB: Query records table
+    RecordsDB-->>API: uk.skyblur.post record, 404, or read error
+    API->>PDS: On 404/read error: com.atproto.repo.getRecord<br/>collection=uk.skyblur.post
+    PDS-->>API: uk.skyblur.post record
+    API->>PublicAPI: app.bsky.graph.getRelationships<br/>actor=requester, others=author
+    PublicAPI-->>API: following / followedBy
+    API->>Constellation: List only: blue.microcosm.links.getBacklinks
+    Constellation-->>API: app.bsky.graph.listitem candidates
+    API->>PDS: List only: com.atproto.repo.getRecord<br/>collection=app.bsky.graph.listitem
+    PDS-->>API: Verified listitem record
+    API->>RestrictedDB: If authorized: fetch restricted content
+    RestrictedDB-->>API: Restricted content
     API-->>PDS: Response
     PDS-->>App: Response
 ```
@@ -114,15 +104,14 @@ sequenceDiagram
     participant Consumer as Go Consumer
     participant API as Internal Ingest API
     participant Ingest as JetstreamIngestDO
-    participant MirrorDB as uk.skyblur.post mirror DB
+    participant RecordsDB@{ "type": "database" } as uk.skyblur.post<br/>PostMirrorDO
 
-    Note over MirrorDB: Durable Object storage: PostMirrorDO
     PDS->>Relay: uk.skyblur.post commit
     Relay->>Jetstream: Firehose stream
     Jetstream->>Consumer: uk.skyblur.post event
     Consumer->>API: HMAC-signed batch
     API->>Ingest: Process batch and cursor
-    Ingest->>MirrorDB: Persist record projection
+    Ingest->>RecordsDB: Persist to records table
     API-->>Consumer: Committed cursor
 ```
 
