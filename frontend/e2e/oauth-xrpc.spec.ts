@@ -1493,6 +1493,7 @@ test("/post refetches restricted detail after the session resolves authenticated
   });
 
   let getPostRequests = 0;
+  let resolveAuthenticatedPost = () => {};
   await page.route("**/xrpc/uk.skyblur.post.getPost", async (route) => {
     getPostRequests += 1;
     if (getPostRequests === 1) {
@@ -1510,6 +1511,10 @@ test("/post refetches restricted detail after the session resolves authenticated
       return;
     }
 
+    await new Promise<void>((resolve) => {
+      resolveAuthenticatedPost = resolve;
+    });
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -1524,14 +1529,25 @@ test("/post refetches restricted detail after the session resolves authenticated
 
   await gotoAndSkipIfUnavailable(page, `/post/${encodeURIComponent(mockDid)}/e2erefetch`);
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
+  const transientLoginNotification = page.locator('[role="alert"]').filter({
+    hasText: "この投稿を表示するにはログインしてください。",
+  });
+  await expect(transientLoginNotification).toHaveCount(0);
   expect(getPostRequests).toBe(1);
 
   await expect.poll(() => sessionRequests).toBe(1);
   resolveSession();
 
+  await expect.poll(() => getPostRequests).toBe(2);
+  await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toBeVisible();
+  await expect(page.getByText("*****", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Authenticated restricted post detail text")).toHaveCount(0);
+  resolveAuthenticatedPost();
+
   await expect(page.getByText("Authenticated restricted post detail text")).toBeVisible();
   await expect(page.getByText("Authenticated restricted post detail additional")).toBeVisible();
   await expect(page.getByText("この投稿はフォロワー限定です。参照するにはログインが必要です。")).toHaveCount(0);
+  await expect(transientLoginNotification).toHaveCount(0);
   expect(sessionRequests).toBe(1);
   expect(getPostRequests).toBe(2);
 });

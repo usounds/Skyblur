@@ -57,6 +57,7 @@ export const PostPage = () => {
     const [debugStatus, setDebugStatus] = useState<string>('Idle');
     const [isRestrictedFetchDone, setIsRestrictedFetchDone] = useState<boolean>(false);
     const [isRestrictedFetching, setIsRestrictedFetching] = useState<boolean>(false);
+    const [authenticatedFetchCompletedKey, setAuthenticatedFetchCompletedKey] = useState('');
     const [initialFetchCompletedKey, setInitialFetchCompletedKey] = useState('');
     const postFetchRequestIdRef = useRef(0);
     const authenticatedRefetchKeyRef = useRef('');
@@ -74,7 +75,9 @@ export const PostPage = () => {
         const requestId = postFetchRequestIdRef.current + 1;
         postFetchRequestIdRef.current = requestId;
         console.log(`[PostPage] getPostData called for ${aturi}, pass=${!!passwordArg}`);
-        if (!passwordArg) {
+        if (useAuthenticatedSession) {
+            setIsRestrictedFetching(true);
+        } else if (!passwordArg) {
             setIsLoading(true);
             setErrorMessage('');
             setIsRestrictedFetchDone(false);
@@ -214,6 +217,10 @@ export const PostPage = () => {
             if (postFetchRequestIdRef.current === requestId) {
                 setIsLoading(false);
                 setIsRestrictedFetchDone(true);
+                if (useAuthenticatedSession) {
+                    setIsRestrictedFetching(false);
+                    setAuthenticatedFetchCompletedKey(`${did}/${rkey}/${loginDid}`);
+                }
                 if (!useAuthenticatedSession) {
                     setInitialFetchCompletedKey(`${did}/${rkey}`);
                 }
@@ -322,6 +329,9 @@ export const PostPage = () => {
 
     const isMasked = isMaskedText;
     const shouldShowLoading = isLoading || (isRestrictedTarget && loginDid && !isRestrictedFetchDone);
+    const authenticatedFetchKey = loginDid ? `${did}/${rkey}/${loginDid}` : '';
+    const shouldShowRestrictedNotice = (visibility === VISIBILITY_LOGIN || isRestrictedVisibilityScope(visibility))
+        && (!loginDid || isRestrictedFetching || authenticatedFetchCompletedKey !== authenticatedFetchKey);
     console.log(`PostPage Render: postText='${postText}', isMasked=${isMasked}, shouldShowLoading=${shouldShowLoading}, loginDid=${!!loginDid}, isSessionChecked=${isSessionChecked}`);
 
     const visibilityKey = visibility || (encryptCid ? VISIBILITY_PASSWORD : VISIBILITY_PUBLIC);
@@ -393,7 +403,7 @@ export const PostPage = () => {
                                             </div>
                                         </div>
 
-                                        {((visibility === VISIBILITY_LOGIN || isRestrictedVisibilityScope(visibility)) && !loginDid) ? (
+                                        {shouldShowRestrictedNotice ? (
                                             <div className="flex flex-col items-center justify-center m-4 gap-4">
                                                 <div className="text-sm text-gray-500">
                                                     {(visibility === VISIBILITY_LOGIN) && "この投稿を参照するにはログインが必要です。"}
