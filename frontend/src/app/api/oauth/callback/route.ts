@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const callbackCookie = cookieStore.get(OAUTH_CALLBACK_COOKIE)?.value;
   const existingDid = verifySignedDid(cookieStore.get(OAUTH_DID_COOKIE)?.value);
-  const redirectTo = callbackCookie ? decodeURIComponent(callbackCookie) : `${origin}/`;
+  const redirectTo = callbackCookie ? decodeURIComponent(callbackCookie) : `${origin}/console`;
 
   try {
     const { session } = await client.callback(url.searchParams);

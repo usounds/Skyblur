@@ -1,6 +1,7 @@
 "use client";
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
+import { getOAuthLoginRedirectUrl } from "@/logic/oauth/redirect";
 import { AtPassport } from '@atpassport/client/core';
 import { AtPassportIcon, AtPassportUI } from '@atpassport/client/ui';
 import { getLocalizedHref } from '@/logic/localePath';
@@ -61,10 +62,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     const isDev = typeof window !== 'undefined' && (window.location.hostname === 'dev.skyblur.uk' || window.location.hostname === 'localhost' || window.location.hostname.endsWith('.localhost'));
     /* istanbul ignore next -- E2E exercises the client path; this fallback is for SSR safety. */
     const apiHost = typeof window !== 'undefined' ? window.location.origin : '';
-    const getRedirectUrl = () => {
-        const currentPath = window.location.pathname;
-        return currentPath === '/' ? `${window.location.origin}/console` : window.location.href;
-    };
+    const getRedirectUrl = () => getOAuthLoginRedirectUrl(window.location);
 
     // ブラウザバック（bfcache）などで戻った際にローディング状態を確実にリセットする
     useEffect(() => {
@@ -88,10 +86,14 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         const error = params.get('loginError');
         if (error === 'invalid_handle') {
             setErrorMessage(locale.Login_InvalidHandle || '無効なハンドルです');
+        } else if (error === 'rejected') {
+            setErrorMessage(locale.Login_Rejected);
+        } else if (error === 'callback_failed') {
+            setErrorMessage(locale.Login_CallbackFailed);
         } else {
             setErrorMessage(null);
         }
-    }, [locale.Login_InvalidHandle]);
+    }, [locale.Login_CallbackFailed, locale.Login_InvalidHandle, locale.Login_Rejected]);
 
     // 同意状態を localStorage に保存
     useEffect(() => {

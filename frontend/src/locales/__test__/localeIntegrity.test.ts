@@ -29,7 +29,7 @@ describe("locale integrity", () => {
 
   it("keeps English and Japanese flat key sets aligned", () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(ja).sort());
-    expect(Object.keys(en)).toHaveLength(366);
+    expect(Object.keys(en)).toHaveLength(367);
   });
 
   it("keeps all flat locale values as strings", () => {

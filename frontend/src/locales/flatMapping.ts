@@ -45,6 +45,7 @@ export const localeFlatMapping = {
   "Login_WithAt": ["login","withAt"],
   "Login_BackOperation": ["login","backOperation"],
   "Login_Rejected": ["login","rejected"],
+  "Login_CallbackFailed": ["login","callbackFailed"],
   "Login_SubTitle": ["login","subTitle"],
   "Login_AgreeToTerms": ["login","agreeToTerms"],
   "Login_PrivacyPolicy": ["login","privacyPolicy"],
