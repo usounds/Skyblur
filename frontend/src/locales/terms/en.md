@@ -2,50 +2,90 @@
 
 Skyblur (hereinafter referred to as "this Site") establishes the following Privacy Policy (hereinafter referred to as "this Policy") regarding the handling of personal user information on this Site.
 
-## Collection and Use of Personal Information
-This Site does not collect personal information from users (hereinafter referred to as users) for the provision of services.
+Last updated and effective: August 15, 2026
+
+## Information We Collect and Process
+This Site collects or processes the following information to the extent necessary to provide the service:
+- OAuth credentials, session information, and account identifiers required for authentication.
+- Posts, visibility settings, list URIs, and other settings created by users.
+- `uk.skyblur.post` records distributed through the public AT Protocol network, together with information identifying their authors and records and information about their publication status.
+- Post URLs or AT URIs, report reasons, and report details submitted through the contact and reporting form.
+- IP addresses, access timestamps, browser information, other access logs, and technical information needed for troubleshooting, security, and abuse prevention.
+
+Information obtained from the public network may include public information belonging to people who did not directly use this Site but created `uk.skyblur.post` records through a compatible third-party client or other service.
+
+## Purposes of Processing
+We use the information we collect or process to provide login, posting, access-control checks, and post display; mirror and synchronize public records; review and respond to contacts and reports; recover from failures; maintain security; prevent abuse; understand service usage; and improve this Site.
 
 ## Provision of Data to Third Parties
-Unless otherwise provided by laws and guidelines, this Site will not provide users' personal information to third parties without consent.
+This Site does not sell information about users. To the extent necessary to provide the service, information may be processed by or communicated to Cloudflare, Fly.io, Tally BV, and the other service providers identified in this Policy. We do not otherwise provide users' personal information to third parties except with the individual's consent or as required by law.
 
 ## About Access Analysis Tools
 This Site uses "Web Analytics," an access analysis tool by Cloudflare. This traffic data is collected anonymously and does not identify individual users.
 
 ## About External Services
 This Site uses the following external services, which results in communication with each service. In addition, communication with the user's PDS will occur.
+- [Cloudflare](https://www.cloudflare.com/privacypolicy/)
 - [Cloudflare Resolver for Firefox](https://developers.cloudflare.com/1.1.1.1/privacy/cloudflare-resolver-firefox/)
 - [DID PLC Directory](https://plc.directory/)
 - [Bluesky API](https://public.api.bsky.app/)
+- [Bluesky Jetstream](https://bsky.network/docs/jetstream/)
+- [Fly.io](https://fly.io/legal/privacy-policy/)
+- [Tally](https://tally.so/help/privacy-policy)
 - [constellation](https://constellation.microcosm.blue/)
 - [Slingshot](https://slingshot.microcosm.blue/)
 
+Use of these services may result in information being processed in locations outside Japan or the user's country or region.
+
+## Contact and Report Handling
+Reports concerning illegal or inappropriate posts or infringements of rights may be submitted through the [contact and reporting form](https://tally.so/r/2EdV09). For emergencies involving an immediate threat to life, contact the police, fire department, or other appropriate authorities directly.
+
+This Site uses a service provided by Tally BV to provide the form. Tally states that information submitted through the form is stored on servers in Europe. This Site uses that information to review reports, take necessary action, and prevent abuse. Submitted information is retained until the operator manually deletes it from Tally. After a matter is closed, the operator manually deletes information that is no longer necessary to retain. Due to Tally's deletion process, it may take up to 90 days for deleted information to be permanently erased.
+
+After reviewing a report and the surrounding circumstances, this Site may, when deemed necessary, hide the relevant post on this Site, delete data stored by this Site, or restrict a user's access to the service. These actions do not guarantee deletion of data held by a PDS or a third party.
+
 ## About Data Retention Location per Visibility Scope
 - The OAuth credentials and private posts of this service are stored in Cloudflare.
-- Public, Password, and Login-required posts are stored in the PDS.
+- Public, Password, and Login-required posts are stored in the PDS, and the latest state of each `uk.skyblur.post` record published through the PDS is also stored in a Cloudflare-hosted mirror.
 - For Followers-only, Following-only, Mutual-only, and List-only posts, the blurred text is stored in the PDS, and the original text is stored in Cloudflare.
 
-## Attribution of Copyright
-Copyright for all content posted on this Site by users belongs to the poster themselves. This Site only displays users' posts.
+## Handling of Public AT Protocol Data
+To provide the service, display posts, maintain availability, and remain consistent with PDS data, this Site may obtain `uk.skyblur.post` records made public through Bluesky Jetstream and similar services and store them in Cloudflare. This also applies to public records created through compatible third-party clients or other services without directly using this Site.
 
-## Responsibility
-Users bear all legal responsibility for their posts, and in the event of any issues, users shall resolve them at their own expense and responsibility.
+As a general rule, this Site retains the latest state of each record and does not retain a cumulative history of changes. For records that this Site has detected as deleted from their PDS, the post body has been deleted.
+
+Changes made in a PDS may take time to appear on this Site. If data published through the AT Protocol has been obtained or copied by a third party, this Site cannot control or delete copies held by that third party.
+
+## Attribution of Copyright
+Copyright in content posted on this Site remains with the person who posted it. Users grant this Site permission to reproduce, store, transmit, and display that content only to the extent necessary to provide, synchronize, mirror, back up, authorize access to, and display the service. This permission does not transfer ownership of copyright.
+
+## Responsibility and Damages
+Users must ensure that the content they post complies with applicable law and does not infringe the rights of third parties. If a user's post causes an issue or dispute with a third party, the user shall address it at their own responsibility and expense, except to the extent that the issue or dispute is attributable to the operator of this Site.
+
+If a user suffers damage in connection with the use of this Site, the operator shall be responsible in accordance with applicable law to the extent that the damage is attributable to the operator. Unless caused by the operator's intentional misconduct or gross negligence, the operator's liability is limited to actual, ordinary, and direct damages.
 
 ## Prohibited Actions
-If this Site confirms that a user has engaged in prohibited acts, the service may suspend the user's use, such as by disabling login, stopping new posts, or hiding posts.
-- Infringing on the rights of third parties.
-- Posting content that violates public order and morals.
-- Posts intended primarily for interaction between users, rather than for posting blurred text or long-form content to be viewed by third parties.
+If this Site confirms, or has reasonable grounds to believe, that a user has engaged in any of the following conduct, it may take measures proportionate to the nature, severity, and urgency of the conduct, including issuing a warning, hiding posts, deleting data stored by this Site, restricting login or new posts, or imposing other necessary service restrictions. Measures may be taken without prior notice when urgently necessary or to prevent further harm.
+- Violating applicable law or infringing a third party's copyright, privacy, reputation, or other rights.
+- Threatening or harassing others, impersonating another person, or improperly disclosing personal information.
+- Posting child sexual abuse material or other content prohibited by law.
+- Sending spam, gaining unauthorized access, performing unauthorized automated actions, or interfering with the operation of this Site.
+- Evading moderation or usage restrictions imposed by another service.
+- Abusing the reporting channel, including by repeatedly submitting false reports.
+- Using this Site primarily as a chat or other means of communication between users rather than to publish obscured or long-form content for third parties to view.
 
 ## Other
-- Part or all of the post is stored in the Bluesky PDS. If you wish to delete a post, please use the delete function on this Site yourself. Since information stored in the Bluesky PDS is public, Skyblur cannot be used for the purpose of absolute concealment.
+- Part or all of a post is stored in a PDS. To delete your own post, use the delete function on this Site. To report another person's post as illegal or infringing, use the contact and reporting form. Hiding or deleting content on this Site does not guarantee deletion of data held by a PDS or a third party.
+- Synchronization between a PDS, Jetstream, and this Site's mirror is not guaranteed to be immediate or complete. External-service outages, delays, or specification changes may delay the display of posts or the application of deletions.
 - Even if the visibility scope is set to "Require login to view," login is required on this Site, but it is not guaranteed on other services.
-- As this service is operated by an individual, the service may be suspended suddenly. Additionally, while we will consider addressing bugs and other issues as much as possible, we do not promise to do so.
-- The terms of use of each PDS apply to information stored in the PDS, and these Terms of Use apply to information stored in Cloudflare. Additionally, Bluesky's Terms of Service apply to Bluesky's features.
+- This Site may change, suspend, or discontinue all or part of the service when necessary for operational, technical, security, or legal reasons. Except in emergencies, notice will be provided in advance to the extent reasonably practicable.
+- These Terms apply to the use of this service. The terms or privacy policies of each provider may also apply to information processed by a PDS, Cloudflare, or another external service.
+
 ## About Followers-only, Following-only, and Mutual-only Visibility Features
 - The determination of follower, following, and mutual follow statuses uses the API provided by Bluesky. These APIs may not reflect changes immediately. Therefore, immediately after following/unfollowing, the status update may be delayed.
 - Post content for followers-only, following-only, and mutual-only visibility may be reflected with a delay on this Site and third-party clients that support this feature.
 - Unblurred text for these posts is stored in Cloudflare, while obscured text is stored in the PDS.
-  - Backups are retained daily for 30 days, but the developer bears no responsibility for any data loss due to unforeseen circumstances. If this is not acceptable, please do not use these features.
+  - Backups of the unblurred text are maintained, but the completeness or availability of backups and the ability to recover data at all times are not guaranteed. The operator's responsibility for data loss is governed by the “Responsibility and Damages” section.
 - For these features, if a discrepancy occurs between the data on the PDS and the data stored on this Site, this Site will prioritize the data stored on this Site for rendering. For other visibility scopes, the PDS content is considered correct.
 - If similar features are implemented in the AT Protocol or PDS in the future, the specifications of these features may change significantly, and past data or settings may not be transferable.
 
@@ -58,11 +98,12 @@ If this Site confirms that a user has engaged in prohibited acts, the service ma
 ## Prohibition of Moderation Evasion
 This service cannot be used for the purpose of evading moderation or usage restrictions on other services.
 
-Additionally, some or all of the data posted through this service is stored on Personal Data Servers (PDS), which are part of decentralized networks such as Bluesky. The Terms of Service for the PDS provided by Bluesky, currently utilized by a large number of users, are identical to the Terms of Service for its official application (bsky.app). Consequently, posting content on this service that is prohibited by bsky.app (e.g., inappropriate content) may be considered a violation of the PDS Terms of Service.
+Additionally, some or all of the data posted through this service is stored on Personal Data Servers (PDS) that form part of a decentralized network. The terms and other conditions of the PDS and connected services used by a user may apply. Posts made through this service may be subject to action by a PDS or connected service if they are determined to violate those terms.
 
-In the unlikely event that your posts lead to allegations of these Terms of Service violations, or cause disadvantages such as account suspension or restriction, the developers and operators of this service shall bear no responsibility whatsoever. Please be fully aware of this in advance and use the service in compliance with the terms of each linked service.
+A user's content or a decision by a connected service may result in account suspension, restrictions, or other adverse consequences. This Site does not control or guarantee decisions or measures taken by a PDS or connected service. Any responsibility of the operator in connection with such matters is governed by the “Responsibility and Damages” section. Users must review and comply with the terms of each connected service.
 
 ## Revision History
+- 2026/08/15 Added and updated clauses concerning the collection, storage, and deletion of public AT Protocol records, processing purposes, external services, contact and report handling, user and operator responsibility, prohibited conduct, service changes and suspension, data loss, and measures taken by external services.
 - 2026/05/05 Added clauses for List-only visibility.
 - 2026/03/03 Added a clause regarding the prohibition of moderation evasion.
 - 2026/02/23 Specified that the OAuth credentials and private posts are stored in Cloudflare.
