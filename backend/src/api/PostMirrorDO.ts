@@ -126,6 +126,22 @@ export class PostMirrorDO extends DurableObject<Env> {
       }, { headers: { 'X-Skyblur-Mirror-DO-Timing': JSON.stringify(timing) } });
     }
 
+    if (request.method === 'GET' && url.pathname === '/dump') {
+      const records = this.ctx.storage.sql.exec<StoredRecordRow>('SELECT * FROM records').toArray();
+      const recordOrder = this.ctx.storage.sql.exec<RecordOrder>('SELECT * FROM record_order').toArray();
+      const backfillState = this.ctx.storage.sql.exec('SELECT * FROM backfill_state').toArray();
+      const meta = this.ctx.storage.sql.exec<{ key: string; value: string }>('SELECT * FROM meta').toArray();
+      const repo = records[0]?.repo ?? recordOrder[0]?.repo ?? null;
+      return Response.json({
+        repo,
+        did: repo,
+        records,
+        recordOrder,
+        backfillState,
+        meta,
+      });
+    }
+
     if (request.method === 'GET' && url.pathname === '/records') return this.records(url);
     if (request.method === 'GET' && url.pathname === '/status') return Response.json(this.status());
     if (request.method === 'GET' && url.pathname === '/backfill/state') return Response.json(this.backfillState());

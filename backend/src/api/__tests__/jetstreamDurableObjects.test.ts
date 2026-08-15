@@ -147,6 +147,18 @@ class MirrorSQL {
         deletedRecords: rows.filter((row) => row.operation === 'delete').length,
       } as T]);
     }
+    if (sql === 'SELECT * FROM records') {
+      return new Cursor<T>([...this.records.values()] as T[]);
+    }
+    if (sql === 'SELECT * FROM record_order') {
+      return new Cursor<T>([...this.orders.values()] as T[]);
+    }
+    if (sql === 'SELECT * FROM backfill_state') {
+      return new Cursor<T>(this.backfill ? [this.backfill as T] : []);
+    }
+    if (sql === 'SELECT * FROM meta') {
+      return new Cursor<T>([...this.meta.entries()].map(([key, value]) => ({ key, value })) as T[]);
+    }
     if (sql.startsWith('SELECT cursor, status')) return new Cursor<T>(this.backfill ? [this.backfill as T] : []);
     if (sql.startsWith('INSERT INTO backfill_state')) {
       this.backfill = {
@@ -485,5 +497,29 @@ describe('PostMirrorDO', () => {
     expect(response.status).toBe(400);
     expect(sql.records.size).toBe(0);
     expect(sql.orders.size).toBe(0);
+  });
+
+  it('dumps records, recordOrder, backfillState, and meta on /dump GET', async () => {
+    const sql = new MirrorSQL();
+    const object = new PostMirrorDO(state(sql), {} as any);
+    const event = await makeEvent('create', 100, 'rev-1');
+
+    await object.fetch(new Request('https://do/event', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    }));
+
+    const dumpRes = await object.fetch(new Request('https://do/dump', { method: 'GET' }));
+    expect(dumpRes.status).toBe(200);
+    const dumpData = await dumpRes.json() as any;
+
+    expect(dumpData.repo).toBe('did:plc:author');
+    expect(dumpData.did).toBe('did:plc:author');
+    expect(dumpData.records).toHaveLength(1);
+    expect(dumpData.records[0].rkey).toBe('post');
+    expect(dumpData.recordOrder).toHaveLength(1);
+    expect(dumpData.recordOrder[0].source).toBe('jetstream');
+    expect(Array.isArray(dumpData.backfillState)).toBe(true);
+    expect(Array.isArray(dumpData.meta)).toBe(true);
   });
 });

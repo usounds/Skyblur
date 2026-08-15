@@ -1,17 +1,76 @@
 import { Env } from "@/index";
 
-interface CloudflareDOListResponse {
-    result: {
-        id: string;
-    }[];
-    success: boolean;
-    errors: any[];
-    messages: any[];
-    result_info: {
-        page: number;
-        per_page: number;
-        total_count: number;
-    }
+interface BackupTarget {
+    className: string;
+    pathPrefix: string;
+    getStub: (env: Env, id: string) => { fetch: (url: string | Request) => Promise<Response> };
+}
+
+const BACKUP_TARGETS: BackupTarget[] = [
+    {
+        className: "RestrictedPostDO",
+        pathPrefix: "restricted_posts",
+        getStub: (env, id) => env.SKYBLUR_DO_RESTRICTED.get(env.SKYBLUR_DO_RESTRICTED.idFromString(id)),
+    },
+    {
+        className: "PostMirrorDO",
+        pathPrefix: "post_mirrors",
+        getStub: (env, id) => env.SKYBLUR_DO_POST_MIRROR.get(env.SKYBLUR_DO_POST_MIRROR.idFromString(id)),
+    },
+];
+
+async function backupNamespace(
+    accountId: string,
+    apiToken: string,
+    target: BackupTarget,
+    namespaceId: string,
+    env: Env,
+    backupTimestamp: string,
+) {
+    let cursor: string | undefined = undefined;
+
+    do {
+        const url = new URL(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/durable_objects/namespaces/${namespaceId}/objects`);
+        if (cursor) url.searchParams.set("cursor", cursor);
+
+        const res = await fetch(url.toString(), {
+            headers: {
+                "Authorization": `Bearer ${apiToken}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!res.ok) {
+            console.error(`Failed to list objects for ${target.className} (${namespaceId}): ${res.status}`);
+            break;
+        }
+
+        const data = await res.json() as { result: { id: string }[]; result_info?: { cursors?: { after: string } } };
+
+        for (const obj of data.result) {
+            try {
+                const stub = target.getStub(env, obj.id);
+                const dumpRes = await stub.fetch("http://do/dump");
+
+                if (dumpRes.ok) {
+                    const dumpData = await dumpRes.json() as { did?: string | null; repo?: string | null; posts?: any[]; records?: any[] };
+
+                    // Use stored DID or repo for filename if available, otherwise Object ID
+                    const identifier = dumpData.did || dumpData.repo || obj.id;
+                    const filename = `${identifier}.json`;
+
+                    await env.SKYBLUR_BACKUP.put(`${target.pathPrefix}/${backupTimestamp}/${filename}`, JSON.stringify(dumpData));
+                } else {
+                    console.error(`Failed to dump object ${obj.id} in ${target.className}: status ${dumpRes.status}`);
+                }
+            } catch (err) {
+                console.error(`Failed to backup object ${obj.id} in ${target.className}:`, err);
+            }
+        }
+
+        cursor = data.result_info?.cursors?.after;
+
+    } while (cursor);
 }
 
 export async function handleBackup(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
@@ -25,19 +84,16 @@ export async function handleBackup(event: ScheduledEvent, env: Env, ctx: Executi
         return;
     }
 
-    // Note: To get the Namespace ID, we might need to list namespaces or have it hardcoded/configured.
-    // For now assuming we can find it via API or it's known.
-    // However, listing *all* DOs in a script might be tricky without knowing the Namespace ID.
-    // Let's assume we fetch the namespace ID first or use a known one.
-    // There is no direct way to get Namespace ID from binding in Worker runtime easily without using the API with the script name.
+    if (!env.SKYBLUR_BACKUP) {
+        console.error("SKYBLUR_BACKUP binding is not set.");
+        return;
+    }
 
-    // Strategy: List Namespaces to find "RestrictedPostDO"
     const accountId = env.CLOUDFLARE_ACCOUNT_ID;
     const apiToken = env.CLOUDFLARE_API_TOKEN;
-    const namespaceName = "RestrictedPostDO"; // The class name in wrangler
 
-    // 1. Get Namespace ID
-    let namespaceId = "";
+    // 1. Get Namespaces
+    let namespaces: { id: string; class: string }[] = [];
     try {
         const nsListRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/durable_objects/namespaces`, {
             headers: {
@@ -51,64 +107,22 @@ export async function handleBackup(event: ScheduledEvent, env: Env, ctx: Executi
             return;
         }
 
-        const nsList = await nsListRes.json() as { result: { id: string, class: string }[] };
-        const targetNs = nsList.result.find(ns => ns.class === namespaceName);
-
-        if (!targetNs) {
-            console.error(`Namespace for class ${namespaceName} not found.`);
-            return;
-        }
-        namespaceId = targetNs.id;
-
+        const nsList = await nsListRes.json() as { result: { id: string; class: string }[] };
+        namespaces = nsList.result || [];
     } catch (e) {
-        console.error("Error fetching namespace ID:", e);
+        console.error("Error fetching namespaces:", e);
         return;
     }
 
-    // 2. List Objects (Pagination)
-    let cursor: string | undefined = undefined;
     const backupTimestamp = new Date().toISOString();
 
-    do {
-        const url = new URL(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/durable_objects/namespaces/${namespaceId}/objects`);
-        if (cursor) url.searchParams.set("cursor", cursor);
-
-        // Note: The API for listing objects exists but returns IDs.
-        // Confirming endpoint: GET accounts/:account_identifier/workers/durable_objects/namespaces/:id/objects
-
-        const res = await fetch(url.toString(), {
-            headers: {
-                "Authorization": `Bearer ${apiToken}`,
-                "Content-Type": "application/json"
-            }
-        });
-
-        if (!res.ok) {
-            console.error(`Failed to list objects: ${res.status}`);
-            break;
+    for (const target of BACKUP_TARGETS) {
+        const targetNs = namespaces.find((ns) => ns.class === target.className);
+        if (!targetNs) {
+            console.error(`Namespace for class ${target.className} not found.`);
+            continue;
         }
 
-        const data = await res.json() as { result: { id: string }[], result_info: { cursors?: { after: string } } };
-
-        for (const obj of data.result) {
-            try {
-                const stub = env.SKYBLUR_DO_RESTRICTED.get(env.SKYBLUR_DO_RESTRICTED.idFromString(obj.id));
-                const dumpRes = await stub.fetch("http://do/dump");
-
-                if (dumpRes.ok) {
-                    const dumpData = await dumpRes.json() as { did: string | null, posts: any[] };
-
-                    // Use stored DID for filename if available, otherwise Object ID
-                    const filename = dumpData.did ? `${dumpData.did}.json` : `${obj.id}.json`;
-
-                    await env.SKYBLUR_BACKUP.put(`restricted_posts/${backupTimestamp}/${filename}`, JSON.stringify(dumpData));
-                }
-            } catch (err) {
-                console.error(`Failed to backup object ${obj.id}:`, err);
-            }
-        }
-
-        cursor = data.result_info?.cursors?.after;
-
-    } while (cursor);
+        await backupNamespace(accountId, apiToken, target, targetNs.id, env, backupTimestamp);
+    }
 }
