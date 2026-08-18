@@ -1,11 +1,10 @@
 "use client"
-import { ActionIcon, Avatar, Menu, Modal } from '@mantine/core';
+import { ActionIcon, Avatar, Menu } from '@mantine/core';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
 import { LogOut, LogIn, Users, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { AuthenticationTitle } from './login/Login';
 import { LogoutModal } from './LogoutModal';
 
 export function AvatorDropdownMenu() {
@@ -13,7 +12,6 @@ export function AvatorDropdownMenu() {
     const { localeData: locale } = useLocale();
     const userProf = useXrpcAgentStore(state => state.userProf);
     const did = useXrpcAgentStore(state => state.did);
-    const isLoginModalOpened = useXrpcAgentStore(state => state.isLoginModalOpened);
     const setIsLoginModalOpened = useXrpcAgentStore(state => state.setIsLoginModalOpened);
     const [logoutModalOpened, setLogoutModalOpened] = useState(false);
     const isLoggedIn = Boolean(did);
@@ -57,10 +55,6 @@ export function AvatorDropdownMenu() {
                         </Menu.Item>
                     </Menu.Dropdown>
                 }
-
-                <Modal opened={isLoginModalOpened} onClose={() => setIsLoginModalOpened(false)} centered radius="md" size={340} title={locale.Login_Login} closeOnClickOutside={false}>
-                    <AuthenticationTitle isModal={true} />
-                </Modal>
             </Menu>
 
             <LogoutModal

@@ -1,7 +1,5 @@
 import Header from "@/components/Header";
 import HtmlLang from "@/components/HtmlLang";
-import PageLoading from "@/components/PageLoading";
-import { Suspense } from "react";
 import { ColorSchemeScript, mantineHtmlProps, Text } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
@@ -126,9 +124,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Notifications position="top-right" zIndex={1000} />
           <Header initialLocale={lang} />
           <main>
-            <Suspense fallback={<PageLoading />}>
-              {children}
-            </Suspense>
+            {children}
           </main>
           <footer
             className="flex gap-6 flex-wrap items-center justify-center py-4 mt-4"

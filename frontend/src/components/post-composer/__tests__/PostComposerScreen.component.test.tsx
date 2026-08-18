@@ -3,7 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { MantineProvider } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -105,6 +105,23 @@ describe("PostComposerScreen component behavior", () => {
     const backButtons = screen.getAllByRole("button", { name: "Back", hidden: true });
     fireEvent.click(backButtons[backButtons.length - 1]!);
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the latest composer state when leaving so the draft can be saved", async () => {
+    const onBack = vi.fn();
+    renderScreen({ onBack });
+
+    await userEvent.click(screen.getByRole("button", { name: "Make dirty" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Back" })[0]!);
+    expect(await screen.findByText("Discard your changes?")).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Back" }));
+
+    await waitFor(() => {
+      expect(onBack).toHaveBeenCalledWith(expect.objectContaining({
+        text: "changed text",
+        dirty: true,
+      }));
+    });
   });
 
   it("asks for confirmation before leaving an edit form", async () => {

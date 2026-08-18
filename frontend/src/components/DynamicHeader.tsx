@@ -1,10 +1,13 @@
+"use client";
+
 import { AvatorDropdownMenu } from '@/components/AvatorDropdownMenu';
 import LanguageToggle from '@/components/LanguageToggle';
 import { getLocalizedHref, getLocalizedPublicPage } from '@/logic/localePath';
 import { SwitchColorMode } from '@/components/switchColorMode/SwitchColorMode';
+import { AuthenticationTitle } from './login/Login';
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from '@/state/XrpcAgent';
-import { ActionIcon, Box, Drawer, Group, Stack, Text } from '@mantine/core';
+import { ActionIcon, Box, Drawer, Group, Modal, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
@@ -15,6 +18,7 @@ const DynamicHeader = () => {
   const { localeData: locale, locale: localeString } = useLocale();
   const did = useXrpcAgentStore(state => state.did);
   const userProf = useXrpcAgentStore((state) => state.userProf);
+  const isLoginModalOpened = useXrpcAgentStore((state) => state.isLoginModalOpened);
   const [isDrawerOpened, setIsDrawerOpened] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -152,6 +156,17 @@ const DynamicHeader = () => {
           </Stack>
         </Stack>
       </Drawer>
+      <Modal
+        opened={isLoginModalOpened}
+        onClose={() => setIsLoginModalOpened(false)}
+        centered
+        radius="md"
+        size={340}
+        title={locale.Login_Login}
+        closeOnClickOutside={false}
+      >
+        <AuthenticationTitle isModal={true} />
+      </Modal>
     </>
   );
 };

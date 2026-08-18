@@ -220,6 +220,15 @@ export async function useLoggedInOAuthMock(
     await page.unroute(routePattern).catch(() => {});
   }
 
+  await page.evaluate(() => {
+    delete (window as any).__skyblurXrpcAgentCache;
+    const store = (window as any).__skyblurUseXrpcAgentStore;
+    if (store) {
+      store.getState()?.setIsLoginModalOpened?.(false);
+      store.getState()?.setIsSessionChecked?.(false);
+    }
+  }).catch(() => {});
+
   await context.clearCookies();
   const userProfile = {
     ...mockProfile,

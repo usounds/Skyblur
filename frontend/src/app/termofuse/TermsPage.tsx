@@ -85,7 +85,7 @@ export function renderTermsPage(lang: Locales) {
   };
 
   return (
-    <main >
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -95,6 +95,6 @@ export function renderTermsPage(lang: Locales) {
           <TermsContent content={content} />
         </Container>
       </section>
-    </main >
+    </>
   );
 }

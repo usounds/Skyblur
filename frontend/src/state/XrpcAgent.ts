@@ -309,3 +309,8 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     }
   });
 });
+
+if (typeof window !== 'undefined') {
+  (window as any).__skyblurUseXrpcAgentStore = useXrpcAgentStore;
+}
+

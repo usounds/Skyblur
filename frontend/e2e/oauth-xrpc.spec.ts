@@ -28,7 +28,18 @@ async function gotoAndSkipIfUnavailable(
   page: import("@playwright/test").Page,
   url: string,
 ) {
-  const res = await page.goto(url, { waitUntil: "domcontentloaded" });
+  let res: import("@playwright/test").Response | null = null;
+  try {
+    const current = page.url();
+    const isSameUrl = current && (current.endsWith(url) || current.endsWith(`${url}/`));
+    if (isSameUrl) {
+      res = await page.reload({ waitUntil: "domcontentloaded" });
+    } else {
+      res = await page.goto(url, { waitUntil: "domcontentloaded" });
+    }
+  } catch (err) {
+    res = await page.goto(url, { waitUntil: "domcontentloaded" }).catch(() => null);
+  }
   if (res) await skipIfUnavailable(res);
   await disableNotificationPointerEvents(page);
   return res;
@@ -157,11 +168,8 @@ async function openHeaderAccountMenu(page: import("@playwright/test").Page, isMo
 
 async function clickCreateComposer(page: import("@playwright/test").Page) {
   const createPostLink = page.getByRole("link", { name: "Create a post" });
-  const createPostHref = await createPostLink.evaluate((node) => (node as HTMLAnchorElement).href).catch(() => null);
-  await createPostLink.click({ force: true }).catch(async (error) => {
-    if (!createPostHref) throw error;
-    await page.goto(createPostHref);
-  });
+  await expect(createPostLink).toBeVisible();
+  await createPostLink.click();
   await expect(page).toHaveURL(/\/console\/posts\/new$/);
 }
 
@@ -258,6 +266,8 @@ async function confirmComposerBack(page: import("@playwright/test").Page) {
     }
     await expect(dialog).toBeHidden();
   });
+  await expect(page).toHaveURL(/\/console$/, { timeout: 20_000 });
+  await expect(page.getByRole("link", { name: "Create a post" })).toBeVisible({ timeout: 20_000 });
 }
 
 async function restoreUnexpectedCreateDraft(page: import("@playwright/test").Page) {
@@ -457,8 +467,9 @@ test.describe("home start session flows", () => {
     await expect(page.getByText("Skyblur shows the unblurred text")).toBeVisible();
     await expect(page.getByText("These clients make Skyblur posts easy to read")).toBeVisible();
 
-    const startButton = page.getByRole("button", { name: "Start" });
+    const startButton = page.getByTestId("home-start-button");
     await expect(startButton).toBeVisible();
+    await expect(startButton).toHaveAttribute("data-hydrated", "true");
     await expect(startButton).toBeEnabled();
     await startButton.click();
     await expect(page.getByRole("dialog", { name: "Login" })).toBeVisible();
@@ -477,7 +488,7 @@ test.describe("home start session flows", () => {
     await gotoAndSkipIfUnavailable(page, "/termofuse");
     await expect(page).toHaveURL(/\/(ja|en)\/termofuse$/);
     await expect(page.getByRole("heading", { name: "Privacy Policy & Terms of Service" })).toBeVisible();
-    await expect(page.getByText("Collection and Use of Personal Information")).toBeVisible();
+    await expect(page.getByText("Information We Collect and Process")).toBeVisible();
     await expect(page.getByText("Provision of Data to Third Parties")).toBeVisible();
     await expect(page.getByText("Prohibited Actions")).toBeVisible();
     await expect(page.getByText("Operator Information")).toBeVisible();
@@ -507,7 +518,10 @@ test.describe("home start session flows", () => {
     await useLoggedInOAuthMock(page, context, baseURL);
 
     await gotoAndSkipIfUnavailable(page, "/en");
-    await page.getByRole("button", { name: "Start" }).click();
+    const startButton = page.getByTestId("home-start-button");
+    await expect(startButton).toBeVisible();
+    await expect(startButton).toHaveAttribute("data-hydrated", "true");
+    await startButton.click();
 
     await expect(page).toHaveURL(/\/console$/);
     await expect(page.getByText(/E2E Tester/)).toBeVisible();
@@ -531,7 +545,10 @@ test.describe("home start session flows", () => {
     });
 
     await gotoAndSkipIfUnavailable(page, "/ja");
-    await page.getByRole("button", { name: "始める" }).click();
+    const startButton = page.getByTestId("home-start-button");
+    await expect(startButton).toBeVisible();
+    await expect(startButton).toHaveAttribute("data-hydrated", "true");
+    await startButton.click();
     await expect(page.getByRole("dialog", { name: "ログイン" })).toBeVisible();
     await page.getByLabel("内容に合意する").check();
     await page.getByRole("combobox", { name: "ハンドル" }).fill("alice.bsky.social");
@@ -567,8 +584,9 @@ test.describe("home start session flows", () => {
     await gotoAndSkipIfUnavailable(page, "/en");
     await expect.poll(() => stalledSessionRequest.route !== null).toBe(true);
 
-    const startButton = page.getByRole("button", { name: "Start" });
+    const startButton = page.getByTestId("home-start-button");
     await expect(startButton).toBeVisible();
+    await expect(startButton).toHaveAttribute("data-hydrated", "true");
     await expect(startButton).toBeEnabled();
     await startButton.click();
     await expect(page.getByRole("dialog", { name: "Restoring session" })).toBeVisible();
@@ -627,8 +645,9 @@ test.describe("home start session flows", () => {
     await gotoAndSkipIfUnavailable(page, "/en");
     await expect.poll(() => stalledSessionRequest.route !== null).toBe(true);
 
-    const startButton = page.getByRole("button", { name: "Start" });
+    const startButton = page.getByTestId("home-start-button");
     await expect(startButton).toBeVisible();
+    await expect(startButton).toHaveAttribute("data-hydrated", "true");
     await expect(startButton).toBeEnabled();
     await startButton.click();
     await expect(page.getByRole("dialog", { name: "Restoring session" })).toBeVisible();
@@ -651,6 +670,7 @@ test.describe("home start session flows", () => {
 
     await expect(page).toHaveURL(/\/console$/);
     await expect(page.getByText(/E2E Tester/)).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Restoring session" })).toBeHidden();
     expect(sessionRequests).toBe(1);
   });
 });
@@ -1230,7 +1250,7 @@ test("/post renders public detail content with profile and reaction metadata", a
   await expect(page.getByText("Public post detail secret text")).toBeVisible();
   await expect(page.getByText("Public post detail additional")).toBeVisible();
   await expect(page.getByRole("button", { name: "Go to My Page" })).toBeVisible();
-  await expect(page.getByText("4", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("post-reactions").getByText("4", { exact: true })).toBeVisible();
 });
 
 for (const { variant, visibleContent } of [
@@ -1247,6 +1267,7 @@ for (const { variant, visibleContent } of [
     page,
     context,
     baseURL,
+    isMobile,
   }) => {
     await useLoggedInOAuthMock(page, context, baseURL, { postDetailVariant: variant });
 
@@ -1292,7 +1313,11 @@ for (const { variant, visibleContent } of [
     expect(getPostCookie).toBe("");
 
     resolveSession();
-    await expect(page.locator('button[aria-label="Account menu"]:visible')).toBeVisible();
+    if (isMobile) {
+      await expect(page.locator('button[aria-label="Menu"]:visible')).toBeVisible();
+    } else {
+      await expect(page.locator('button[aria-label="Account menu"]:visible')).toBeVisible();
+    }
     await expect(page.getByText(visibleContent)).toBeVisible();
     expect(getPostRequests).toBe(1);
   });
@@ -1314,8 +1339,9 @@ test("/post hides reaction metadata when reaction fetches fail", async ({
 
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText("Public post detail secret text")).toBeVisible();
-    await expect(page.getByText("4", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("3", { exact: true })).toHaveCount(0);
+    const reactions = page.getByTestId("post-reactions");
+    await expect(reactions.getByText("4", { exact: true })).toHaveCount(0);
+    await expect(reactions.getByText("3", { exact: true })).toHaveCount(0);
   }
 });
 

@@ -1,36 +1,11 @@
 "use client";
-import { Divider, Box, Group, Skeleton } from '@mantine/core';
+import { Divider } from '@mantine/core';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import { useEffect } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocaleStore } from '@/state/Locale';
 import type { Locales } from '@/state/Locale';
 import { getLocalizedHref } from '@/logic/localePath';
-
-function HeaderPlaceholder() {
-  return (
-    <>
-      <Box visibleFrom="sm" className="col-start-2 justify-self-center" style={{ height: '20px', width: '150px' }} />
-      <Box visibleFrom="sm" className="col-start-3 justify-self-end">
-        <Group gap="sm">
-          <Skeleton height={32} width={32} radius="xl" />
-          <Skeleton height={32} width={60} radius="sm" />
-          <Skeleton height={32} width={32} radius="sm" />
-        </Group>
-      </Box>
-      <Box hiddenFrom="sm" className="col-start-3 justify-self-end">
-        <Skeleton height={32} width={32} radius="sm" />
-      </Box>
-    </>
-  );
-}
-
-// SSRを無効にしてクライアントでのみロード、ローディング中はプレースホルダーを表示してCLSを抑える
-const DynamicHeader = dynamic(() => import('./DynamicHeader'), {
-  ssr: false,
-  loading: () => <HeaderPlaceholder />
-});
+import DynamicHeader from './DynamicHeader';
 
 const Header = ({ initialLocale }: { initialLocale: Locales }) => {
   const initLocale = useLocaleStore(state => state.initLocale);
@@ -42,14 +17,11 @@ const Header = ({ initialLocale }: { initialLocale: Locales }) => {
     initLocale(initialLocale);
     setIsLocaleHydrated(true);
   }, [initLocale, initialLocale]);
+
   return (
     <>
-      <div
-        className="flex flex-wrap w-full text-sm h-11 overflow-hidden items-center"
-        style={{
-          minHeight: '50px',
-          overflow: 'hidden',
-        }}
+      <header
+        className="w-full text-sm h-[50px] min-h-[50px] max-h-[50px] flex items-center overflow-hidden"
       >
         <nav className="px-4 md:px-8 w-full mx-auto grid grid-cols-[1fr_auto_1fr] items-center h-full">
           <Link href={getLocalizedHref(activeLocale, '')} className="col-start-1 justify-self-start text-xl font-semibold">
@@ -57,7 +29,7 @@ const Header = ({ initialLocale }: { initialLocale: Locales }) => {
           </Link>
           <DynamicHeader />
         </nav>
-      </div>
+      </header>
       <Divider my={0} style={{ width: '100%' }} />
     </>
   );

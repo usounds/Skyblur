@@ -104,19 +104,16 @@
 
 .revealRoot[data-enhanced="true"] .revealItem {
   opacity: 0;
-  transform: translateY(18px);
 }
 
 .revealRoot[data-enhanced="true"] .revealed {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .card,
 .step {
   transition:
-    opacity 620ms ease var(--reveal-delay, 0ms),
-    transform 620ms ease var(--reveal-delay, 0ms),
+    opacity 400ms ease var(--reveal-delay, 0ms),
     border-color 160ms ease,
     box-shadow 160ms ease;
 }

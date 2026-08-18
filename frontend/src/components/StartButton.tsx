@@ -117,6 +117,8 @@ export function StartButton({ initialLocale }: { initialLocale: Locales }) {
                 leftSection={<Sparkles size={24} />}
                 className="px-10 h-16 text-lg min-w-[180px]"
                 color="blue.8"
+                data-testid="home-start-button"
+                data-hydrated={isLocaleHydrated ? "true" : "false"}
             >
                 {locale.Landing_StartButton}
             </Button>

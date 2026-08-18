@@ -34,7 +34,7 @@ type PostComposerRenderArgs = {
 
 type PostComposerScreenProps = {
   initialData?: PostComposerInitialData;
-  onBack?: () => void;
+  onBack?: (state: PostComposerState) => void;
   onStateChange?: (state: PostComposerState) => void;
   requiresRelogin?: boolean;
   buildSavePlan?: (state: PostComposerState) => BuildSavePlanResult;
@@ -147,6 +147,11 @@ export function PostComposerScreen({
     });
   }, []);
 
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
+
   useEffect(() => {
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
@@ -154,8 +159,8 @@ export function PostComposerScreen({
     }
 
     if (!state.dirty) return;
-    onStateChange?.(state);
-  }, [onStateChange, state]);
+    onStateChangeRef.current?.(state);
+  }, [state]);
 
   const goToStep = useCallback((step: ComposerStep) => {
     setRawState((current) => ({ ...current, step }));
@@ -225,7 +230,7 @@ export function PostComposerScreen({
       setConfirmBackOpened(true);
       return;
     }
-    onBack?.();
+    onBack?.(state);
   };
 
   const handleNext = () => {
@@ -294,7 +299,8 @@ export function PostComposerScreen({
             color="red"
             onClick={() => {
               setConfirmBackOpened(false);
-              onBack?.();
+              setRawState((current) => ({ ...current, dirty: false }));
+              onBack?.(state);
             }}
           >
             {locale.Menu_Back}

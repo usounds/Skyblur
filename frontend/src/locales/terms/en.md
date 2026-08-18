@@ -10,7 +10,8 @@ This Site collects or processes the following information to the extent necessar
 - Posts, visibility settings, list URIs, and other settings created by users.
 - `uk.skyblur.post` records distributed through the public AT Protocol network, together with information identifying their authors and records and information about their publication status.
 - Post URLs or AT URIs, report reasons, and report details submitted through the contact and reporting form.
-- IP addresses, access timestamps, browser information, other access logs, and technical information needed for troubleshooting, security, and abuse prevention.
+
+Infrastructure providers may process and temporarily retain IP addresses, access timestamps, and similar information to provide network communications, maintain security, prevent abuse, and respond to service failures. This Site does not explicitly store IP addresses in its application databases.
 
 Information obtained from the public network may include public information belonging to people who did not directly use this Site but created `uk.skyblur.post` records through a compatible third-party client or other service.
 

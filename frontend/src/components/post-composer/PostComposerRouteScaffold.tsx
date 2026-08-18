@@ -124,20 +124,21 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
     if (mode === "create" && decision !== "pending") setActiveCreateSession(true);
     setRestoreDecision(decision);
   }, [mode]);
-  const exitToConsole = useCallback(() => {
+  const exitToConsole = useCallback((state?: PostComposerState) => {
+    if (mode === "create" && state) {
+      syncCreateDraft(state);
+    }
+    suppressCreateDraftSyncRef.current = true;
     setActiveCreateSession(false);
     setHasUnsavedComposerChanges(false);
     if (onExit) {
       onExit();
       return;
     }
-    if (mode === "create") {
-      router.back();
-      return;
-    }
     router.push("/console");
   }, [mode, onExit, router, setHasUnsavedComposerChanges]);
   const completeToConsole = useCallback(() => {
+    suppressCreateDraftSyncRef.current = true;
     setActiveCreateSession(false);
     setHasUnsavedComposerChanges(false);
     if (onExit) {
@@ -147,7 +148,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   }, [onExit, router, setHasUnsavedComposerChanges]);
   useEffect(() => {
     return () => {
-      suppressCreateDraftSyncRef.current = false;
+      setActiveCreateSession(false);
       setHasUnsavedComposerChanges(false);
     };
   }, [setHasUnsavedComposerChanges]);

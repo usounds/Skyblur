@@ -27,6 +27,8 @@ const reuseExistingE2EServer = process.env.E2E_REUSE_SERVER === "true";
 
 export default defineConfig({
   testDir: "./e2e",
+  fullyParallel: false,
+  workers: 1,
   timeout: 60_000,
   expect: {
     timeout: 20_000,
