@@ -235,5 +235,39 @@ describe('AuthUtils', () => {
             const did = await getAuthenticatedDid(c);
             expect(did).toBeNull();
         });
+
+        it('should reject cookie authentication when the signing secret is missing', async () => {
+            const storedDid = 'did:example:forged';
+            const signedDid = await signDid(storedDid, 'default-fallback');
+
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: {}
+            };
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBeNull();
+        });
+
+        it('should not fall back to a forged cookie after JWT verification fails without a signing secret', async () => {
+            const storedDid = 'did:example:forged';
+            const signedDid = await signDid(storedDid, 'default-fallback');
+
+            const c: any = {
+                req: {
+                    header: vi.fn().mockReturnValue('Bearer invalid-token'),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { APPVIEW_HOST: 'app.example.com' }
+            };
+            // @ts-ignore
+            JWTTokenHandler.verifyJWT.mockRejectedValue(new Error('Invalid token'));
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBeNull();
+        });
     });
 });

@@ -49,7 +49,7 @@ export const getAuthenticatedDid = async (c: Context, requestId?: string): Promi
     const startedAt = performance.now();
     const authorization = c.req.header('Authorization') || ''
     const rawDid = getCookie(c, 'oauth_did')
-    const secret = (c.env as any).OAUTH_PRIVATE_KEY_JWK || 'default-fallback';
+    const secret = (c.env as any).OAUTH_PRIVATE_KEY_JWK;
 
     if (authorization) {
         const audiences = getAcceptedAudiences(c);
@@ -114,7 +114,7 @@ export const getAuthenticatedDid = async (c: Context, requestId?: string): Promi
         console.warn(`[auth] JWT verification failed for audiences ${audiences.join(', ')}:`, lastError);
     }
 
-    if (rawDid) {
+    if (rawDid && secret) {
         const cookieStartedAt = performance.now();
         const lastDotIndex = rawDid.lastIndexOf('.');
         if (lastDotIndex !== -1) {
