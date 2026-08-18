@@ -2,7 +2,7 @@
 
 Skyblur (hereinafter referred to as "this Site") establishes the following Privacy Policy (hereinafter referred to as "this Policy") regarding the handling of personal user information on this Site.
 
-Last updated and effective: August 15, 2026
+Last updated and effective: August 18, 2026
 
 ## Information We Collect and Process
 This Site collects or processes the following information to the extent necessary to provide the service:
@@ -104,6 +104,7 @@ Additionally, some or all of the data posted through this service is stored on P
 A user's content or a decision by a connected service may result in account suspension, restrictions, or other adverse consequences. This Site does not control or guarantee decisions or measures taken by a PDS or connected service. Any responsibility of the operator in connection with such matters is governed by the “Responsibility and Damages” section. Users must review and comply with the terms of each connected service.
 
 ## Revision History
+- 2026/08/18 Clarified that this Site does not explicitly store IP addresses in its application databases and that infrastructure providers may process and temporarily retain them to provide network communications, maintain security, prevent abuse, and respond to service failures.
 - 2026/08/15 Added and updated clauses concerning the collection, storage, and deletion of public AT Protocol records, processing purposes, external services, contact and report handling, user and operator responsibility, prohibited conduct, service changes and suspension, data loss, and measures taken by external services.
 - 2026/05/05 Added clauses for List-only visibility.
 - 2026/03/03 Added a clause regarding the prohibition of moderation evasion.
