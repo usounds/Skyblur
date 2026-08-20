@@ -15,6 +15,7 @@ overrides:
   '@aws-sdk/dynamodb-codec': 3.972.0
   minimatch: ^10.2.1
   postcss: 8.5.26
+  nanoid: 3.3.18
   '@atcute/time-ms': 1.2.3
   '@atcute/util-text': 1.1.1
   '@aws-sdk/core': <=3.976.0
@@ -3513,14 +3514,9 @@ packages:
   n-gram@2.0.2:
     resolution: {integrity: sha512-S24aGsn+HLBxUGVAUFOwGpKs7LBcG4RudKU//eWzt/mQ97/NMKQxDWHyHx63UNWk/OOdihgmzoETn1tf5nQDzQ==}
 
-  nanoid@3.3.17:
-    resolution: {integrity: sha512-xQLf0A3HOMlgHq0n247/LRuAOYmB7dXJ/DvAxGvsSBij45XtBSmQycu+F8ODbHwns/XyFZagyL1+J0Offw1E0g==}
+  nanoid@3.3.18:
+    resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
-  nanoid@5.1.16:
-    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
-    engines: {node: ^18 || >=20}
     hasBin: true
 
   napi-postinstall@0.3.4:
@@ -4803,7 +4799,7 @@ snapshots:
     dependencies:
       '@atcute/multibase': 1.2.5
       '@atcute/uint8array': 1.1.5
-      nanoid: 5.1.16
+      nanoid: 3.3.18
       valibot: 1.4.2(typescript@6.0.3)
     transitivePeerDependencies:
       - typescript
@@ -4824,7 +4820,7 @@ snapshots:
       '@atcute/oauth-keyset': 0.1.3(typescript@6.0.3)
       '@atcute/oauth-types': 1.0.1(typescript@6.0.3)
       '@atcute/util-fetch': 2.0.2(typescript@6.0.3)
-      nanoid: 5.1.16
+      nanoid: 3.3.18
       valibot: 1.4.2(typescript@6.0.3)
     transitivePeerDependencies:
       - typescript
@@ -8454,9 +8450,7 @@ snapshots:
 
   n-gram@2.0.2: {}
 
-  nanoid@3.3.17: {}
-
-  nanoid@5.1.16: {}
+  nanoid@3.3.18: {}
 
   napi-postinstall@0.3.4: {}
 
@@ -8693,7 +8687,7 @@ snapshots:
 
   postcss@8.5.26:
     dependencies:
-      nanoid: 3.3.17
+      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 

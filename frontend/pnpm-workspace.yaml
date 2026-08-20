@@ -81,6 +81,7 @@ overrides:
   '@aws-sdk/dynamodb-codec': 3.972.0
   minimatch: ^10.2.1
   postcss: 8.5.26
+  nanoid: 3.3.18
   '@atcute/time-ms': 1.2.3
   '@atcute/util-text': 1.1.1
   '@aws-sdk/core': <=3.976.0
