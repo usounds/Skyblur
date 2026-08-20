@@ -10,10 +10,7 @@ import (
 	"time"
 )
 
-var (
-	ErrInvalidEvent = errors.New("invalid Jetstream event")
-	ErrQueueFull    = errors.New("consumer queue is full")
-)
+var ErrInvalidEvent = errors.New("invalid Jetstream event")
 
 const maxFutureCursor = 5 * time.Minute
 

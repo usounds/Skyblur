@@ -28,6 +28,9 @@ Optional limits:
 
 The connection is rotated when no Jetstream frame arrives for 90 seconds, even
 if the underlying TCP/WebSocket connection still responds to pings.
+When the bounded in-memory frame queue is full, the reader applies backpressure
+until persistence catches up instead of reconnecting and replaying the same
+cursor range.
 
 Wanted commit events and quarantined frames are durably flushed within one
 second. Cursor-only Account and Identity traffic is checkpointed once per

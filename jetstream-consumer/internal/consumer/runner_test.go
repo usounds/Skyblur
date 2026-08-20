@@ -38,12 +38,28 @@ type blockingSink struct {
 	once    sync.Once
 }
 
+type failingBlockingSink struct {
+	started chan struct{}
+	release chan struct{}
+}
+
 func (s *blockingSink) LoadCursor(context.Context) (int64, error) { return 0, nil }
 func (s *blockingSink) Persist(ctx context.Context, batch Batch) (int64, error) {
 	s.once.Do(func() { close(s.started) })
 	select {
 	case <-s.release:
 		return batch.Cursor, nil
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	}
+}
+
+func (s *failingBlockingSink) LoadCursor(context.Context) (int64, error) { return 0, nil }
+func (s *failingBlockingSink) Persist(ctx context.Context, _ Batch) (int64, error) {
+	close(s.started)
+	select {
+	case <-s.release:
+		return 0, errors.New("persist failed")
 	case <-ctx.Done():
 		return 0, ctx.Err()
 	}
@@ -167,6 +183,120 @@ func TestRunnerReconnectsFromDurableCursorWithRewind(t *testing.T) {
 	}
 	if cursors[1] != "6000000" {
 		t.Fatalf("second cursor = %s", cursors[1])
+	}
+}
+
+func TestReadFramesAppliesBackpressureWhenQueueIsFull(t *testing.T) {
+	written := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		connection, err := websocket.Accept(response, request, nil)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer connection.CloseNow()
+		for cursor := int64(100); cursor <= 101; cursor++ {
+			payload, _ := json.Marshal(map[string]any{
+				"did": "did:plc:author", "time_us": cursor, "kind": "identity",
+			})
+			if err := connection.Write(request.Context(), websocket.MessageText, payload); err != nil {
+				return
+			}
+		}
+		close(written)
+		<-request.Context().Done()
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	connection, _, err := websocket.Dial(ctx, "ws"+server.URL[len("http"):], &websocket.DialOptions{HTTPClient: server.Client()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer connection.CloseNow()
+	frames := make(chan Frame, 1)
+	done := make(chan error, 1)
+	runner := &Runner{Options: DefaultOptions()}
+	go func() { done <- runner.readFrames(ctx, connection, frames) }()
+
+	select {
+	case <-written:
+	case <-time.After(time.Second):
+		t.Fatal("server did not write burst")
+	}
+	deadline := time.Now().Add(time.Second)
+	for len(frames) != cap(frames) && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if len(frames) != cap(frames) {
+		t.Fatal("frame queue did not fill")
+	}
+	select {
+	case err := <-done:
+		t.Fatalf("reader exited instead of applying backpressure: %v", err)
+	case <-time.After(20 * time.Millisecond):
+	}
+
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunSessionCancelsBackpressuredReaderWhenPersistFails(t *testing.T) {
+	written := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		connection, err := websocket.Accept(response, request, nil)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer connection.CloseNow()
+		for cursor := int64(100); cursor <= 103; cursor++ {
+			payload, _ := json.Marshal(map[string]any{
+				"did": "did:plc:author", "time_us": cursor, "kind": "commit",
+				"commit": map[string]any{
+					"rev": "rev", "operation": "create", "collection": "uk.skyblur.post",
+					"rkey": "key", "record": map[string]any{"text": "hello"},
+				},
+			})
+			if err := connection.Write(request.Context(), websocket.MessageText, payload); err != nil {
+				return
+			}
+		}
+		close(written)
+		<-request.Context().Done()
+	}))
+	defer server.Close()
+
+	sink := &failingBlockingSink{started: make(chan struct{}), release: make(chan struct{})}
+	options := DefaultOptions()
+	options.QueueCapacity = 1
+	options.MaxBatchEvents = 1
+	runner := &Runner{Options: options, Sink: sink, HTTPClient: server.Client()}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- runner.runSession(ctx, "ws"+server.URL[len("http"):], 0) }()
+
+	select {
+	case <-sink.started:
+	case <-ctx.Done():
+		t.Fatal("persist did not start")
+	}
+	select {
+	case <-written:
+	case <-ctx.Done():
+		t.Fatal("server did not write burst")
+	}
+	close(sink.release)
+	select {
+	case err := <-done:
+		if err == nil || err.Error() != "persist Jetstream batch: persist failed" {
+			t.Fatalf("unexpected session result: %v", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("session deadlocked after persistence failure")
 	}
 }
 

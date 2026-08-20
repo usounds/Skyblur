@@ -155,7 +155,8 @@ func (r *Runner) runSession(ctx context.Context, endpoint string, committed int6
 
 	select {
 	case persistErr := <-persistErrors:
-		_ = connection.Close(websocket.StatusGoingAway, "persistence stopped")
+		cancelSession()
+		connection.CloseNow()
 		<-readErrors
 		return persistErr
 	case readErr := <-readErrors:
@@ -198,8 +199,6 @@ func (r *Runner) readFrames(ctx context.Context, connection *websocket.Conn, fra
 		case frames <- frame:
 		case <-ctx.Done():
 			return nil
-		default:
-			return ErrQueueFull
 		}
 	}
 }
