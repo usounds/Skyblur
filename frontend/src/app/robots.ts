@@ -5,8 +5,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: [
+        '/$',
         '/robots.txt$',
         '/sitemap.xml$',
+        '/favicon.ico$',
+        '/icon.png$',
+        '/ogp.png$',
+        '/_next/static/',
         '/ja$',
         '/ja/features$',
         '/ja/termofuse$',

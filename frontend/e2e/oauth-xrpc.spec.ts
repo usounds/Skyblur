@@ -788,7 +788,9 @@ test("public metadata endpoints expose app identity documents", async ({ request
   expect(robots.ok(), await responseText(robots)).toBe(true);
   const robotsText = await robots.text();
   expect(robotsText).toContain("Disallow: /");
-  expect(robotsText).not.toContain("Allow: /$");
+  expect(robotsText).toContain("Allow: /$");
+  expect(robotsText).toContain("Allow: /favicon.ico$");
+  expect(robotsText).toContain("Allow: /icon.png$");
   expect(robotsText).not.toContain("Allow: /features$");
   expect(robotsText).not.toContain("Allow: /termofuse$");
   expect(robotsText).toContain("Allow: /ja$");
