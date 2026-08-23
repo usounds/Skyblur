@@ -787,14 +787,12 @@ test("public metadata endpoints expose app identity documents", async ({ request
   await skipIfUnavailable(robots);
   expect(robots.ok(), await responseText(robots)).toBe(true);
   const robotsText = await robots.text();
-  expect(robotsText).toContain("Disallow: /");
-  expect(robotsText).toContain("Allow: /$");
-  expect(robotsText).toContain("Allow: /favicon.ico$");
-  expect(robotsText).toContain("Allow: /icon.png$");
-  expect(robotsText).not.toContain("Allow: /features$");
-  expect(robotsText).not.toContain("Allow: /termofuse$");
-  expect(robotsText).toContain("Allow: /ja$");
-  expect(robotsText).toContain("Allow: /ja/termofuse$");
+  expect(robotsText).toContain("Allow: /");
+  expect(robotsText).toContain("Disallow: /console/");
+  expect(robotsText).toContain("Disallow: /settings/");
+  expect(robotsText).toContain("Disallow: /api/");
+  expect(robotsText).toContain("Disallow: /xrpc/");
+  expect(robotsText).toContain("Sitemap: https://skyblur.uk/sitemap.xml");
 
   const rootRedirect = await request.get("/", { maxRedirects: 0 });
   expect(rootRedirect.status(), await responseText(rootRedirect)).toBe(308);
