@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
         '/settings/',
         '/api/',
         '/xrpc/',
+        '/post/',
+        '/profile/',
       ],
     },
     sitemap: 'https://skyblur.uk/sitemap.xml',
