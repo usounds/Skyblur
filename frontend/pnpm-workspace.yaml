@@ -91,7 +91,7 @@ overrides:
   '@smithy/core': <=3.29.0
   '@smithy/signature-v4': <=5.6.9
   brace-expansion: 5.0.9
-  qs: 6.15.2
+  qs: 6.16.0
   caniuse-lite: 1.0.30001806
   postcss-selector-parser: 7.1.4
   update-browserslist-db: 1.2.3
