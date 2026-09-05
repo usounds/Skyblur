@@ -5,6 +5,7 @@ import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
 import '@mantine/notifications/styles.css';
 import type { Metadata } from "next";
+import Image from "next/image";
 import "./globals.css";
 import Script from "next/script"
 import { cookies, headers } from "next/headers";
@@ -153,14 +154,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </a>
               </div>
               <div className="flex justify-center">
-                <a href="https://www.buymeacoffee.com/usounds" target="_blank" className="transition duration-100 hover:opacity-80">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                <a href="https://www.buymeacoffee.com/usounds" target="_blank" rel="noopener noreferrer" className="transition duration-100 hover:opacity-80">
+                  <Image
                     src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
                     alt="Buy Me A Coffee"
-                    width={545}
-                    height={153}
-                    style={{ width: '143px', height: '40px', aspectRatio: '545 / 153', display: 'block' }}
+                    width={143}
+                    height={40}
+                    style={{ width: '143px', height: '40px', display: 'block' }}
                   />
                 </a>
               </div>
