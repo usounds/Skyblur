@@ -41,6 +41,17 @@ async function gotoAndSkipIfUnavailable(
     res = await page.goto(url, { waitUntil: "domcontentloaded" }).catch(() => null);
   }
   if (res) await skipIfUnavailable(res);
+  if (url === "/console") {
+    const loadingFallback = page.getByText("Loading...", { exact: true });
+    const loadingCompleted = await expect(loadingFallback)
+      .toBeHidden({ timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!loadingCompleted) {
+      res = await page.reload({ waitUntil: "domcontentloaded" });
+      if (res) await skipIfUnavailable(res);
+    }
+  }
   await disableNotificationPointerEvents(page);
   return res;
 }
@@ -157,13 +168,22 @@ async function openCreateComposer(page: import("@playwright/test").Page) {
 }
 
 async function openHeaderAccountMenu(page: import("@playwright/test").Page, isMobile: boolean) {
-  const accountMenu = page.locator('button[aria-label="Account menu"]:visible');
-  if (isMobile) {
-    if (await accountMenu.count() === 0) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const accountMenu = page.locator('button[aria-label="Account menu"]:visible');
+    if (isMobile && await accountMenu.count() === 0) {
       await page.getByRole("button", { name: "Menu", exact: true }).click();
     }
+
+    await accountMenu.click();
+    const menuOpened = await expect(page.getByRole("menu"))
+      .toBeVisible({ timeout: 2_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (menuOpened) return;
+    await page.waitForTimeout(250);
   }
-  await accountMenu.click();
+
+  await expect(page.getByRole("menu")).toBeVisible();
 }
 
 async function clickCreateComposer(page: import("@playwright/test").Page) {

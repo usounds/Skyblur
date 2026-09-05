@@ -88,7 +88,7 @@ overrides:
   '@aws-sdk/middleware-endpoint-discovery': <=3.972.0
   '@aws-sdk/xml-builder': <=3.972.0
   '@emnapi/runtime': 1.11.2
-  '@smithy/core': <=3.29.0
+  '@smithy/core': 3.33.3
   '@smithy/signature-v4': <=5.6.9
   brace-expansion: 5.0.9
   qs: 6.16.0
