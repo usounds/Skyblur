@@ -156,7 +156,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div className="flex justify-center">
                 <a href="https://www.buymeacoffee.com/usounds" target="_blank" rel="noopener noreferrer" className="transition duration-100 hover:opacity-80">
                   <Image
-                    src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+                    src="/bmc-button.png"
                     alt="Buy Me A Coffee"
                     width={143}
                     height={40}

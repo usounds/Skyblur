@@ -18,11 +18,6 @@ const nextConfig = {
         hostname: 'cdn.bsky.app',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'cdn.buymeacoffee.com',
-        pathname: '/**',
-      },
     ],
   },
   allowedDevOrigins: ['dev.skyblur.uk'],
