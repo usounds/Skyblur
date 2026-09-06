@@ -11,7 +11,7 @@ describe('markdownForAgents', () => {
       expect(jaResult).not.toBeNull();
       expect(rootResult?.markdown).toContain('# Skyblurへようこそ');
       expect(rootResult?.markdown).toContain('title: "Skyblur');
-      expect(rootResult?.markdown).toContain('image: https://skyblur.uk/ogp.png');
+      expect(rootResult?.markdown).toContain('image: "https://skyblur.uk/ogp.png"');
       expect(jaResult?.markdown).toEqual(rootResult?.markdown);
     });
 

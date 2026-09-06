@@ -16,9 +16,9 @@ const OGP_IMAGE = 'https://skyblur.uk/ogp.png';
 function buildFrontmatter(title: string, description: string, image = OGP_IMAGE): string {
   return [
     '---',
-    `title: "${title.replace(/"/g, '\\"')}"`,
-    `description: "${description.replace(/"/g, '\\"')}"`,
-    `image: ${image}`,
+    `title: ${JSON.stringify(title)}`,
+    `description: ${JSON.stringify(description)}`,
+    `image: ${JSON.stringify(image)}`,
     '---',
     '',
   ].join('\n');
