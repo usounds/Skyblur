@@ -5,11 +5,10 @@ import '@mantine/core/styles.css';
 import { Notifications } from "@mantine/notifications";
 import '@mantine/notifications/styles.css';
 import type { Metadata } from "next";
-import Image from "next/image";
 import "./globals.css";
 import Script from "next/script"
 import { cookies, headers } from "next/headers";
-import { BlueskyIcon, GithubIcon } from "@/components/Icons";
+import { BlueskyIcon, GithubIcon, BuyMeACoffeeIcon } from "@/components/Icons";
 import en from "@/locales/en";
 import ja from "@/locales/ja";
 import { Viewport } from "next";
@@ -154,15 +153,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </a>
               </div>
               <div className="flex justify-center">
-                <a href="https://www.buymeacoffee.com/usounds" target="_blank" rel="noopener noreferrer" className="transition duration-100 hover:opacity-80">
-                  <Image
-                    src="/bmc-button.png"
-                    alt="Buy Me A Coffee"
-                    width={143}
-                    height={40}
-                    unoptimized
-                    style={{ width: '143px', height: '40px', display: 'block' }}
-                  />
+                <a
+                  href="https://www.buymeacoffee.com/usounds"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-xs text-black bg-[#FFDD00] hover:opacity-85 transition duration-100 shadow-sm"
+                  style={{ height: '36px' }}
+                >
+                  <BuyMeACoffeeIcon size={18} />
+                  <span>Buy me a coffee</span>
                 </a>
               </div>
             </div>
