@@ -41,7 +41,7 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: `pnpm exec next dev -p ${e2ePort}`,
+        command: `./node_modules/.bin/next dev -p ${e2ePort}`,
         env: {
           E2E_TEST: "true",
           NEXT_PUBLIC_E2E_SESSION_RETRY_SECONDS: "1",

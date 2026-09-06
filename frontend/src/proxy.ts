@@ -4,6 +4,35 @@ import { normalizeLocale, resolveLocale } from '@/logic/locale';
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    const accept = request.headers.get('accept') || '';
+    const requestHeaders = new Headers(request.headers);
+
+    // Content negotiation for AI agents (Markdown for Agents)
+    if (accept.includes('text/markdown')) {
+        const cleanPath = pathname.replace(/\/$/, '') || '/';
+        const supportedPaths = new Set([
+            '/',
+            '/ja',
+            '/en',
+            '/features',
+            '/ja/features',
+            '/en/features',
+            '/termofuse',
+            '/ja/termofuse',
+            '/en/termofuse',
+        ]);
+        if (supportedPaths.has(cleanPath)) {
+            const url = request.nextUrl.clone();
+            url.pathname = '/api/agent-markdown';
+            url.searchParams.set('path', cleanPath);
+            requestHeaders.set('x-markdown-path', cleanPath);
+            return NextResponse.rewrite(url, {
+                request: {
+                    headers: requestHeaders,
+                },
+            });
+        }
+    }
 
     // Public marketing pages have one indexable URL per language.  Keeping the
     // unprefixed home page locale-adaptive created a second Japanese page at

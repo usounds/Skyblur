@@ -27,7 +27,7 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
   variable: "--font-inter",
-  display: "optional",
+  display: "swap",
 });
 
 export async function generateMetadata() {
@@ -160,6 +160,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     alt="Buy Me A Coffee"
                     width={143}
                     height={40}
+                    unoptimized
                     style={{ width: '143px', height: '40px', display: 'block' }}
                   />
                 </a>
