@@ -1,7 +1,7 @@
 {
   "name": "skyblurapi",
   "type": "module",
-  "packageManager": "pnpm@11.5.0",
+  "packageManager": "pnpm@11.25.0",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production --minify",
@@ -13,27 +13,34 @@
   },
   "dependencies": {
     "@atcute/atproto": "^4.0.4",
-    "@atcute/client": "^5.1.1",
+    "@atcute/client": "^5.1.2",
     "@atcute/identity-resolver": "^2.0.1",
-    "@atcute/lexicons": "^2.0.3",
+    "@atcute/lexicons": "^2.1.0",
     "@atcute/oauth-crypto": "^1.0.1",
     "@atcute/oauth-node-client": "^2.0.1",
     "did-jwt": "^8.0.18",
     "did-resolver": "^5.0.1",
-    "hono": "4.13.0",
+    "hono": "4.13.7",
     "web-did-resolver": "^2.0.32"
   },
   "devDependencies": {
-    "@atcute/bluesky": "4.0.14",
-    "@atcute/lex-cli": "^3.2.1",
+    "@atcute/bluesky": "4.0.21",
+    "@atcute/lex-cli": "^3.3.0",
     "@cloudflare/unenv-preset": "^2.16.1",
-    "@cloudflare/workers-types": "^5.20260804.1",
-    "@types/node": "^26.1.2",
-    "@vitest/coverage-v8": "^4.1.10",
-    "@vitest/ui": "^4.1.10",
+    "@cloudflare/workers-types": "^5.20260910.1",
+    "@types/node": "^26.5.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/ui": "^5.0.0",
     "unenv": "2.0.0-rc.24",
-    "vite": "8.1.5",
-    "vitest": "^4.1.10",
-    "wrangler": "4.119.0"
+    "vite": "8.3.0",
+    "vitest": "^5.0.0",
+    "wrangler": "4.130.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@cloudflare/workerd-darwin-arm64",
+      "esbuild",
+      "workerd"
+    ]
   }
 }
