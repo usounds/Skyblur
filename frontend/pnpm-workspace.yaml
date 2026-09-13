@@ -8,6 +8,7 @@ allowBuilds:
 minimumReleaseAge: 1440
 
 minimumReleaseAgeExclude:
+  - '@atpassport/client@0.2.1'
   - '@atpassport/client@0.2.0-b4'
   - '@atpassport/client@0.2.0-b2'
   - '@atpassport/client@0.2.0-b1'
@@ -99,6 +100,6 @@ overrides:
   postcss-selector-parser: 7.1.4
   update-browserslist-db: 1.2.3
   vite: 8.1.5
-  js-yaml: 4.3.1
+  js-yaml: ^4.3.2
   undici: 7.29.0
-  sharp: 0.35.2
+  sharp: 0.35.4

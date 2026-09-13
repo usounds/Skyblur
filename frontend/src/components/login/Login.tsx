@@ -107,8 +107,16 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // モーダル表示時などに確実にフォーカスを当てる
+    // モーダル表示時などにPCでは拡張機能のためにフォーカスを当てる（スマホ等のタッチデバイスではキーボードで@passportボタンが隠れるのを防ぐため自動フォーカスしない）
     useEffect(() => {
+        const isTouchOrMobile = typeof window !== 'undefined' && (
+            window.matchMedia('(pointer: coarse)').matches ||
+            window.matchMedia('(max-width: 48em)').matches
+        );
+        if (isTouchOrMobile) {
+            return;
+        }
+
         let retryCount = 0;
         const tryFocus = () => {
             if (inputRef.current) {
@@ -379,12 +387,11 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                     ref={inputRef}
                     label={locale.Login_HandleCaption}
                     placeholder="alice.bsky.social"
+                    leftSection={<Text size="sm" c="dimmed">@</Text>}
                     required
                     id="handle"
                     name="handle"
                     type="text"
-                    data-autofocus
-                    autoFocus
                     radius="md"
                     autoCapitalize={"none"}
                     autoCorrect={"off"}
