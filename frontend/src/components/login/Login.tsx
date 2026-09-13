@@ -2,7 +2,7 @@
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { getOAuthLoginRedirectUrl } from "@/logic/oauth/redirect";
-import { AtPassport } from '@atpassport/client/core';
+import { AtPassport, requestHandleAssist } from '@atpassport/client/core';
 import { AtPassportIcon, AtPassportUI } from '@atpassport/client/ui';
 import { getLocalizedHref } from '@/logic/localePath';
 import { getLikelyOAuthHandleTypo, normalizeOAuthHandle } from '@/logic/oauth/handle';
@@ -123,21 +123,22 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         return () => clearTimeout(timer);
     }, []);
 
-    const handleSignIn = async () => {
-        setIsHandleLoading(true)
+    const handleSignIn = async (overrideHandle?: string | unknown) => {
+        const targetHandle = typeof overrideHandle === 'string' ? overrideHandle : handle;
+        setIsHandleLoading(true);
         /* istanbul ignore next -- The submit button is disabled until a handle exists. */
-        if (!handle) {
+        if (!targetHandle) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_InputHandle,
                 color: 'red',
                 icon: <X />
             });
-            setIsHandleLoading(false)
-            return
+            setIsHandleLoading(false);
+            return;
         }
 
-        if (/\s/.test(handle)) {
+        if (/\s/.test(targetHandle)) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_CannotUseWhiteSpace,
@@ -148,7 +149,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return;
         }
 
-        if (handle.includes('_')) {
+        if (targetHandle.includes('_')) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_CannotUseUnderscore,
@@ -159,7 +160,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return;
         }
 
-        if (handle.startsWith('@')) {
+        if (targetHandle.startsWith('@')) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_WithAt,
@@ -170,7 +171,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return;
         }
 
-        if (handle.endsWith('.')) {
+        if (targetHandle.endsWith('.')) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_HandleCannotEndWithDot,
@@ -181,7 +182,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return;
         }
 
-        if (handle.includes('..')) {
+        if (targetHandle.includes('..')) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_HandleCannotHaveConsecutiveDots,
@@ -192,29 +193,29 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             return;
         }
 
-        if (/[^a-zA-Z0-9.-]/.test(handle)) {
+        if (/[^a-zA-Z0-9.-]/.test(targetHandle)) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_InvalidCharacter,
                 color: 'red',
                 icon: <X />
             });
-            setIsHandleLoading(false)
-            return
+            setIsHandleLoading(false);
+            return;
         }
 
-        if (!handle.includes('.')) {
+        if (!targetHandle.includes('.')) {
             notifications.show({
                 title: 'Error',
                 message: locale.Login_NotDomain,
                 color: 'red',
                 icon: <X />
             });
-            setIsHandleLoading(false)
-            return
+            setIsHandleLoading(false);
+            return;
         }
 
-        const likelyTypo = getLikelyOAuthHandleTypo(normalizeOAuthHandle(handle) || '');
+        const likelyTypo = getLikelyOAuthHandleTypo(normalizeOAuthHandle(targetHandle) || '');
         if (likelyTypo) {
             const message = locale.Login_HandleMaybeTypo.replace("{1}", likelyTypo);
             setWarningMessage(message);
@@ -238,10 +239,10 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
 
         try {
             // バックエンドのログインAPIへリダイレクト
-            window.localStorage.setItem('oauth.handle', handle);
+            window.localStorage.setItem('oauth.handle', targetHandle);
 
             const redirectUrl = getRedirectUrl();
-            const loginUrl = `${apiHost}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
+            const loginUrl = `${apiHost}/api/oauth/login?handle=${encodeURIComponent(targetHandle)}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
             const response = await fetch(loginUrl, {
                 headers: {
                     Accept: 'application/json',
@@ -285,20 +286,44 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     const handleAtPassportLogin = async () => {
         const passportHost = isDev ? 'https://preview.atpassport.net' : 'https://atpassport.net';
 
-        const passport = new AtPassport({
-            baseUrl: passportHost,
-            callbackUrl: `${apiHost}/api/oauth/login`,
-            lang: lang
-        });
+        const triggerRedirect = async () => {
+            const passport = new AtPassport({
+                baseUrl: passportHost,
+                callbackUrl: `${apiHost}/api/oauth/login`,
+                lang: lang
+            });
 
-        const { url: atPassportUrl } = passport.generateAuthUrl({
-            redirect_uri: getRedirectUrl()
-        });
+            const { url: atPassportUrl } = passport.generateAuthUrl({
+                redirect_uri: getRedirectUrl()
+            });
+
+            setIsPassportLoading(true);
+            window.location.assign(atPassportUrl);
+            // リダイレクトまで待機
+            await new Promise(() => { });
+            return null;
+        };
 
         setIsPassportLoading(true);
-        window.location.assign(atPassportUrl);
-        // リダイレクトまで待機
-        await new Promise(() => { });
+        try {
+            const assistResult = await requestHandleAssist({
+                targetInput: inputRef.current ?? undefined,
+                configURL: `${passportHost}/fedcm/config.json`,
+                fallback: triggerRedirect,
+            });
+
+            if (assistResult?.handle) {
+                setHandle(assistResult.handle);
+                setSuggestions([]);
+                setErrorMessage(null);
+                setWarningMessage(null);
+                await handleSignIn(assistResult.handle);
+            }
+        } catch (e) {
+            console.error('FedCM handle assist error:', e);
+        } finally {
+            setIsPassportLoading(false);
+        }
     }
 
 

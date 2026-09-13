@@ -8,6 +8,7 @@ allowBuilds:
 minimumReleaseAge: 1440
 
 minimumReleaseAgeExclude:
+  - '@atpassport/client@0.2.0-b1'
   - '@atcute/lexicons@2.0.3'
   - '@atcute/tid@1.1.4'
   - '@atcute/uint8array@1.1.5'
