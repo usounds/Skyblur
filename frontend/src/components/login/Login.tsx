@@ -68,11 +68,6 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
         lang,
         fedcm: true,
     }), [apiHost, isDev, lang]);
-    const [isHandleAssistSupported, setIsHandleAssistSupported] = useState(false);
-
-    useEffect(() => {
-        setIsHandleAssistSupported(passport.isHandleAssistSupported());
-    }, [passport]);
 
     // ブラウザバック（bfcache）などで戻った際にローディング状態を確実にリセットする
     useEffect(() => {
@@ -296,8 +291,19 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     const handleAtPassportLogin = async () => {
         setIsPassportLoading(true);
         try {
+            const fallback = async () => {
+                const { url: atPassportUrl } = passport.generateAuthUrl({
+                    redirect_uri: getRedirectUrl(),
+                });
+                window.location.assign(atPassportUrl);
+                // リダイレクトまで待機
+                await new Promise(() => { });
+                return null;
+            };
+
             const assistResult = await passport.requestHandleAssist({
                 targetInput: inputRef.current ?? undefined,
+                fallback,
             });
 
             const targetHandle = assistResult?.username || (assistResult as any)?.handle;
@@ -426,35 +432,31 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 </Button>
             </Stack>
 
-            {isHandleAssistSupported && (
-                <>
-                    <Divider label={locale.Login_Or} labelPosition="center" />
+            <Divider label={locale.Login_Or} labelPosition="center" />
 
-                    <Box>
-                        <Button
-                            fullWidth
-                            size="md"
-                            radius="lg"
-                            px="xs"
-                            variant="default"
-                            onClick={handleAtPassportLogin}
-                            disabled={isAnyLoading || !agreed}
-                            loading={isPassportLoading}
-                            loaderProps={{ type: 'dots' }}
-                            styles={{
-                                inner: { gap: 6 },
-                                label: { fontSize: 14 },
-                            }}
-                            leftSection={<AtPassportIcon size={18} />}
-                        >
-                            {AtPassportUI[lang].title}
-                        </Button>
-                        <Text size="xs" c="dimmed" ta="left" mt={8} px={4} lh={1.4}>
-                            {AtPassportUI[lang].description}
-                        </Text>
-                    </Box>
-                </>
-            )}
+            <Box>
+                <Button
+                    fullWidth
+                    size="md"
+                    radius="lg"
+                    px="xs"
+                    variant="default"
+                    onClick={handleAtPassportLogin}
+                    disabled={isAnyLoading || !agreed}
+                    loading={isPassportLoading}
+                    loaderProps={{ type: 'dots' }}
+                    styles={{
+                        inner: { gap: 6 },
+                        label: { fontSize: 14 },
+                    }}
+                    leftSection={<AtPassportIcon size={18} />}
+                >
+                    {AtPassportUI[lang].title}
+                </Button>
+                <Text size="xs" c="dimmed" ta="left" mt={8} px={4} lh={1.4}>
+                    {AtPassportUI[lang].description}
+                </Text>
+            </Box>
 
             <Box ta="center">
                 <Anchor

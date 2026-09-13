@@ -13,12 +13,14 @@ import { AtPassport } from "@atpassport/client";
 const passportMocks = vi.hoisted(() => ({
   isHandleAssistSupported: vi.fn(() => true),
   requestHandleAssist: vi.fn(),
+  generateAuthUrl: vi.fn(() => ({ url: "https://atpassport.net/ja/authentication?test=1", atpstate: "mock-state" })),
 }));
 
 vi.mock("@atpassport/client", () => {
   class MockAtPassport {
     isHandleAssistSupported = passportMocks.isHandleAssistSupported;
     requestHandleAssist = passportMocks.requestHandleAssist;
+    generateAuthUrl = passportMocks.generateAuthUrl;
   }
 
   return {
@@ -158,17 +160,46 @@ describe("AuthenticationTitle with FedCM support", () => {
     });
   });
 
-  it("hides the complete @passport panel when FedCM is unsupported", async () => {
-    passportMocks.isHandleAssistSupported.mockReturnValue(false);
+  it("renders the unified @passport button and executes fallback redirect when FedCM triggers fallback", async () => {
+    const user = userEvent.setup();
+    const assignMock = vi.fn();
+
+    delete (window as any).location;
+    window.location = {
+      ...originalLocation,
+      origin: "https://skyblur.uk",
+      hostname: "skyblur.uk",
+      search: "",
+      assign: assignMock,
+    } as any;
+
+    passportMocks.requestHandleAssist.mockImplementation(async (options: any) => {
+      if (options?.fallback) {
+        return await options.fallback();
+      }
+      return null;
+    });
 
     renderLogin();
 
+    expect(screen.getByRole("button", { name: /@passport/i })).toBeInTheDocument();
+    expect(screen.getByText("ハンドル入力アシスト")).toBeInTheDocument();
+
+    const agreeCheckbox = screen.getByRole("checkbox");
+    await user.click(agreeCheckbox);
+
+    const atPassportBtn = screen.getByRole("button", { name: /@passport/i });
+    await user.click(atPassportBtn);
+
     await waitFor(() => {
-      expect(passportMocks.isHandleAssistSupported).toHaveBeenCalled();
+      expect(passportMocks.requestHandleAssist).toHaveBeenCalledTimes(1);
+      expect(passportMocks.generateAuthUrl).toHaveBeenCalledWith(expect.objectContaining({
+        redirect_uri: expect.stringContaining("/console"),
+      }));
+      expect(assignMock).toHaveBeenCalledWith(
+        expect.stringContaining("https://atpassport.net/ja/authentication"),
+      );
     });
-    expect(screen.queryByRole("button", { name: /@passport/i })).not.toBeInTheDocument();
-    expect(screen.queryByText("ハンドル入力アシスト")).not.toBeInTheDocument();
-    expect(passportMocks.requestHandleAssist).not.toHaveBeenCalled();
   });
 
   it("resets loading and leaves form intact when FedCM is dismissed by user", async () => {
