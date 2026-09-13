@@ -93,7 +93,7 @@ describe("AuthenticationTitle with FedCM support", () => {
     passportMocks.requestHandleAssist.mockImplementation(async () => {
       return {
         did: "did:plc:test12345",
-        handle: "alice.bsky.social",
+        username: "alice.bsky.social",
         token: "mock-token",
       };
     });

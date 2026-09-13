@@ -300,12 +300,13 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 targetInput: inputRef.current ?? undefined,
             });
 
-            if (assistResult?.handle) {
-                setHandle(assistResult.handle);
+            const targetHandle = assistResult?.username || (assistResult as any)?.handle;
+            if (targetHandle) {
+                setHandle(targetHandle);
                 setSuggestions([]);
                 setErrorMessage(null);
                 setWarningMessage(null);
-                await handleSignIn(assistResult.handle);
+                await handleSignIn(targetHandle);
             }
         } catch (e) {
             console.error('FedCM handle assist error:', e);

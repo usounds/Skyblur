@@ -40,7 +40,7 @@
     "@atcute/lexicons": "^2.1.0",
     "@atcute/oauth-node-client": "^2.0.1",
     "@atcute/tid": "^1.1.4",
-    "@atpassport/client": "0.2.0-b2",
+    "@atpassport/client": "0.2.0-b4",
     "@aws-sdk/client-dynamodb": "3.1129.0",
     "@mantine/core": "^9.6.1",
     "@mantine/hooks": "^9.6.1",

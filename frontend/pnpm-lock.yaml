@@ -6,9 +6,6 @@ importers:
   .:
     configDependencies: {}
     packageManagerDependencies:
-      '@pnpm/exe':
-        specifier: 12.3.4
-        version: 12.3.4
       pnpm:
         specifier: 12.3.4
         version: 12.3.4
@@ -59,11 +56,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@pnpm/exe@12.3.4':
-    resolution: {integrity: sha512-Rq7JokWAyYF9IFfn8zofB/q2AgnZlmoMuH5fMHB2+Ta61I9aD7sNm+woZpx6iH+5vb38chdSoYRvOtSqlH72YQ==}
-    engines: {node: '>=18.*'}
-    hasBin: true
-
   pnpm@12.3.4:
     resolution: {integrity: sha512-lhqkH7B32joEpEHZ+OFevAyW2o73ELLrZ7+e58sGEOq9SPH9hfUc/+c4RnhfoPh8VqOocqHYk/hEZ0G1zORUVw==}
     engines: {node: '>=18.*'}
@@ -94,17 +86,6 @@ snapshots:
 
   '@pnpm/exe.win32-x64@12.3.4':
     optional: true
-
-  '@pnpm/exe@12.3.4':
-    optionalDependencies:
-      '@pnpm/exe.darwin-arm64': 12.3.4
-      '@pnpm/exe.darwin-x64': 12.3.4
-      '@pnpm/exe.linux-arm64': 12.3.4
-      '@pnpm/exe.linux-arm64-musl': 12.3.4
-      '@pnpm/exe.linux-x64': 12.3.4
-      '@pnpm/exe.linux-x64-musl': 12.3.4
-      '@pnpm/exe.win32-arm64': 12.3.4
-      '@pnpm/exe.win32-x64': 12.3.4
 
   pnpm@12.3.4:
     optionalDependencies:
@@ -183,8 +164,8 @@ importers:
         specifier: ^1.1.4
         version: 1.1.4
       '@atpassport/client':
-        specifier: 0.2.0-b2
-        version: 0.2.0-b2(react@19.3.0)
+        specifier: 0.2.0-b4
+        version: 0.2.0-b4(react@19.3.0)
       '@aws-sdk/client-dynamodb':
         specifier: 3.1057.0
         version: 3.1057.0
@@ -540,8 +521,8 @@ packages:
   '@atcute/varint@2.0.2':
     resolution: {integrity: sha512-/+hS1juMgnmf6eL6lICUkTw7wcGTo3I+Q0L1PI521mUz77rGSC6nXAUNKtvm2wYJpuWdEGq+GILGoYkOArn0TQ==}
 
-  '@atpassport/client@0.2.0-b2':
-    resolution: {integrity: sha512-X4BYMWQteBNlMr0ZRkaAGWCNnMErcNAI+DPlBoy3nk4DRf6sYzTNr8kFhrw0AZxo1rkzZ/jm75wqoTusQwofZQ==}
+  '@atpassport/client@0.2.0-b4':
+    resolution: {integrity: sha512-zzjqD8FkIZspTvaIYMvxknVGAtnMll6hxX58nPrDc3gmojch/4de0MqXavANIpVDiZcRq1DHNoXDMDQd/lA2Cw==}
     peerDependencies:
       react: '>=18.0.0'
     peerDependenciesMeta:
@@ -5101,7 +5082,7 @@ snapshots:
 
   '@atcute/varint@2.0.2': {}
 
-  '@atpassport/client@0.2.0-b2(react@19.3.0)':
+  '@atpassport/client@0.2.0-b4(react@19.3.0)':
     optionalDependencies:
       react: 19.3.0
 

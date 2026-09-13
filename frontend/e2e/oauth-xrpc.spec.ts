@@ -3398,6 +3398,7 @@ test("/console login form shows typeahead suggestions and assists handle via atp
             token: JSON.stringify({
               v: 1,
               did,
+              username: handle,
               handle,
             }),
           };
