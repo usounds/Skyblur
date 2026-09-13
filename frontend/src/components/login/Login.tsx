@@ -2,8 +2,7 @@
 import { useLocale } from '@/state/Locale';
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { getOAuthLoginRedirectUrl } from "@/logic/oauth/redirect";
-import { AtPassport, requestHandleAssist } from '@atpassport/client/core';
-import { AtPassportIcon, AtPassportUI } from '@atpassport/client/ui';
+import { AtPassport, AtPassportIcon, AtPassportUI } from '@atpassport/client';
 import { getLocalizedHref } from '@/logic/localePath';
 import { getLikelyOAuthHandleTypo, normalizeOAuthHandle } from '@/logic/oauth/handle';
 import {
@@ -25,7 +24,7 @@ import {
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { X } from 'lucide-react';
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import styles from './AuthenticationTitle.module.css';
 
 
@@ -63,6 +62,17 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     /* istanbul ignore next -- E2E exercises the client path; this fallback is for SSR safety. */
     const apiHost = typeof window !== 'undefined' ? window.location.origin : '';
     const getRedirectUrl = () => getOAuthLoginRedirectUrl(window.location);
+    const passport = useMemo(() => new AtPassport({
+        baseUrl: isDev ? 'https://dev.atpassport.net' : 'https://atpassport.net',
+        callbackUrl: `${apiHost}/api/oauth/login`,
+        lang,
+        fedcm: true,
+    }), [apiHost, isDev, lang]);
+    const [isHandleAssistSupported, setIsHandleAssistSupported] = useState(false);
+
+    useEffect(() => {
+        setIsHandleAssistSupported(passport.isHandleAssistSupported());
+    }, [passport]);
 
     // ブラウザバック（bfcache）などで戻った際にローディング状態を確実にリセットする
     useEffect(() => {
@@ -284,32 +294,10 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
     }
 
     const handleAtPassportLogin = async () => {
-        const passportHost = isDev ? 'https://preview.atpassport.net' : 'https://atpassport.net';
-
-        const triggerRedirect = async () => {
-            const passport = new AtPassport({
-                baseUrl: passportHost,
-                callbackUrl: `${apiHost}/api/oauth/login`,
-                lang: lang
-            });
-
-            const { url: atPassportUrl } = passport.generateAuthUrl({
-                redirect_uri: getRedirectUrl()
-            });
-
-            setIsPassportLoading(true);
-            window.location.assign(atPassportUrl);
-            // リダイレクトまで待機
-            await new Promise(() => { });
-            return null;
-        };
-
         setIsPassportLoading(true);
         try {
-            const assistResult = await requestHandleAssist({
+            const assistResult = await passport.requestHandleAssist({
                 targetInput: inputRef.current ?? undefined,
-                configURL: `${passportHost}/fedcm/config.json`,
-                fallback: triggerRedirect,
             });
 
             if (assistResult?.handle) {
@@ -414,6 +402,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                         );
                     }}
                     error={errorMessage || warningMessage}
+                    disabled={isAnyLoading}
                     styles={{
                         input: {
                             fontSize: 16,
@@ -436,31 +425,35 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
                 </Button>
             </Stack>
 
-            <Divider label={locale.Login_Or} labelPosition="center" />
+            {isHandleAssistSupported && (
+                <>
+                    <Divider label={locale.Login_Or} labelPosition="center" />
 
-            <Box>
-                <Button
-                    fullWidth
-                    size="md"
-                    radius="lg"
-                    px="xs"
-                    variant="default"
-                    onClick={handleAtPassportLogin}
-                    disabled={isAnyLoading || !agreed}
-                    loading={isPassportLoading}
-                    loaderProps={{ type: 'dots' }}
-                    styles={{
-                        inner: { gap: 6 },
-                        label: { fontSize: 14 },
-                    }}
-                    leftSection={<AtPassportIcon size={18} />}
-                >
-                    {AtPassportUI[lang].title}
-                </Button>
-                <Text size="xs" c="dimmed" ta="left" mt={8} px={4} lh={1.4}>
-                    {AtPassportUI[lang].description}
-                </Text>
-            </Box>
+                    <Box>
+                        <Button
+                            fullWidth
+                            size="md"
+                            radius="lg"
+                            px="xs"
+                            variant="default"
+                            onClick={handleAtPassportLogin}
+                            disabled={isAnyLoading || !agreed}
+                            loading={isPassportLoading}
+                            loaderProps={{ type: 'dots' }}
+                            styles={{
+                                inner: { gap: 6 },
+                                label: { fontSize: 14 },
+                            }}
+                            leftSection={<AtPassportIcon size={18} />}
+                        >
+                            {AtPassportUI[lang].title}
+                        </Button>
+                        <Text size="xs" c="dimmed" ta="left" mt={8} px={4} lh={1.4}>
+                            {AtPassportUI[lang].description}
+                        </Text>
+                    </Box>
+                </>
+            )}
 
             <Box ta="center">
                 <Anchor

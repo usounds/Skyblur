@@ -164,6 +164,10 @@ const DynamicHeader = () => {
         size={340}
         title={locale.Login_Login}
         closeOnClickOutside={false}
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
       >
         <AuthenticationTitle isModal={true} />
       </Modal>

@@ -3368,11 +3368,65 @@ test("/profile renders avatar and display-name fallbacks", async ({
   await expect(page.getByText(`@${mockHandle}`)).toBeVisible();
 });
 
-test("/console login form shows typeahead suggestions and redirects to atpassport", async ({
+test("/console login form shows typeahead suggestions and assists handle via atpassport FedCM", async ({
   page,
   context,
   baseURL,
 }) => {
+  const origin = new URL(baseURL || "http://127.0.0.1:4500").origin;
+  await page.addInitScript(({ did, handle }) => {
+    (window as any).IdentityCredential = function IdentityCredential() {};
+    const mockPolicy = {
+      allowsFeature: (feature: string) => (feature === "identity-credentials-get" ? true : true),
+    };
+    try {
+      Object.defineProperty(Document.prototype, "permissionsPolicy", {
+        configurable: true,
+        get: () => mockPolicy,
+      });
+    } catch {}
+    try {
+      Object.defineProperty(document, "permissionsPolicy", {
+        configurable: true,
+        get: () => mockPolicy,
+      });
+    } catch {}
+    const credentialsMock = {
+      get: async (options: any) => {
+        if (options?.identity) {
+          return {
+            token: JSON.stringify({
+              v: 1,
+              did,
+              handle,
+            }),
+          };
+        }
+        return null;
+      },
+    };
+    try {
+      Object.defineProperty(navigator, "credentials", {
+        configurable: true,
+        get: () => credentialsMock,
+      });
+    } catch {}
+    try {
+      Object.defineProperty(Navigator.prototype, "credentials", {
+        configurable: true,
+        get: () => credentialsMock,
+      });
+    } catch {}
+  }, { did: mockDid, handle: mockHandle });
+
+  await page.route("**/api/oauth/login?**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ url: `${origin}/oauth-authorize-e2e` }),
+    });
+  });
+
   await openConsoleLoginForm(page, context, baseURL);
   await page.route("https://public.api.bsky.app/**", async (route) => {
     await route.fulfill({
@@ -3398,9 +3452,12 @@ test("/console login form shows typeahead suggestions and redirects to atpasspor
   await expect(page.getByRole("combobox", { name: "Handle" })).toHaveValue(mockHandle);
 
   await expect(page.getByRole("button", { name: "Login with @passport" })).toBeEnabled();
+  const loginRequest = page.waitForRequest(new RegExp(`/api/oauth/login\\?handle=${mockHandle}`));
   await page.getByRole("button", { name: "Login with @passport" }).click();
 
-  await expect(page).toHaveURL(/preview\.atpassport\.net|atpassport\.net/);
+  const loginUrl = new URL((await loginRequest).url());
+  expect(loginUrl.searchParams.get("handle")).toBe(mockHandle);
+  expect(loginUrl.searchParams.get("redirect_uri")).toBe(`${origin}/console`);
 });
 
 test("/settings renders and saves logged-in settings from mocked OAuth data", async ({
