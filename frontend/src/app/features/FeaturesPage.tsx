@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { serializeJsonLd } from '@/logic/serializeJsonLd';
 import type { CSSProperties } from 'react';
 import { Badge, Container, Group, Text, ThemeIcon, Title } from '@mantine/core';
 import { EyeOff, FileText, History, KeyRound, ListChecks, LockKeyhole, LogIn, Pencil, ShieldCheck, Type, UsersRound } from 'lucide-react';
@@ -183,7 +185,8 @@ export function generateFeaturesMetadata(lang: Locales, options: FeaturesMetadat
   };
 }
 
-export function renderFeaturesPage(lang: Locales) {
+export async function renderFeaturesPage(lang: Locales) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   const locale = lang === 'ja' ? ja : en;
   const copy = pageCopy[lang];
 
@@ -374,8 +377,9 @@ export function renderFeaturesPage(lang: Locales) {
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <Container size="lg" className={classes.wrapper}>
         <section className={classes.hero}>

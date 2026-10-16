@@ -2,18 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { Container } from '@mantine/core';
 import type { Metadata } from 'next';
-import DOMPurify from 'dompurify';
+import { headers } from 'next/headers';
+import { serializeJsonLd } from '@/logic/serializeJsonLd';
 import TermsContent from './TermsContent';
 import type { Locales } from '@/state/Locale';
-
-function sanitizeHtml(html: string | null | undefined) {
-  return html
-    ? DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['span', 'p'],
-        ALLOWED_ATTR: ['class'],
-      })
-    : '';
-}
 
 function getTermsCopy(lang: Locales) {
   return {
@@ -62,7 +54,8 @@ export function generateTermsMetadata(lang: Locales, options: TermsMetadataOptio
   };
 }
 
-export function renderTermsPage(lang: Locales) {
+export async function renderTermsPage(lang: Locales) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   const baseFull = path.resolve(process.cwd(), 'src', 'locales', 'terms');
   const filePath = path.join(baseFull, `${lang}.md`);
   const rel = path.relative(baseFull, filePath);
@@ -102,8 +95,9 @@ export function renderTermsPage(lang: Locales) {
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(JSON.stringify(jsonLd)) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <section className="">
         <Container size="md" className="py-10">

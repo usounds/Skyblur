@@ -75,6 +75,7 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const headersList = await headers();
+  const nonce = headersList.get('x-nonce') ?? undefined;
   const lang = normalizeLocale(headersList.get('x-skyblur-locale')) ?? resolveLocale(cookieStore.get('lang')?.value, headersList.get('accept-language'));
 
   return (
@@ -82,6 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <Script
           id="console-back-forward-recovery"
+          nonce={nonce}
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
@@ -119,7 +121,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         <ServiceWorkerRegister />
         <HtmlLang initialLocale={lang} />
-        <ColorSchemeScript />
+        <ColorSchemeScript nonce={nonce} />
         <AppMantineProvider>
           <Notifications position="top-right" zIndex={1000} />
           <Header initialLocale={lang} />
@@ -170,6 +172,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </AppMantineProvider>
         <Script
           src="https://static.cloudflareinsights.com/beacon.min.js"
+          nonce={nonce}
           data-cf-beacon='{"token": "300d80e7a0bd450f823bfd0231dc3ce9"}'
           strategy="afterInteractive"
         />

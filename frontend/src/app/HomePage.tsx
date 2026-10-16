@@ -2,23 +2,16 @@ import { HomeContent } from './HomeContent';
 import type { Locales } from '@/state/Locale';
 import en from '@/locales/en';
 import ja from '@/locales/ja';
-import DOMPurify from 'dompurify';
+import { headers } from 'next/headers';
+import { serializeJsonLd } from '@/logic/serializeJsonLd';
 
 interface HomePageProps {
   locale: Locales;
   url: string;
 }
 
-function sanitizeHtml(html: string | null | undefined) {
-  return html
-    ? DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['span', 'p'],
-        ALLOWED_ATTR: ['class'],
-      })
-    : '';
-}
-
-export function HomePage({ locale, url }: HomePageProps) {
+export async function HomePage({ locale, url }: HomePageProps) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   const langDescription = locale === 'ja' ? ja.Common_OGDescription : en.Common_OGDescription;
   const langName = locale === 'ja' ? ja.Common_Title : en.Common_Title;
 
@@ -63,8 +56,9 @@ export function HomePage({ locale, url }: HomePageProps) {
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(JSON.stringify(jsonLd)) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <HomeContent initialLocale={locale} />
     </>

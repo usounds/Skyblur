@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { normalizeLocale, resolveLocale } from '@/logic/locale';
+import { createContentSecurityPolicy } from '@/logic/contentSecurityPolicy';
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const accept = request.headers.get('accept') || '';
     const requestHeaders = new Headers(request.headers);
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const csp = createContentSecurityPolicy(nonce, process.env.NODE_ENV === 'development', request.nextUrl.protocol === 'https:');
+    // Next.js reads the request CSP to nonce its own runtime and hydration scripts.
+    // Overwrite incoming values so clients cannot choose the trusted nonce or policy.
+    requestHeaders.set('x-nonce', nonce);
+    requestHeaders.set('Content-Security-Policy', csp);
+
+    const withCsp = (response: NextResponse) => {
+        response.headers.set('Content-Security-Policy', csp);
+        return response;
+    };
 
     // Content negotiation for AI agents (Markdown for Agents)
     if (accept.includes('text/markdown')) {
@@ -26,11 +38,11 @@ export function proxy(request: NextRequest) {
             url.pathname = '/api/agent-markdown';
             url.searchParams.set('path', cleanPath);
             requestHeaders.set('x-markdown-path', cleanPath);
-            return NextResponse.rewrite(url, {
+            return withCsp(NextResponse.rewrite(url, {
                 request: {
                     headers: requestHeaders,
                 },
-            });
+            }));
         }
     }
 
@@ -40,16 +52,16 @@ export function proxy(request: NextRequest) {
     if (pathname === '/') {
         const localizedUrl = request.nextUrl.clone();
         localizedUrl.pathname = '/ja';
-        return NextResponse.redirect(localizedUrl, 308);
+        return withCsp(NextResponse.redirect(localizedUrl, 308));
     }
 
     // 静的ファイルなどは即時復帰
     if (pathname.includes('.')) {
-        return NextResponse.next();
+        return withCsp(NextResponse.next({ request: { headers: requestHeaders } }));
     }
 
     // x-nextjs-router-state ヘッダーが大きすぎる場合は削除（エラー回避）
-    const headers = new Headers(request.headers);
+    const headers = requestHeaders;
     const routerState = headers.get('x-nextjs-router-state');
     if (routerState && routerState.length > 5120) {
         console.warn(`[Proxy] usage of x-nextjs-router-state detected with size ${routerState.length}. Stripping header.`);
@@ -81,7 +93,7 @@ export function proxy(request: NextRequest) {
         });
     }
 
-    return response;
+    return withCsp(response);
 }
 
 export const config = {
