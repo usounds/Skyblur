@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { deriveKey, getDecrypt } from '../CryptHandler';
 
 // Web Crypto API polyfill for Node environment if needed, 
@@ -6,6 +6,9 @@ import { deriveKey, getDecrypt } from '../CryptHandler';
 // If not, we might need to verify if globalThis.crypto is available.
 
 describe('CryptHandler', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
     describe('deriveKey', () => {
         it('should derive a CryptoKey from password and salt', async () => {
             const password = 'my-secret-password';
@@ -55,21 +58,42 @@ describe('CryptHandler', () => {
                 ok: true,
                 blob: async () => new Blob([blobContent])
             });
-            global.fetch = fetchMock;
+            vi.stubGlobal('fetch', fetchMock);
 
-            const result = await getDecrypt('https://pds.example.com', 'did:example:repo', 'bafy...', password);
+            const result = await getDecrypt('https://example.com', 'did:example:repo', 'bafy...', password);
 
-            expect(fetchMock).toHaveBeenCalledWith('https://pds.example.com/xrpc/com.atproto.sync.getBlob?did=did:example:repo&cid=bafy...');
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            const url = new URL(fetchMock.mock.calls[0][0]);
+            expect(url.origin).toBe('https://example.com');
+            expect(url.pathname).toBe('/xrpc/com.atproto.sync.getBlob');
+            expect(url.searchParams.get('did')).toBe('did:example:repo');
+            expect(url.searchParams.get('cid')).toBe('bafy...');
             expect(result).toEqual({ text: 'Hello World', additional: 'Extra' });
         });
 
         it('should throw error if fetch fails', async () => {
-            global.fetch = vi.fn().mockResolvedValue({
+            const fetchMock = vi.fn().mockResolvedValue({
                 ok: false
             });
+            vi.stubGlobal('fetch', fetchMock);
 
-            await expect(getDecrypt('https://pds.example', 'did:e', 'cid', 'pass'))
-                .rejects.toThrow('Cannot get blob');
+            await expect(getDecrypt('https://example.com', 'did:e', 'cid', 'pass'))
+                .rejects.toThrow('Cannot get blob from https://example.com/');
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
+
+        it.each([
+            'https://pds.example.com',
+            'https://example.com.attacker.test',
+            'https://127.0.0.1',
+            'ftp://example.com',
+            'https://example.com/../private',
+        ])('rejects an invalid blob URL before fetching: %s', async (pds) => {
+            const fetchMock = vi.fn();
+            vi.stubGlobal('fetch', fetchMock);
+
+            await expect(getDecrypt(pds, 'did:e', 'cid', 'pass')).rejects.toThrow('Invalid URL');
+            expect(fetchMock).not.toHaveBeenCalled();
         });
     });
 });
