@@ -7,6 +7,16 @@ import { SESSION_TTL_SECONDS } from "@/logic/oauth/constants";
 import { isInvalidGrantInvalidCodeError } from "@/logic/oauth/errors";
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
+function isSafeRedirectUrl(url: string, origin: string): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(String(url).replace(/[\t\n\r]/g, ""), origin);
+    return parsed.origin === origin && (parsed.protocol === "http:" || parsed.protocol === "https:");
+  } catch {
+    return false;
+  }
+}
+
 function clearOAuthCallbackCookie(response: NextResponse) {
   response.cookies.set(OAUTH_CALLBACK_COOKIE, "", {
     path: "/",
@@ -24,7 +34,9 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const callbackCookie = cookieStore.get(OAUTH_CALLBACK_COOKIE)?.value;
   const existingDid = verifySignedDid(cookieStore.get(OAUTH_DID_COOKIE)?.value);
-  const redirectTo = callbackCookie ? decodeURIComponent(callbackCookie) : `${origin}/console`;
+  const requestedRedirect = callbackCookie ? decodeURIComponent(callbackCookie) : null;
+  const redirectTo =
+    requestedRedirect && isSafeRedirectUrl(requestedRedirect, origin) ? requestedRedirect : `${origin}/console`;
 
   try {
     const { session } = await client.callback(url.searchParams);
