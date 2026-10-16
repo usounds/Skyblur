@@ -102,4 +102,4 @@ overrides:
   vite: 8.1.5
   js-yaml: ^4.3.2
   undici: 7.29.0
-  sharp: 0.35.4
+  sharp: 0.35.5
