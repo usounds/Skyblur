@@ -2,8 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import { Container } from '@mantine/core';
 import type { Metadata } from 'next';
+import DOMPurify from 'dompurify';
 import TermsContent from './TermsContent';
 import type { Locales } from '@/state/Locale';
+
+function sanitizeHtml(html: string | null | undefined) {
+  return html
+    ? DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['span', 'p'],
+        ALLOWED_ATTR: ['class'],
+      })
+    : '';
+}
 
 function getTermsCopy(lang: Locales) {
   return {
@@ -93,7 +103,7 @@ export function renderTermsPage(lang: Locales) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(JSON.stringify(jsonLd)) }}
       />
       <section className="">
         <Container size="md" className="py-10">
