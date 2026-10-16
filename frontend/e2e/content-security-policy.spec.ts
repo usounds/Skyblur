@@ -36,11 +36,14 @@ test('legitimate scripts hydrate and interactive UI works under CSP', async ({ p
 
   const response = await page.goto('/ja');
   const nonce = response!.headers()['content-security-policy'].match(/'nonce-([^']+)'/)![1];
-  expect(await page.locator('script').evaluateAll((scripts) => scripts.map((script) => script.nonce)))
-    .toEqual(expect.arrayContaining([nonce]));
-  expect(await page.locator('script:not([type="application/ld+json"])').evaluateAll(
-    (scripts, expected) => scripts.every((script) => script.nonce === expected), nonce,
-  )).toBe(true);
+  // Check parser-inserted scripts in the original HTML. Next's development
+  // runtime can append trusted scripts without a nonce under strict-dynamic.
+  const initialScriptNonces = await page.evaluate((html) => {
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    return Array.from(document.scripts, (script) => script.nonce);
+  }, await response!.text());
+  expect(initialScriptNonces.length).toBeGreaterThan(0);
+  expect(initialScriptNonces.every((value) => value === nonce)).toBe(true);
 
   const startButton = page.getByTestId('home-start-button');
   await expect(startButton).toHaveAttribute('data-hydrated', 'true');
