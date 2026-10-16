@@ -2,10 +2,20 @@ import { HomeContent } from './HomeContent';
 import type { Locales } from '@/state/Locale';
 import en from '@/locales/en';
 import ja from '@/locales/ja';
+import DOMPurify from 'dompurify';
 
 interface HomePageProps {
   locale: Locales;
   url: string;
+}
+
+function sanitizeHtml(html: string | null | undefined) {
+  return html
+    ? DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['span', 'p'],
+        ALLOWED_ATTR: ['class'],
+      })
+    : '';
 }
 
 export function HomePage({ locale, url }: HomePageProps) {
@@ -54,7 +64,7 @@ export function HomePage({ locale, url }: HomePageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(JSON.stringify(jsonLd)) }}
       />
       <HomeContent initialLocale={locale} />
     </>
