@@ -53,7 +53,12 @@ export function generateTermsMetadata(lang: Locales, options: TermsMetadataOptio
 }
 
 export function renderTermsPage(lang: Locales) {
-  const filePath = path.join(process.cwd(), 'src', 'locales', 'terms', `${lang}.md`);
+  const baseFull = path.resolve(process.cwd(), 'src', 'locales', 'terms');
+  const filePath = path.join(baseFull, `${lang}.md`);
+  const rel = path.relative(baseFull, filePath);
+  if (rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) {
+    throw new Error('Invalid file path');
+  }
 
   let content = '';
   try {
