@@ -24,12 +24,33 @@ export async function deriveKey(password: string, salt: Uint8Array): Promise<Cry
     );
 }
 
+function buildValidatedUrl(baseUrl: string, did: string, cid: string): string {
+    try {
+        if (baseUrl.includes('/../') || /\/%2e%2e\//i.test(baseUrl)) {
+            throw new Error('Invalid path');
+        }
+        const url = new URL(baseUrl);
+        const allowedDomains = ['example.com']; // add your allowed domains here
+        if (!allowedDomains.includes(url.hostname)) {
+            throw new Error('Invalid host');
+        }
+        if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Invalid protocol');
+        }
+        url.searchParams.set('did', did);
+        url.searchParams.set('cid', cid);
+        return url.href;
+    } catch {
+        throw new Error('Invalid URL');
+    }
+}
+
 export async function getDecrypt(pds: string, repo: string, cid: string, password: string) {
     let decodedData
     //Blob取得
     try {
         const sanitizedPds = pds.replace(/\/$/, "");
-        const url = `${sanitizedPds}/xrpc/com.atproto.sync.getBlob?did=${repo}&cid=${cid}`;
+        const url = buildValidatedUrl(`${sanitizedPds}/xrpc/com.atproto.sync.getBlob`, repo, cid);
         const response = await fetch(url);
         if (!response.ok) {
             console.log(`getDecrypt error ${url}`)
