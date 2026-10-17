@@ -243,8 +243,19 @@ function reviveBinary(value: unknown): unknown {
 
 let cachedAesKey: { raw?: string; key: CryptoKey | null } | undefined;
 
+function getRawEncryptionKey(): string | undefined {
+  if (process.env.DATA_ENCRYPTION_KEY) {
+    return process.env.DATA_ENCRYPTION_KEY;
+  }
+  try {
+    return (Resource as unknown as { DATA_ENCRYPTION_KEY?: { value?: string } }).DATA_ENCRYPTION_KEY?.value;
+  } catch {
+    return undefined;
+  }
+}
+
 async function getAesKey(): Promise<CryptoKey | null> {
-  const raw = process.env.DATA_ENCRYPTION_KEY;
+  const raw = getRawEncryptionKey();
 
   if (raw) {
     if (cachedAesKey && cachedAesKey.raw === raw) {

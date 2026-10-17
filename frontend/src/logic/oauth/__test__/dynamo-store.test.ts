@@ -261,4 +261,45 @@ describe("Dynamo OAuth store", () => {
     const retrieved = await store.get('user-1');
     expect(retrieved).toEqual({ secretToken: 'dpop-private-key-data', count: 42 });
   });
+
+  it('round-trips encrypted data when key is provided via SST Resource', async () => {
+    vi.stubEnv('USE_AWS_REAL_DB', 'true');
+    vi.stubEnv('OAUTH_STORE_TABLE_NAME', 'oauth-store');
+    const key = Buffer.alloc(32, 7).toString('base64');
+
+    vi.doMock('sst', () => ({
+      Resource: {
+        DATA_ENCRYPTION_KEY: { value: key },
+      },
+    }));
+
+    let storedValue: string | undefined;
+    const send = vi.fn().mockImplementation(async (command) => {
+      if (command.input?.Item?.value?.S) {
+        storedValue = command.input.Item.value.S;
+        return {};
+      }
+      if (command.input?.Key?.pk?.S) {
+        return { Item: { value: { S: storedValue } } };
+      }
+      return {};
+    });
+
+    vi.doMock('@aws-sdk/client-dynamodb', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@aws-sdk/client-dynamodb')>();
+      return { ...actual, DynamoDBClient: vi.fn(function () { return { send }; }) };
+    });
+
+    const { DynamoOAuthStore } = await import('../dynamo-store');
+    const store = new DynamoOAuthStore<string, { token: string }>('session');
+    await store.set('user-sst', { token: 'sst-linked-secret' });
+
+    expect(storedValue).toBeDefined();
+    const parsedStored = JSON.parse(storedValue!);
+    expect(parsedStored.__encrypted).toBe(true);
+
+    const retrieved = await store.get('user-sst');
+    expect(retrieved).toEqual({ token: 'sst-linked-secret' });
+  });
 });
+

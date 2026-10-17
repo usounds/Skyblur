@@ -6,6 +6,10 @@
 
 declare module "sst" {
   export interface Resource {
+    "DATA_ENCRYPTION_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "OAuthStore": {
       "name": string
       "type": "sst.aws.Dynamo"

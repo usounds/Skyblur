@@ -25,11 +25,14 @@ export default $config({
       ttl: "expiresAt",
     });
 
+    const dataEncryptionKey = new sst.Secret("DATA_ENCRYPTION_KEY");
+
     new sst.aws.Nextjs("Skyblur", {
-      link: [oauthStore],
+      link: [oauthStore, dataEncryptionKey],
       environment: {
         NEXT_PUBLIC_BASE_URL: baseUrl,
         OAUTH_STORE_TABLE_NAME: oauthStore.name,
+        DATA_ENCRYPTION_KEY: dataEncryptionKey.value,
       },
       domain: stage === "production"
         ? {
