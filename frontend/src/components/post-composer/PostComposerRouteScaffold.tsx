@@ -67,7 +67,7 @@ function buildPostPath(did: string, blurUri: string) {
   return `/post/${did}/${rkey}`;
 }
 
-function syncCreateDraft(state: PostComposerState) {
+function syncCreateDraft(state: PostComposerState, authorDid?: string) {
   setActiveCreateSession(true);
 
   const tempPost = useTempPostStore.getState();
@@ -81,6 +81,9 @@ function syncCreateDraft(state: PostComposerState) {
   tempPost.setEncryptKey(state.visibility === VISIBILITY_PASSWORD ? state.password : "");
   tempPost.setReply(state.replyPost?.uri ?? "");
   tempPost.setReplyPost(state.replyPost);
+  if (authorDid) {
+    tempPost.setOwnerDid(authorDid);
+  }
 }
 
 export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEditData, onExit }: PostComposerRouteScaffoldProps) {
@@ -94,6 +97,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   const isSessionChecked = useXrpcAgentStore((state) => state.isSessionChecked);
   const missingScopes = useXrpcAgentStore((state) => state.missingAppBskyRpcScopes);
   const clearTempPost = useTempPostStore((state) => state.clearTempPost);
+  const tempOwnerDid = useTempPostStore((state) => state.ownerDid);
   const tempText = useTempPostStore((state) => state.text);
   const tempAdditional = useTempPostStore((state) => state.additional);
   const tempSimpleMode = useTempPostStore((state) => state.simpleMode);
@@ -126,7 +130,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   }, [mode]);
   const exitToConsole = useCallback((state?: PostComposerState) => {
     if (mode === "create" && state) {
-      syncCreateDraft(state);
+      syncCreateDraft(state, did);
     }
     suppressCreateDraftSyncRef.current = true;
     setActiveCreateSession(false);
@@ -136,7 +140,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
       return;
     }
     router.push("/console");
-  }, [mode, onExit, router, setHasUnsavedComposerChanges]);
+  }, [did, mode, onExit, router, setHasUnsavedComposerChanges]);
   const completeToConsole = useCallback(() => {
     suppressCreateDraftSyncRef.current = true;
     setActiveCreateSession(false);
@@ -188,7 +192,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
     restoredReplyPost,
     tempReplyPostSnapshot,
   ]);
-  const hasCreateDraft = mode === "create" && !!(
+  const hasCreateDraft = mode === "create" && (!tempOwnerDid || tempOwnerDid === did) && !!(
     tempText
     || tempAdditional
     || tempReply
@@ -287,18 +291,26 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   }, [mode]);
 
   useEffect(() => {
-    if (mode !== "create" || isAuthenticated !== true || !isDraftHydrated || restoreDecisionRef.current !== "pending") return;
+    if (mode !== "create" || isAuthenticated !== true || !isDraftHydrated) return;
 
-	    if (!hasCreateDraft) {
-	      commitRestoreDecision("fresh");
-	      return;
-	    }
+    if (tempOwnerDid && did && tempOwnerDid !== did) {
+      clearTempPost();
+      commitRestoreDecision("fresh");
+      return;
+    }
 
-	    if (tempReply && !isTempReplyResolved) return;
+    if (restoreDecisionRef.current !== "pending") return;
 
-	    setInitialCreateDraft(createInitialData);
-	    setRestorePostData(true);
-	  }, [commitRestoreDecision, createInitialData, hasCreateDraft, isAuthenticated, isDraftHydrated, isTempReplyResolved, mode, tempReply]);
+    if (!hasCreateDraft) {
+      commitRestoreDecision("fresh");
+      return;
+    }
+
+    if (tempReply && !isTempReplyResolved) return;
+
+    setInitialCreateDraft(createInitialData);
+    setRestorePostData(true);
+  }, [clearTempPost, commitRestoreDecision, createInitialData, did, hasCreateDraft, isAuthenticated, isDraftHydrated, isTempReplyResolved, mode, tempOwnerDid, tempReply]);
 
   useEffect(() => {
     const currentState = useXrpcAgentStore.getState();
@@ -418,7 +430,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
         }
         setHasUnsavedComposerChanges(state.dirty);
         if (mode === "create") {
-          syncCreateDraft(state);
+          syncCreateDraft(state, did);
         }
       }}
       requiresRelogin={missingScopes.length > 0}

@@ -32,6 +32,8 @@ export function compareProjectionOrder(incoming: RecordOrder, current: RecordOrd
   if (incoming.source !== current.source) {
     if (incoming.source === 'backfill') return -1;
     if (current.source === 'backfill') return 1;
+    if (incoming.source === 'pds' && !incoming.rev && current.rev) return -1;
+    if (incoming.source === 'jetstream' && incoming.rev && !current.rev) return 1;
     if (incoming.time_us !== current.time_us) return incoming.time_us > current.time_us ? 1 : -1;
     return incoming.source === 'jetstream' ? 1 : -1;
   }

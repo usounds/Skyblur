@@ -3,6 +3,7 @@ import { Client, simpleFetchHandler } from '@atcute/client';
 import { scopeList } from '../logic/oauth/constants';
 import { create } from 'zustand';
 import { clearSensitiveDraft } from './SensitiveDraft';
+import { useTempPostStore } from './TempPost';
 
 type State = {
   agent: Client;
@@ -211,8 +212,10 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
               return { authenticated: true, did: data.did, pds: pdsUrl, scope: nextScope, missingAppBskyRpcScopes };
             }
 
-            if (get().did && get().did !== data.did) {
+            const tempOwnerDid = useTempPostStore.getState().ownerDid;
+            if ((get().did && get().did !== data.did) || (tempOwnerDid && tempOwnerDid !== data.did)) {
               clearSensitiveDraft();
+              useTempPostStore.getState().clearTempPost();
             }
 
             if (get().did !== data.did || get().serviceUrl !== pdsUrl || get().scope !== nextScope) {
@@ -230,6 +233,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
             if (get().did !== "" || get().isSessionChecked !== true) {
               if (get().did !== "") {
                 clearSensitiveDraft();
+                useTempPostStore.getState().clearTempPost();
               }
               set({ did: "", serviceUrl: "", isSessionChecked: true, userProf: null, scope: "", missingAppBskyRpcScopes: [] });
             }
@@ -296,6 +300,7 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
       } finally {
         getXrpcAgentCache().lastSessionResult = null;
         clearSensitiveDraft();
+        useTempPostStore.getState().clearTempPost();
         set({
           did: "",
           userProf: null,

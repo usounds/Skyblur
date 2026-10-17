@@ -524,4 +524,74 @@ describe('getPost API', () => {
             errorCode: 'RelationshipNotFound'
         }));
     });
+
+    it('should re-verify authorization when DO visibility differs from recordObj visibility (Issue 3)', async () => {
+        // Record says followers, but DO was edited to list
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' }, 'did:requester');
+
+        // Requester follows author (so recordObj check passes)
+        mockClientGet.mockResolvedValue({
+            data: { relationships: [{ $type: 'app.bsky.graph.defs#relationship', following: 'at://link', followedBy: null }] }
+        });
+
+        // DO has edited visibility: 'list' with a listUri where user is not a member
+        mockDOFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                text: 'replacement restricted text',
+                additional: '',
+                visibility: 'list',
+                listUri: 'at://did:repo/app.bsky.graph.list/target-list'
+            })
+        });
+
+        await handle(c);
+
+        // Should be rejected under the new 'list' ACL
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({
+            errorCode: expect.any(String),
+            visibility: 'list'
+        }));
+        expect(c.json).not.toHaveBeenCalledWith(expect.objectContaining({
+            text: 'replacement restricted text'
+        }));
+    });
+
+    it('should protect against stale mirror when mirror says public but DO has restricted content (Issue 2)', async () => {
+        // Mirror says public
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                value: {
+                    text: 'stale public text',
+                    createdAt: '2024-01-01',
+                    visibility: 'public'
+                }
+            })
+        });
+
+        // DO has restricted post
+        mockDOFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                text: 'new restricted secret',
+                additional: '',
+                visibility: 'followers'
+            })
+        });
+
+        // Anonymous requester
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' }, null);
+
+        await handle(c);
+
+        // Should return AuthRequired instead of stale public plaintext
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({
+            errorCode: 'AuthRequired',
+            visibility: 'followers'
+        }));
+        expect(c.json).not.toHaveBeenCalledWith(expect.objectContaining({
+            text: 'stale public text'
+        }));
+    });
 });

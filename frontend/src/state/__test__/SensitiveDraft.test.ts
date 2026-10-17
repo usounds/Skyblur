@@ -201,4 +201,44 @@ describe('SensitiveDraftStore', () => {
       replyPostSnapshot: undefined,
     });
   });
+
+  it('records ownerDid and clears it upon clearTempPost', async () => {
+    const { useTempPostStore } = await import('../TempPost');
+
+    useTempPostStore.getState().setText('draft by user A');
+    useTempPostStore.getState().setOwnerDid('did:plc:userA');
+
+    expect(useTempPostStore.getState().ownerDid).toBe('did:plc:userA');
+    expect(useTempPostStore.getState().text).toBe('draft by user A');
+
+    useTempPostStore.getState().clearTempPost();
+
+    expect(useTempPostStore.getState().ownerDid).toBeUndefined();
+    expect(useTempPostStore.getState().text).toBe('');
+  });
+
+  it('clears draft when session switches to another account in XrpcAgent', async () => {
+    const { useTempPostStore } = await import('../TempPost');
+    const { useXrpcAgentStore } = await import('../XrpcAgent');
+
+    // Simulate user A draft
+    useTempPostStore.getState().setText('user A unpublished content');
+    useTempPostStore.getState().setOwnerDid('did:plc:userA');
+
+    // Mock fetch for /api/oauth/session returning user B
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        authenticated: true,
+        did: 'did:plc:userB',
+        pds: 'https://bsky.social',
+      }),
+    }));
+
+    await useXrpcAgentStore.getState().checkSession();
+
+    // Draft should be completely cleared because owner did not match user B
+    expect(useTempPostStore.getState().text).toBe('');
+    expect(useTempPostStore.getState().ownerDid).toBeUndefined();
+  });
 });

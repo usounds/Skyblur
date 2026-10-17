@@ -79,13 +79,16 @@ export const ProfilePage = () => {
         try {
             const value = await getPreference(repo)
 
-            if (!value) {
-                console.error('Preference not found')
+            if (!value || !value.myPage?.isUseMyPage) {
+                console.error('Preference not found or MyPage not enabled')
                 setErrorMessage(locale.Profile_NotPublish);
-                return
+                setIsMyPage(false);
+                setMyPageDescription('');
+                setAgent(null);
+                return;
             }
             setMyPageDescription(value.myPage.description || '')
-            setIsMyPage(value.myPage.isUseMyPage)
+            setIsMyPage(true)
 
             const pdsUrl = await resolvePdsEndpoint(repo);
             if (!pdsUrl) {
@@ -133,7 +136,7 @@ export const ProfilePage = () => {
                             </div>
                         }
 
-                        {myPageDescription &&
+                        {!errorMessage && myPageDescription &&
                             <div className="whitespace-pre-wrap break-words mx-3 my-4">
                                 {myPageDescription}
                             </div>

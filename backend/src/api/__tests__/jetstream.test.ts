@@ -237,6 +237,12 @@ describe('mirror ordering', () => {
     expect(compareProjectionOrder(pds, { ...base, source: 'backfill' })).toBeGreaterThan(0);
   });
 
+  it('never lets an unversioned PDS snapshot supersede a versioned Jetstream record', () => {
+    const unversionedPds = { ...base, source: 'pds' as const, rev: '', time_us: 500 };
+    expect(compareProjectionOrder(unversionedPds, base)).toBeLessThan(0);
+    expect(compareProjectionOrder(base, unversionedPds)).toBeGreaterThan(0);
+  });
+
   it('keeps delete ahead of update when time and revision are equal', () => {
     expect(compareProjectionOrder({ ...base, operation: 'delete' }, base)).toBeGreaterThan(0);
     expect(compareProjectionOrder(base, { ...base, operation: 'delete' })).toBeLessThan(0);

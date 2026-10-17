@@ -85,6 +85,7 @@ type State = {
   visibility?: string;
   listUri?: string;
   limitConsecutive?: boolean;
+  ownerDid?: string;
 };
 
 type Action = {
@@ -97,6 +98,7 @@ type Action = {
   setVisibility: (visibility: string) => void;
   setListUri: (listUri?: string) => void;
   setLimitConsecutive: (limit: boolean) => void;
+  setOwnerDid: (ownerDid?: string) => void;
   clearTempPost: () => void;
 };
 
@@ -112,6 +114,7 @@ export const useTempPostStore = create(
       visibility: VISIBILITY_PUBLIC,
       listUri: undefined,
       limitConsecutive: false,
+      ownerDid: undefined,
       setText: (text: string) => set((state) => {
         if (state.visibility === VISIBILITY_PASSWORD) {
           useSensitiveDraftStore.getState().setSensitiveText(text);
@@ -177,6 +180,7 @@ export const useTempPostStore = create(
       }),
       setListUri: (listUri?: string) => set({ listUri }),
       setLimitConsecutive: (limit: boolean) => set({ limitConsecutive: limit }),
+      setOwnerDid: (ownerDid?: string) => set({ ownerDid }),
       clearTempPost: () => {
         clearSensitiveDraft();
         set({
@@ -189,6 +193,7 @@ export const useTempPostStore = create(
           visibility: VISIBILITY_PUBLIC,
           listUri: undefined,
           limitConsecutive: false,
+          ownerDid: undefined,
         });
       },
     }),
@@ -203,6 +208,7 @@ export const useTempPostStore = create(
         visibility: state.visibility,
         listUri: state.listUri,
         limitConsecutive: state.limitConsecutive,
+        ownerDid: state.ownerDid,
       }),
     }
   )

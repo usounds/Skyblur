@@ -250,41 +250,21 @@ export const handle = async (c: Context) => {
     const visibility = recordObj.visibility as string;
     requestMeta.visibility = visibility;
 
-
-    if (['followers', 'following', 'mutual', 'list'].includes(visibility)) {
-        const listUri = recordObj.listUri;
-        if (!requesterDid) {
-
-            return finish(c.json({
-                text: recordObj.text,
-                additional: '',
-                message: `Login required. Visibility: ${visibility}`,
-                errorCode: 'AuthRequired',
-                errorDescription: `Login is required to view this content (Visibility: ${visibility})`,
-                createdAt: recordObj.createdAt,
-                visibility: visibility,
-                listUri
-            }));
-        }
-
-        let isAuthorized = false;
-        let errorCode = '';
-
+    const checkAuth = async (targetVis: string, targetList: string | undefined) => {
         if (requesterDid === repo) {
-
-            isAuthorized = true;
-        } else if (visibility === 'list') {
-            if (!listUri) {
-                errorCode = 'ListUriMissing';
-            } else if (!isValidListUri(listUri, repo)) {
-                errorCode = 'InvalidListUri';
-            } else {
-                const result = await checkListMembership({ requesterDid, authorDid: repo, listUri });
-                isAuthorized = result.ok;
-                errorCode = result.errorCode || '';
+            return { isAuthorized: true, errorCode: '' };
+        }
+        if (targetVis === 'list') {
+            if (!targetList) {
+                return { isAuthorized: false, errorCode: 'ListUriMissing' };
             }
-        } else {
-            // Check relationship
+            if (!isValidListUri(targetList, repo)) {
+                return { isAuthorized: false, errorCode: 'InvalidListUri' };
+            }
+            const result = await checkListMembership({ requesterDid, authorDid: repo, listUri: targetList });
+            return { isAuthorized: result.ok, errorCode: result.errorCode || '' };
+        }
+        if (['followers', 'following', 'mutual'].includes(targetVis)) {
             const relationshipStartedAt = performance.now();
             try {
                 const client = new Client({ handler: simpleFetchHandler({ service: 'https://public.api.bsky.app' }) });
@@ -297,49 +277,56 @@ export const handle = async (c: Context) => {
                         Authorization: authorization
                     }
                 });
+                timings.relationship = performance.now() - relationshipStartedAt;
 
-                // relationships structure: { actor: did, relationships: [ { did: target, following: uri, followedBy: uri } ] }
                 const rel = (data as AppBskyGraphGetRelationships.$output).relationships?.[0];
                 if (rel && rel.$type === 'app.bsky.graph.defs#relationship') {
-                    // app.bsky.graph.getRelationships returns relationships from the perspective of the 'actor' (requester)
-                    // regarding the 'others' (repo/author).
-
-                    // rel.following: If the actor follows this user, this is the AT-URI of the follow record.
-                    // => Requester follows Author (閲覧者が投稿者をフォローしている = Authorのフォロワーである)
                     const isFollowing = !!rel.following;
-
-                    // rel.followedBy: If the user follows the actor, this is the AT-URI of the follow record.
-                    // => Author follows Requester (投稿者が閲覧者をフォローしている = Authorのフォロイーである)
                     const isFollowedBy = !!rel.followedBy;
 
-                    if (visibility === 'followers') {
-                        isAuthorized = isFollowing || requesterDid === repo;
-                        if (!isAuthorized) errorCode = 'NotFollower';
-                    } else if (visibility === 'following') {
-                        isAuthorized = isFollowedBy || requesterDid === repo;
-                        if (!isAuthorized) errorCode = 'NotFollowing';
-                    } else if (visibility === 'mutual') {
-                        isAuthorized = (isFollowing && isFollowedBy) || requesterDid === repo;
-                        if (!isAuthorized) errorCode = 'NotMutual';
+                    if (targetVis === 'followers') {
+                        const isAuthorized = isFollowing || requesterDid === repo;
+                        return { isAuthorized, errorCode: isAuthorized ? '' : 'NotFollower' };
+                    } else if (targetVis === 'following') {
+                        const isAuthorized = isFollowedBy || requesterDid === repo;
+                        return { isAuthorized, errorCode: isAuthorized ? '' : 'NotFollowing' };
+                    } else if (targetVis === 'mutual') {
+                        const isAuthorized = (isFollowing && isFollowedBy) || requesterDid === repo;
+                        return { isAuthorized, errorCode: isAuthorized ? '' : 'NotMutual' };
                     }
-                } else {
-                    errorCode = 'RelationshipNotFound';
                 }
-                timings.relationship = performance.now() - relationshipStartedAt;
+                return { isAuthorized: false, errorCode: 'RelationshipNotFound' };
             } catch (e) {
                 timings.relationship = performance.now() - relationshipStartedAt;
                 console.error("Error checking relationships", e);
-                errorCode = 'RelationshipCheckFailed';
+                return { isAuthorized: false, errorCode: 'RelationshipCheckFailed' };
             }
         }
+        return { isAuthorized: true, errorCode: '' };
+    };
 
-        if (!isAuthorized) {
+    if (['followers', 'following', 'mutual', 'list'].includes(visibility)) {
+        const listUri = recordObj.listUri;
+        if (!requesterDid) {
+            return finish(c.json({
+                text: recordObj.text,
+                additional: '',
+                message: `Login required. Visibility: ${visibility}`,
+                errorCode: 'AuthRequired',
+                errorDescription: `Login is required to view this content (Visibility: ${visibility})`,
+                createdAt: recordObj.createdAt,
+                visibility: visibility,
+                listUri
+            }));
+        }
 
+        const authResult = await checkAuth(visibility, listUri);
+        if (!authResult.isAuthorized) {
             return finish(c.json({
                 text: recordObj.text,
                 additional: '',
                 message: `Not authorized. Requester: ${requesterDid}, Repo: ${repo}, Visibility: ${visibility}`,
-                errorCode: errorCode || 'NotAuthorized',
+                errorCode: authResult.errorCode || 'NotAuthorized',
                 errorDescription: `One of the requirements is not met: ${visibility}`,
                 createdAt: recordObj.createdAt,
                 visibility: visibility,
@@ -347,14 +334,32 @@ export const handle = async (c: Context) => {
             }));
         }
 
-        // Authorized: Fetch content from DO
+        // Authorized for recordObj.visibility: Fetch content from DO
         try {
             const restrictedStartedAt = performance.now();
             const doRes = await getRestrictedContent(c, repo, rkey);
             timings.restricted = performance.now() - restrictedStartedAt;
-            requestMeta.restrictedDo = doRes.headers?.get?.('X-Skyblur-Restricted-DO-Timing');
-            if (doRes.ok) {
+            requestMeta.restrictedDo = doRes?.headers?.get?.('X-Skyblur-Restricted-DO-Timing');
+            if (doRes && doRes.ok) {
                 const data = await doRes.json() as { text: string, additional: string, visibility?: string, listUri?: string };
+
+                // Re-verify authorization if DO visibility was edited to a different restricted ACL (prevent new plaintext leak under old ACL)
+                if (data.visibility && data.visibility !== visibility && ['followers', 'following', 'mutual', 'list'].includes(data.visibility)) {
+                    const reAuth = await checkAuth(data.visibility, data.listUri);
+                    if (!reAuth.isAuthorized) {
+                        return finish(c.json({
+                            text: recordObj.text,
+                            additional: '',
+                            message: `Not authorized. Requester: ${requesterDid}, Repo: ${repo}, Visibility: ${data.visibility}`,
+                            errorCode: reAuth.errorCode || 'NotAuthorized',
+                            errorDescription: `One of the requirements is not met: ${data.visibility}`,
+                            createdAt: recordObj.createdAt,
+                            visibility: data.visibility,
+                            listUri: data.listUri
+                        }));
+                    }
+                }
+
                 return finish(c.json({
                     text: data.text,
                     additional: data.additional,
@@ -377,6 +382,52 @@ export const handle = async (c: Context) => {
         } catch (e) {
             console.error("DO Fetch Error", e);
             return c.json({ message: "Internal server error fetching content." }, 500);
+        }
+    }
+
+    // Protect against stale mirror: if mirror record says public, check if post was edited to restricted in DO
+    if (visibility === 'public' && (c.env as any)?.SKYBLUR_DO_RESTRICTED) {
+        try {
+            const checkRes = await getRestrictedContent(c, repo, rkey);
+            if (checkRes && checkRes.ok) {
+                const doData = await checkRes.json() as { text: string; additional: string; visibility?: string; listUri?: string };
+                if (doData.visibility && ['followers', 'following', 'mutual', 'list'].includes(doData.visibility)) {
+                    if (!requesterDid) {
+                        return finish(c.json({
+                            text: '○○○○○',
+                            additional: '',
+                            message: `Login required. Visibility: ${doData.visibility}`,
+                            errorCode: 'AuthRequired',
+                            errorDescription: `Login is required to view this content (Visibility: ${doData.visibility})`,
+                            createdAt: recordObj.createdAt,
+                            visibility: doData.visibility,
+                            listUri: doData.listUri
+                        }));
+                    }
+                    const reAuth = await checkAuth(doData.visibility, doData.listUri);
+                    if (!reAuth.isAuthorized) {
+                        return finish(c.json({
+                            text: '○○○○○',
+                            additional: '',
+                            message: `Not authorized. Requester: ${requesterDid}, Repo: ${repo}, Visibility: ${doData.visibility}`,
+                            errorCode: reAuth.errorCode || 'NotAuthorized',
+                            errorDescription: `One of the requirements is not met: ${doData.visibility}`,
+                            createdAt: recordObj.createdAt,
+                            visibility: doData.visibility,
+                            listUri: doData.listUri
+                        }));
+                    }
+                    return finish(c.json({
+                        text: doData.text,
+                        additional: doData.additional,
+                        createdAt: recordObj.createdAt,
+                        visibility: doData.visibility,
+                        listUri: doData.listUri
+                    }));
+                }
+            }
+        } catch (e) {
+            console.warn("[getPost] Stale mirror DO check error", e);
         }
     }
 
