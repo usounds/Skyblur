@@ -3,6 +3,7 @@ import { SESSION_TTL_SECONDS } from './constants';
 
 export const OAUTH_DID_COOKIE = "__Host-oauth_did";
 export const OAUTH_CALLBACK_COOKIE = "__Host-oauth_callback";
+export const OAUTH_STATE_COOKIE = "__Host-oauth_state";
 
 function getCookieSecret() {
   const secret = process.env.SESSION_SECRET || process.env.OAUTH_PRIVATE_KEY_JWK;

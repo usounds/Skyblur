@@ -65,3 +65,15 @@ export function getCookieDomain(request: Request) {
   if (parts.length < 2) return undefined;
   return `.${parts.slice(-2).join(".")}`;
 }
+
+export function isAllowedOrigin(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  try {
+    const expectedOrigin = getRequestOrigin(request);
+    return origin === expectedOrigin;
+  } catch {
+    return false;
+  }
+}

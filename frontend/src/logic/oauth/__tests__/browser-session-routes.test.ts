@@ -1,9 +1,17 @@
 import { createHmac } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({ raw: undefined as string | undefined, grant: true }));
+const state = vi.hoisted(() => ({ raw: undefined as string | undefined, oauthState: 'test-state' as string | undefined, grant: true }));
 const did = 'did:plc:route-migration';
-vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => state.raw ? { value: state.raw } : undefined }) }));
+vi.mock('next/headers', () => ({
+  cookies: async () => ({
+    get: (name: string) => {
+      if (name === '__Host-oauth_did') return state.raw ? { value: state.raw } : undefined;
+      if (name === '__Host-oauth_state') return state.oauthState ? { value: state.oauthState } : undefined;
+      return undefined;
+    },
+  }),
+}));
 vi.mock('../client', () => ({
   getOAuthClient: async () => ({
     callback: async () => { state.grant = true; return { session: { did: 'did:plc:route-migration' } }; },
@@ -17,7 +25,13 @@ vi.mock('../client', () => ({
   isDeletedSessionError: (error: Error) => error.message === 'session was deleted',
   isUnsafeOAuthResourceError: () => false,
 }));
-vi.mock('../origin', () => ({ getRequestOrigin: () => 'https://skyblur.uk' }));
+vi.mock('../origin', () => ({
+  getRequestOrigin: () => 'https://skyblur.uk',
+  isAllowedOrigin: (request: Request) => {
+    const origin = request.headers.get('origin');
+    return !origin || origin === 'https://skyblur.uk';
+  },
+}));
 vi.mock('@atcute/client', () => ({
   Client: class { async post() { return { ok: true, data: { stored: true }, headers: new Headers() }; } },
 }));
@@ -75,7 +89,7 @@ describe('OAuth cookie migration through route handlers', () => {
     await POST(new Request('https://skyblur.uk/api/oauth/logout', { method: 'POST' }));
     expect(state.grant).toBe(false);
     const { GET: callback } = await import('@/app/api/oauth/callback/route');
-    const response = await callback(new Request('https://skyblur.uk/api/oauth/callback?code=test'));
+    const response = await callback(new Request('https://skyblur.uk/api/oauth/callback?code=test&state=test-state'));
     const fresh = response.cookies.get('__Host-oauth_did')?.value;
     expect(fresh).toMatch(/^v1\./);
     const { GET: session } = await import('@/app/api/oauth/session/route');
@@ -88,7 +102,7 @@ describe('OAuth cookie migration through route handlers', () => {
     const { DynamoOAuthStore } = await import('../dynamo-store');
     vi.spyOn(DynamoOAuthStore.prototype, 'set').mockRejectedValue(new Error('store unavailable'));
     const { GET } = await import('@/app/api/oauth/callback/route');
-    const response = await GET(new Request('https://skyblur.uk/api/oauth/callback?code=test'));
+    const response = await GET(new Request('https://skyblur.uk/api/oauth/callback?code=test&state=test-state'));
     expect(response.cookies.get('__Host-oauth_did')).toBeUndefined();
     expect(response.headers.get('location')).toContain('loginError=callback_failed');
   });
@@ -105,5 +119,33 @@ describe('OAuth cookie migration through route handlers', () => {
     expect(response.cookies.get('__Host-oauth_did')).toBeUndefined();
     expect(state.grant).toBe(true);
     expect((await getBrowserSession(state.raw))?.did).toBe(did);
+  });
+
+  it('rejects cross-origin POST requests on protected routes to prevent CSRF', async () => {
+    const { POST: xrpc } = await import('@/app/xrpc/[method]/route');
+    const crossOriginReq = new Request('https://skyblur.uk/xrpc/uk.skyblur.post.store', {
+      method: 'POST',
+      headers: { 'origin': 'https://evil.com', 'content-type': 'application/json' },
+      body: '{}',
+    });
+    const response = await xrpc(crossOriginReq, { params: Promise.resolve({ method: 'uk.skyblur.post.store' }) });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ error: 'Forbidden' });
+
+    const { POST: logout } = await import('@/app/api/oauth/logout/route');
+    const crossOriginLogout = new Request('https://skyblur.uk/api/oauth/logout', {
+      method: 'POST',
+      headers: { 'origin': 'https://evil.com' },
+    });
+    const logoutRes = await logout(crossOriginLogout);
+    expect(logoutRes.status).toBe(403);
+
+    const { POST: softLogout } = await import('@/app/api/oauth/soft-logout/route');
+    const crossOriginSoftLogout = new Request('https://skyblur.uk/api/oauth/soft-logout', {
+      method: 'POST',
+      headers: { 'origin': 'https://evil.com' },
+    });
+    const softLogoutRes = await softLogout(crossOriginSoftLogout);
+    expect(softLogoutRes.status).toBe(403);
   });
 });

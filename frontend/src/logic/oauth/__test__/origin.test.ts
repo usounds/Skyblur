@@ -4,6 +4,7 @@ import {
   getAppOriginFromRequest,
   getCookieDomain,
   getRequestOrigin,
+  isAllowedOrigin,
 } from "../origin";
 
 function request(url: string, headers?: HeadersInit) {
@@ -65,5 +66,22 @@ describe("OAuth origin helpers", () => {
     const req = request("https://skyblur.uk/api");
 
     expect(() => getRequestOrigin(req)).toThrow("NEXT_PUBLIC_BASE_URL must be an origin");
+  });
+
+  it("validates origin headers correctly with isAllowedOrigin", () => {
+    process.env.NEXT_PUBLIC_BASE_URL = "https://skyblur.uk";
+
+    // No origin header (non-browser or server-to-server)
+    expect(isAllowedOrigin(request("https://skyblur.uk/xrpc/test"))).toBe(true);
+
+    // Matching origin header
+    expect(isAllowedOrigin(request("https://skyblur.uk/xrpc/test", { origin: "https://skyblur.uk" }))).toBe(true);
+
+    // Mismatched origin header (CSRF attack)
+    expect(isAllowedOrigin(request("https://skyblur.uk/xrpc/test", { origin: "https://evil.com" }))).toBe(false);
+
+    // Origin calculation throws error (e.g. invalid config)
+    delete process.env.NEXT_PUBLIC_BASE_URL;
+    expect(isAllowedOrigin(request("https://intranet/xrpc/test", { host: "intranet", origin: "https://intranet" }))).toBe(false);
   });
 });

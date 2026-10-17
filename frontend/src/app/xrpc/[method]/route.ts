@@ -11,7 +11,7 @@ import {
 } from "@/logic/oauth/client";
 import { OAUTH_DID_COOKIE } from "@/logic/oauth/cookies";
 import { getBrowserSession } from '@/logic/oauth/browser-session';
-import { getRequestOrigin } from "@/logic/oauth/origin";
+import { getRequestOrigin, isAllowedOrigin } from "@/logic/oauth/origin";
 
 const publicSkyblurMethods = new Set([
   "uk.skyblur.post.decryptByCid",
@@ -533,6 +533,13 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ method: string }> },
 ) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json(
+      { error: "Forbidden", message: "Cross-origin request forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const { method } = await context.params;
 
   if (publicSkyblurMethods.has(method)) {

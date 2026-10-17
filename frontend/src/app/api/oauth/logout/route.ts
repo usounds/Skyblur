@@ -4,9 +4,16 @@ import { NextResponse } from "next/server";
 import { getOAuthClient, restoreSession, isDeletedSessionError, isUnsafeOAuthResourceError } from "@/logic/oauth/client";
 import { OAUTH_DID_COOKIE } from "@/logic/oauth/cookies";
 import { revokeBrowserSession } from '@/logic/oauth/browser-session';
-import { getRequestOrigin } from "@/logic/oauth/origin";
+import { getRequestOrigin, isAllowedOrigin } from "@/logic/oauth/origin";
 
 export async function POST(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json(
+      { error: "Forbidden", message: "Cross-origin request forbidden" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const origin = getRequestOrigin(request);
   const rawDid = (await cookies()).get(OAUTH_DID_COOKIE)?.value;
   try {

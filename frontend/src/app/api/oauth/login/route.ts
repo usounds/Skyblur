@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getOAuthClient } from "@/logic/oauth/client";
-import { OAUTH_CALLBACK_COOKIE } from "@/logic/oauth/cookies";
+import { OAUTH_CALLBACK_COOKIE, OAUTH_STATE_COOKIE } from "@/logic/oauth/cookies";
 import { SESSION_TTL_SECONDS } from "@/logic/oauth/constants";
 import {
   getLikelyOAuthHandleTypo,
@@ -92,6 +92,13 @@ export async function GET(request: Request) {
       secure: true,
       sameSite: "lax",
       maxAge: SESSION_TTL_SECONDS,
+    });
+    response.cookies.set(OAUTH_STATE_COOKIE, result.stateId, {
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 600,
     });
     return response;
   } catch (error) {

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getOAuthClient, restoreSession } from "@/logic/oauth/client";
-import { OAUTH_CALLBACK_COOKIE, OAUTH_DID_COOKIE } from "@/logic/oauth/cookies";
+import { OAUTH_CALLBACK_COOKIE, OAUTH_DID_COOKIE, OAUTH_STATE_COOKIE } from "@/logic/oauth/cookies";
 import { getBrowserSession, issueBrowserSession } from '@/logic/oauth/browser-session';
 import { SESSION_TTL_SECONDS } from "@/logic/oauth/constants";
 import { isInvalidGrantInvalidCodeError } from "@/logic/oauth/errors";
@@ -18,8 +18,15 @@ function isSafeRedirectUrl(url: string, origin: string): boolean {
   }
 }
 
-function clearOAuthCallbackCookie(response: NextResponse) {
+function clearOAuthCookies(response: NextResponse) {
   response.cookies.set(OAUTH_CALLBACK_COOKIE, "", {
+    path: "/",
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 0,
+  });
+  response.cookies.set(OAUTH_STATE_COOKIE, "", {
     path: "/",
     httpOnly: true,
     secure: true,
@@ -34,6 +41,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const cookieStore = await cookies();
   const callbackCookie = cookieStore.get(OAUTH_CALLBACK_COOKIE)?.value;
+  const stateCookie = cookieStore.get(OAUTH_STATE_COOKIE)?.value;
+  const queryState = url.searchParams.get("state");
   const existingDid = (await getBrowserSession(cookieStore.get(OAUTH_DID_COOKIE)?.value,
     (did) => restoreSession(client, did)))?.did;
   let requestedRedirect: string | null = null;
@@ -44,6 +53,17 @@ export async function GET(request: Request) {
   }
   const redirectTo =
     requestedRedirect && isSafeRedirectUrl(requestedRedirect, origin) ? requestedRedirect : `${origin}/console`;
+
+  // Validate browser-bound state to prevent Login CSRF / Session Swapping
+  if (!stateCookie || !queryState || stateCookie !== queryState) {
+    console.warn("OAuth Callback rejected: state mismatch or missing browser-bound state cookie (Login CSRF prevented).");
+    const redirectUrl = new URL(redirectTo);
+    redirectUrl.searchParams.set("loginError", "state_mismatch");
+    const response = NextResponse.redirect(redirectUrl);
+    response.headers.set("Cache-Control", "no-store");
+    clearOAuthCookies(response);
+    return response;
+  }
 
   try {
     const { session } = await client.callback(url.searchParams);
@@ -58,7 +78,7 @@ export async function GET(request: Request) {
       sameSite: "lax",
       maxAge: SESSION_TTL_SECONDS,
     });
-    clearOAuthCallbackCookie(response);
+    clearOAuthCookies(response);
     return response;
   } catch (error: unknown) {
     const redirectUrl = new URL(redirectTo);
@@ -75,7 +95,7 @@ export async function GET(request: Request) {
 
     const response = NextResponse.redirect(redirectUrl);
     response.headers.set("Cache-Control", "no-store");
-    clearOAuthCallbackCookie(response);
+    clearOAuthCookies(response);
     return response;
   }
 }
