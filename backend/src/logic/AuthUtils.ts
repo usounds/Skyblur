@@ -1,6 +1,7 @@
 import { Context } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { createCachedResolver, verifyJWT } from './JWTTokenHandler'
+import { getOAuthClient, getRequestOrigin, restoreSession } from './ATPOauth'
 
 export async function signDid(did: string, secret: string): Promise<string> {
     const encoder = new TextEncoder();
@@ -121,6 +122,20 @@ export const getAuthenticatedDid = async (c: Context, requestId?: string): Promi
             const did = rawDid.substring(0, lastDotIndex);
             const expectedSigned = await signDid(did, secret);
             if (rawDid === expectedSigned) {
+                // The HMAC only proves the cookie was issued by this server. It does not
+                // prove the OAuth session is still live, so the session must be restored
+                // to honour server-side revocation (logout), deletion and expiry.
+                try {
+                    const origin = getRequestOrigin(c.req.raw, c.env as any);
+                    const oauth = await getOAuthClient(c.env as any, origin);
+                    await restoreSession(oauth, did);
+                } catch (e) {
+                    console.warn('[auth] cookie rejected: OAuth session could not be restored', {
+                        requestId,
+                        error: e instanceof Error ? e.message : String(e),
+                    });
+                    return null;
+                }
                 console.info('[auth] timing', {
                     requestId,
                     mode: 'cookie',
