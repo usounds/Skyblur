@@ -22,10 +22,10 @@ type OAuthMemoryItem = {
 const globalForOAuthStore = globalThis as unknown as {
   skyblurOAuthMemoryStore?: Map<string, OAuthMemoryItem>;
   skyblurOAuthWarnedMemoryFallback?: boolean;
+  skyblurOAuthLocalDevKey?: CryptoKey;
 };
 
 const client = new DynamoDBClient({});
-let aesKey: CryptoKey | null | undefined;
 const memoryStore =
   globalForOAuthStore.skyblurOAuthMemoryStore ||
   (globalForOAuthStore.skyblurOAuthMemoryStore = new Map<string, OAuthMemoryItem>());
@@ -241,28 +241,49 @@ function reviveBinary(value: unknown): unknown {
   return value;
 }
 
-async function getAesKey() {
-  if (aesKey !== undefined) return aesKey;
+let cachedAesKey: { raw?: string; key: CryptoKey | null } | undefined;
 
+async function getAesKey(): Promise<CryptoKey | null> {
   const raw = process.env.DATA_ENCRYPTION_KEY;
-  if (!raw) {
-    aesKey = null;
-    return aesKey;
+
+  if (raw) {
+    if (cachedAesKey && cachedAesKey.raw === raw) {
+      return cachedAesKey.key;
+    }
+    const bytes = Uint8Array.from(Buffer.from(raw, "base64"));
+    const key = await crypto.subtle.importKey("raw", bytes, { name: "AES-GCM" }, false, [
+      "encrypt",
+      "decrypt",
+    ]);
+    cachedAesKey = { raw, key };
+    return key;
   }
 
-  const bytes = Uint8Array.from(Buffer.from(raw, "base64"));
-  aesKey = await crypto.subtle.importKey("raw", bytes, { name: "AES-GCM" }, false, [
-    "encrypt",
-    "decrypt",
-  ]);
-  return aesKey;
+  cachedAesKey = undefined;
+
+  if (isLocalFallbackEnabled()) {
+    if (globalForOAuthStore.skyblurOAuthLocalDevKey) {
+      return globalForOAuthStore.skyblurOAuthLocalDevKey;
+    }
+    const devKey = await crypto.subtle.generateKey(
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["encrypt", "decrypt"],
+    );
+    globalForOAuthStore.skyblurOAuthLocalDevKey = devKey;
+    return devKey;
+  }
+
+  return null;
 }
 
 async function encodeValue(value: unknown) {
   const replaced = replaceBinary(value);
   const key = await getAesKey();
 
-  if (!key) return JSON.stringify(replaced);
+  if (!key) {
+    throw new Error("DATA_ENCRYPTION_KEY is required to encrypt OAuth store data");
+  }
 
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = await crypto.subtle.encrypt(
@@ -280,10 +301,14 @@ async function encodeValue(value: unknown) {
 
 async function decodeValue(value: string) {
   const parsed = JSON.parse(value);
-  if (!parsed?.__encrypted) return reviveBinary(parsed);
+  if (!parsed?.__encrypted) {
+    throw new Error("Unencrypted OAuth store data is forbidden");
+  }
 
   const key = await getAesKey();
-  if (!key) throw new Error("DATA_ENCRYPTION_KEY is required to decrypt OAuth store data");
+  if (!key) {
+    throw new Error("DATA_ENCRYPTION_KEY is required to decrypt OAuth store data");
+  }
 
   const decrypted = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: Uint8Array.from(Buffer.from(parsed.iv, "base64")) },

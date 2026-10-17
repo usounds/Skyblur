@@ -115,6 +115,7 @@ describe("Dynamo OAuth store", () => {
   it('uses strong reads and checks browser-session TTL before Dynamo deletes the item', async () => {
     vi.stubEnv('USE_AWS_REAL_DB', 'true');
     vi.stubEnv('OAUTH_STORE_TABLE_NAME', 'oauth-store');
+    vi.stubEnv('DATA_ENCRYPTION_KEY', Buffer.alloc(32, 1).toString('base64'));
     const send = vi.fn().mockResolvedValue({ Item: {
       value: { S: JSON.stringify({ did: 'did:plc:test' }) },
       expiresAt: { N: String(Math.floor(Date.now() / 1000)) },
@@ -130,6 +131,7 @@ describe("Dynamo OAuth store", () => {
     const account = new DynamoOAuthStore<string, unknown>('browser-account');
     await account.set('did:plc:test', { legacyAllowed: false });
     expect(send.mock.calls[1][0].input.Item.expiresAt).toBeUndefined();
+    expect(JSON.parse(send.mock.calls[1][0].input.Item.value.S).__encrypted).toBe(true);
   });
 
   it('conditionally deletes only the expected browser session owner', async () => {
@@ -150,5 +152,80 @@ describe("Dynamo OAuth store", () => {
     expect(await store.setIfOwner('did:plc:test', { legacyAllowed: true }, 'stale-generation')).toBe(false);
     expect(await store.setIfOwner('did:plc:test', { legacyAllowed: true }, 'stale-generation', 'generation-1')).toBe(false);
     expect(await store.get('did:plc:test')).toEqual({ legacyAllowed: false });
+  });
+
+  it('fails closed and throws error when DATA_ENCRYPTION_KEY is missing in real DB mode', async () => {
+    vi.stubEnv('USE_AWS_REAL_DB', 'true');
+    vi.stubEnv('OAUTH_STORE_TABLE_NAME', 'oauth-store');
+    vi.stubEnv('DATA_ENCRYPTION_KEY', '');
+    const send = vi.fn().mockResolvedValue({});
+    vi.doMock('@aws-sdk/client-dynamodb', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@aws-sdk/client-dynamodb')>();
+      return { ...actual, DynamoDBClient: vi.fn(function () { return { send }; }) };
+    });
+    const { DynamoOAuthStore } = await import('../dynamo-store');
+    const store = new DynamoOAuthStore<string, { token: string }>('session');
+    await expect(store.set('did:plc:victim', { token: 'secret-refresh-token' })).rejects.toThrow(
+      'DATA_ENCRYPTION_KEY is required to encrypt OAuth store data',
+    );
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('rejects unencrypted records on decode with forbidden error', async () => {
+    vi.stubEnv('USE_AWS_REAL_DB', 'true');
+    vi.stubEnv('OAUTH_STORE_TABLE_NAME', 'oauth-store');
+    vi.stubEnv('DATA_ENCRYPTION_KEY', Buffer.alloc(32, 2).toString('base64'));
+    const send = vi.fn().mockResolvedValue({
+      Item: {
+        pk: { S: 'session:did:plc:plain' },
+        value: { S: JSON.stringify({ token: 'plaintext-secret' }) },
+      },
+    });
+    vi.doMock('@aws-sdk/client-dynamodb', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@aws-sdk/client-dynamodb')>();
+      return { ...actual, DynamoDBClient: vi.fn(function () { return { send }; }) };
+    });
+    const { DynamoOAuthStore } = await import('../dynamo-store');
+    const store = new DynamoOAuthStore<string, { token: string }>('session');
+    await expect(store.get('did:plc:plain')).rejects.toThrow(
+      'Unencrypted OAuth store data is forbidden',
+    );
+  });
+
+  it('round-trips encrypted data correctly when DATA_ENCRYPTION_KEY is set', async () => {
+    vi.stubEnv('USE_AWS_REAL_DB', 'true');
+    vi.stubEnv('OAUTH_STORE_TABLE_NAME', 'oauth-store');
+    const key = Buffer.alloc(32, 9).toString('base64');
+    vi.stubEnv('DATA_ENCRYPTION_KEY', key);
+
+    let storedValue: string | undefined;
+    const send = vi.fn().mockImplementation(async (command) => {
+      if (command.input?.Item?.value?.S) {
+        storedValue = command.input.Item.value.S;
+        return {};
+      }
+      if (command.input?.Key?.pk?.S) {
+        return { Item: { value: { S: storedValue } } };
+      }
+      return {};
+    });
+
+    vi.doMock('@aws-sdk/client-dynamodb', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@aws-sdk/client-dynamodb')>();
+      return { ...actual, DynamoDBClient: vi.fn(function () { return { send }; }) };
+    });
+
+    const { DynamoOAuthStore } = await import('../dynamo-store');
+    const store = new DynamoOAuthStore<string, { secretToken: string; count: number }>('session');
+    await store.set('user-1', { secretToken: 'dpop-private-key-data', count: 42 });
+
+    expect(storedValue).toBeDefined();
+    const parsedStored = JSON.parse(storedValue!);
+    expect(parsedStored.__encrypted).toBe(true);
+    expect(parsedStored.data).toBeDefined();
+    expect(storedValue).not.toContain('dpop-private-key-data');
+
+    const retrieved = await store.get('user-1');
+    expect(retrieved).toEqual({ secretToken: 'dpop-private-key-data', count: 42 });
   });
 });
