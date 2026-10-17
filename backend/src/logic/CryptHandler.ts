@@ -1,4 +1,4 @@
-
+import { isPublicDnsHostname } from './publicDnsHostname';
 
 export async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
     const encoder = new TextEncoder();
@@ -27,16 +27,12 @@ export async function deriveKey(password: string, salt: Uint8Array): Promise<Cry
 function buildValidatedUrl(pds: string, did: string, cid: string): string {
     try {
         const base = new URL(pds);
-        const host = base.hostname.toLowerCase().replace(/\.$/, '');
         // PDS hosts are federated, not a static domain allowlist. Reject local
         // names and all IP literals, including WHATWG-normalized numeric IPv4.
         if (base.protocol !== 'https:' || base.username || base.password || base.port
             || base.pathname !== '/' || base.search || base.hash
             || /[\s\\]/.test(pds) || /\/%2e|\/\.\./i.test(pds)
-            || /^\d+\.\d+\.\d+\.\d+$/.test(host)
-            || !host.includes('.') || host.length > 253
-            || !host.split('.').every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label))
-            || /\.(?:localhost|local|internal|home|lan|invalid|test)$/.test(host)) {
+            || !isPublicDnsHostname(base.hostname)) {
             throw new Error('Unsafe PDS URL');
         }
         const url = new URL('/xrpc/com.atproto.sync.getBlob', base);

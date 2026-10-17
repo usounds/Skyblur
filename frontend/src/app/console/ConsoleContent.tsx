@@ -30,13 +30,20 @@ export function ConsoleContent() {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const [inlineEditInitialData, setInlineEditInitialData] = useState<PostComposerInitialData | null>(null);
 
+    useEffect(() => {
+        setInlineEditInitialData(null);
+    }, [did]);
+
     const handleEdit = async (input: PostListItem) => {
+        const editingDid = did;
+        if (!editingDid || useXrpcAgentStore.getState().did !== editingDid) return;
         const parts = input.blurATUri.split('/');
         const routeDid = parts[2];
         const routeRkey = parts[4];
         if (routeDid && routeRkey) {
             if (input.blur.visibility === VISIBILITY_PASSWORD && input.isDecrypt && input.encryptKey) {
                 const gateInitialData = await loadGateInitialData(apiProxyAgent, routeDid, routeRkey);
+                if (useXrpcAgentStore.getState().did !== editingDid) return;
                 setInlineEditInitialData(applyPasswordUnlockToInitialData({
                     ...buildEditInitialData({
                         did: routeDid,
@@ -131,7 +138,7 @@ export function ConsoleContent() {
         );
     }
 
-    if (inlineEditInitialData) {
+    if (inlineEditInitialData && inlineEditInitialData.authorDid === did) {
         return (
             <PostComposerRouteScaffold
                 mode="edit"

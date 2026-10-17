@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handle } from '../getPost';
+import * as ListVisibility from '../listVisibility';
 import * as AuthUtils from '@/logic/AuthUtils';
 import * as JWTTokenHandler from '@/logic/JWTTokenHandler';
 import * as CryptHandler from '@/logic/CryptHandler';
@@ -54,7 +55,7 @@ describe('getPost API', () => {
         });
 
         // Setup DO Mocks
-        mockDOFetch = vi.fn();
+        mockDOFetch = vi.fn().mockResolvedValue(new Response(null, { status: 404 }));
         mockDONamespace = {
             idFromName: vi.fn().mockReturnValue('do-id'),
             get: vi.fn().mockReturnValue({ fetch: mockDOFetch })
@@ -557,41 +558,81 @@ describe('getPost API', () => {
         }));
     });
 
-    it('should protect against stale mirror when mirror says public but DO has restricted content (Issue 2)', async () => {
-        // Mirror says public
-        mockFetch.mockResolvedValue({
-            ok: true,
-            json: async () => ({
-                value: {
-                    text: 'stale public text',
-                    createdAt: '2024-01-01',
-                    visibility: 'public'
-                }
-            })
-        });
-
-        // DO has restricted post
-        mockDOFetch.mockResolvedValue({
-            ok: true,
-            json: async () => ({
-                text: 'new restricted secret',
-                additional: '',
-                visibility: 'followers'
-            })
-        });
-
-        // Anonymous requester
-        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' }, null);
-
+    it('rechecks list membership when only the restricted list URI changes', async () => {
+        const oldList = 'at://did:repo/app.bsky.graph.list/old';
+        const newList = 'at://did:repo/app.bsky.graph.list/new';
+        mockFetch.mockResolvedValue(Response.json({ value: {
+            text: '○○○○○', visibility: 'list', listUri: oldList, createdAt: '2024-01-01',
+        } }));
+        mockDOFetch.mockResolvedValue(Response.json({
+            text: 'new list private text', visibility: 'list', listUri: newList, additional: '',
+        }));
+        const membership = vi.spyOn(ListVisibility, 'checkListMembership')
+            .mockResolvedValueOnce({ ok: true })
+            .mockResolvedValueOnce({ ok: false, errorCode: 'NotListMember' });
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' });
         await handle(c);
-
-        // Should return AuthRequired instead of stale public plaintext
-        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({
-            errorCode: 'AuthRequired',
-            visibility: 'followers'
-        }));
-        expect(c.json).not.toHaveBeenCalledWith(expect.objectContaining({
-            text: 'stale public text'
-        }));
+        expect(membership).toHaveBeenNthCalledWith(2, expect.objectContaining({ listUri: newList }));
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: 'NotListMember', listUri: newList }));
+        expect(JSON.stringify(c.json.mock.calls)).not.toContain('new list private text');
     });
+
+    it('rechecks the live PDS ACL when a public mirror conflicts with restricted storage', async () => {
+        mockMirrorFetch.mockResolvedValueOnce(Response.json({
+            value: { text: 'stale public text', visibility: 'public', createdAt: '2024-01-01' },
+            source: 'jetstream',
+        }));
+        mockFetch.mockResolvedValue(Response.json({ value: {
+            text: '○○○○○', visibility: 'followers', createdAt: '2024-01-01',
+        } }));
+        mockDOFetch.mockResolvedValue(Response.json({
+            text: 'new restricted secret', visibility: 'followers', additional: '',
+        }));
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' }, null);
+        await handle(c);
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({
+            text: '○○○○○', errorCode: 'AuthRequired', visibility: 'followers',
+        }));
+        expect(mockFetch).toHaveBeenCalledOnce();
+    });
+
+    it.each([null, 'did:repo', 'did:example:requester'])(
+        'never returns stale restricted plaintext after publishing for viewer %s', async (viewer) => {
+            mockMirrorFetch.mockResolvedValueOnce(Response.json({
+                value: { text: 'current public body', visibility: 'public', createdAt: '2024-01-01' },
+                source: 'jetstream',
+            }));
+            mockFetch.mockResolvedValue(Response.json({ value: {
+                text: 'current public body', additional: 'current public note', visibility: 'public', createdAt: '2024-01-01',
+            } }));
+            mockDOFetch.mockResolvedValue(Response.json({
+                text: 'old restricted secret', additional: 'old note', visibility: 'followers',
+            }));
+            mockClientGet.mockResolvedValue({ data: { relationships: [{
+                $type: 'app.bsky.graph.defs#relationship', following: 'at://follow',
+            }] } });
+            const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' }, viewer);
+            await handle(c);
+            expect(c.json).toHaveBeenCalledWith(expect.objectContaining({
+                text: 'current public body', additional: 'current public note', visibility: 'public',
+            }));
+            expect(JSON.stringify(c.json.mock.calls)).not.toContain('old restricted secret');
+        },
+    );
+
+    it.each(['throw', '500', 'invalid-json'])(
+        'does not return public mirror plaintext if restricted check fails with %s and PDS is unavailable', async (failure) => {
+            mockMirrorFetch.mockResolvedValueOnce(Response.json({
+                value: { text: 'stale mirror secret', visibility: 'public', createdAt: '2024-01-01' },
+                source: 'jetstream',
+            }));
+            if (failure === 'throw') mockDOFetch.mockRejectedValue(new Error('unavailable'));
+            else mockDOFetch.mockResolvedValue(new Response('bad', { status: failure === '500' ? 500 : 200 }));
+            mockFetch.mockRejectedValue(new Error('PDS unavailable'));
+            const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/123' }, null);
+            await handle(c);
+            expect(c.json).toHaveBeenCalledWith({ message: 'Cannot verify current post visibility.' }, 503);
+            expect(JSON.stringify(c.json.mock.calls)).not.toContain('stale mirror secret');
+        },
+    );
 });

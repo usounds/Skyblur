@@ -68,10 +68,12 @@ function buildPostPath(did: string, blurUri: string) {
 }
 
 function syncCreateDraft(state: PostComposerState, authorDid?: string) {
+  if (!authorDid || useXrpcAgentStore.getState().did !== authorDid) return;
   setActiveCreateSession(true);
 
   const tempPost = useTempPostStore.getState();
 
+  tempPost.setOwnerDid(authorDid);
   tempPost.setVisibility(state.visibility);
   tempPost.setSimpleMode(state.simpleMode);
   tempPost.setLimitConsecutive(state.limitConsecutive);
@@ -81,12 +83,14 @@ function syncCreateDraft(state: PostComposerState, authorDid?: string) {
   tempPost.setEncryptKey(state.visibility === VISIBILITY_PASSWORD ? state.password : "");
   tempPost.setReply(state.replyPost?.uri ?? "");
   tempPost.setReplyPost(state.replyPost);
-  if (authorDid) {
-    tempPost.setOwnerDid(authorDid);
-  }
 }
 
-export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEditData, onExit }: PostComposerRouteScaffoldProps) {
+export function PostComposerRouteScaffold(props: PostComposerRouteScaffoldProps) {
+  const did = useXrpcAgentStore((state) => state.did);
+  return <AccountPostComposerRouteScaffold key={did || "anonymous"} {...props} />;
+}
+
+function AccountPostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEditData, onExit }: PostComposerRouteScaffoldProps) {
   const { localeData: locale } = useLocale();
   const router = useRouter();
   const setHasUnsavedComposerChanges = useComposerLocaleSwitchGuardStore((state) => state.setHasUnsavedComposerChanges);
@@ -106,6 +110,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   const tempLimitConsecutive = useTempPostStore((state) => state.limitConsecutive);
   const tempReply = useTempPostStore((state) => state.reply);
   const tempReplyPostSnapshot = useTempPostStore((state) => state.replyPostSnapshot);
+  const sensitiveOwnerDid = useSensitiveDraftStore((state) => state.ownerDid);
   const sensitiveText = useSensitiveDraftStore((state) => state.text);
   const sensitiveAdditional = useSensitiveDraftStore((state) => state.additional);
   const sensitivePassword = useSensitiveDraftStore((state) => state.password || state.encryptKey);
@@ -115,6 +120,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   const [restoreDecision, setRestoreDecision] = useState<"pending" | "restored" | "fresh">(initialRestoreDecision);
   const restoreDecisionRef = useRef<"pending" | "restored" | "fresh">(initialRestoreDecision);
   const suppressCreateDraftSyncRef = useRef(false);
+  const isActiveRef = useRef(true);
   const [isDraftHydrated, setIsDraftHydrated] = useState(mode !== "create");
   const [initialCreateDraft, setInitialCreateDraft] = useState<PostComposerInitialData | null>(null);
   const [restoredReplyPost, setRestoredReplyPost] = useState<PostView | undefined>();
@@ -151,7 +157,9 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
     router.push("/console");
   }, [onExit, router, setHasUnsavedComposerChanges]);
   useEffect(() => {
+    isActiveRef.current = true;
     return () => {
+      isActiveRef.current = false;
       setActiveCreateSession(false);
       setHasUnsavedComposerChanges(false);
     };
@@ -159,7 +167,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   const routeRkey = useMemo(() => safeDecode(rkeyParam), [rkeyParam]);
   const hasInlineEditData = mode === "edit" && !!initialEditData;
   const hasInvalidEditParams = mode === "edit" && !hasInlineEditData && (!routeDid || !routeRkey);
-  const isDifferentAccount = mode === "edit" && !hasInlineEditData && !!routeDid && !!did && routeDid !== did;
+  const isDifferentAccount = mode === "edit" && !!did && (hasInlineEditData ? initialEditData?.authorDid !== did : !!routeDid && routeDid !== did);
   const createInitialData = useMemo<PostComposerInitialData>(() => {
     const visibility = (tempVisibility ?? VISIBILITY_PUBLIC) as VisibilityValue;
     const isPassword = visibility === VISIBILITY_PASSWORD;
@@ -192,7 +200,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
     restoredReplyPost,
     tempReplyPostSnapshot,
   ]);
-  const hasCreateDraft = mode === "create" && (!tempOwnerDid || tempOwnerDid === did) && !!(
+  const hasCreateDraft = mode === "create" && (!!did && tempOwnerDid === did && (tempVisibility !== VISIBILITY_PASSWORD || sensitiveOwnerDid === did)) && !!(
     tempText
     || tempAdditional
     || tempReply
@@ -293,7 +301,10 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
   useEffect(() => {
     if (mode !== "create" || isAuthenticated !== true || !isDraftHydrated) return;
 
-    if (tempOwnerDid && did && tempOwnerDid !== did) {
+    const hasSensitiveData = !!(sensitiveText || sensitiveAdditional || sensitivePassword);
+    if ((tempOwnerDid && tempOwnerDid !== did)
+      || ((tempText || tempAdditional || tempReply || hasSensitiveData) && tempOwnerDid !== did)
+      || (hasSensitiveData && sensitiveOwnerDid !== did)) {
       clearTempPost();
       commitRestoreDecision("fresh");
       return;
@@ -310,7 +321,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
 
     setInitialCreateDraft(createInitialData);
     setRestorePostData(true);
-  }, [clearTempPost, commitRestoreDecision, createInitialData, did, hasCreateDraft, isAuthenticated, isDraftHydrated, isTempReplyResolved, mode, tempOwnerDid, tempReply]);
+  }, [clearTempPost, commitRestoreDecision, createInitialData, did, hasCreateDraft, isAuthenticated, isDraftHydrated, isTempReplyResolved, mode, tempOwnerDid, tempReply, tempText, tempAdditional, sensitiveOwnerDid, sensitiveText, sensitiveAdditional, sensitivePassword]);
 
   useEffect(() => {
     const currentState = useXrpcAgentStore.getState();
@@ -425,6 +436,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
       initialData={initialData ?? activeCreateInitialData}
       onBack={exitToConsole}
       onStateChange={(state) => {
+        if (!isActiveRef.current || useXrpcAgentStore.getState().did !== did) return;
         if (mode === "create" && suppressCreateDraftSyncRef.current) {
           return;
         }
@@ -436,6 +448,7 @@ export function PostComposerRouteScaffold({ mode, didParam, rkeyParam, initialEd
       requiresRelogin={missingScopes.length > 0}
       onSubmit={async (state, plan) => {
         const result = await postComposerSave({ state, plan, did, agent, apiProxyAgent, locale, initialData });
+        if (!isActiveRef.current || useXrpcAgentStore.getState().did !== did) return result;
         if (result.status === "success") {
           suppressCreateDraftSyncRef.current = true;
           clearSensitiveDraft();

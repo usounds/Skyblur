@@ -147,6 +147,7 @@ export const useTempPostStore = create(
       setVisibility: (visibility: string) => set((state) => {
         if (visibility === VISIBILITY_PASSWORD && state.visibility !== VISIBILITY_PASSWORD) {
           useSensitiveDraftStore.getState().setSensitiveDraft({
+            ownerDid: state.ownerDid,
             text: state.text,
             additional: state.additional,
             password: state.encryptKey || '',
@@ -180,7 +181,10 @@ export const useTempPostStore = create(
       }),
       setListUri: (listUri?: string) => set({ listUri }),
       setLimitConsecutive: (limit: boolean) => set({ limitConsecutive: limit }),
-      setOwnerDid: (ownerDid?: string) => set({ ownerDid }),
+      setOwnerDid: (ownerDid?: string) => {
+        useSensitiveDraftStore.getState().setSensitiveDraft({ ownerDid });
+        set({ ownerDid });
+      },
       clearTempPost: () => {
         clearSensitiveDraft();
         set({

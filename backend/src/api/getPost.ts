@@ -246,6 +246,30 @@ export const handle = async (c: Context) => {
         return c.json({ message: `Cannot getRecord[${decodedUri}]` }, 500);
     }
 
+    // A leftover restricted entry may belong to an older revision. Resolve conflicts
+    // against the PDS instead of serving either cached plaintext on an ambiguous ACL.
+    if (recordObj.visibility === 'public' && (c.env as Env).SKYBLUR_DO_RESTRICTED) {
+        let requiresVerification = false;
+        try {
+            const response = await getRestrictedContent(c, repo, rkey);
+            if (response?.ok) {
+                const stored = await response.json() as { visibility?: string };
+                requiresVerification = stored.visibility !== 'public';
+            } else {
+                requiresVerification = response?.status !== 404;
+            }
+        } catch {
+            requiresVerification = true;
+        }
+        if (requiresVerification) {
+            try {
+                recordObj = (await getSkyblurRecord(repo, rkey)).value as UkSkyblurPost.Record;
+            } catch {
+                return c.json({ message: 'Cannot verify current post visibility.' }, 503);
+            }
+        }
+    }
+
     // Visibility checks
     const visibility = recordObj.visibility as string;
     requestMeta.visibility = visibility;
@@ -344,7 +368,7 @@ export const handle = async (c: Context) => {
                 const data = await doRes.json() as { text: string, additional: string, visibility?: string, listUri?: string };
 
                 // Re-verify authorization if DO visibility was edited to a different restricted ACL (prevent new plaintext leak under old ACL)
-                if (data.visibility && data.visibility !== visibility && ['followers', 'following', 'mutual', 'list'].includes(data.visibility)) {
+                if (data.visibility && (data.visibility !== visibility || (data.visibility === 'list' && data.listUri !== listUri)) && ['followers', 'following', 'mutual', 'list'].includes(data.visibility)) {
                     const reAuth = await checkAuth(data.visibility, data.listUri);
                     if (!reAuth.isAuthorized) {
                         return finish(c.json({
@@ -382,52 +406,6 @@ export const handle = async (c: Context) => {
         } catch (e) {
             console.error("DO Fetch Error", e);
             return c.json({ message: "Internal server error fetching content." }, 500);
-        }
-    }
-
-    // Protect against stale mirror: if mirror record says public, check if post was edited to restricted in DO
-    if (visibility === 'public' && (c.env as any)?.SKYBLUR_DO_RESTRICTED) {
-        try {
-            const checkRes = await getRestrictedContent(c, repo, rkey);
-            if (checkRes && checkRes.ok) {
-                const doData = await checkRes.json() as { text: string; additional: string; visibility?: string; listUri?: string };
-                if (doData.visibility && ['followers', 'following', 'mutual', 'list'].includes(doData.visibility)) {
-                    if (!requesterDid) {
-                        return finish(c.json({
-                            text: '○○○○○',
-                            additional: '',
-                            message: `Login required. Visibility: ${doData.visibility}`,
-                            errorCode: 'AuthRequired',
-                            errorDescription: `Login is required to view this content (Visibility: ${doData.visibility})`,
-                            createdAt: recordObj.createdAt,
-                            visibility: doData.visibility,
-                            listUri: doData.listUri
-                        }));
-                    }
-                    const reAuth = await checkAuth(doData.visibility, doData.listUri);
-                    if (!reAuth.isAuthorized) {
-                        return finish(c.json({
-                            text: '○○○○○',
-                            additional: '',
-                            message: `Not authorized. Requester: ${requesterDid}, Repo: ${repo}, Visibility: ${doData.visibility}`,
-                            errorCode: reAuth.errorCode || 'NotAuthorized',
-                            errorDescription: `One of the requirements is not met: ${doData.visibility}`,
-                            createdAt: recordObj.createdAt,
-                            visibility: doData.visibility,
-                            listUri: doData.listUri
-                        }));
-                    }
-                    return finish(c.json({
-                        text: doData.text,
-                        additional: doData.additional,
-                        createdAt: recordObj.createdAt,
-                        visibility: doData.visibility,
-                        listUri: doData.listUri
-                    }));
-                }
-            }
-        } catch (e) {
-            console.warn("[getPost] Stale mirror DO check error", e);
         }
     }
 

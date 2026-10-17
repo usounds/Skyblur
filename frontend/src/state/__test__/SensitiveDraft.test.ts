@@ -28,6 +28,7 @@ describe('SensitiveDraftStore', () => {
     vi.resetModules();
     memoryStorage = createMemoryStorage();
     vi.stubGlobal('localStorage', memoryStorage);
+    vi.stubGlobal('window', { localStorage: memoryStorage, location: { origin: 'http://localhost:4502' } });
   });
 
   it('moves normal draft content into the sensitive bucket when password visibility starts', async () => {
@@ -215,6 +216,22 @@ describe('SensitiveDraftStore', () => {
 
     expect(useTempPostStore.getState().ownerDid).toBeUndefined();
     expect(useTempPostStore.getState().text).toBe('');
+  });
+
+  it('persists sensitive draft ownership across reload and clears it with the draft', async () => {
+    const { useTempPostStore } = await import('../TempPost');
+    useTempPostStore.getState().setOwnerDid('did:plc:userA');
+    useTempPostStore.getState().setVisibility('password');
+    useTempPostStore.getState().setText('private draft');
+    useTempPostStore.getState().setEncryptKey('private password');
+    const persisted = JSON.parse(memoryStorage.getItem('zustand.sensitive-post-draft')!);
+    expect(persisted.state.ownerDid).toBe('did:plc:userA');
+    vi.resetModules();
+    const { useSensitiveDraftStore } = await import('../SensitiveDraft');
+    expect(useSensitiveDraftStore.getState()).toMatchObject({ ownerDid: 'did:plc:userA', text: 'private draft' });
+    useSensitiveDraftStore.getState().clearSensitiveDraft();
+    expect(useSensitiveDraftStore.getState().ownerDid).toBeUndefined();
+    expect(memoryStorage.getItem('zustand.sensitive-post-draft')).not.toContain('private draft');
   });
 
   it('clears draft when session switches to another account in XrpcAgent', async () => {

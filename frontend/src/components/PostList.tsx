@@ -25,7 +25,12 @@ type PostListProps = {
     did: string;
 };
 
-export const PostList: React.FC<PostListProps> = ({
+export const PostList: React.FC<PostListProps> = (props) => {
+    const viewerDid = useXrpcAgentStore((state) => state.did);
+    return <AccountPostList key={`${props.did}:${viewerDid || 'anonymous'}`} {...props} />;
+};
+
+const AccountPostList: React.FC<PostListProps> = ({
     handleEdit,
     agent,
     did
@@ -42,6 +47,10 @@ export const PostList: React.FC<PostListProps> = ({
     const [isLast, setIsLast] = useState<boolean>(false)
 
     const isMounted = useRef(true);
+    const requestGeneration = useRef(0);
+    const isCurrentRequest = (generation: number) => isMounted.current
+        && generation === requestGeneration.current
+        && useXrpcAgentStore.getState().did === loginDid;
     const observerTarget = useRef<HTMLDivElement>(null);
 
     const getPosts = useCallback(async (currentCursor: string, isInitial: boolean = false) => {
@@ -50,6 +59,7 @@ export const PostList: React.FC<PostListProps> = ({
             return;
         }
 
+        const generation = requestGeneration.current;
         setIsLoading(true)
         const deleteListLocal: PostListItem[] = [];
         try {
@@ -64,7 +74,7 @@ export const PostList: React.FC<PostListProps> = ({
                 params: param
             });
 
-            if (!result.ok || !isMounted.current) {
+            if (!result.ok || !isCurrentRequest(generation)) {
                 return;
             }
 
@@ -103,15 +113,16 @@ export const PostList: React.FC<PostListProps> = ({
         } catch (error) {
             console.error('PostList: Error fetching records:', error);
         } finally {
-            if (isMounted.current) {
+            if (isCurrentRequest(generation)) {
                 setIsLoading(false);
             }
         }
-    }, [agent, did]);
+    }, [agent, did, loginDid]);
 
     const isSessionChecked = useXrpcAgentStore(state => state.isSessionChecked);
 
     useEffect(() => {
+        requestGeneration.current += 1;
         isMounted.current = true;
         if (did && agent && isSessionChecked) {
             setDeleteList([]);
@@ -123,6 +134,7 @@ export const PostList: React.FC<PostListProps> = ({
         }
         return () => {
             isMounted.current = false;
+            requestGeneration.current += 1;
         };
     }, [did, agent, isSessionChecked, getPosts]);
 
@@ -149,6 +161,7 @@ export const PostList: React.FC<PostListProps> = ({
     }, [cursor, isLoading, isLast, getPosts]);
 
     const handleDisplay = async (item: PostListItem) => {
+        const generation = requestGeneration.current;
         if (!item.isDecrypt && item.blur?.visibility === VISIBILITY_PASSWORD) {
             return
         }
@@ -183,6 +196,7 @@ export const PostList: React.FC<PostListProps> = ({
                     }
                 });
 
+                if (!isCurrentRequest(generation)) return;
                 notifications.hide('auth-fetch');
 
                 if (res.ok && res.data) {
@@ -191,7 +205,7 @@ export const PostList: React.FC<PostListProps> = ({
                     // Only update masked text if we have no error code (meaning success)
                     if (data.text && !data.errorCode) {
                         // Success: Update item and show detail
-                        const updatedList = deleteList.map((currentItem) =>
+                        setDeleteList((previous) => previous.map((currentItem) =>
                             currentItem === item
                                 ? {
                                     ...currentItem,
@@ -200,8 +214,7 @@ export const PostList: React.FC<PostListProps> = ({
                                     isDecrypt: true
                                 }
                                 : currentItem
-                        );
-                        setDeleteList(updatedList);
+                        ));
                     }
 
                     if (data.errorCode) {
@@ -247,6 +260,7 @@ export const PostList: React.FC<PostListProps> = ({
                     });
                 }
             } catch (e) {
+                if (!isCurrentRequest(generation)) return;
                 notifications.hide('auth-fetch');
                 console.error("Tap-to-Reveal fetch error:", e);
                 notifications.show({
@@ -278,6 +292,7 @@ export const PostList: React.FC<PostListProps> = ({
     };
 
     const handleDecrypt = async (item: typeof deleteList[number]) => {
+        const generation = requestGeneration.current;
         if (!item.encryptKey) {
             notifications.show({
                 title: 'Error',
@@ -327,8 +342,10 @@ export const PostList: React.FC<PostListProps> = ({
                 body: JSON.stringify(decryptByCidBody)
             });
 
+            if (!isCurrentRequest(generation)) return;
             if (response.ok) {
                 const data: UkSkyblurPostDecryptByCid.Output = await response.json()
+                if (!isCurrentRequest(generation)) return;
                 notifications.clean()
                 setDeleteList((prevList) =>
                     prevList.map((listItem) =>
@@ -367,6 +384,7 @@ export const PostList: React.FC<PostListProps> = ({
                 }
             }
         } catch (e) {
+            if (!isCurrentRequest(generation)) return;
             notifications.clean()
             notifications.show({
                 title: 'Error',
@@ -376,7 +394,7 @@ export const PostList: React.FC<PostListProps> = ({
             });
         }
 
-        setIsDecrypting(false)
+        if (isCurrentRequest(generation)) setIsDecrypting(false)
 
     }
 
@@ -526,6 +544,7 @@ export const PostList: React.FC<PostListProps> = ({
                                         </Text>
                                         <Group justify="center" gap="sm" mt="xs">
                                             <Input
+                                                type="password"
                                                 value={item.encryptKey ?? ""}
                                                 size="xs"
                                                 styles={{

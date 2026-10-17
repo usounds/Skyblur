@@ -7,11 +7,12 @@ type SensitiveDraftData = {
   password: string;
   encryptKey: string;
   updatedAt?: number;
+  ownerDid?: string;
 };
 
 type PersistedSensitiveDraftData = Pick<
   SensitiveDraftData,
-  'text' | 'additional' | 'password' | 'encryptKey' | 'updatedAt'
+  'text' | 'additional' | 'password' | 'encryptKey' | 'updatedAt' | 'ownerDid'
 >;
 
 type SensitiveDraftAction = {
@@ -27,6 +28,7 @@ const emptySensitiveDraft: SensitiveDraftData = {
   additional: '',
   password: '',
   encryptKey: '',
+  ownerDid: undefined,
 };
 
 export const useSensitiveDraftStore = create(
@@ -56,6 +58,7 @@ export const useSensitiveDraftStore = create(
           password: persisted?.password ?? '',
           encryptKey: persisted?.encryptKey ?? persisted?.password ?? '',
           updatedAt: persisted?.updatedAt,
+          ownerDid: persisted?.ownerDid,
         };
       },
       partialize: (state) => ({
@@ -64,6 +67,7 @@ export const useSensitiveDraftStore = create(
         password: state.password,
         encryptKey: state.encryptKey,
         updatedAt: state.updatedAt,
+        ownerDid: state.ownerDid,
       }),
     },
   ),
