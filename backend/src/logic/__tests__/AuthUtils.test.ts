@@ -4,10 +4,22 @@ import * as JWTTokenHandler from '../JWTTokenHandler';
 
 // Mock JWTTokenHandler
 vi.mock('../JWTTokenHandler');
+vi.mock('../ATPOauth', () => ({
+    getOAuthClient: vi.fn(),
+    getRequestOrigin: vi.fn(),
+    restoreSession: vi.fn(),
+}));
+import * as ATPOauth from '../ATPOauth';
 
 describe('AuthUtils', () => {
     beforeEach(() => {
         vi.resetAllMocks();
+        // @ts-ignore
+        ATPOauth.getRequestOrigin.mockReturnValue('https://api.example.com');
+        // @ts-ignore
+        ATPOauth.getOAuthClient.mockResolvedValue({});
+        // @ts-ignore
+        ATPOauth.restoreSession.mockResolvedValue({});
     });
 
     describe('signDid', () => {
@@ -180,6 +192,165 @@ describe('AuthUtils', () => {
 
             const did = await getAuthenticatedDid(c);
             expect(did).toBe(storedDid);
+        });
+
+        it('should reject a validly signed cookie when the OAuth session was revoked', async () => {
+            const secret = 'secret-key';
+            const signedDid = await signDid('did:example:revoked', secret);
+
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { OAUTH_PRIVATE_KEY_JWK: secret, APPVIEW_HOST: 'app.example.com' }
+            };
+            // @ts-ignore
+            ATPOauth.restoreSession.mockRejectedValue(new Error('session was deleted'));
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBeNull();
+        });
+
+        it('should reject a validly signed cookie when the OAuth session was explicitly revoked via logout', async () => {
+            const secret = 'secret-key';
+            const signedDid = await signDid('did:example:loggedout', secret);
+
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { OAUTH_PRIVATE_KEY_JWK: secret, APPVIEW_HOST: 'app.example.com' }
+            };
+            // Simulate the session being revoked (e.g., via oauth.revoke(did))
+            // @ts-ignore
+            ATPOauth.restoreSession.mockRejectedValue(new Error('Session not found'));
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBeNull();
+            // Verify that restoreSession was called to check session validity
+            expect(ATPOauth.restoreSession).toHaveBeenCalledWith(expect.anything(), 'did:example:loggedout');
+        });
+
+        it('should reject a validly signed cookie when the OAuth session has expired', async () => {
+            const secret = 'secret-key';
+            const signedDid = await signDid('did:example:expired', secret);
+
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { OAUTH_PRIVATE_KEY_JWK: secret, APPVIEW_HOST: 'app.example.com' }
+            };
+            // Simulate an expired session
+            // @ts-ignore
+            ATPOauth.restoreSession.mockRejectedValue(new Error('Token expired'));
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBeNull();
+        });
+
+        it('should accept a validly signed cookie when the OAuth session is still active', async () => {
+            const secret = 'secret-key';
+            const storedDid = 'did:example:active';
+            const signedDid = await signDid(storedDid, secret);
+
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { OAUTH_PRIVATE_KEY_JWK: secret, APPVIEW_HOST: 'app.example.com' }
+            };
+            // Simulate a valid, active session
+            // @ts-ignore
+            ATPOauth.restoreSession.mockResolvedValue({ did: storedDid });
+
+            const did = await getAuthenticatedDid(c);
+            expect(did).toBe(storedDid);
+            // Verify that restoreSession was called to validate the session
+            expect(ATPOauth.restoreSession).toHaveBeenCalledWith(expect.anything(), storedDid);
+        });
+
+        it('should reject cookie fallback after JWT failure when session was revoked', async () => {
+            const secret = 'secret-key';
+            const signedDid = await signDid('did:example:revoked', secret);
+
+            const c: any = {
+                req: {
+                    header: vi.fn().mockReturnValue('Bearer expired-jwt-token'),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { 
+                    OAUTH_PRIVATE_KEY_JWK: secret, 
+                    APPVIEW_HOST: 'app.example.com' 
+                }
+            };
+            // JWT verification fails (e.g., expired token)
+            // @ts-ignore
+            JWTTokenHandler.verifyJWT.mockRejectedValue(new Error('JWT expired'));
+            // Cookie HMAC is valid but session was revoked
+            // @ts-ignore
+            ATPOauth.restoreSession.mockRejectedValue(new Error('session was deleted'));
+
+            const did = await getAuthenticatedDid(c);
+            // Should reject authentication entirely, not fall back to revoked cookie
+            expect(did).toBeNull();
+        });
+
+        it('should prevent replay of copied cookie after server-side revocation', async () => {
+            const secret = 'secret-key';
+            const victimDid = 'did:example:victim';
+            const signedDid = await signDid(victimDid, secret);
+
+            // Scenario: Attacker copied the cookie before victim logged out
+            // Victim logs out, which calls oauth.revoke(did)
+            // Attacker tries to replay the copied cookie
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { OAUTH_PRIVATE_KEY_JWK: secret, APPVIEW_HOST: 'app.example.com' }
+            };
+            // The session was revoked server-side, so restoreSession fails
+            // @ts-ignore
+            ATPOauth.restoreSession.mockRejectedValue(new Error('Session not found'));
+
+            const did = await getAuthenticatedDid(c);
+            // The cookie replay should be rejected
+            expect(did).toBeNull();
+            // Verify that the session validity was checked
+            expect(ATPOauth.restoreSession).toHaveBeenCalledWith(expect.anything(), victimDid);
+        });
+
+        it('should verify OAuth session state for cookie auth even with valid HMAC signature', async () => {
+            const secret = 'secret-key';
+            const testDid = 'did:example:test';
+            const signedDid = await signDid(testDid, secret);
+
+            const c: any = {
+                req: {
+                    header: vi.fn(),
+                    raw: { headers: new Headers({ 'Cookie': `oauth_did=${signedDid}` }) }
+                },
+                env: { OAUTH_PRIVATE_KEY_JWK: secret, APPVIEW_HOST: 'app.example.com' }
+            };
+            
+            // Mock restoreSession to succeed
+            // @ts-ignore
+            ATPOauth.restoreSession.mockResolvedValue({ did: testDid });
+
+            const did = await getAuthenticatedDid(c);
+            
+            // Should succeed because both HMAC and session are valid
+            expect(did).toBe(testDid);
+            // Critical: verify that restoreSession was called (the security fix)
+            expect(ATPOauth.restoreSession).toHaveBeenCalled();
+            expect(ATPOauth.getOAuthClient).toHaveBeenCalled();
+            expect(ATPOauth.getRequestOrigin).toHaveBeenCalled();
         });
 
         it('should return DID from cookie for did:web identifiers that include dots', async () => {
