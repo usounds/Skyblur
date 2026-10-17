@@ -22,7 +22,7 @@ describe("signed DID cookies", () => {
 
     const signed = signDid(did);
 
-    expect(signed).toMatch(/^did:web:alice\.example\.com\./);
+    expect(signed).toMatch(/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
     expect(verifySignedDid(signed)).toBe(did);
   });
 
@@ -31,6 +31,13 @@ describe("signed DID cookies", () => {
 
     expect(OAUTH_DID_COOKIE).toBe("__Host-oauth_did");
     expect(OAUTH_CALLBACK_COOKIE).toBe("__Host-oauth_callback");
+  });
+
+  it('uses distinct session IDs and enforces signed expiry', async () => {
+    const { signDid, verifySignedSession } = await import('../cookies');
+    expect(signDid('did:plc:abc')).not.toBe(signDid('did:plc:abc'));
+    const expired = signDid('did:plc:abc', '00000000-0000-4000-8000-000000000000', Math.floor(Date.now() / 1000));
+    expect(verifySignedSession(expired)).toBeNull();
   });
 
   it("rejects missing, malformed, and tampered values", async () => {

@@ -9,7 +9,8 @@ import {
   isUnsafeOAuthResourceError,
   restoreSession,
 } from "@/logic/oauth/client";
-import { OAUTH_DID_COOKIE, verifySignedDid } from "@/logic/oauth/cookies";
+import { OAUTH_DID_COOKIE } from "@/logic/oauth/cookies";
+import { getBrowserSession } from '@/logic/oauth/browser-session';
 import { getRequestOrigin } from "@/logic/oauth/origin";
 
 const publicSkyblurMethods = new Set([
@@ -150,7 +151,9 @@ function getProxyHeaderValue(proxy: AtprotoAudience | null) {
 
 async function getOAuthSession(request: Request) {
   const rawDid = (await cookies()).get(OAUTH_DID_COOKIE)?.value;
-  const did = verifySignedDid(rawDid ? decodeURIComponent(rawDid) : rawDid);
+  const did = (await getBrowserSession(rawDid, async (legacyDid) => {
+    return restoreSession(await getOAuthClient(getRequestOrigin(request)), legacyDid);
+  }))?.did;
 
   if (!did) return null;
 

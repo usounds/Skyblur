@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getOAuthClient } from "@/logic/oauth/client";
-import { OAUTH_CALLBACK_COOKIE, OAUTH_DID_COOKIE, signDid, verifySignedDid } from "@/logic/oauth/cookies";
+import { getOAuthClient, restoreSession } from "@/logic/oauth/client";
+import { OAUTH_CALLBACK_COOKIE, OAUTH_DID_COOKIE } from "@/logic/oauth/cookies";
+import { getBrowserSession, issueBrowserSession } from '@/logic/oauth/browser-session';
 import { SESSION_TTL_SECONDS } from "@/logic/oauth/constants";
 import { isInvalidGrantInvalidCodeError } from "@/logic/oauth/errors";
 import { getRequestOrigin } from "@/logic/oauth/origin";
@@ -33,7 +34,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const cookieStore = await cookies();
   const callbackCookie = cookieStore.get(OAUTH_CALLBACK_COOKIE)?.value;
-  const existingDid = verifySignedDid(cookieStore.get(OAUTH_DID_COOKIE)?.value);
+  const existingDid = (await getBrowserSession(cookieStore.get(OAUTH_DID_COOKIE)?.value,
+    (did) => restoreSession(client, did)))?.did;
   const requestedRedirect = callbackCookie ? decodeURIComponent(callbackCookie) : null;
   const redirectTo =
     requestedRedirect && isSafeRedirectUrl(requestedRedirect, origin) ? requestedRedirect : `${origin}/console`;
@@ -43,7 +45,8 @@ export async function GET(request: Request) {
     const response = NextResponse.redirect(redirectTo);
     response.headers.set("Cache-Control", "no-store");
 
-    response.cookies.set(OAUTH_DID_COOKIE, signDid(session.did), {
+    const sessionCookie = await issueBrowserSession(session.did, () => restoreSession(client, session.did));
+    response.cookies.set(OAUTH_DID_COOKIE, sessionCookie, {
       path: "/",
       httpOnly: true,
       secure: true,

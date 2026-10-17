@@ -19,6 +19,14 @@ describe("useXrpcAgentStore.checkSession", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps the session and surfaces a failed server-side logout', async () => {
+    useXrpcAgentStore.setState({ did: 'did:plc:still-active', isSessionChecked: true });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 503 })));
+    await expect(useXrpcAgentStore.getState().logout('hard')).rejects.toThrow('Logout failed: 503');
+    expect(useXrpcAgentStore.getState().did).toBe('did:plc:still-active');
   });
 
   it("keeps the session unresolved when session check times out", async () => {

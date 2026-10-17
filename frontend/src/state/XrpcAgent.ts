@@ -291,26 +291,27 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
     logout: async (mode: 'soft' | 'hard') => {
       try {
         const endpoint = mode === 'hard' ? '/api/oauth/logout' : '/api/oauth/soft-logout';
-        await fetch(endpoint, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           credentials: 'include'
         });
+        if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
       } catch (error) {
         console.error(`Logout (${mode}) error:`, error);
-      } finally {
-        getXrpcAgentCache().lastSessionResult = null;
-        clearSensitiveDraft();
-        useTempPostStore.getState().clearTempPost();
-        set({
-          did: "",
-          userProf: null,
-          serviceUrl: "",
-          isSessionChecked: true,
-          scope: "",
-          missingAppBskyRpcScopes: []
-        });
-        window.localStorage.removeItem('oauth.did');
+        throw error;
       }
+      getXrpcAgentCache().lastSessionResult = null;
+      clearSensitiveDraft();
+      useTempPostStore.getState().clearTempPost();
+      set({
+        did: "",
+        userProf: null,
+        serviceUrl: "",
+        isSessionChecked: true,
+        scope: "",
+        missingAppBskyRpcScopes: []
+      });
+      window.localStorage.removeItem('oauth.did');
     }
   });
 });
@@ -318,4 +319,3 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
 if (typeof window !== 'undefined') {
   (window as any).__skyblurUseXrpcAgentStore = useXrpcAgentStore;
 }
-

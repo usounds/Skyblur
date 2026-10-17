@@ -11,7 +11,7 @@ import { Resource } from "sst";
 
 import { LOCK_TTL_SECONDS, OAUTH_METADATA_TTL_SECONDS, SESSION_TTL_SECONDS, STATE_TTL_SECONDS } from "./constants";
 
-type StoreKind = "session" | "state" | "pr-metadata";
+type StoreKind = "session" | "state" | "pr-metadata" | "browser-session" | "browser-account";
 type OAuthMemoryItem = {
   value: string;
   expiresAt: number;
@@ -52,7 +52,7 @@ function getTableName() {
 }
 
 function ttlForKind(kind: StoreKind) {
-  if (kind === "session") return SESSION_TTL_SECONDS;
+  if (kind === "session" || kind === "browser-session") return SESSION_TTL_SECONDS;
   if (kind === "state") return STATE_TTL_SECONDS;
   return OAUTH_METADATA_TTL_SECONDS;
 }
@@ -153,18 +153,22 @@ function handleMemoryCommand(command: DynamoCommand) {
   if (command instanceof PutItemCommand) {
     const pk = command.input.Item?.pk?.S;
     const value = command.input.Item?.value?.S;
-    const expiresAt = Number(command.input.Item?.expiresAt?.N || now);
+    const expiresAt = Number(command.input.Item?.expiresAt?.N || Number.MAX_SAFE_INTEGER);
     const updatedAt = Number(command.input.Item?.updatedAt?.N || Date.now());
     const owner = command.input.Item?.owner?.S;
     if (!pk || !value) return {};
 
     const existing = memoryStore.get(pk);
     const requiresAvailableLock = command.input.ConditionExpression?.includes("attribute_not_exists");
-    if (requiresAvailableLock && existing && existing.expiresAt >= now) {
+    if (requiresAvailableLock && existing && (!command.input.ConditionExpression?.includes('expiresAt') || existing.expiresAt >= now)) {
       throw new ConditionalCheckFailedException({
         message: "Memory lock is already held",
         $metadata: {},
       });
+    }
+    const expectedOwner = command.input.ExpressionAttributeValues?.[':expectedOwner']?.S;
+    if (command.input.ConditionExpression?.includes(':expectedOwner') && existing?.owner !== expectedOwner) {
+      throw new ConditionalCheckFailedException({ message: 'Memory record version mismatch', $metadata: {} });
     }
 
     memoryStore.set(pk, { value, expiresAt, updatedAt, owner });
@@ -298,20 +302,24 @@ export class DynamoOAuthStore<K extends string, V> implements Store<K, V> {
   }
 
   async get(key: K): Promise<V | undefined> {
-    const res = await sendDynamo<{ Item?: { value?: { S?: string } } }>(
+    const res = await sendDynamo<{ Item?: { value?: { S?: string }; expiresAt?: { N?: string } } }>(
       new GetItemCommand({
         TableName: getTableName(),
         Key: { pk: { S: this.key(key) } },
+        ...(['browser-session', 'browser-account'].includes(this.kind) ? { ConsistentRead: true } : {}),
       }),
     );
 
     const value = res.Item?.value?.S;
     if (!value) return undefined;
+    if (this.kind === 'browser-session' && Number(res.Item?.expiresAt?.N || 0) <= Math.floor(Date.now() / 1000)) {
+      return undefined;
+    }
 
     return (await decodeValue(value)) as V;
   }
 
-  async set(key: K, value: V): Promise<void> {
+  async set(key: K, value: V, owner?: string): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
     await sendDynamo(
       new PutItemCommand({
@@ -319,8 +327,10 @@ export class DynamoOAuthStore<K extends string, V> implements Store<K, V> {
         Item: {
           pk: { S: this.key(key) },
           value: { S: await encodeValue(value) },
-          expiresAt: { N: String(now + ttlForKind(this.kind)) },
+          // Revocation generations must survive OAuth session expiry and new logins.
+          ...(this.kind === 'browser-account' ? {} : { expiresAt: { N: String(now + ttlForKind(this.kind)) } }),
           updatedAt: { N: String(Date.now()) },
+          ...(owner ? { owner: { S: owner } } : {}),
         },
       }),
     );
@@ -333,6 +343,47 @@ export class DynamoOAuthStore<K extends string, V> implements Store<K, V> {
         Key: { pk: { S: this.key(key) } },
       }),
     );
+  }
+
+  // Compare-and-swap for persistent account generations and migration policy.
+  // This fences stale writers even if the surrounding lock lease has expired.
+  async setIfOwner(key: K, value: V, owner: string, expectedOwner?: string): Promise<boolean> {
+    const now = Math.floor(Date.now() / 1000);
+    try {
+      await sendDynamo(new PutItemCommand({
+        TableName: getTableName(),
+        Item: {
+          pk: { S: this.key(key) }, value: { S: await encodeValue(value) },
+          owner: { S: owner }, updatedAt: { N: String(Date.now()) },
+          ...(this.kind === 'browser-account' ? {} : { expiresAt: { N: String(now + ttlForKind(this.kind)) } }),
+        },
+        ConditionExpression: expectedOwner === undefined ? 'attribute_not_exists(pk)' : '#owner = :expectedOwner',
+        ...(expectedOwner === undefined ? {} : {
+          ExpressionAttributeNames: { '#owner': 'owner' },
+          ExpressionAttributeValues: { ':expectedOwner': { S: expectedOwner } },
+        }),
+      }));
+      return true;
+    } catch (error) {
+      if (isConditionalCheckFailed(error)) return false;
+      throw error;
+    }
+  }
+
+  async deleteIfOwner(key: K, owner: string): Promise<boolean> {
+    try {
+      await sendDynamo(new DeleteItemCommand({
+        TableName: getTableName(),
+        Key: { pk: { S: this.key(key) } },
+        ConditionExpression: '#owner = :owner',
+        ExpressionAttributeNames: { '#owner': 'owner' },
+        ExpressionAttributeValues: { ':owner': { S: owner } },
+      }));
+      return true;
+    } catch (error) {
+      if (isConditionalCheckFailed(error)) return false;
+      throw error;
+    }
   }
 
   async clear(): Promise<void> {

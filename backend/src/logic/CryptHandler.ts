@@ -24,19 +24,22 @@ export async function deriveKey(password: string, salt: Uint8Array): Promise<Cry
     );
 }
 
-function buildValidatedUrl(baseUrl: string, did: string, cid: string): string {
+function buildValidatedUrl(pds: string, did: string, cid: string): string {
     try {
-        if (baseUrl.includes('/../') || /\/%2e%2e\//i.test(baseUrl)) {
-            throw new Error('Invalid path');
+        const base = new URL(pds);
+        const host = base.hostname.toLowerCase().replace(/\.$/, '');
+        // PDS hosts are federated, not a static domain allowlist. Reject local
+        // names and all IP literals, including WHATWG-normalized numeric IPv4.
+        if (base.protocol !== 'https:' || base.username || base.password || base.port
+            || base.pathname !== '/' || base.search || base.hash
+            || /[\s\\]/.test(pds) || /\/%2e|\/\.\./i.test(pds)
+            || /^\d+\.\d+\.\d+\.\d+$/.test(host)
+            || !host.includes('.') || host.length > 253
+            || !host.split('.').every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label))
+            || /\.(?:localhost|local|internal|home|lan|invalid|test)$/.test(host)) {
+            throw new Error('Unsafe PDS URL');
         }
-        const url = new URL(baseUrl);
-        const allowedDomains = ['example.com']; // add your allowed domains here
-        if (!allowedDomains.includes(url.hostname)) {
-            throw new Error('Invalid host');
-        }
-        if (!['http:', 'https:'].includes(url.protocol)) {
-            throw new Error('Invalid protocol');
-        }
+        const url = new URL('/xrpc/com.atproto.sync.getBlob', base);
         url.searchParams.set('did', did);
         url.searchParams.set('cid', cid);
         return url.href;
@@ -49,10 +52,11 @@ export async function getDecrypt(pds: string, repo: string, cid: string, passwor
     let decodedData
     //Blob取得
     try {
-        const sanitizedPds = pds.replace(/\/$/, "");
-        const url = buildValidatedUrl(`${sanitizedPds}/xrpc/com.atproto.sync.getBlob`, repo, cid);
-        const response = await fetch(url);
-        if (!response.ok) {
+        const url = buildValidatedUrl(pds, repo, cid);
+        // Use the Workers global fetch network boundary, never a private/VPC
+        // binding. Do not follow redirects to unvalidated destinations.
+        const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(15_000) });
+        if (!response.ok || (response.status >= 300 && response.status < 400)) {
             console.log(`getDecrypt error ${url}`)
             throw new Error(`Cannot get blob from ${url}`);
         }

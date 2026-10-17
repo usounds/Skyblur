@@ -26,7 +26,8 @@ describe('CryptHandler', () => {
     });
 
     describe('getDecrypt', () => {
-        it('should decrypt data correctly', async () => {
+        it.each(['https://morel.us-east.host.bsky.network', 'https://pds.example.com/'])(
+          'decrypts data from a federated PDS: %s', async (pds) => {
             // Mock fetch to return a specific blob
             // First we need to construct a valid encrypted blob to test decryption against.
             // This is a bit complex as we need to replicate the encryption side which isn't exported in CryptHandler 
@@ -60,14 +61,15 @@ describe('CryptHandler', () => {
             });
             vi.stubGlobal('fetch', fetchMock);
 
-            const result = await getDecrypt('https://example.com', 'did:example:repo', 'bafy...', password);
+            const result = await getDecrypt(pds, 'did:example:repo', 'bafy...', password);
 
             expect(fetchMock).toHaveBeenCalledTimes(1);
             const url = new URL(fetchMock.mock.calls[0][0]);
-            expect(url.origin).toBe('https://example.com');
+            expect(url.origin).toBe(new URL(pds).origin);
             expect(url.pathname).toBe('/xrpc/com.atproto.sync.getBlob');
             expect(url.searchParams.get('did')).toBe('did:example:repo');
             expect(url.searchParams.get('cid')).toBe('bafy...');
+            expect(fetchMock.mock.calls[0][1]).toMatchObject({ redirect: 'manual', signal: expect.any(AbortSignal) });
             expect(result).toEqual({ text: 'Hello World', additional: 'Extra' });
         });
 
@@ -83,9 +85,18 @@ describe('CryptHandler', () => {
         });
 
         it.each([
-            'https://pds.example.com',
-            'https://example.com.attacker.test',
             'https://127.0.0.1',
+            'https://2130706433',
+            'https://0x7f000001',
+            'https://[::1]',
+            'https://[::ffff:127.0.0.1]',
+            'https://localhost.',
+            'https://pds.internal',
+            'http://pds.example.com',
+            'https://user:pass@pds.example.com',
+            'https://pds.example.com:8443',
+            'https://pds.example.com?redirect=1',
+            'https://pds.example.com#fragment',
             'ftp://example.com',
             'https://example.com/../private',
         ])('rejects an invalid blob URL before fetching: %s', async (pds) => {
@@ -94,6 +105,16 @@ describe('CryptHandler', () => {
 
             await expect(getDecrypt(pds, 'did:e', 'cid', 'pass')).rejects.toThrow('Invalid URL');
             expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('does not follow a blob redirect to an internal destination', async () => {
+            const fetchMock = vi.fn().mockResolvedValue(new Response(null, {
+                status: 302, headers: { location: 'https://127.0.0.1/private' },
+            }));
+            vi.stubGlobal('fetch', fetchMock);
+            await expect(getDecrypt('https://pds.example.com', 'did:e', 'cid', 'pass')).rejects.toThrow('Cannot get blob');
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock.mock.calls[0][1].redirect).toBe('manual');
         });
     });
 });
