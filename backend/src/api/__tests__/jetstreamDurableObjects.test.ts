@@ -82,6 +82,7 @@ class MirrorSQL {
   records = new Map<string, any>();
   meta = new Map<string, string>();
   backfill: any = null;
+  initialized = false;
 
   exec<T extends object>(query: string, ...args: unknown[]): Cursor<T> {
     const sql = query.replace(/\s+/g, ' ').trim();
@@ -89,7 +90,8 @@ class MirrorSQL {
       this.events.clear();
       return new Cursor<T>();
     }
-    if (sql.startsWith('CREATE TABLE')) return new Cursor<T>();
+    if (sql.startsWith('CREATE TABLE')) { this.initialized = true; return new Cursor<T>(); }
+    if (sql.startsWith('SELECT name FROM sqlite_master')) return new Cursor<T>(this.initialized ? [{ name: 'records' } as T] : []);
     if (sql.startsWith('SELECT source, time_us')) {
       const row = this.orders.get(`${args[0]}/${args[1]}/${args[2]}`);
       return new Cursor<T>(row ? [row as T] : []);

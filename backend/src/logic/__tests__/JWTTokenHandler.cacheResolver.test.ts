@@ -82,7 +82,7 @@ describe('JWTTokenHandler - Cache Resolver Security Tests', () => {
             // SECURITY ASSERTION: Must resolve fresh, not use cache
             expect(resolveSpy).toHaveBeenCalledWith('did:example:user');
             expect(result.didDocument).toEqual(mockDidDocument);
-            expect(result.didDocument?.verificationMethod?.[0].publicKeyJwk.x).toBe('new');
+            expect((result.didDocument?.verificationMethod?.[0] as any)?.publicKeyJwk?.x).toBe('new');
 
             resolveSpy.mockRestore();
         });
@@ -119,7 +119,7 @@ describe('JWTTokenHandler - Cache Resolver Security Tests', () => {
             });
 
             const resolveSpy = vi.spyOn(resolverInstance, 'resolve').mockResolvedValue({
-                didDocument: freshDocument,
+                didDocument: freshDocument as any,
                 didDocumentMetadata: {},
                 didResolutionMetadata: {}
             });
@@ -129,13 +129,13 @@ describe('JWTTokenHandler - Cache Resolver Security Tests', () => {
 
             // SECURITY ASSERTION: Must NOT use cache, even though it's valid
             expect(resolveSpy).toHaveBeenCalled();
-            expect(result.didDocument?.verificationMethod?.[0].publicKeyJwk.x).toBe('current');
+            expect((result.didDocument?.verificationMethod?.[0] as any)?.publicKeyJwk?.x).toBe('current');
 
             resolveSpy.mockRestore();
         });
 
         it('should update cache after fresh resolution', async () => {
-            const freshDocument = {
+            const freshDocument: any = {
                 id: 'did:example:user',
                 verificationMethod: [{ id: 'did:example:user#key-1' }]
             };
@@ -168,7 +168,7 @@ describe('JWTTokenHandler - Cache Resolver Security Tests', () => {
 
     describe('Security: Per-resolver memoization', () => {
         it('should memoize forced resolutions within the same resolver instance', async () => {
-            const mockDocument = {
+            const mockDocument: any = {
                 id: 'did:example:user',
                 verificationMethod: [{ id: 'did:example:user#key-1' }]
             };
@@ -235,7 +235,7 @@ describe('JWTTokenHandler - Cache Resolver Security Tests', () => {
         });
 
         it('should handle concurrent resolution requests for the same DID', async () => {
-            const mockDocument = {
+            const mockDocument: any = {
                 id: 'did:example:user',
                 verificationMethod: [{ id: 'did:example:user#key-1' }]
             };
@@ -334,7 +334,7 @@ describe('JWTTokenHandler - Cache Resolver Security Tests', () => {
         });
 
         it('should resolve fresh when cache is expired (forceRefresh=false)', async () => {
-            const freshDocument = {
+            const freshDocument: any = {
                 id: 'did:example:user',
                 verificationMethod: [{ id: 'did:example:user#fresh-key' }]
             };
@@ -422,7 +422,7 @@ describe('JWTTokenHandler - Cache Resolver Security Tests', () => {
             // SECURITY ASSERTION: Must return fresh document without old key
             expect(result.didDocument?.verificationMethod).toHaveLength(1);
             expect(result.didDocument?.verificationMethod?.[0].id).toBe('did:example:user#new-key');
-            expect(result.didDocument?.verificationMethod?.[0].publicKeyJwk.x).toBe('new');
+            expect((result.didDocument?.verificationMethod?.[0] as any)?.publicKeyJwk?.x).toBe('new');
 
             // Old key should NOT be present
             const hasOldKey = result.didDocument?.verificationMethod?.some(

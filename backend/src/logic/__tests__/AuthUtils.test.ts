@@ -77,8 +77,7 @@ describe('AuthUtils', () => {
                 }
             };
 
-            // @ts-ignore
-            JWTTokenHandler.verifyJWT
+            (JWTTokenHandler.verifyJWT as any)
                 .mockRejectedValueOnce(new Error('Invalid audience'))
                 .mockResolvedValueOnce({
                     verified: true,
@@ -114,8 +113,7 @@ describe('AuthUtils', () => {
                 }
             };
 
-            // @ts-ignore
-            JWTTokenHandler.verifyJWT
+            (JWTTokenHandler.verifyJWT as any)
                 .mockRejectedValueOnce(new Error('Invalid audience'))
                 .mockResolvedValueOnce({
                     verified: true,

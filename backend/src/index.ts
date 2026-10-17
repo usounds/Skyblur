@@ -517,13 +517,13 @@ app.get('/internal/mirror/records', (c) => inspectMirrorRecords(c))
 app.get('/internal/mirror/status', (c) => inspectMirrorStatus(c))
 app.post('/internal/mirror/quarantine/resolve', (c) => resolveQuarantinedFrame(c))
 
-app.get('/xrpc/uk.skyblur.admin.getDidDocument', (c) => {
+app.get('/xrpc/uk.skyblur.admin.getDidDocument', async (c) => {
   const origin = c.req.header('origin') || '';
   if (!allowedOrigins.includes(origin)) {
     return c.json({ error: 'This method shoud be call from Skyblur AppView' }, 403);
   }
 
-  return getDidDoc(c)
+  return await getDidDoc(c)
 })
 
 app.get('/xrpc/uk.skyblur.admin.resolveHandle', (c) => {

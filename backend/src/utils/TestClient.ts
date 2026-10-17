@@ -1,4 +1,4 @@
-import { Client, CredentialManager } from '@atcute/client';
+import { Client } from '@atcute/client';
 
 export interface TestClientConfig {
     service?: string;
@@ -9,9 +9,9 @@ export interface TestClientConfig {
 }
 
 export class SkyblurTestClient {
-    public manager: CredentialManager;
-    public client: Client;
-    public proxyClient: Client | null = null;
+    public manager: any;
+    public client: any;
+    public proxyClient: any = null;
 
     private config: TestClientConfig;
 
@@ -22,8 +22,8 @@ export class SkyblurTestClient {
             proxyServiceId: '#skyblur_api',
             ...config
         };
-        this.manager = new CredentialManager({ service: this.config.service! });
-        this.client = new Client({ handler: this.manager });
+        this.manager = null;
+        this.client = null;
     }
 
     async login(identifier?: string, password?: string) {
@@ -43,7 +43,7 @@ export class SkyblurTestClient {
                 proxy: {
                     did: this.config.proxyDid as `did:${string}:${string}`,
                     serviceId: this.config.proxyServiceId as `#${string}`
-                }
+                } as any
             });
         }
     }

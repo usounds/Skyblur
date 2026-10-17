@@ -7,9 +7,12 @@
     "deploy": "wrangler deploy --env production --minify",
     "deploy:preview": "wrangler deploy --env preview --minify",
     "gen-lex": "lex-cli generate",
+    "sync:shared": "node ../scripts/sync-shared.mjs",
+    "verify:shared": "node ../scripts/sync-shared.mjs --check",
     "update": "pnpm dlx npm-check-updates -u --reject \"prisma,@prisma/client\" && pnpm install",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@atcute/atproto": "^4.0.4",
@@ -31,6 +34,7 @@
     "@types/node": "^26.6.5",
     "@vitest/coverage-v8": "^5.0.5",
     "@vitest/ui": "^5.0.5",
+    "typescript": "^7.0.2",
     "unenv": "2.0.0-rc.24",
     "vite": "8.3.4",
     "vitest": "^5.0.5",

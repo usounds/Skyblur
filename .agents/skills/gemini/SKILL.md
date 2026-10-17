@@ -27,6 +27,14 @@ Ritoは、Bluesky（AT Protocol）のエコシステムに向けたブックマ�
 
 ### 2. コマンド実行ルール
 - ターミナルでコマンド（`pnpm`, `git`, `wrangler` など）を実行する際は、常に [RTK.md](file:///Users/usounds/Program/Skyblur/.agents/skills/rtk/SKILL.md) の指示に従い、`rtk` をプレフィックスとして付与してください（例：`rtk pnpm install`）。
+- **実行ディレクトリ**: ルート直下で直接 `pnpm test` 等を実行せず、対象ディレクトリ（`backend/` または `frontend/`）で実行してください。
+- **型チェック**:
+  - `backend`: `rtk pnpm run typecheck` (`tsc --noEmit`) を使用してください。
+  - `frontend`: `rtk pnpm run build` (Next.js Turbopack 型検証) を使用してください。
+- **既知のコマンド制限（ESLintスキップ）**:
+  - `frontend` の `pnpm lint` は、TypeScript 7.0 と `typescript-eslint` 8.x の非互換によりエラー停止するため、上流ライブラリの対応まで**ワークフロー内で実行をスキップ**してください（型チェック・静的検査は Next.js ビルドで代替）。
+- **共通コード同期（DRY）**:
+  - `shared/logic/` が共有モジュールの単一情報源（Single Source of Truth）です。`frontend` / `backend` への同期は `pnpm run sync:shared`、検証は `pnpm run verify:shared`（またはテスト内）で行ってください。
 
 ### 3. AT Protocol / Lexicon
 - `uk.skyblur.*` 名前空間 of レキシコンを尊重してください。

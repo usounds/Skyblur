@@ -2,6 +2,7 @@
 
 import { isDid } from "@atcute/lexicons/syntax";
 import type { Did } from "@atcute/lexicons";
+import { readResponseText } from "@/logic/boundedBody";
 import { headers } from "next/headers";
 import { isValidServerSideHandle, normalizeOAuthHandle } from "@/logic/oauth/handle";
 
@@ -28,16 +29,18 @@ export async function resolveHandleAction(handle: string): Promise<ResolveHandle
 
   try {
     const url = new URL("/.well-known/atproto-did", `https://${normalizedHandle}`);
+    const signal = AbortSignal.timeout(5000);
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
+      signal,
       cache: "no-store",
     });
 
     if (!response.ok) {
+      void response.body?.cancel().catch(() => {});
       return { ok: false, error: "Domain is unreachable", status: 502 };
     }
 
-    const did = (await response.text()).split("\n")[0]?.trim();
+    const did = (await readResponseText(response, 2048, signal)).split("\n")[0]?.trim();
     if (did && isDid(did)) {
       return { ok: true, did: did as Did };
     }

@@ -60,7 +60,7 @@ export const handle = async (c: Context) => {
             }
 
             if (didDoc) {
-                pds = getAtprotoPdsEndpoint(didDoc) || pds;
+                pds = ((getAtprotoPdsEndpoint(didDoc) || pds) as UkSkyblurPostDecryptByCid.Input['pds']);
             }
         } catch (e) {
             console.error('Failed to resolve PDS from cache/directory in decryptByCid:', e);
@@ -69,7 +69,7 @@ export const handle = async (c: Context) => {
 
     if (!pds && repo) {
         try {
-            pds = normalizeServiceEndpoint(await fetchServiceEndpoint(repo)) || pds;
+            pds = ((normalizeServiceEndpoint(await fetchServiceEndpoint(repo)) || pds) as UkSkyblurPostDecryptByCid.Input['pds']);
         } catch (e) {
             console.error('Failed to resolve PDS from DID resolver in decryptByCid:', e);
         }

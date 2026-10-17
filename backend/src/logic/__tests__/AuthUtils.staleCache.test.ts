@@ -196,8 +196,7 @@ describe('AuthUtils - Stale Cache Security Tests', () => {
             };
 
             // First two audiences fail, third succeeds
-            // @ts-ignore
-            JWTTokenHandler.verifyJWT
+            (JWTTokenHandler.verifyJWT as any)
                 .mockRejectedValueOnce(new Error('Invalid audience'))
                 .mockRejectedValueOnce(new Error('Invalid audience'))
                 .mockResolvedValueOnce({

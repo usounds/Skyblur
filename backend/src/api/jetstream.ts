@@ -1,5 +1,6 @@
 import type { Context } from 'hono';
 import type { Env } from '@/index';
+import { BodyLimitError, readBodyBytes } from '@/logic/boundedBody';
 
 export const MAX_INGEST_BODY_BYTES = 2 * 1024 * 1024;
 const MAX_BATCH_EVENTS = 20;
@@ -179,8 +180,20 @@ async function authenticatedBody(c: Context<{ Bindings: Env }>): Promise<Uint8Ar
   if (Number.isFinite(contentLength) && contentLength > MAX_INGEST_BODY_BYTES) {
     return c.json({ error: 'Payload too large' }, 413);
   }
-  const body = new Uint8Array(await c.req.raw.arrayBuffer());
-  if (body.byteLength > MAX_INGEST_BODY_BYTES) return c.json({ error: 'Payload too large' }, 413);
+  const timestamp = Date.parse(c.req.header('x-skyblur-timestamp') ?? '');
+  if (!c.env.JETSTREAM_INGEST_SECRET || !Number.isFinite(timestamp)
+    || Math.abs(Date.now() - timestamp) > SIGNATURE_MAX_AGE_MS
+    || !/^sha256=[0-9a-f]{64}$/i.test(c.req.header('x-skyblur-signature') ?? '')) {
+    void c.req.raw.body?.cancel().catch(() => {});
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  let body: Uint8Array;
+  try {
+    body = await readBodyBytes(c.req.raw.body, MAX_INGEST_BODY_BYTES, AbortSignal.timeout(10_000));
+  } catch (error) {
+    return c.json({ error: error instanceof BodyLimitError ? 'Payload too large' : 'Cannot read request body' },
+      error instanceof BodyLimitError ? 413 : 408);
+  }
   if (!(await verifySignedRequest(c.req.raw, body, c.env.JETSTREAM_INGEST_SECRET))) {
     console.warn('[jetstream] signed request rejected', {
       path: new URL(c.req.url, 'http://localhost').pathname,
@@ -215,7 +228,12 @@ export async function ingest(c: Context<{ Bindings: Env }>) {
   try {
     const response = await stub.fetch('https://jetstream-ingest/ingest', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Skyblur-Ingest-Id': await sha256Hex(new TextEncoder().encode(
+          `${c.req.header('x-skyblur-timestamp')}\n${c.req.header('x-skyblur-signature')?.toLowerCase()}`,
+        )),
+      },
       body: JSON.stringify(batch),
     });
     return new Response(await response.text(), {
@@ -262,8 +280,9 @@ export async function publicCursor(c: Context<{ Bindings: Env }>) {
   }
 }
 
-/** Public read-only projection source check for StatusCheck/debugging. */
+/** Operator-only projection diagnostic: never instantiate arbitrary DOs anonymously. */
 export async function publicMirrorSource(c: Context<{ Bindings: Env }>) {
+  if (!isInspectorAuthorized(c)) return c.json({ error: 'Unauthorized' }, 401);
   const repo = c.req.query('repo');
   const rkey = c.req.query('rkey');
   if (!repo?.startsWith('did:') || !rkey) return c.json({ error: 'repo and rkey are required' }, 400);

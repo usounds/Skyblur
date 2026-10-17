@@ -1,3 +1,4 @@
+import { BodyLimitError, readResponseBytes } from "../boundedBody";
 import {
   CompositeDidDocumentResolver,
   CompositeHandleResolver,
@@ -116,12 +117,12 @@ function protectedResourceMetadataCacheKey(input: RequestInfo | URL) {
   return getFetchUrl(input).origin;
 }
 
-async function cacheProtectedResourceMetadata(input: RequestInfo | URL, response: Response) {
+async function cacheProtectedResourceMetadata(input: RequestInfo | URL, response: Response, body: string) {
   if (response.status !== 200) return;
 
   try {
     await protectedResourceMetadataFallbackStore.set(protectedResourceMetadataCacheKey(input), {
-      body: await response.clone().text(),
+      body,
       contentType: response.headers.get("content-type"),
     });
   } catch (error) {
@@ -134,7 +135,7 @@ async function getCachedProtectedResourceMetadata(input: RequestInfo | URL) {
     const cached = await protectedResourceMetadataFallbackStore.get(
       protectedResourceMetadataCacheKey(input),
     );
-    if (!cached) return undefined;
+    if (!cached || typeof cached.body !== "string" || new TextEncoder().encode(cached.body).byteLength > 1024) return undefined;
 
     return new Response(cached.body, {
       status: 200,
@@ -156,13 +157,30 @@ export const guardedOAuthFetch: typeof fetch = async (input, init) => {
   const retryable = isRetryableOAuthFetch(input, init);
   const fallbackable = isProtectedResourceMetadataFetch(input, init);
   const attempts = retryable ? 3 : 1;
+  // The SDK also uses this fetch for authenticated XRPC. Keep those resource
+  // responses streaming; discovery and OAuth endpoints never carry a user token.
+  const requestHeaders = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+  const resourceRequest = /^\/xrpc\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+){2,}$/.test(url.pathname)
+    && /^(DPoP|Bearer) /i.test(requestHeaders.get("authorization") ?? "");
+  const parentSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+  const signal = resourceRequest ? parentSignal : AbortSignal.any([AbortSignal.timeout(10_000), ...(parentSignal ? [parentSignal] : [])]);
+  const maxBytes = fallbackable ? 1024 : 64 * 1024;
 
   let lastError: unknown;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      const response = await fetch(input, init);
-      if (fallbackable) {
-        await cacheProtectedResourceMetadata(input, response);
+      signal?.throwIfAborted();
+      const upstream = await fetch(input, resourceRequest ? init : { ...init, signal });
+      let response = upstream;
+      if (!resourceRequest) {
+        const body = await readResponseBytes(upstream, maxBytes, signal!);
+        const headers = new Headers(upstream.headers);
+        headers.delete("content-length");
+        headers.delete("content-encoding");
+        response = new Response([101, 204, 205, 304].includes(upstream.status) ? null : (body as unknown as BodyInit), {
+          status: upstream.status, statusText: upstream.statusText, headers,
+        });
+        if (fallbackable) await cacheProtectedResourceMetadata(input, response, new TextDecoder().decode(body));
       }
       if (!retryable || !isRetryableOAuthStatus(response.status) || attempt === attempts - 1) {
         if (fallbackable && isRetryableOAuthStatus(response.status)) {
@@ -171,9 +189,11 @@ export const guardedOAuthFetch: typeof fetch = async (input, init) => {
         }
         return response;
       }
+      void response.body?.cancel().catch(() => {});
       lastError = new Error(`OAuth metadata fetch returned ${response.status}`);
     } catch (error) {
       lastError = error;
+      if (error instanceof BodyLimitError || signal?.aborted) throw error;
       if (!retryable || attempt === attempts - 1) {
         if (fallbackable) {
           const cached = await getCachedProtectedResourceMetadata(input);

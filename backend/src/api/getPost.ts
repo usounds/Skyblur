@@ -9,7 +9,8 @@ import { checkListMembership, isValidListUri } from './listVisibility'
 
 import { getAuthenticatedDid } from '@/logic/AuthUtils'
 import type { Env } from '@/index'
-import { PDS_CACHE_GENERATION, pdsCacheEventId } from './pdsCache'
+import { readResponseText } from '@/logic/boundedBody'
+import { pdsReadCache } from './pdsReadCache'
 
 function normalizeServiceEndpoint(endpoint: unknown): string | null {
     if (typeof endpoint === 'string') {
@@ -42,7 +43,9 @@ async function getRecordFromEndpoint(endpoint: string, repo: string, rkey: strin
     url.searchParams.append('rkey', rkey);
 
     const recordUrl = url.toString();
+    const signal = AbortSignal.timeout(10_000);
     const result = await fetch(recordUrl, {
+        signal,
         headers: {
             'Accept': 'application/json',
             'User-Agent': 'SkyblurAPI/1.0',
@@ -50,12 +53,12 @@ async function getRecordFromEndpoint(endpoint: string, repo: string, rkey: strin
     });
 
     if (!result.ok) {
-        const errText = await result.text();
+        const errText = await readResponseText(result, 4096, signal);
         console.error(`[getPost] getRecord failed: ${result.status} ${errText} URL: ${recordUrl}`);
         throw new Error(`Failed to get record from ${recordUrl}`);
     }
 
-    const record = await result.json() as { value: unknown; cid?: unknown };
+    const record = JSON.parse(await readResponseText(result, 64 * 1024, signal)) as { value: unknown; cid?: unknown };
     return {
         value: record.value,
         cid: typeof record.cid === 'string' ? record.cid : undefined,
@@ -86,48 +89,6 @@ async function getMirrorRecord(c: Context, repo: string, rkey: string): Promise<
     const record = await response.json() as RecordResult;
     record.mirrorTiming = response.headers.get('X-Skyblur-Mirror-DO-Timing') ?? undefined;
     return record;
-}
-
-function snapshotTimeUs(): number {
-    return Date.now() * 1_000;
-}
-
-async function storePdsRecord(
-    c: Context,
-    repo: string,
-    rkey: string,
-    record: RecordResult,
-): Promise<{ projected: boolean; duplicate: boolean; stale: boolean }> {
-    const timeUs = snapshotTimeUs();
-    const eventId = pdsCacheEventId(repo, rkey, record.cid, timeUs);
-    const response = await mirrorStub(c, repo).fetch('https://mirror/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            eventId,
-            did: repo,
-            timeUs,
-            kind: 'commit',
-            source: 'pds',
-            commit: {
-                operation: 'create',
-                collection: 'uk.skyblur.post',
-                rkey,
-                cid: record.cid,
-                record: record.value,
-            },
-        }),
-    });
-    if (!response.ok) throw new Error(`Mirror write failed: ${response.status}`);
-    const result = await response.json() as {
-        accepted?: boolean; projected?: boolean; duplicate?: boolean; stale?: boolean;
-    };
-    if (result.accepted !== true) throw new Error('Mirror write was not accepted');
-    return {
-        projected: result.projected === true,
-        duplicate: result.duplicate === true,
-        stale: result.stale === true,
-    };
 }
 
 async function shadowCompareRecord(c: Context, repo: string, rkey: string, mirrorValue: unknown) {
@@ -210,10 +171,9 @@ export const handle = async (c: Context) => {
 
         const pdsReadThroughEnabled = (c.env as Env).PDS_READ_THROUGH_CACHE === 'true';
         const shouldUseMirrorRecord = recordResult
-            && (recordResult.source !== 'pds'
-                || (pdsReadThroughEnabled && recordResult.pdsGeneration === PDS_CACHE_GENERATION));
+            && recordResult.source !== 'pds';
 
-        if (shouldUseMirrorRecord) {
+        if (shouldUseMirrorRecord && recordResult) {
             recordObj = recordResult.value as UkSkyblurPost.Record;
             requestMeta.mirrorDo = recordResult.mirrorTiming;
             const executionCtx = (c as Context & { executionCtx?: ExecutionContext }).executionCtx;
@@ -222,24 +182,25 @@ export const handle = async (c: Context) => {
             }
         } else {
             const pdsStartedAt = performance.now();
-            recordResult = await getSkyblurRecord(repo, rkey);
+            recordResult = (pdsReadThroughEnabled ? pdsReadCache.get(repo, rkey) : undefined)
+                ?? await getSkyblurRecord(repo, rkey);
             timings.pds = performance.now() - pdsStartedAt;
             recordObj = recordResult.value as UkSkyblurPost.Record;
-            if (pdsReadThroughEnabled) {
-                try {
-                    const stored = await storePdsRecord(c, repo, rkey, recordResult);
-                    if (stored.stale) {
-                        const current = await getMirrorRecord(c, repo, rkey);
-                        if (current) {
-                            recordResult = current;
-                            recordObj = current.value as UkSkyblurPost.Record;
-                        }
-                    }
-                } catch (error) {
-                    if (error instanceof MirrorDeletedError) throw error;
-                    console.warn(`[getPost] Mirror Write Error repo=${repo} rkey=${rkey}`, error);
-                }
+            // A concurrent canonical projection or tombstone wins over this PDS snapshot.
+            let current: RecordResult | null = null;
+            try { current = await getMirrorRecord(c, repo, rkey); }
+            catch (error) {
+                if (error instanceof MirrorDeletedError) throw error;
+                // A fresh PDS response can still be served during a mirror outage.
+                recordResult = await getSkyblurRecord(repo, rkey);
+                recordObj = recordResult.value as UkSkyblurPost.Record;
             }
+            if (current && current.source !== 'pds') {
+                recordObj = current.value as UkSkyblurPost.Record;
+            } else if (pdsReadThroughEnabled) {
+                pdsReadCache.set(repo, rkey, recordResult);
+            }
+
         }
     } catch (e) {
         console.error(`[getPost] Record Fetch Error: ${e}`);

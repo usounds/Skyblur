@@ -10,6 +10,7 @@ export class CookieHasher {
      * 値に署名を付けてシリアライズする (value.signature)
      */
     static sign(value: string): string {
+        // codeql[js/insufficient-password-hash] False positive: This is HMAC-SHA256 cookie signing for message integrity, not password hashing.
         const hmac = createHmac('sha256', this.secret);
         hmac.update(value);
         const signature = hmac.digest('base64url');
@@ -24,6 +25,7 @@ export class CookieHasher {
         if (parts.length !== 2) return null;
 
         const [value, signature] = parts;
+        // codeql[js/insufficient-password-hash] False positive: This is HMAC-SHA256 signature verification for cookie integrity, not password hashing.
         const expectedSignature = createHmac('sha256', this.secret).update(value).digest('base64url');
 
         // タイミング攻撃対策として timingSafeEqual を使用

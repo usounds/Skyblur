@@ -88,6 +88,32 @@ describe('Jetstream ingest authentication', () => {
     expect(namespace.get).not.toHaveBeenCalled();
   });
 
+  it.each([undefined, '1'])('stops oversized streaming input with content-length %s before storage', async (length) => {
+    const signed = await signedRequest('https://api.skyblur.uk/internal/jetstream/ingest', 'POST', '{}');
+    const headers = new Headers(signed.headers);
+    if (length) headers.set('content-length', length);
+    const cancel = vi.fn();
+    let pulled = 0;
+    const raw = new Request(signed.url, {
+      method: 'POST', headers,
+      body: new ReadableStream({ pull(controller) { pulled++; controller.enqueue(new Uint8Array(512 * 1024)); }, cancel }, { highWaterMark: 0 }),
+      duplex: 'half',
+    } as RequestInit);
+    const namespace = { idFromName: vi.fn(), get: vi.fn() };
+    const response = await ingest(context(raw, { JETSTREAM_INGEST_SECRET: secret, SKYBLUR_DO_JETSTREAM_INGEST: namespace }));
+    expect(response.status).toBe(413); expect(pulled).toBe(5);
+    expect(cancel).toHaveBeenCalledOnce(); expect(namespace.get).not.toHaveBeenCalled();
+  });
+
+  it('rejects unsigned streaming input without buffering it', async () => {
+    const pull = vi.fn(); const cancel = vi.fn();
+    const raw = new Request('https://api.skyblur.uk/internal/jetstream/ingest', {
+      method: 'POST', body: new ReadableStream({ pull, cancel }, { highWaterMark: 0 }), duplex: 'half',
+    } as RequestInit);
+    const response = await ingest(context(raw, { JETSTREAM_INGEST_SECRET: secret }));
+    expect(response.status).toBe(401); expect(pull).not.toHaveBeenCalled(); expect(cancel).toHaveBeenCalledOnce();
+  });
+
   it('validates canonical event IDs and forwards a signed batch', async () => {
     const item = await event();
     const batch: JetstreamBatch = { cursor: item.timeUs, events: [item] };

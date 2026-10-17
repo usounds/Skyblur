@@ -1,6 +1,7 @@
 import * as didJWT from 'did-jwt';
 import {
   Resolver,
+  Resolvable,
   DIDDocument,
   DIDResolutionResult,
 } from 'did-resolver';
@@ -40,7 +41,7 @@ export type Service = {
 export const verifyJWT = async (
   auth: string,
   audience: string,
-  resolver = resolverInstance,
+  resolver: Resolvable = resolverInstance,
 ) => {
   const token = auth.replace(/^Bearer\s+/i, '').trim();
 

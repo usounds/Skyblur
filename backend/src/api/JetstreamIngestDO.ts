@@ -2,9 +2,16 @@ import { DurableObject } from 'cloudflare:workers';
 import type { Env } from '@/index';
 import type { JetstreamBatch, JetstreamEvent } from './jetstream';
 
+// Signatures permit five minutes of future skew plus five minutes of age.
+const RECEIPT_TTL_MS = 11 * 60_000;
+const MAX_RECEIPTS = 4096;
+const MAX_IN_FLIGHT = 64;
+type IngestResult = { body: string; status: number };
+
 const MAX_FUTURE_CURSOR_US = 5 * 60 * 1_000_000;
 
 export class JetstreamIngestDO extends DurableObject<Env> {
+  private readonly inFlight = new Map<string, Promise<IngestResult>>();
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.ctx.storage.sql.exec(`
@@ -21,6 +28,10 @@ export class JetstreamIngestDO extends DurableObject<Env> {
         remediated_by TEXT
       );
       CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS ingest_receipts (
+        request_id TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, response_json TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS ingest_receipts_expiry ON ingest_receipts(expires_at);
     `);
     this.ensureQuarantineSchema();
   }
@@ -28,61 +39,36 @@ export class JetstreamIngestDO extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/ingest') {
-      const batch = await request.json() as JetstreamBatch;
-      if (
-        !Number.isSafeInteger(batch.cursor)
-        || batch.cursor < 0
-        || batch.cursor > Date.now() * 1_000 + MAX_FUTURE_CURSOR_US
-        || !Array.isArray(batch.events)
-      ) {
-        return Response.json({ error: 'Invalid batch' }, { status: 400 });
+      const requestId = request.headers.get('x-skyblur-ingest-id');
+      if (!requestId) return this.applyBatch(request);
+      if (!/^[0-9a-f]{64}$/.test(requestId)) {
+        void request.body?.cancel().catch(() => {});
+        return Response.json({ error: 'Invalid request ID' }, { status: 400 });
       }
-
-      let projection: { projected: number; duplicates: number; stale: number };
-      try {
-        projection = await this.projectEvents(batch.events);
-      } catch (error) {
-        console.error(JSON.stringify({
-          event: 'jetstream_projection_failed',
-          message: error instanceof Error ? error.message.slice(0, 512) : 'projection_failed',
-        }));
-        return Response.json({ error: 'Failed to apply Jetstream batch' }, { status: 503 });
+      this.ctx.storage.sql.exec('DELETE FROM ingest_receipts WHERE expires_at <= ?', Date.now());
+      const cached = this.ctx.storage.sql.exec<{ response_json: string }>(
+        'SELECT response_json FROM ingest_receipts WHERE request_id = ?', requestId,
+      ).toArray()[0];
+      if (cached) {
+        void request.body?.cancel().catch(() => {});
+        return new Response(cached.response_json, { headers: { 'Content-Type': 'application/json' } });
       }
-
-      const result = this.ctx.storage.transactionSync(() => {
-        const stored = this.metaNumber('committedCursor');
-        let quarantined = 0;
-        for (const item of batch.quarantined ?? []) {
-          const write = this.ctx.storage.sql.exec(
-            `INSERT OR IGNORE INTO quarantined_frames
-              (hash, time_us, reason, did, collection, rkey, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            item.hash, item.cursor, item.reason, item.did ?? null,
-            item.collection ?? null, item.rkey ?? null, Date.now(),
-          );
-          quarantined += write.rowsWritten;
-        }
-        const committedCursor = Math.max(stored, batch.cursor);
-        this.setMetaNumber('committedCursor', committedCursor);
-        this.setMetaNumber('lastIngestedAt', Date.now());
-        return {
-          committedCursor,
-          quarantined,
-          quarantineDuplicates: (batch.quarantined?.length ?? 0) - quarantined,
-        };
-      });
-
-      console.info(JSON.stringify({
-        event: 'jetstream_ingest',
-        committedCursor: result.committedCursor,
-        events: batch.events.length,
-        projected: projection.projected,
-        duplicates: projection.duplicates,
-        stale: projection.stale,
-        quarantined: result.quarantined,
-        quarantineDuplicates: result.quarantineDuplicates,
+      const existing = this.inFlight.get(requestId);
+      if (existing) {
+        void request.body?.cancel().catch(() => {});
+        return this.resultResponse(await existing);
+      }
+      const count = this.ctx.storage.sql.exec<{ count: number }>('SELECT COUNT(*) AS count FROM ingest_receipts').toArray()[0]?.count ?? 0;
+      if (this.inFlight.size >= MAX_IN_FLIGHT || count + this.inFlight.size >= MAX_RECEIPTS) {
+        void request.body?.cancel().catch(() => {});
+        return Response.json({ error: 'Ingest capacity temporarily exceeded' }, { status: 503 });
+      }
+      const processing = this.applyBatch(request, requestId).then(async (response) => ({
+        body: await response.text(), status: response.status,
       }));
-      return Response.json({ accepted: true, ...result, ...projection });
+      this.inFlight.set(requestId, processing);
+      try { return this.resultResponse(await processing); }
+      finally { this.inFlight.delete(requestId); }
     }
 
     if (request.method === 'GET' && url.pathname === '/state') {
@@ -114,6 +100,73 @@ export class JetstreamIngestDO extends DurableObject<Env> {
       return Response.json({ accepted: true, resolved: result.rowsWritten });
     }
     return new Response('Not found', { status: 404 });
+  }
+
+  private resultResponse(result: IngestResult) {
+    return new Response(result.body, { status: result.status, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  private async applyBatch(request: Request, requestId?: string): Promise<Response> {
+    const batch = await request.json() as JetstreamBatch;
+    if (
+      !Number.isSafeInteger(batch.cursor)
+      || batch.cursor < 0
+      || batch.cursor > Date.now() * 1_000 + MAX_FUTURE_CURSOR_US
+      || !Array.isArray(batch.events)
+    ) {
+      return Response.json({ error: 'Invalid batch' }, { status: 400 });
+    }
+
+    let projection: { projected: number; duplicates: number; stale: number };
+    try {
+      projection = await this.projectEvents(batch.events);
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: 'jetstream_projection_failed',
+        message: error instanceof Error ? error.message.slice(0, 512) : 'projection_failed',
+      }));
+      return Response.json({ error: 'Failed to apply Jetstream batch' }, { status: 503 });
+    }
+
+    const result = this.ctx.storage.transactionSync(() => {
+      const stored = this.metaNumber('committedCursor');
+      let quarantined = 0;
+      for (const item of batch.quarantined ?? []) {
+        const write = this.ctx.storage.sql.exec(
+          `INSERT OR IGNORE INTO quarantined_frames
+            (hash, time_us, reason, did, collection, rkey, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          item.hash, item.cursor, item.reason, item.did ?? null,
+          item.collection ?? null, item.rkey ?? null, Date.now(),
+        );
+        quarantined += write.rowsWritten;
+      }
+      const committedCursor = Math.max(stored, batch.cursor);
+      this.setMetaNumber('committedCursor', committedCursor);
+      this.setMetaNumber('lastIngestedAt', Date.now());
+      const result = {
+        accepted: true, committedCursor, quarantined,
+        quarantineDuplicates: (batch.quarantined?.length ?? 0) - quarantined,
+        ...projection,
+      };
+      if (requestId) this.ctx.storage.sql.exec(
+        'INSERT INTO ingest_receipts (request_id, expires_at, response_json) VALUES (?, ?, ?)',
+        requestId, Date.now() + RECEIPT_TTL_MS, JSON.stringify(result),
+      );
+      return result;
+    });
+
+    console.info(JSON.stringify({
+      event: 'jetstream_ingest',
+      committedCursor: result.committedCursor,
+      events: batch.events.length,
+      projected: projection.projected,
+      duplicates: projection.duplicates,
+      stale: projection.stale,
+      quarantined: result.quarantined,
+      quarantineDuplicates: result.quarantineDuplicates,
+    }));
+    return Response.json(result);
   }
 
   private state() {

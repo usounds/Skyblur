@@ -36,7 +36,12 @@ export async function GET(request: Request) {
   const callbackCookie = cookieStore.get(OAUTH_CALLBACK_COOKIE)?.value;
   const existingDid = (await getBrowserSession(cookieStore.get(OAUTH_DID_COOKIE)?.value,
     (did) => restoreSession(client, did)))?.did;
-  const requestedRedirect = callbackCookie ? decodeURIComponent(callbackCookie) : null;
+  let requestedRedirect: string | null = null;
+  try {
+    requestedRedirect = callbackCookie ? decodeURIComponent(callbackCookie) : null;
+  } catch {
+    // Ignore malformed legacy redirect cookies and finish OAuth normally.
+  }
   const redirectTo =
     requestedRedirect && isSafeRedirectUrl(requestedRedirect, origin) ? requestedRedirect : `${origin}/console`;
 

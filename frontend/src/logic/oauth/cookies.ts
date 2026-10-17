@@ -17,6 +17,7 @@ export type SignedBrowserSession = { did: string; sessionId: string; expiresAt: 
 export function signDid(did: string, sessionId: string = randomUUID(), expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS) {
   const payload = Buffer.from(JSON.stringify({ did, sessionId, expiresAt })).toString('base64url');
   const signed = `v1.${payload}`;
+  // codeql[js/insufficient-password-hash] False positive: This is HMAC-SHA256 message authentication for browser session cookie integrity, not password hashing.
   const signature = createHmac("sha256", getCookieSecret())
     .update(signed)
     .digest("base64url");
@@ -29,6 +30,7 @@ export function verifySignedSession(rawDid: string | undefined | null): SignedBr
   if (parts.length !== 3 || parts[0] !== 'v1' || !/^[A-Za-z0-9_-]+$/.test(parts[1])) return null;
   const signed = `${parts[0]}.${parts[1]}`;
   const signature = parts[2];
+  // codeql[js/insufficient-password-hash] False positive: This is HMAC-SHA256 signature verification for browser session cookie integrity, not password hashing.
   const expectedSignature = createHmac("sha256", getCookieSecret())
     .update(signed)
     .digest("base64url");
@@ -64,6 +66,7 @@ export function verifyLegacySignedDid(raw: string | undefined | null): string | 
   const did = raw.slice(0, index);
   if (!did.startsWith('did:')) return null;
   const signature = Buffer.from(raw.slice(index + 1));
+  // codeql[js/insufficient-password-hash] False positive: This is HMAC-SHA256 signature verification for legacy DID cookie migration, not password hashing.
   const expected = Buffer.from(createHmac('sha256', getCookieSecret()).update(did).digest('base64url'));
   return signature.length === expected.length && timingSafeEqual(signature, expected) ? did : null;
 }

@@ -49,9 +49,14 @@ export function compareProjectionOrder(incoming: RecordOrder, current: RecordOrd
 
 export class PostMirrorDO extends DurableObject<Env> {
   private readonly initializedAt = performance.now();
+  private schemaReady = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+  }
+
+  private ensureSchema() {
+    if (this.schemaReady) return;
     this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS records (
         repo TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL,
@@ -85,13 +90,28 @@ export class PostMirrorDO extends DurableObject<Env> {
         );
       });
     }
+    this.schemaReady = true;
   }
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+    if (!this.schemaReady && request.method === 'GET') {
+      const exists = this.ctx.storage.sql.exec(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'records'",
+      ).toArray().length > 0;
+      // Anonymous reads must leave never-written objects empty and disposable.
+      if (!exists) {
+        if (url.pathname === '/status') return Response.json({
+          watermark: null, backfill: null, counts: { records: 0, activeRecords: 0, deletedRecords: 0 },
+        });
+        return new Response(null, { status: 404 });
+      }
+      this.ensureSchema();
+    }
     if (request.method === 'POST' && url.pathname === '/event') {
       const event = await request.json() as MirrorEvent;
       if (!this.validEvent(event)) return Response.json({ error: 'Invalid mirror event' }, { status: 400 });
+      this.ensureSchema();
       return Response.json(this.project(event));
     }
 
@@ -130,7 +150,7 @@ export class PostMirrorDO extends DurableObject<Env> {
 
     if (request.method === 'GET' && url.pathname === '/dump') {
       const records = this.ctx.storage.sql.exec<StoredRecordRow>('SELECT * FROM records').toArray();
-      const recordOrder = this.ctx.storage.sql.exec<RecordOrder>('SELECT * FROM record_order').toArray();
+      const recordOrder = this.ctx.storage.sql.exec<RecordOrder & { repo: string }>('SELECT * FROM record_order').toArray();
       const backfillState = this.ctx.storage.sql.exec('SELECT * FROM backfill_state').toArray();
       const meta = this.ctx.storage.sql.exec<{ key: string; value: string }>('SELECT * FROM meta').toArray();
       const repo = records[0]?.repo ?? recordOrder[0]?.repo ?? null;
@@ -148,6 +168,7 @@ export class PostMirrorDO extends DurableObject<Env> {
     if (request.method === 'GET' && url.pathname === '/status') return Response.json(this.status());
     if (request.method === 'GET' && url.pathname === '/backfill/state') return Response.json(this.backfillState());
     if (request.method === 'POST' && url.pathname === '/backfill/checkpoint') {
+      this.ensureSchema();
       return this.updateBackfillCheckpoint(await request.json());
     }
     return new Response('Not found', { status: 404 });
