@@ -6,13 +6,13 @@ import { createContentSecurityPolicy } from '../contentSecurityPolicy';
 describe('Content Security Policy', () => {
     it('blocks injected scripts and embeds without disabling federation or inline styles', () => {
         const policy = createContentSecurityPolicy('test-nonce', false);
-        expect(policy).toContain("script-src 'self' 'nonce-test-nonce' 'strict-dynamic'");
+        expect(policy).toContain("script-src 'nonce-test-nonce' 'strict-dynamic'");
         expect(policy).not.toContain("'unsafe-eval'");
         expect(policy.split('; ').find((part) => part.startsWith('script-src'))).not.toContain("'unsafe-inline'");
         expect(policy).toContain("object-src 'none'");
         expect(policy).toContain("base-uri 'none'");
         expect(policy).toContain("frame-ancestors 'none'");
-        expect(policy).toContain("connect-src 'self' https:");
+        expect(policy).toContain("connect-src 'self' https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com https://*.bsky.app https://*.bsky.social");
         expect(policy).toContain("style-src 'self' 'unsafe-inline'");
         expect(policy).toContain('upgrade-insecure-requests');
     });

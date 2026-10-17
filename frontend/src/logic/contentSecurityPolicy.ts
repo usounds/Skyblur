@@ -1,13 +1,12 @@
 export function createContentSecurityPolicy(nonce: string, isDevelopment: boolean, isHttps = true) {
     return [
         "default-src 'self'",
-        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,
+        `script-src 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,
         // Mantine and existing components use inline style attributes.
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' https: data: blob:",
         "font-src 'self'",
-        // Federated did:web / PDS hosts are discovered at runtime, not a fixed allowlist.
-        `connect-src 'self' https:${isDevelopment ? ' ws: wss:' : ''}`,
+        `connect-src 'self' https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com https://*.bsky.app https://*.bsky.social${isDevelopment ? ' https: ws: wss:' : ''}`,
         "worker-src 'self'",
         "media-src 'self' https: blob:",
         "object-src 'none'",
