@@ -175,8 +175,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           nonce={nonce}
           data-cf-beacon='{"token": "300d80e7a0bd450f823bfd0231dc3ce9"}'
           strategy="afterInteractive"
-          integrity="sha512-fO1/8WQz7NEL7o+BoqktgSq/wtdI0lWLiWXt5QtTkN3Dl5hqnPQgbEst0xRxMHkjeXE8LkA3LpvzHhhQzEiEZg=="
-          crossOrigin="anonymous"
         />
       </body>
     </html>
