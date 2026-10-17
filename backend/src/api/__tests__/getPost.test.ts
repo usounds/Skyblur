@@ -1,3 +1,5 @@
+import { DatabaseSync } from 'node:sqlite';
+import { RestrictedPostDO } from '../RestrictedPostDO';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handle } from '../getPost';
 import { pdsReadCache } from '../pdsReadCache';
@@ -108,6 +110,43 @@ describe('getPost API', () => {
             json: vi.fn()
         } as any;
     };
+
+    it.each([false, true])('serves a public mirror during PDS outage with a real restricted DO (initialized=%s)', async (initialized) => {
+        const db = new DatabaseSync(':memory:');
+        try {
+            if (initialized) db.exec("CREATE TABLE posts (rkey TEXT PRIMARY KEY, text TEXT, additional TEXT, visibility TEXT, list_uri TEXT, created_at TEXT); CREATE TABLE config (key TEXT PRIMARY KEY, value TEXT)");
+            const exec = vi.fn((query: string, ...args: unknown[]) => {
+                const rows = db.prepare(query).all(...args as never[]);
+                return { toArray: () => rows, one: () => { if (rows.length !== 1) throw new Error('Expected exactly one row'); return rows[0]; } };
+            });
+            const object = new RestrictedPostDO({ storage: { sql: { exec } } } as unknown as DurableObjectState, {} as never);
+            mockDOFetch.mockImplementation((request: Request) => object.fetch(request));
+            mockMirrorFetch.mockImplementation(async () => Response.json({ value: { text: 'mirror body', visibility: 'public' }, source: 'jetstream' }));
+            mockFetch.mockRejectedValue(new Error('PDS offline'));
+            const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/public' }, null);
+            await handle(c);
+            expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ text: 'mirror body' }));
+            expect(mockFetch).not.toHaveBeenCalled();
+            expect(exec.mock.calls.every(([query]) => /^\s*(SELECT|PRAGMA)/i.test(query))).toBe(true);
+            if (!initialized) expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()).toEqual([]);
+        } finally { db.close(); }
+    });
+
+    it('expires a PDS snapshot despite cache hits before the deadline', async () => {
+        const now = vi.spyOn(Date, 'now');
+        now.mockReturnValue(100000);
+        mockFetch.mockImplementation(async () => Response.json({ value: { text: 'old', visibility: 'public' } }));
+        await handle(createCtx({ uri: 'at://did:repo/uk.skyblur.post/ttl' }, null));
+        now.mockReturnValue(159000);
+        await handle(createCtx({ uri: 'at://did:repo/uk.skyblur.post/ttl' }, null));
+        expect(mockFetch).toHaveBeenCalledOnce();
+        mockFetch.mockImplementation(async () => Response.json({ value: { text: 'masked', visibility: 'password', encryptBody: { ref: 'new-cid' } } }));
+        now.mockReturnValue(161000);
+        const c = createCtx({ uri: 'at://did:repo/uk.skyblur.post/ttl' }, null);
+        await handle(c);
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+        expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ errorCode: 'PasswordRequired', encryptCid: 'new-cid' }));
+    });
 
     it('should return error if uri is missing', async () => {
         const c = createCtx({});

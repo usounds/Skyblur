@@ -182,8 +182,9 @@ export const handle = async (c: Context) => {
             }
         } else {
             const pdsStartedAt = performance.now();
-            recordResult = (pdsReadThroughEnabled ? pdsReadCache.get(repo, rkey) : undefined)
-                ?? await getSkyblurRecord(repo, rkey);
+            const cachedRecord = pdsReadThroughEnabled ? pdsReadCache.get(repo, rkey) : undefined;
+            let fetchedFromPds = !cachedRecord;
+            recordResult = cachedRecord ?? await getSkyblurRecord(repo, rkey);
             timings.pds = performance.now() - pdsStartedAt;
             recordObj = recordResult.value as UkSkyblurPost.Record;
             // A concurrent canonical projection or tombstone wins over this PDS snapshot.
@@ -193,11 +194,12 @@ export const handle = async (c: Context) => {
                 if (error instanceof MirrorDeletedError) throw error;
                 // A fresh PDS response can still be served during a mirror outage.
                 recordResult = await getSkyblurRecord(repo, rkey);
+                fetchedFromPds = true;
                 recordObj = recordResult.value as UkSkyblurPost.Record;
             }
             if (current && current.source !== 'pds') {
                 recordObj = current.value as UkSkyblurPost.Record;
-            } else if (pdsReadThroughEnabled) {
+            } else if (pdsReadThroughEnabled && fetchedFromPds) {
                 pdsReadCache.set(repo, rkey, recordResult);
             }
 

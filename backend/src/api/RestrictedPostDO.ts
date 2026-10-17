@@ -6,6 +6,9 @@ export class RestrictedPostDO extends DurableObject {
 
     constructor(ctx: DurableObjectState, env: Env) {
         super(ctx, env);
+    }
+
+    private ensureSchema() {
         // Initialize SQLite table
         // created_at is TEXT to store ISO 8601 string
         this.ctx.storage.sql.exec(`
@@ -36,14 +39,33 @@ export class RestrictedPostDO extends DurableObject {
         // key parameter is expected to be the rkey
         const key = url.searchParams.get("key");
 
+        if (!key && (request.method === "DELETE" || (request.method === "GET" && url.pathname !== "/dump"))) {
+            return new Response("Missing key", { status: 400 });
+        }
+
+        if (request.method === "GET" || request.method === "DELETE") {
+            const exists = this.ctx.storage.sql.exec(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'posts'",
+            ).toArray().length > 0;
+            if (!exists) {
+                if (request.method === "DELETE") return new Response("OK");
+                if (url.pathname === "/dump") return Response.json({ did: null, posts: [] });
+                return new Response(null, { status: 404 });
+            }
+        }
+
         if (request.method === "GET") {
             const startedAt = performance.now();
             if (url.pathname === "/dump") {
                 const postsResult = this.ctx.storage.sql.exec("SELECT * FROM posts");
-                const posts = [...postsResult];
+                const posts = postsResult.toArray();
 
-                const configResult = this.ctx.storage.sql.exec("SELECT value FROM config WHERE key = 'did'");
-                const didRow = configResult.one();
+                const hasConfig = this.ctx.storage.sql.exec(
+                    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'config'",
+                ).toArray().length > 0;
+                const didRow = hasConfig
+                    ? this.ctx.storage.sql.exec("SELECT value FROM config WHERE key = 'did'").toArray()[0]
+                    : undefined;
                 const did = didRow ? didRow.value : null;
 
                 return new Response(JSON.stringify({ did, posts }), {
@@ -55,10 +77,12 @@ export class RestrictedPostDO extends DurableObject {
                 return new Response("Missing key", { status: 400 });
             }
 
-            const result = this.ctx.storage.sql.exec("SELECT text, additional, visibility, list_uri as listUri FROM posts WHERE rkey = ?", key);
+            // Read legacy schemas without migrating them on public requests.
+            const hasListUri = this.ctx.storage.sql.exec<{ name: string }>("PRAGMA table_info(posts)")
+                .toArray().some((column) => column.name === 'list_uri');
+            const result = this.ctx.storage.sql.exec(`SELECT text, additional, visibility, ${hasListUri ? 'list_uri' : 'NULL'} as listUri FROM posts WHERE rkey = ?`, key);
             const sqlDurationMs = Number((performance.now() - startedAt).toFixed(1));
-            // .one() returns the first row or null if no results
-            const row = result.one();
+            const row = result.toArray()[0];
             const instanceAgeMs = Number((performance.now() - this.initializedAt).toFixed(1));
             const timingHeaders = {
                 "Content-Type": "application/json",
@@ -101,6 +125,7 @@ export class RestrictedPostDO extends DurableObject {
             if (typeof text !== "string" || (additional !== undefined && typeof additional !== "string") || typeof visibility !== "string") {
                 return new Response("Invalid body", { status: 400 });
             }
+            this.ensureSchema();
             const createdAt = new Date().toISOString();
 
             // Store DID if provided (Singleton config)

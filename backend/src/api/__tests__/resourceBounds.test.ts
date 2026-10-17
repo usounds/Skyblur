@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, expect, it, vi } from 'vitest';
 import { JetstreamIngestDO } from '../JetstreamIngestDO';
+import { RestrictedPostDO } from '../RestrictedPostDO';
 import { PostMirrorDO } from '../PostMirrorDO';
 import { publicMirrorSource } from '../jetstream';
 
@@ -102,4 +103,27 @@ it('keeps empty mirror reads free of persistent schema or metadata writes', asyn
   const response = await object.fetch(new Request('https://do/record?repo=did:fake:one&rkey=key'));
   expect(response.status).toBe(404);
   expect(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()).toEqual([]);
+});
+
+
+it('keeps restricted GET, dump and empty DELETE free of schema writes', async () => {
+  const { db, ctx } = sqliteState();
+  const object = new RestrictedPostDO(ctx, {} as never);
+  expect((await object.fetch(new Request('https://do/get?key=missing'))).status).toBe(404);
+  expect(await (await object.fetch(new Request('https://do/dump'))).json()).toEqual({ did: null, posts: [] });
+  expect((await object.fetch(new Request('https://do/get?key=missing', { method: 'DELETE' }))).status).toBe(200);
+  expect(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()).toEqual([]);
+});
+
+it('reads legacy restricted schemas without writes and migrates on PUT', async () => {
+  const { db, ctx, exec } = sqliteState();
+  db.exec("CREATE TABLE posts (rkey TEXT PRIMARY KEY, text TEXT, additional TEXT, visibility TEXT, created_at TEXT); CREATE TABLE config (key TEXT PRIMARY KEY, value TEXT); INSERT INTO posts VALUES ('old','secret','','followers','date')");
+  const object = new RestrictedPostDO(ctx, {} as never);
+  expect((await object.fetch(new Request('https://do/get?key=absent'))).status).toBe(404);
+  expect(await (await object.fetch(new Request('https://do/get?key=old'))).json()).toMatchObject({ text: 'secret', listUri: null });
+  expect(exec.mock.calls.every(([query]) => /^\s*(SELECT|PRAGMA)/i.test(query))).toBe(true);
+  expect((await object.fetch(new Request('https://do/get?key=new', { method: 'PUT', body: JSON.stringify({ text: 'new', visibility: 'list', listUri: 'at://list', did: 'did:author' }) }))).status).toBe(200);
+  const restarted = new RestrictedPostDO(ctx, {} as never);
+  expect(await (await restarted.fetch(new Request('https://do/get?key=new'))).json()).toMatchObject({ text: 'new', listUri: 'at://list' });
+  expect((await restarted.fetch(new Request('https://do/get?key=absent'))).status).toBe(404);
 });

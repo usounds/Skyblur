@@ -9,6 +9,8 @@ describe('RestrictedPostDO', () => {
         // Mock SQL execution
         const sqlExec = vi.fn((query: string, ...args: any[]) => {
             const q = query.trim().toUpperCase();
+            if (q.includes('FROM SQLITE_MASTER')) return { toArray: () => [{ name: 'posts' }] };
+            if (q.startsWith('PRAGMA')) return { toArray: () => [{ name: 'list_uri' }] };
 
             // Initialization (CREATE TABLE)
             if (q.startsWith('CREATE TABLE')) return;
@@ -45,12 +47,12 @@ describe('RestrictedPostDO', () => {
                 const [key] = args;
                 const row = postsDB.find(p => p.rkey === key);
                 return {
-                    one: () => row || null
+                    toArray: () => row ? [row] : []
                 } as any;
             }
 
             return {
-                one: () => null,
+                toArray: () => [],
                 [Symbol.iterator]: function* () { yield* []; }
             } as any;
         });
@@ -88,6 +90,8 @@ describe('RestrictedPostDO', () => {
         const postsDB: any[] = [{ rkey: 'del', text: 'delete me' }];
         const sqlExec = vi.fn((query: string, ...args: any[]) => {
             const q = query.trim().toUpperCase();
+            if (q.includes('FROM SQLITE_MASTER')) return { toArray: () => [{ name: 'posts' }] };
+            if (q.startsWith('PRAGMA')) return { toArray: () => [{ name: 'list_uri' }] };
             if (q.startsWith('CREATE TABLE')) return;
             if (q.startsWith('ALTER TABLE')) return;
 
@@ -121,17 +125,19 @@ describe('RestrictedPostDO', () => {
 
         const sqlExec = vi.fn((query: string) => {
             const q = query.trim().toUpperCase();
+            if (q.includes('FROM SQLITE_MASTER')) return { toArray: () => [{ name: 'posts' }] };
+            if (q.startsWith('PRAGMA')) return { toArray: () => [{ name: 'list_uri' }] };
             if (q.startsWith('CREATE TABLE')) return;
             if (q.startsWith('ALTER TABLE')) return;
 
             if (q.startsWith('SELECT * FROM POSTS')) {
                 return {
-                    [Symbol.iterator]: function* () { yield* postsDB; }
+                    toArray: () => postsDB
                 };
             }
             if (q.startsWith('SELECT VALUE FROM CONFIG')) {
                 return {
-                    one: () => configDB[0]
+                    toArray: () => configDB
                 };
             }
         });
@@ -153,7 +159,7 @@ describe('RestrictedPostDO', () => {
     });
 
     it('should return 404 if row not found in GET', async () => {
-        const sqlExec = vi.fn().mockReturnValue({ one: () => null });
+        const sqlExec = vi.fn().mockReturnValue({ toArray: () => [] });
         const state: any = { storage: { sql: { exec: sqlExec } } };
         const doInstance = new RestrictedPostDO(state, {} as any);
 

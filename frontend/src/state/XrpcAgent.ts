@@ -300,7 +300,11 @@ export const useXrpcAgentStore = create<State & Action>((set, get) => {
         console.error(`Logout (${mode}) error:`, error);
         throw error;
       }
-      getXrpcAgentCache().lastSessionResult = null;
+      const cache = getXrpcAgentCache();
+      cache.sessionCheckGeneration += 1;
+      cache.sessionCheckPromise = null;
+      cache.sessionCheckStartedAt = 0;
+      cache.lastSessionResult = null;
       clearSensitiveDraft();
       useTempPostStore.getState().clearTempPost();
       set({

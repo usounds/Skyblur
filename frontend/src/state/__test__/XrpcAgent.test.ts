@@ -22,6 +22,21 @@ describe("useXrpcAgentStore.checkSession", () => {
     vi.unstubAllGlobals();
   });
 
+  it.each(['soft', 'hard'] as const)('ignores a late session response after %s logout', async (mode) => {
+    vi.stubGlobal('window', { localStorage: { removeItem: vi.fn() } });
+    useXrpcAgentStore.setState({ did: 'did:plc:alice', serviceUrl: 'https://pds.example.com' });
+    let resolveSession!: (response: Response) => void;
+    vi.stubGlobal('fetch', vi.fn((url) => url === '/api/oauth/session'
+      ? new Promise<Response>((resolve) => { resolveSession = resolve; })
+      : Promise.resolve(Response.json({ success: true }))));
+    const pending = useXrpcAgentStore.getState().checkSession();
+    await useXrpcAgentStore.getState().logout(mode);
+    resolveSession(Response.json({ authenticated: true, did: 'did:plc:alice', pds: 'https://pds.example.com' }));
+    await pending;
+    expect(useXrpcAgentStore.getState()).toMatchObject({ did: '', serviceUrl: '', userProf: null, isSessionChecked: true });
+    expect(await useXrpcAgentStore.getState().checkSession()).toMatchObject({ authenticated: false, did: '' });
+  });
+
   it('keeps the session and surfaces a failed server-side logout', async () => {
     useXrpcAgentStore.setState({ did: 'did:plc:still-active', isSessionChecked: true });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 503 })));

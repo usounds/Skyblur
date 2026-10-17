@@ -83,5 +83,9 @@ describe("OAuth origin helpers", () => {
     // Origin calculation throws error (e.g. invalid config)
     delete process.env.NEXT_PUBLIC_BASE_URL;
     expect(isAllowedOrigin(request("https://intranet/xrpc/test", { host: "intranet", origin: "https://intranet" }))).toBe(false);
+
+    // Localhost origin matching during local dev or e2e tests
+    expect(isAllowedOrigin(request("http://localhost:4501/api/logout", { host: "localhost:4501", origin: "http://localhost:4501" }))).toBe(true);
+    expect(isAllowedOrigin(request("http://localhost:4501/api/logout", { host: "localhost:4501", origin: "http://evil.com" }))).toBe(false);
   });
 });

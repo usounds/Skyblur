@@ -93,7 +93,7 @@ export function AuthenticationTitle({ isModal = false }: { isModal?: boolean } =
             setErrorMessage(locale.Login_InvalidHandle || '無効なハンドルです');
         } else if (error === 'rejected') {
             setErrorMessage(locale.Login_Rejected);
-        } else if (error === 'callback_failed') {
+        } else if (error === 'callback_failed' || error === 'state_mismatch') {
             setErrorMessage(locale.Login_CallbackFailed);
         } else {
             setErrorMessage(null);

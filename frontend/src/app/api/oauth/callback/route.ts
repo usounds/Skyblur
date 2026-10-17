@@ -54,6 +54,16 @@ export async function GET(request: Request) {
   const redirectTo =
     requestedRedirect && isSafeRedirectUrl(requestedRedirect, origin) ? requestedRedirect : `${origin}/console`;
 
+  const callbackError = url.searchParams.get("error");
+  if (callbackError === "access_denied") {
+    const redirectUrl = new URL(redirectTo);
+    redirectUrl.searchParams.set("loginError", "rejected");
+    const response = NextResponse.redirect(redirectUrl);
+    response.headers.set("Cache-Control", "no-store");
+    clearOAuthCookies(response);
+    return response;
+  }
+
   // Validate browser-bound state to prevent Login CSRF / Session Swapping
   if (!stateCookie || !queryState || stateCookie !== queryState) {
     console.warn("OAuth Callback rejected: state mismatch or missing browser-bound state cookie (Login CSRF prevented).");

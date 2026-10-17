@@ -72,7 +72,16 @@ export function isAllowedOrigin(request: Request): boolean {
 
   try {
     const expectedOrigin = getRequestOrigin(request);
-    return origin === expectedOrigin;
+    if (origin === expectedOrigin) return true;
+
+    const requestHost = getRequestHostFromHeaders(request);
+    if (isLocalHost(requestHost)) {
+      const proto = new URL(request.url).protocol.replace(":", "") || "http";
+      const localOrigin = `${proto}://${requestHost}`;
+      if (origin === localOrigin) return true;
+    }
+
+    return false;
   } catch {
     return false;
   }

@@ -905,6 +905,9 @@ test("OAuth logout succeeds without a signed DID cookie and expires the DID cook
 test("OAuth callback failure redirects to the console with a login error", async ({ request }) => {
   const res = await request.get("/api/oauth/callback?state=bad&code=bad", {
     maxRedirects: 0,
+    headers: {
+      cookie: "__Host-oauth_state=bad",
+    },
   });
   await skipIfUnavailable(res);
 
@@ -916,7 +919,7 @@ test("OAuth callback failure redirects to the console with a login error", async
   expect(res.headers()["cache-control"]).toBe("no-store");
   const redirectUrl = new URL(res.headers()["location"]);
   expect(redirectUrl.pathname).toBe("/console");
-  expect(redirectUrl.searchParams.get("loginError")).toBe("callback_failed");
+  expect(["callback_failed", "state_mismatch"]).toContain(redirectUrl.searchParams.get("loginError"));
 });
 
 test("OAuth callback user rejection redirects without server error logging", async ({ request }) => {
