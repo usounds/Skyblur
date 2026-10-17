@@ -66,20 +66,50 @@ function getDidDocumentCacheStub(env: Pick<Env, 'SKYBLUR_DO'>) {
 }
 
 /**
- * Resolve issuer DIDs through the existing global DO cache. The cache is
- * deliberately long-lived because PLC DID changes are rare; a stale key can
- * still be refreshed explicitly by passing forceRefresh.
+ * Resolve issuer DIDs through the existing global DO cache. The cached
+ * document is only suitable for non-authentication uses; credential
+ * verification must pass forceRefresh so that rotated or revoked signing keys
+ * are never accepted from a stale document.
  */
 export function createCachedResolver(
   env: Pick<Env, 'SKYBLUR_DO'>,
   forceRefresh = false,
 ) {
+  // Per-resolver memoisation of forced resolutions, so that verifying one
+  // token against several audiences resolves each DID only once.
+  const forcedResolutions = new Map<string, Promise<DIDResolutionResult>>();
+
+  const resolveFresh = async (did: string): Promise<DIDResolutionResult> => {
+    const stub = getDidDocumentCacheStub(env);
+    const cacheKey = `${DID_DOCUMENT_CACHE_PREFIX}${did}`;
+    const resolved = await resolverInstance.resolve(did);
+    if (resolved.didDocument) {
+      await stub.fetch(
+        new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ document: resolved.didDocument, cachedAt: Date.now() } satisfies CachedDidDocument),
+        }),
+      );
+    }
+    return resolved;
+  };
+
   return {
     resolve: async (did: string) => {
+      if (forceRefresh) {
+        let pending = forcedResolutions.get(did);
+        if (!pending) {
+          pending = resolveFresh(did);
+          forcedResolutions.set(did, pending);
+          pending.catch(() => forcedResolutions.delete(did));
+        }
+        return pending;
+      }
+
       const stub = getDidDocumentCacheStub(env);
       const cacheKey = `${DID_DOCUMENT_CACHE_PREFIX}${did}`;
 
-      if (!forceRefresh) {
+      {
         const cachedResponse = await stub.fetch(
           new Request(`http://do/cache?key=${encodeURIComponent(cacheKey)}`),
         );

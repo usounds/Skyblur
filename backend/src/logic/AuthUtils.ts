@@ -56,8 +56,13 @@ export const getAuthenticatedDid = async (c: Context, requestId?: string): Promi
         let lastError: unknown = null;
         let jwtAttempts = 0;
         const jwtStartedAt = performance.now();
+        // Authentication must reflect the authoritative DID document, so a
+        // signing key that has been rotated out or revoked is rejected
+        // immediately. The resolver always resolves the DID afresh (and
+        // memoises the result for the duration of this request) rather than
+        // trusting a cached document that may predate a key rotation.
         const cachedResolver = (c.env as any).SKYBLUR_DO
-            ? createCachedResolver(c.env as any)
+            ? createCachedResolver(c.env as any, true)
             : undefined;
 
         // JWT検証
@@ -82,32 +87,6 @@ export const getAuthenticatedDid = async (c: Context, requestId?: string): Promi
                 return payload.iss || payload.sub || '';
             } catch (e) {
                 lastError = e;
-            }
-        }
-
-        // A rotated signing key can make a cached DID document stale. Refresh
-        // once before falling back to cookie authentication.
-        if (cachedResolver) {
-            const refreshedResolver = createCachedResolver(c.env as any, true);
-            for (const audience of audiences) {
-                jwtAttempts++;
-                try {
-                    const verifiedJwt = await verifyJWT(authorization, audience, refreshedResolver);
-                    const payload = verifiedJwt.payload as SkyblurJwtPayload;
-                    console.info('[auth] timing', {
-                        requestId,
-                        mode: 'jwt-refresh',
-                        audiences: audiences.length,
-                        jwtAttempts,
-                        jwtMs: Number((performance.now() - jwtStartedAt).toFixed(1)),
-                        totalMs: Number((performance.now() - startedAt).toFixed(1)),
-                        cachedResolver: true,
-                        success: true,
-                    });
-                    return payload.iss || payload.sub || '';
-                } catch (e) {
-                    lastError = e;
-                }
             }
         }
 
