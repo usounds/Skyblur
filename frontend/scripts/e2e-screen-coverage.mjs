@@ -62,10 +62,17 @@ const screenScenarios = [
 ];
 
 function listSpecFiles(dir) {
+  const rootDir = path.resolve(e2eDir);
   return fs
     .readdirSync(dir, { withFileTypes: true })
     .flatMap((entry) => {
-      const fullPath = path.join(dir, entry.name);
+      if (entry.name.includes("..") || entry.name.includes("/") || entry.name.includes("\\")) {
+        return [];
+      }
+      const fullPath = path.resolve(dir, entry.name);
+      if (!fullPath.startsWith(rootDir + path.sep) && fullPath !== rootDir) {
+        return [];
+      }
       if (entry.isDirectory()) return listSpecFiles(fullPath);
       return /\.(spec|test)\.tsx?$/.test(entry.name) ? [fullPath] : [];
     });

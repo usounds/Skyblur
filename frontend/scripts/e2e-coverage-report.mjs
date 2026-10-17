@@ -19,11 +19,18 @@ const thresholdMetrics = (
 
 function listCoverageFiles(dir) {
   if (!fs.existsSync(dir)) return [];
+  const rootDir = path.resolve(inputDir);
 
   return fs
     .readdirSync(dir, { withFileTypes: true })
     .flatMap((entry) => {
-      const fullPath = path.join(dir, entry.name);
+      if (entry.name.includes("..") || entry.name.includes("/") || entry.name.includes("\\")) {
+        return [];
+      }
+      const fullPath = path.resolve(dir, entry.name);
+      if (!fullPath.startsWith(rootDir + path.sep) && fullPath !== rootDir) {
+        return [];
+      }
       if (entry.isDirectory()) return listCoverageFiles(fullPath);
       return entry.name.endsWith(".json") ? [fullPath] : [];
     });
