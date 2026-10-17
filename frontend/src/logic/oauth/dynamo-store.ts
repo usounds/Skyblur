@@ -259,6 +259,24 @@ async function getAesKey(): Promise<CryptoKey | null> {
     return key;
   }
 
+  const fallbackSecret = process.env.SESSION_SECRET || process.env.OAUTH_PRIVATE_KEY_JWK;
+  if (fallbackSecret) {
+    const rawFallback = `derived:${fallbackSecret}`;
+    if (cachedAesKey && cachedAesKey.raw === rawFallback) {
+      return cachedAesKey.key;
+    }
+    const hash = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`skyblur-oauth-store:${fallbackSecret}`),
+    );
+    const key = await crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, [
+      "encrypt",
+      "decrypt",
+    ]);
+    cachedAesKey = { raw: rawFallback, key };
+    return key;
+  }
+
   cachedAesKey = undefined;
 
   if (isLocalFallbackEnabled()) {
@@ -302,7 +320,9 @@ async function encodeValue(value: unknown) {
 async function decodeValue(value: string) {
   const parsed = JSON.parse(value);
   if (!parsed?.__encrypted) {
-    throw new Error("Unencrypted OAuth store data is forbidden");
+    // Backward compatibility: Allow reading legacy plaintext records created before encryption,
+    // ensuring existing production sessions, accounts, and migration policies do not break.
+    return reviveBinary(parsed);
   }
 
   const key = await getAesKey();
@@ -310,13 +330,18 @@ async function decodeValue(value: string) {
     throw new Error("DATA_ENCRYPTION_KEY is required to decrypt OAuth store data");
   }
 
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: Uint8Array.from(Buffer.from(parsed.iv, "base64")) },
-    key,
-    Uint8Array.from(Buffer.from(parsed.data, "base64")),
-  );
+  try {
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: Uint8Array.from(Buffer.from(parsed.iv, "base64")) },
+      key,
+      Uint8Array.from(Buffer.from(parsed.data, "base64")),
+    );
 
-  return reviveBinary(JSON.parse(new TextDecoder().decode(decrypted)));
+    return reviveBinary(JSON.parse(new TextDecoder().decode(decrypted)));
+  } catch (error) {
+    console.error("[OAuthStore] Failed to decrypt store record:", error);
+    return undefined;
+  }
 }
 
 export class DynamoOAuthStore<K extends string, V> implements Store<K, V> {

@@ -171,7 +171,7 @@ describe("Dynamo OAuth store", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('rejects unencrypted records on decode with forbidden error', async () => {
+  it('reads legacy plaintext records on decode for seamless backward compatibility', async () => {
     vi.stubEnv('USE_AWS_REAL_DB', 'true');
     vi.stubEnv('OAUTH_STORE_TABLE_NAME', 'oauth-store');
     vi.stubEnv('DATA_ENCRYPTION_KEY', Buffer.alloc(32, 2).toString('base64'));
@@ -187,9 +187,42 @@ describe("Dynamo OAuth store", () => {
     });
     const { DynamoOAuthStore } = await import('../dynamo-store');
     const store = new DynamoOAuthStore<string, { token: string }>('session');
-    await expect(store.get('did:plc:plain')).rejects.toThrow(
-      'Unencrypted OAuth store data is forbidden',
-    );
+    expect(await store.get('did:plc:plain')).toEqual({ token: 'plaintext-secret' });
+  });
+
+  it('derives encryption key from OAUTH_PRIVATE_KEY_JWK when DATA_ENCRYPTION_KEY is absent', async () => {
+    vi.stubEnv('USE_AWS_REAL_DB', 'true');
+    vi.stubEnv('OAUTH_STORE_TABLE_NAME', 'oauth-store');
+    vi.stubEnv('DATA_ENCRYPTION_KEY', '');
+    vi.stubEnv('OAUTH_PRIVATE_KEY_JWK', JSON.stringify({ kty: 'EC', d: 'secret-key-material' }));
+
+    let storedValue: string | undefined;
+    const send = vi.fn().mockImplementation(async (command) => {
+      if (command.input?.Item?.value?.S) {
+        storedValue = command.input.Item.value.S;
+        return {};
+      }
+      if (command.input?.Key?.pk?.S) {
+        return { Item: { value: { S: storedValue } } };
+      }
+      return {};
+    });
+
+    vi.doMock('@aws-sdk/client-dynamodb', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@aws-sdk/client-dynamodb')>();
+      return { ...actual, DynamoDBClient: vi.fn(function () { return { send }; }) };
+    });
+
+    const { DynamoOAuthStore } = await import('../dynamo-store');
+    const store = new DynamoOAuthStore<string, { sessionData: string }>('session');
+    await store.set('derived-user', { sessionData: 'safe-under-derived-key' });
+
+    expect(storedValue).toBeDefined();
+    const parsed = JSON.parse(storedValue!);
+    expect(parsed.__encrypted).toBe(true);
+
+    const retrieved = await store.get('derived-user');
+    expect(retrieved).toEqual({ sessionData: 'safe-under-derived-key' });
   });
 
   it('round-trips encrypted data correctly when DATA_ENCRYPTION_KEY is set', async () => {
