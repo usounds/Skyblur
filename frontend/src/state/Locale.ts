@@ -27,14 +27,18 @@ const initialLocale = readLocaleCookie() ?? 'ja';
 export const useLocaleStore = create<LocaleState>((set) => ({
   locale: initialLocale,
   setLocale: (newLocale) => {
-    // クッキーに保存
-    if (typeof document !== 'undefined') {
-      document.cookie = `lang=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    // クッキーに保存 (API 経由で HttpOnly クッキーを設定)
+    if (typeof window !== 'undefined') {
+      fetch('/api/locale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale: newLocale }),
+      }).catch(() => {});
     }
     set({ locale: newLocale });
   },
   initLocale: (fallbackLocale) => {
-    const locale = readLocaleCookie() ?? fallbackLocale;
+    const locale = fallbackLocale ?? readLocaleCookie();
     if (locale) {
       set({ locale });
     }

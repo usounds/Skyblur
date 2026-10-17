@@ -16,6 +16,13 @@ export function proxy(request: NextRequest) {
 
     const withCsp = (response: NextResponse) => {
         response.headers.set('Content-Security-Policy', csp);
+        if (request.nextUrl.protocol === 'https:' || process.env.NODE_ENV !== 'development') {
+            response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+        }
+        response.headers.set('X-Content-Type-Options', 'nosniff');
+        response.headers.set('X-Frame-Options', 'DENY');
+        response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        response.headers.delete('x-powered-by');
         return response;
     };
 
@@ -90,6 +97,8 @@ export function proxy(request: NextRequest) {
             path: '/',
             maxAge: 60 * 60 * 24 * 365, // 1 year
             sameSite: 'lax',
+            httpOnly: true,
+            secure: request.nextUrl.protocol === 'https:' || process.env.NODE_ENV !== 'development',
         });
     }
 

@@ -10,6 +10,7 @@ describe('Content Security Policy', () => {
         expect(policy).not.toContain("'unsafe-eval'");
         expect(policy.split('; ').find((part) => part.startsWith('script-src'))).not.toContain("'unsafe-inline'");
         expect(policy).toContain("object-src 'none'");
+        expect(policy).toContain("base-uri 'none'");
         expect(policy).toContain("frame-ancestors 'none'");
         expect(policy).toContain("connect-src 'self' https:");
         expect(policy).toContain("style-src 'self' 'unsafe-inline'");
@@ -30,11 +31,15 @@ describe('Content Security Policy', () => {
         expect(policy).toContain("'nonce-test-nonce'");
     });
 
-    it('covers the root redirect, preserves its destination and query', () => {
+    it('covers the root redirect, preserves its destination and query, and sets HSTS/security headers', () => {
         const response = proxy(new NextRequest('https://skyblur.uk/?source=test'));
         expect(response.status).toBe(308);
         expect(response.headers.get('location')).toBe('https://skyblur.uk/ja?source=test');
         expect(response.headers.get('Content-Security-Policy')).toContain("object-src 'none'");
+        expect(response.headers.get('Strict-Transport-Security')).toBe('max-age=63072000; includeSubDomains; preload');
+        expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+        expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+        expect(response.headers.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin');
     });
 
     it.each(['/en', '/ja', '/profile/user.example', '/post/did:web:user.example/key'])(
@@ -63,4 +68,15 @@ describe('Content Security Policy', () => {
             response.headers.get('x-middleware-request-content-security-policy'),
         );
     });
+
+    it('sets the lang cookie with secure=true and httpOnly=true when visiting via HTTPS', () => {
+        const response = proxy(new NextRequest('https://skyblur.uk/en'));
+        const cookie = response.cookies.get('lang');
+        expect(cookie).toBeDefined();
+        expect(cookie?.value).toBe('en');
+        expect(cookie?.secure).toBe(true);
+        expect(cookie?.httpOnly).toBe(true);
+        expect(cookie?.sameSite).toBe('lax');
+    });
 });
+

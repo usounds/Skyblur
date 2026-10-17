@@ -1,7 +1,7 @@
 export function createContentSecurityPolicy(nonce: string, isDevelopment: boolean, isHttps = true) {
     return [
         "default-src 'self'",
-        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://static.cloudflareinsights.com${isDevelopment ? " 'unsafe-eval'" : ''}`,
+        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,
         // Mantine and existing components use inline style attributes.
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' https: data: blob:",
@@ -11,7 +11,7 @@ export function createContentSecurityPolicy(nonce: string, isDevelopment: boolea
         "worker-src 'self'",
         "media-src 'self' https: blob:",
         "object-src 'none'",
-        "base-uri 'self'",
+        "base-uri 'none'",
         "form-action 'self'",
         "frame-src 'none'",
         "frame-ancestors 'none'",
