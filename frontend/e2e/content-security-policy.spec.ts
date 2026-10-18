@@ -102,3 +102,45 @@ test('CSP blocks an injected inline script without a nonce', async ({ page }) =>
     .toContain('script-src-elem');
   expect(await page.evaluate(() => 'cspInjectedScriptRan' in window)).toBe(false);
 });
+
+
+test('Passport login can reach its IdP under the delivered CSP', async ({ page, context, baseURL }) => {
+  await useLoggedInOAuthMock(page, context, baseURL, { authenticated: false });
+  await page.addInitScript(() => {
+    localStorage.setItem('login.agreed', 'true');
+    const probe = { urls: [] as string[], completed: false, error: '' };
+    Object.assign(window, { passportCspProbe: probe });
+    // Exercise the SDK and real browser CSP without depending on an IdP account.
+    Object.defineProperty(window, 'IdentityCredential', { configurable: true, value: class {} });
+    Object.defineProperty(navigator, 'credentials', { configurable: true, value: { get: async (options: { identity: { providers: { configURL: string }[] } }) => {
+      try {
+        probe.urls.push(options.identity.providers[0].configURL);
+        for (const url of new Set([...probe.urls, 'https://atpassport.net/fedcm/config.json', 'https://dev.atpassport.net/fedcm/config.json', 'https://preview.atpassport.net/fedcm/config.json'])) {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`IdP response: ${response.status}`);
+        }
+        probe.completed = true;
+      } catch (error) { probe.error = String(error); }
+      return null;
+    } } });
+  });
+  for (const origin of ['https://atpassport.net', 'https://dev.atpassport.net', 'https://preview.atpassport.net']) {
+    await page.route(`${origin}/fedcm/config.json`, (route) => route.fulfill({
+      json: {}, headers: { 'Access-Control-Allow-Origin': '*' },
+    }));
+  }
+  const response = await page.goto('/ja');
+  const connectSources = response!.headers()['content-security-policy'].split('; ')
+    .find((directive) => directive.startsWith('connect-src '))!.split(' ');
+  expect(connectSources).toContain('https://atpassport.net');
+  expect(connectSources).toContain('https://dev.atpassport.net');
+  expect(connectSources).toContain('https://preview.atpassport.net');
+  await page.getByTestId('home-start-button').click();
+  await page.getByRole('button', { name: '@passportでログイン', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { passportCspProbe: { completed: boolean } }).passportCspProbe.completed)).toBe(true);
+  const result = await page.evaluate(() => (window as unknown as { passportCspProbe: { urls: string[]; error: string } }).passportCspProbe);
+  expect(result.urls).toHaveLength(1);
+  expect(result.urls[0]).toMatch(/^https:\/\/(dev\.)?atpassport\.net\/fedcm\/config\.json$/);
+  expect(result.error).toBe('');
+  await expect(page).toHaveURL(/\/ja$/);
+});

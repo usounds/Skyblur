@@ -12,9 +12,19 @@ describe('Content Security Policy', () => {
         expect(policy).toContain("object-src 'none'");
         expect(policy).toContain("base-uri 'none'");
         expect(policy).toContain("frame-ancestors 'none'");
-        expect(policy).toContain("connect-src 'self' https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com https://*.bsky.app https://*.bsky.social");
+        expect(policy).toContain("connect-src 'self' https://atpassport.net https://dev.atpassport.net https://preview.atpassport.net https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com https://*.bsky.app https://*.bsky.social");
         expect(policy).toContain("style-src 'self' 'unsafe-inline'");
         expect(policy).toContain('upgrade-insecure-requests');
+    });
+
+    it('allows production, development and preview Passport IdPs in production without allowing arbitrary HTTPS connections', () => {
+        const sources = createContentSecurityPolicy('nonce', false).split('; ')
+            .find((directive) => directive.startsWith('connect-src '))!.split(' ').slice(1);
+        expect(sources).toContain('https://atpassport.net');
+        expect(sources).toContain('https://dev.atpassport.net');
+        expect(sources).toContain('https://preview.atpassport.net');
+        expect(sources).not.toContain('https:');
+        expect(sources).not.toContain('*');
     });
 
     it('allows development debugging and hot reload without upgrading local HTTP', () => {

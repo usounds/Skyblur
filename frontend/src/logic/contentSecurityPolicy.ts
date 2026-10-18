@@ -6,7 +6,8 @@ export function createContentSecurityPolicy(nonce: string, isDevelopment: boolea
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' https: data: blob:",
         "font-src 'self'",
-        `connect-src 'self' https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com https://*.bsky.app https://*.bsky.social${isDevelopment ? ' https: ws: wss:' : ''}`,
+        // FedCM checks its IdP configuration URL against connect-src.
+        `connect-src 'self' https://atpassport.net https://dev.atpassport.net https://preview.atpassport.net https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com https://*.bsky.app https://*.bsky.social${isDevelopment ? ' https: ws: wss:' : ''}`,
         "worker-src 'self'",
         "media-src 'self' https: blob:",
         "object-src 'none'",
