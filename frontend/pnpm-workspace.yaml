@@ -83,7 +83,8 @@ overrides:
   zod: ^4.3.6
   '@aws-sdk/client-dynamodb': 3.1057.0
   '@aws-sdk/dynamodb-codec': 3.972.0
-  minimatch: ^10.2.1
+  minimatch: ^11.0.2
+  glob: ^14.0.3
   postcss: 8.5.26
   nanoid: 3.3.18
   '@atcute/time-ms': 1.2.3
@@ -94,12 +95,12 @@ overrides:
   '@emnapi/runtime': 1.11.2
   '@smithy/core': 3.33.3
   '@smithy/signature-v4': <=5.6.9
-  brace-expansion: 5.0.9
-  qs: 6.16.0
+  brace-expansion: 5.0.12
+  qs: 6.17.1
   caniuse-lite: 1.0.30001806
-  postcss-selector-parser: 7.1.4
+  postcss-selector-parser: 7.1.7
   update-browserslist-db: 1.2.3
-  vite: 8.1.5
+  vite: 8.3.5
   js-yaml: ^4.3.2
-  undici: 7.29.0
+  undici: 7.30.1
   sharp: 0.35.5
