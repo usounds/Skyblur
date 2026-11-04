@@ -36,7 +36,7 @@
     "@vitest/ui": "^5.0.5",
     "typescript": "^7.0.2",
     "unenv": "2.0.0-rc.24",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "^5.0.5",
     "wrangler": "4.151.1"
   },
