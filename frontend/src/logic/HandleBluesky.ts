@@ -1,6 +1,6 @@
 import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
 import { SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
-import { Client, simpleFetchHandler } from '@atcute/client';
+import { Client, ok, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
 
 export const transformUrl = (inputUrl: string): string => {
@@ -49,6 +49,10 @@ export const getPreference = async (did: string, serviceUrl?: string): Promise<U
     if (!pdsUrl) return null;
 
     const agent = new Client({ handler: simpleFetchHandler({ service: pdsUrl }) });
+    return getPreferenceFromClient(agent, did);
+};
+
+export const getPreferenceFromClient = async (agent: Client, did: string): Promise<UkSkyblurPreference.Record | null> => {
     const preference = await agent.get('com.atproto.repo.getRecord', {
         params: {
             repo: did as ActorIdentifier,
@@ -57,9 +61,7 @@ export const getPreference = async (did: string, serviceUrl?: string): Promise<U
         }
     });
 
-    if (!preference.ok) return null
+    if (!preference.ok && preference.data.error === 'RecordNotFound') return null;
 
-    const value = preference.data.value as unknown as UkSkyblurPreference.Record;
-    console.log(value)
-    return value
+    return ok(preference).value as unknown as UkSkyblurPreference.Record;
 };

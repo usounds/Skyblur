@@ -1,7 +1,8 @@
 "use client"
 import Loading from "@/components/Loading";
 import URLCopyButton from "@/components/URLCopyButton";
-import { getPreference } from "@/logic/HandleBluesky";
+import { getPreferenceFromClient } from "@/logic/HandleBluesky";
+import { ok } from '@atcute/client';
 import { compressImage } from "@/logic/ImageCompression";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
@@ -38,7 +39,8 @@ function Settings() {
   const serviceUrl = useXrpcAgentStore((state) => state.serviceUrl);
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isUseMyPage, setIsUseMyPage] = useState<boolean>(false)
-  const [preferenceMode, setPreferenceMode] = useState<"create" | "update">('create')
+  const [preferenceMode, setPreferenceMode] = useState<"create" | "update" | null>(null)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [myPageDescription, setMyPageDescription] = useState<string>('')
   const [initialMyPage, setInitialMyPage] = useState<MyPageSnapshot>({
     enabled: false,
@@ -80,9 +82,11 @@ function Settings() {
 
     setIsMounted(true);
     setIsLoading(true)
+    setSettingsLoaded(false)
+    setPreferenceMode(null)
     const fetchData = async () => {
       try {
-        const value = await getPreference(did, serviceUrl)
+        const value = await getPreferenceFromClient(agent, did)
         if (isAborted) return;
 
         if (value === null) {
@@ -107,7 +111,7 @@ function Settings() {
           })
         }
 
-        const feedRecord = await getFeedGeneratorRecord(serviceUrl, did);
+        const feedRecord = await getFeedGeneratorRecord(did);
 
         /* istanbul ignore next -- Cleanup race guard is not deterministic in E2E. */
         if (isAborted) return;
@@ -146,8 +150,11 @@ function Settings() {
           })
         }
 
+        setSettingsLoaded(true)
+
       } catch (e) {
         console.error("Settings fetchData failed:", e);
+        if (!isAborted) setFeedUpdateMessage('Error:' + e);
       } finally {
         if (!isAborted) setIsLoading(false);
       }
@@ -207,7 +214,7 @@ function Settings() {
   const getPreferenceWrite = (param: boolean) => {
     /* istanbul ignore next -- The save button is only reachable in authenticated settings. */
     if (!did) return null;
-    if (!hasMyPageChanged()) return null;
+    if (!preferenceMode || !hasMyPageChanged()) return null;
 
     return {
       $type: `com.atproto.repo.applyWrites#${preferenceMode}` as const,
@@ -224,22 +231,19 @@ function Settings() {
     };
   };
 
-  const getFeedGeneratorRecord = async (pdsUrl: string, repo: string) => {
-    const recordUrl = new URL('/xrpc/com.atproto.repo.getRecord', pdsUrl);
-    recordUrl.searchParams.set('repo', repo);
-    recordUrl.searchParams.set('collection', 'app.bsky.feed.generator');
-    recordUrl.searchParams.set('rkey', 'skyblurCustomFeed');
-
-    const res = await fetch(recordUrl, {
-      cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
+  const getFeedGeneratorRecord = async (repo: string) => {
+    if (!agent) throw new Error('Settings session is unavailable');
+    const res = await agent.get('com.atproto.repo.getRecord', {
+      params: {
+        repo: repo as ActorIdentifier,
+        collection: 'app.bsky.feed.generator',
+        rkey: 'skyblurCustomFeed',
       },
     });
 
-    if (!res.ok) return null;
+    if (!res.ok && res.data.error === 'RecordNotFound') return null;
 
-    const data = await res.json();
+    const data = ok(res);
     return data.value as {
       displayName?: string;
       description?: string;
@@ -433,7 +437,7 @@ function Settings() {
 
   const handleSave = async () => {
     /* istanbul ignore next -- The save button is only reachable after authenticated settings state is ready. */
-    if (!agent || !did) return
+    if (!agent || !did || !settingsLoaded) return
     /* istanbul ignore next -- The save button is disabled until a setting changes. */
     if (!hasSettingsChanged()) return
     setFeedUpdateMessage("")
@@ -455,12 +459,12 @@ function Settings() {
       if (prefWrite) writes.push(prefWrite);
 
       if (writes.length > 0) {
-        await agent.post('com.atproto.repo.applyWrites', {
+        await ok(agent.post('com.atproto.repo.applyWrites', {
           input: {
             repo: did as ActorIdentifier,
             writes,
           },
-        });
+        }));
       }
 
       notifications.clean()
@@ -592,7 +596,7 @@ function Settings() {
                     <Button
                       onClick={handleSave}
                       loading={isSave}
-                      disabled={isLoading || !hasSettingsChanged()}
+                      disabled={isLoading || !settingsLoaded || !hasSettingsChanged()}
                       loaderProps={{ type: 'dots' }}
                       leftSection={<Save />}
                     >
