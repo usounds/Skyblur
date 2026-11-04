@@ -216,6 +216,7 @@ function Settings() {
       value: {
         $type: 'uk.skyblur.preference' as any,
         myPage: {
+          $type: 'uk.skyblur.preference#myPage',
           isUseMyPage: param,
           description: myPageDescription,
         },
