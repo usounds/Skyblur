@@ -2,6 +2,7 @@
 import Loading from "@/components/Loading";
 import URLCopyButton from "@/components/URLCopyButton";
 import { getPreferenceFromClient } from "@/logic/HandleBluesky";
+import { getPublicBlobUrl } from "@/logic/publicPdsClient";
 import { ok } from '@atcute/client';
 import { compressImage } from "@/logic/ImageCompression";
 import { useLocale } from "@/state/Locale";
@@ -135,7 +136,7 @@ function Settings() {
           /* istanbul ignore next -- Custom feed mock records include normalized string metadata. */
           setFeedDescription(feedRecord.description || '')
           /* istanbul ignore next -- Avatar URL fallback is covered by no-avatar custom feed records. */
-          setFeedAvatarImg(getFeedAvatarUrl(serviceUrl, did, feedRecord.avatar) || '')
+          setFeedAvatarImg(getFeedAvatarUrl(did, feedRecord.avatar) || '')
           setIsCustomFeed(true)
           setOriginallyHasCustomFeed(true)
           setInitialCustomFeed({
@@ -256,18 +257,15 @@ function Settings() {
     return typeof ref?.$link === 'string' ? ref.$link : null;
   };
 
-  const getFeedAvatarUrl = (pdsUrl: string, repo: string, avatar: unknown) => {
+  const getFeedAvatarUrl = (repo: string, avatar: unknown) => {
     const cid = getBlobCid(avatar);
     if (!cid) return null;
 
-    const blobUrl = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl);
-    blobUrl.searchParams.set('did', repo);
-    blobUrl.searchParams.set('cid', cid);
-    return blobUrl.toString();
+    return getPublicBlobUrl(repo, cid);
   };
 
   const getCidFromAvatarUrl = (avatarUrl: string) => {
-    const url = new URL(avatarUrl);
+    const url = new URL(avatarUrl, window.location.origin);
     const cid = url.searchParams.get('cid');
     if (cid) return cid;
 
@@ -281,7 +279,7 @@ function Settings() {
   const sanitizeAvatarUrl = (urlStr: string): string => {
     if (!urlStr) return '';
     try {
-      const parsed = new URL(urlStr);
+      const parsed = new URL(urlStr, window.location.origin);
       if (parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'blob:') {
         return parsed.toString();
       }
@@ -291,12 +289,8 @@ function Settings() {
     return '';
   };
 
-  const fetchBlobFromPds = async (pdsUrl: string, didValue: string, cid: string) => {
-    const blobUrl = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl);
-    blobUrl.searchParams.set('did', didValue);
-    blobUrl.searchParams.set('cid', cid);
-
-    const res = await fetch(blobUrl, {
+  const fetchBlobFromPds = async (didValue: string, cid: string) => {
+    const res = await fetch(getPublicBlobUrl(didValue, cid), {
       cache: 'no-store',
     });
 
@@ -373,7 +367,7 @@ function Settings() {
           avatarRef = initialCustomFeed.avatar;
         } else {
           const didValue = did as `did:${string}:${string}`;
-          const blob = await fetchBlobFromPds(serviceUrl, didValue, cid);
+          const blob = await fetchBlobFromPds(didValue, cid);
           const fileUint = new Uint8Array(await blob.arrayBuffer());
 
           const blobRes = await agent.post('com.atproto.repo.uploadBlob', {

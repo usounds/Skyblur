@@ -19,11 +19,9 @@ vi.mock("@atcute/client", () => ({
 }));
 
 const mockGetPreference = vi.fn();
-const mockResolvePdsEndpoint = vi.fn();
 
 vi.mock("@/logic/HandleBluesky", () => ({
   getPreference: (...args: any[]) => mockGetPreference(...args),
-  resolvePdsEndpoint: (...args: any[]) => mockResolvePdsEndpoint(...args),
 }));
 
 vi.mock("@/components/PostList", () => ({
@@ -120,7 +118,6 @@ describe("ProfilePage", () => {
         description: "Public profile description",
       },
     });
-    mockResolvePdsEndpoint.mockResolvedValue("https://pds.example.com");
 
     renderWithProviders(<ProfilePage />);
 

@@ -1,7 +1,8 @@
 import { UkSkyblurPreference } from '@/lexicon/UkSkyblur';
 import { SKYBLUR_PREFERENCE_COLLECTION } from '@/types/types';
-import { Client, ok, simpleFetchHandler } from '@atcute/client';
+import { Client, ok } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
+import { publicPdsClient } from './publicPdsClient';
 
 export const transformUrl = (inputUrl: string): string => {
 
@@ -19,37 +20,8 @@ export const transformUrl = (inputUrl: string): string => {
     return ''
 };
 
-export const resolvePdsEndpoint = async (did: string): Promise<string | null> => {
-    let didDoc: any = null;
-
-    if (did.startsWith('did:plc:')) {
-        const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`, {
-            cache: 'no-store',
-        });
-        if (res.ok) didDoc = await res.json();
-    } else if (did.startsWith('did:web:')) {
-        const host = did.slice('did:web:'.length).replace(/:/g, '/');
-        const res = await fetch(`https://${host}/.well-known/did.json`, {
-            cache: 'no-store',
-        });
-        if (res.ok) didDoc = await res.json();
-    }
-
-    const service = didDoc?.service?.find((s: any) => s.type === 'AtprotoPersonalDataServer');
-    const endpoint = service?.serviceEndpoint;
-
-    if (typeof endpoint === 'string') return endpoint;
-    if (Array.isArray(endpoint) && typeof endpoint[0] === 'string') return endpoint[0];
-
-    return null;
-};
-
-export const getPreference = async (did: string, serviceUrl?: string): Promise<UkSkyblurPreference.Record | null> => {
-    const pdsUrl = serviceUrl || await resolvePdsEndpoint(did);
-    if (!pdsUrl) return null;
-
-    const agent = new Client({ handler: simpleFetchHandler({ service: pdsUrl }) });
-    return getPreferenceFromClient(agent, did);
+export const getPreference = async (did: string): Promise<UkSkyblurPreference.Record | null> => {
+    return getPreferenceFromClient(publicPdsClient, did);
 };
 
 export const getPreferenceFromClient = async (agent: Client, did: string): Promise<UkSkyblurPreference.Record | null> => {

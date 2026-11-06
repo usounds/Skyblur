@@ -2,11 +2,12 @@
 import { Avatar } from "@/components/Avatar";
 import Loading from "@/components/Loading";
 import { PostList } from "@/components/PostList";
-import { getPreference, resolvePdsEndpoint } from "@/logic/HandleBluesky";
+import { getPreference } from "@/logic/HandleBluesky";
+import { publicPdsClient } from "@/logic/publicPdsClient";
 import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { AppBskyActorDefs } from '@atcute/bluesky';
-import { Client, simpleFetchHandler } from '@atcute/client';
+import { Client } from '@atcute/client';
 import { ActorIdentifier } from '@atcute/lexicons/syntax';
 import Head from 'next/head';
 import { useParams } from 'next/navigation';
@@ -90,18 +91,7 @@ export const ProfilePage = () => {
             setMyPageDescription(value.myPage.description || '')
             setIsMyPage(true)
 
-            const pdsUrl = await resolvePdsEndpoint(repo);
-            if (!pdsUrl) {
-                console.error('PDS URL not found')
-                setErrorMessage(locale.Profile_NotPublish);
-                return
-            }
-
-            // Create agent connected to the user's PDS
-            const pdsAgent = new Client({
-                handler: simpleFetchHandler({ service: pdsUrl })
-            });
-            setAgent(pdsAgent)
+            setAgent(publicPdsClient)
             return
         } catch (e) {
             console.error('Error fetching preference: ' + e)

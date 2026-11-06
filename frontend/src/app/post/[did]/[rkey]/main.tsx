@@ -12,7 +12,6 @@ import { useLocale } from "@/state/Locale";
 import { useXrpcAgentStore } from "@/state/XrpcAgent";
 import { SKYBLUR_POST_COLLECTION, VISIBILITY_LOGIN, VISIBILITY_PASSWORD, VISIBILITY_PUBLIC, VISIBILITY_FOLLOWERS, VISIBILITY_FOLLOWING, VISIBILITY_MUTUAL, VISIBILITY_LIST } from '@/types/types';
 import { AppBskyActorDefs } from '@atcute/bluesky';
-import { Client, simpleFetchHandler } from '@atcute/client';
 import { ActorIdentifier, ResourceUri } from '@atcute/lexicons/syntax';
 import { Button, Divider, Group, Input } from '@mantine/core';
 import { notifications, notificationsStore } from '@mantine/notifications';
