@@ -23,7 +23,7 @@
     "@atcute/oauth-node-client": "^2.0.1",
     "did-jwt": "^9.0.2",
     "did-resolver": "^6.0.0",
-    "hono": "4.13.13",
+    "hono": "4.13.16",
     "web-did-resolver": "^3.2.0"
   },
   "devDependencies": {
