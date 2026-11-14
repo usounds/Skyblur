@@ -75,6 +75,8 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # AppMantineProvider sets the nonce on the same get-nonce instance react-style-singleton reads.
+  get-nonce: 1.0.1
   '@atcute/bluesky': 4.0.14
   hono: ^4.12.23
   '@modelcontextprotocol/sdk': ^1.26.0

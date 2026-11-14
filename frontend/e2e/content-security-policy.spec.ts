@@ -51,6 +51,14 @@ test('legitimate scripts hydrate and interactive UI works under CSP', async ({ p
   const dialog = page.getByRole('dialog', { name: 'ログイン', exact: true });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('combobox')).toBeVisible();
+  // Production CSP blocks <style> elements without the nonce, while development
+  // still allows them; check nonces directly so dev runs catch missing ones too.
+  // The Next dev overlay injects its own font style, which production never ships.
+  const styleNonces = await page.evaluate(() => Array.from(document.querySelectorAll('style'))
+    .filter((style) => !style.textContent?.includes('__nextjs'))
+    .map((style) => style.nonce));
+  expect(styleNonces.length).toBeGreaterThan(0);
+  expect(styleNonces.filter((value) => value !== nonce)).toEqual([]);
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
 

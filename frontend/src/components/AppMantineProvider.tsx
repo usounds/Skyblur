@@ -1,5 +1,8 @@
 'use client';
 
+import { setNonce } from 'get-nonce';
+import { useState } from 'react';
+
 import {
   MantineProvider,
   createTheme,
@@ -45,9 +48,18 @@ const cssVariablesResolver: CSSVariablesResolver = () => ({
   },
 });
 
-export function AppMantineProvider({ children }: { children: React.ReactNode }) {
+export function AppMantineProvider({ children, nonce }: { children: React.ReactNode; nonce?: string }) {
+  // Keep the nonce from the first render: it matches the delivered document's
+  // CSP, while later RSC payloads (router.refresh) carry a fresh, unusable one.
+  // The scroll-lock library reads get-nonce's global, so set it once on the client.
+  const [getStyleNonce] = useState(() => {
+    const styleNonce = nonce ?? '';
+    if (typeof document !== 'undefined') setNonce(styleNonce);
+    return () => styleNonce;
+  });
   return (
-    <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver}>
+    <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver}
+      getStyleNonce={getStyleNonce}>
       {children}
     </MantineProvider>
   );

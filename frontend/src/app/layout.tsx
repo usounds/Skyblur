@@ -122,7 +122,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ServiceWorkerRegister />
         <HtmlLang initialLocale={lang} />
         <ColorSchemeScript nonce={nonce} />
-        <AppMantineProvider>
+        <AppMantineProvider nonce={nonce}>
           <Notifications position="top-right" zIndex={1000} />
           <Header initialLocale={lang} />
           <main>

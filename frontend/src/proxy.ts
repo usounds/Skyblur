@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { normalizeLocale, resolveLocale } from '@/logic/locale';
 import { createContentSecurityPolicy } from '@/logic/contentSecurityPolicy';
+import { getRobotsHeader } from '@/logic/robotsHeader';
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -23,6 +24,8 @@ export function proxy(request: NextRequest) {
         response.headers.set('X-Frame-Options', 'DENY');
         response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
         response.headers.delete('x-powered-by');
+        const robotsHeader = getRobotsHeader(pathname);
+        if (robotsHeader) response.headers.set('X-Robots-Tag', robotsHeader);
         return response;
     };
 

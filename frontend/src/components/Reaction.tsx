@@ -5,7 +5,7 @@ import { useViewerStore } from "@/state/Viewer";
 import { useEffect, useState } from "react";
 //import { BiCommentCheck, BiHeart, BiRepost } from "react-icons/bi";
 import { MessageSquareText } from 'lucide-react';
-import BeatLoader from "react-spinners/BeatLoader";
+import { Loader } from "@mantine/core";
 import { Repeat2 } from 'lucide-react';
 import { Heart } from 'lucide-react';
 
@@ -82,7 +82,7 @@ const Reaction: React.FC<Props> = ({ atUriPost, atUriBlur }) => {
     <div data-testid="post-reactions" className="flex items-center gap-2 text-sm text-gray-500" onClick={() => setIsHideReactions(!isHideReactions)}>
 
       {isLoading ? (
-        <BeatLoader size={12} />
+        <Loader type="dots" size="sm" />
       ) : isHideReactions ? (
         locale.Post_ViewReactions
       ) : (

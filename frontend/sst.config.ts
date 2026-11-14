@@ -50,7 +50,7 @@ export default $config({
       regions: ["ap-northeast-1"],
       transform: {
         server: {
-          runtime: "nodejs22.x",
+          runtime: "nodejs24.x",
         },
       },
     });

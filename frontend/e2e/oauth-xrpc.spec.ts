@@ -812,8 +812,11 @@ test("public metadata endpoints expose app identity documents", async ({ request
   expect(robotsText).toContain("Disallow: /settings/");
   expect(robotsText).toContain("Disallow: /api/");
   expect(robotsText).toContain("Disallow: /xrpc/");
-  expect(robotsText).toContain("Disallow: /post/");
-  expect(robotsText).toContain("Disallow: /profile/");
+  // noindex pages must stay crawlable so search engines can read the directive.
+  expect(robotsText).not.toContain("Disallow: /post/");
+  expect(robotsText).not.toContain("Disallow: /profile/");
+  const profilePage = await request.get("/profile/did%3Aplc%3Ae2e");
+  expect(profilePage.headers()["x-robots-tag"]).toBe("noindex, nofollow");
   expect(robotsText).toContain("Sitemap: https://skyblur.uk/sitemap.xml");
 
   const rootRedirect = await request.get("/", { maxRedirects: 0 });

@@ -12,8 +12,11 @@ describe('Content Security Policy', () => {
         expect(policy).toContain("object-src 'none'");
         expect(policy).toContain("base-uri 'none'");
         expect(policy).toContain("frame-ancestors 'none'");
-        expect(policy).toContain("connect-src 'self' https://atpassport.net https://dev.atpassport.net https://preview.atpassport.net https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com https://*.bsky.app https://*.bsky.social");
-        expect(policy).toContain("style-src 'self' 'unsafe-inline'");
+        expect(policy).toContain("connect-src 'self' https://atpassport.net https://dev.atpassport.net https://preview.atpassport.net https://public.api.bsky.app https://constellation.microcosm.blue https://cloudflareinsights.com");
+        expect(policy).toContain("style-src 'self' 'nonce-test-nonce'");
+        expect(policy).toContain("style-src-attr 'unsafe-inline'");
+        expect(policy.split('; ').find((part) => part.startsWith('style-src '))).not.toContain("'unsafe-inline'");
+        expect(policy.split('; ').find((part) => part.startsWith('connect-src '))).not.toContain('*');
         expect(policy).toContain('upgrade-insecure-requests');
     });
 
