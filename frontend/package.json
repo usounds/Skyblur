@@ -99,11 +99,5 @@
   "overrides": {
     "sharp": "0.35.5",
     "js-yaml": "^4.3.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "sharp": "0.35.5",
-      "js-yaml": "^4.3.2"
-    }
   }
 }
